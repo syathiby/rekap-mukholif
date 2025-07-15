@@ -1,0 +1,45 @@
+/santri-crud/
+│
+├── santri/
+    ├── index.php         // Menampilkan data santri (Read)
+    ├── create.php        // Form tambah santri (Create)
+    ├── edit.php          // Form edit santri (Update)
+    ├── delete.php        // Hapus santri (Delete)
+    ├── search.php
+    ├── bulk-delete.php   // Koneksi database
+    └── bulk-create.php
+├── jenis-pelanggaran/
+│   ├── index.php // Menampilkan data jenis pelanggaran
+│   ├── create.php // Form tambah jenis pelanggaran
+│   ├── edit.php // Form edit jenis pelanggaran
+│   ├── delete.php // Hapus jenis pelanggaran
+│   └── process.php // Proses create/update (bisa digabung) 
+├── pelanggaran/
+    ├── index.php
+    ├── kebersihan-kamar/
+    │   ├── index.php       // Halaman utama dengan form dropdown kamar & daftar santri
+    │   └── process.php     // Proses penyimpanan data pelanggaran
+│   ├── telat-sholat/
+│   │   ├── index.php       // Halaman utama pencatatan
+│   │   ├── process.php     // Proses penyimpanan data
+│   │   ├── style.css       // Styling khusus
+        └── script.js
+    ├── telat-kbm/
+│   │   ├── index.php       // Halaman utama pencatatan
+│   │   ├── process.php     // Proses penyimpanan data
+│   │   ├── style.css       // Styling khusus
+        └── script.js  
+├──rekap/
+    ├──index.php
+    ├──santri.php
+    ├──per-kamar.php
+    ├──kamar-terbersih.php
+    ├──kamar-terkotor.php
+    ├──rekap-jenis.php
+    ├──chart.php
+    ├──style.css
+├─db.php                    // Koneksi database
+├─footer.php
+├─header.php
+├─index.php
+├─style.css
