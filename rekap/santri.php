@@ -6,7 +6,7 @@ include '../header.php';
 function deteksiKategoriPelanggaran($datetime) {
     $jam = date('H:i', strtotime($datetime));
 
-    if ($jam >= '04:00' && $jam <= '05:30') return 'Sholat Subuh';
+    if ($jam >= '03.30' && $jam <= '05:30') return 'Sholat Subuh';
     elseif ($jam >= '07:30' && $jam <= '08:15') return 'KBM';
     elseif ($jam >= '11:30' && $jam <= '13:00') return 'Sholat Dzuhur';
     elseif ($jam >= '14:45' && $jam <= '16:00') return 'Sholat Ashar';
@@ -49,7 +49,7 @@ $result = mysqli_query($conn, $query) or die("Query Error: " . mysqli_error($con
 $chart_query = "
     SELECT  
         CASE 
-            WHEN TIME(tanggal) BETWEEN '04:00:00' AND '05:30:00' THEN 'Sholat Subuh'
+            WHEN TIME(tanggal) BETWEEN '03:30:00' AND '05:30:00' THEN 'Sholat Subuh'
             WHEN TIME(tanggal) BETWEEN '07:30:00' AND '08:15:00' THEN 'KBM'
             WHEN TIME(tanggal) BETWEEN '11:30:00' AND '13:00:00' THEN 'Sholat Dzuhur'
             WHEN TIME(tanggal) BETWEEN '14:45:00' AND '16:00:00' THEN 'Sholat Ashar'
