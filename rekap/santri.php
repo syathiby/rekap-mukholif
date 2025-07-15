@@ -47,7 +47,7 @@ $result = mysqli_query($conn, $query) or die("Query Error: " . mysqli_error($con
 
 // Hitung total pelanggaran per kategori untuk chart
 $chart_query = "
-    SELECT 
+    SELECT  
         CASE 
             WHEN TIME(tanggal) BETWEEN '04:00:00' AND '05:30:00' THEN 'Sholat Subuh'
             WHEN TIME(tanggal) BETWEEN '07:30:00' AND '08:15:00' THEN 'KBM'

@@ -112,6 +112,9 @@ require_once __DIR__ . '/../header.php';
             <a href="bulk-create.php" class="btn btn-primary me-2">
                 <i class="fas fa-file-import me-1"></i> Bulk Input
             </a>
+            <a href="bulk-edit.php" class="btn btn-warning me-2">
+                <i class="fas fa-pen-to-square me-1"></i> Bulk Edit
+            </a>
             <button type="button" class="btn btn-danger" onclick="confirmBulkDelete()">
                 <i class="fas fa-user-minus me-1"></i> Hapus Terpilih
             </button>
