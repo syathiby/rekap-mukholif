@@ -8,6 +8,7 @@
     ├── search.php
     ├── bulk-delete.php   // Koneksi database
     └── bulk-create.php
+    └── bulk-edit.php
 ├── jenis-pelanggaran/
 │   ├── index.php // Menampilkan data jenis pelanggaran
 │   ├── create.php // Form tambah jenis pelanggaran
