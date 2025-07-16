@@ -6,7 +6,7 @@
     ├── edit.php          // Form edit santri (Update)
     ├── delete.php        // Hapus santri (Delete)
     ├── search.php
-    ├── bulk-delete.php   // Koneksi database
+    ├── bulk-delete.php   
     └── bulk-create.php
     └── bulk-edit.php
 ├── jenis-pelanggaran/
