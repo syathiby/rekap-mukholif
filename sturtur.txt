@@ -1,4 +1,4 @@
-/santri-crud/
+/rekap-mukholif/
 │
 ├── santri/
     ├── index.php         // Menampilkan data santri (Read)
@@ -20,6 +20,9 @@
     ├── kebersihan-kamar/
     │   ├── index.php       // Halaman utama dengan form dropdown kamar & daftar santri
     │   └── process.php     // Proses penyimpanan data pelanggaran
+        ├──eksekusi/
+            ├──index.php
+            ├──process.php
 │   ├── telat-sholat/
 │   │   ├── index.php       // Halaman utama pencatatan
 │   │   ├── process.php     // Proses penyimpanan data
@@ -36,11 +39,13 @@
     ├──per-kamar.php
     ├──kamar-terbersih.php
     ├──kamar-terkotor.php
-    ├──rekap-jenis.php
     ├──chart.php
     ├──style.css
 ├─db.php                    // Koneksi database
 ├─footer.php
 ├─header.php
 ├─index.php
+├─login.php
+├─logout.php
+├─register.php
 ├─style.css
