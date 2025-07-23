@@ -17,19 +17,20 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     }
 
     $berhasil = 0;
-    foreach ($pelanggaranList as $id) {
-        $idSafe = (int) $id;
-        $catatanSafe = mysqli_real_escape_string($conn, $catatan);
-        $tanggalSafe = mysqli_real_escape_string($conn, $tanggal);
-        $jenisSafe = mysqli_real_escape_string($conn, $jenis_hukuman);
 
+    foreach ($pelanggaranList as $id) {
+        $idSafe = (int)$id;
         $res = mysqli_query($conn, "SELECT kamar FROM pelanggaran_kebersihan WHERE id = $idSafe");
         if ($row = mysqli_fetch_assoc($res)) {
             $kamarSafe = mysqli_real_escape_string($conn, $row['kamar']);
+            $catatanSafe = mysqli_real_escape_string($conn, $catatan);
+            $tanggalSafe = mysqli_real_escape_string($conn, $tanggal);
+            $jenisSafe = mysqli_real_escape_string($conn, $jenis_hukuman);
 
             $insert = mysqli_query($conn, "
-                INSERT INTO eksekusi_kebersihan (kamar, jenis_sanksi, catatan, tanggal_eksekusi, dicatat_oleh)
-                VALUES ('$kamarSafe', '$jenisSafe', '$catatanSafe', '$tanggalSafe', $user_id)
+                INSERT INTO eksekusi_kebersihan 
+                (pelanggaran_id, kamar, jenis_sanksi, catatan, tanggal_eksekusi, dicatat_oleh)
+                VALUES ($idSafe, '$kamarSafe', '$jenisSafe', '$catatanSafe', '$tanggalSafe', $user_id)
             ");
 
             if ($insert) $berhasil++;
@@ -42,4 +43,4 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 } else {
     header("Location: index.php");
     exit();
-} ?>
+}

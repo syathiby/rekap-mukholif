@@ -1,6 +1,7 @@
 <?php
-// Start session
+// ✅ Set session lifetime DULU sebelum session dimulai
 if (session_status() === PHP_SESSION_NONE) {
+    ini_set('session.cookie_lifetime', 0); // Auto logout saat browser ditutup
     session_start();
 }
 
@@ -30,45 +31,53 @@ unset($_SESSION['error']);
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/jqueryui/1.12.1/jquery-ui.min.css">
-    <style>
-        .navbar-brand {
-            font-weight: bold;
-        }
-        .sidebar {
-            min-height: 100vh;
-            background-color: #f8f9fa;
-            padding-top: 20px;
-        }
-        .sidebar .nav-link {
-            color: #333;
-            border-radius: 5px;
-            margin-bottom: 5px;
-        }
-        .sidebar .nav-link:hover {
-            background-color: #e9ecef;
-        }
-        .sidebar .nav-link.active {
-            background-color: #0d6efd;
-            color: white;
-        }
-        .main-content {
-            padding: 20px;
-        }
-        .card {
-            margin-bottom: 20px;
-            box-shadow: 0 0.125rem 0.25rem rgba(0,0,0,0.075);
-        }
-        .toast-container {
-            position: fixed;
-            top: 20px;
-            right: 20px;
-            z-index: 1100;
-        }
-        .datetime-info {
-            font-size: 0.8rem;
-            color: #6c757d;
-        }
-    </style>
+<style>
+    .sidebar .nav-link[href='/rekap-mukholif/index.php'] i {
+        color: #0d6efd !important; /* biru - dashboard */
+    }
+    .sidebar .nav-link[href='/rekap-mukholif/santri/'] i {
+        color: #20c997 !important; /* teal - data santri */
+    }
+    .sidebar .nav-link[href='/rekap-mukholif/jenis-pelanggaran/'] i {
+        color: #fd7e14 !important; /* oranye - jenis pelanggaran */
+    }
+    .sidebar .nav-link[href='/rekap-mukholif/pelanggaran/'] i {
+        color: #6c757d !important; /* abu abu - catatan pelanggaran */
+    }
+    .sidebar .nav-link[href='/rekap-mukholif/rekap/'] i {
+        color: #6f42c1 !important; /* ungu - rekap */
+    }
+    .sidebar .nav-link[href='/rekap-mukholif/pelanggaran/kebersihan-kamar/eksekusi'] i {
+        color: #e83e8c !important; /* pink - eksekusi */
+    }
+    .sidebar .nav-link:hover i {
+        transform: scale(1.1);
+        transition: 0.2s ease-in-out;
+    }
+    .sidebar .nav-link {
+        padding-left: 1rem;
+    }
+    .sidebar .nav-link {
+        color: #333 !important; /* warna teks: abu gelap, netral */
+        font-weight: 500;
+    }
+
+    .sidebar .nav-link:hover {
+        background-color: #e9ecef;
+        color: #000 !important; /* saat hover, teks tetap netral */
+    }
+
+    .sidebar .nav-link i {
+        margin-right: 0.5rem;
+    }
+    .sidebar .nav-link {
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+        font-family: 'Poppins', sans-serif;
+        font-size: 15px;
+    }
+</style>
 </head>
 <body>
     <!-- Toast Notifications -->
@@ -189,32 +198,39 @@ unset($_SESSION['error']);
 
             <!-- Main Content -->
             <div class="col-lg-10 ms-sm-auto px-md-4 main-content">
-                <nav class="navbar navbar-expand-lg navbar-light bg-light mb-4">
-                    <div class="container-fluid">
-                        <!-- Toggle Button untuk Mobile Sidebar -->
-                        <button class="btn btn-outline-secondary d-lg-none me-2" type="button" data-bs-toggle="offcanvas" data-bs-target="#sidebarOffcanvas">
-                            <i class="fas fa-bars"></i>
-                        </button>
-                        <a class="navbar-brand" href="../">
-                            <i class="fas fa-user-shield me-2"></i>Sistem Pelanggaran Santri
-                        </a>
-                        <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
-                            <span class="navbar-toggler-icon"></span>
-                        </button>
-                        <div class="collapse navbar-collapse" id="navbarNav">
-                            <ul class="navbar-nav ms-auto align-items-center">
-                                <li class="nav-item me-3 text-dark">
-                                    <i class="fas fa-user-circle me-1"></i> <?= $_SESSION['username'] ?? 'Admin' ?>
-                                </li>
-                                <li class="nav-item">
-                                    <a class="btn btn-outline-danger btn-sm" href="/rekap-mukholif/logout.php">
-                                        <i class="fas fa-sign-out-alt me-1"></i>Logout
-                                    </a>
-                                </li>
-                            </ul>
-                        </div>
-                    </div>
-                </nav>
+<nav class="navbar navbar-expand-lg mb-4 shadow-sm rounded bg-white border border-success">
+    <div class="container-fluid">
+        <!-- Toggle Sidebar Button (Mobile) -->
+        <button class="btn btn-success d-lg-none me-2" type="button" data-bs-toggle="offcanvas" data-bs-target="#sidebarOffcanvas">
+            <i class="fas fa-bars text-white"></i>
+        </button>
+
+        <!-- Logo & Judul Aplikasi -->
+        <a class="navbar-brand text-success fw-bold d-flex align-items-center" href="../">
+            <img src="/rekap-mukholif/assets/logo.png?v=2" alt="Logo" style="height:58px;" class="me-2">
+            Aplikasi Pendataan Mukholif
+        </a>
+
+        <!-- Mobile Toggle Button -->
+        <button class="navbar-toggler border-success" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
+            <span class="navbar-toggler-icon"></span>
+        </button>
+
+        <!-- User Info + Logout -->
+        <div class="collapse navbar-collapse" id="navbarNav">
+            <ul class="navbar-nav ms-auto align-items-center">
+                <li class="nav-item me-3 text-success fw-semibold">
+                    <i class="fas fa-user-circle me-1"></i> <?= $_SESSION['username'] ?? 'Admin' ?>
+                </li>
+                <li class="nav-item">
+                    <a class="btn btn-sm btn-danger text-white" href="/rekap-mukholif/logout.php">
+                        <i class="fas fa-sign-out-alt me-1"></i>Logout
+                    </a>
+                </li>
+            </ul>
+        </div>
+    </div>
+</nav>
 
                 <!-- Content dimulai di sini -->
                 <div class="container-fluid">

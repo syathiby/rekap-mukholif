@@ -1,5 +1,10 @@
 <?php
-session_start();
+// ✅ Cek dulu: kalau session belum aktif, baru kita atur dan mulai
+if (session_status() === PHP_SESSION_NONE) {
+    ini_set('session.cookie_lifetime', 0); // Auto logout saat browser ditutup
+    session_start();
+}
+
 include 'db.php';
 
 $error = '';

@@ -1,5 +1,7 @@
 /rekap-mukholif/
 │
+├──assets
+    └──logo.png
 ├── santri/
     ├── index.php         // Menampilkan data santri (Read)
     ├── create.php        // Form tambah santri (Create)
@@ -47,5 +49,4 @@
 ├─index.php
 ├─login.php
 ├─logout.php
-├─register.php
 ├─style.css
