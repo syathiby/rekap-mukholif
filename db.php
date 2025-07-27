@@ -1,15 +1,21 @@
 <?php
-$host = "localhost";
-$user = "root";
-$password = "";
-$dbname = "db_mukholif";
 
-$conn = mysqli_connect($host, $user, $password, $dbname);
+require 'vendor/autoload.php';
+
+$dotenv = Dotenv\Dotenv::createImmutable(__DIR__);
+$dotenv->load();
+
+$host     = $_ENV['DB_HOST'];
+$user     = $_ENV['DB_USER'];
+$password = $_ENV['DB_PASSWORD'];
+$dbname   = $_ENV['DB_NAME'];
+
+$conn = mysqli_connect(hostname: $host, username: $user, password: $password, database: $dbname);
 
 if (!$conn) {
-    die("Koneksi gagal: " . mysqli_connect_error());
+    die("koneksi gagal: " . mysqli_connect_error());
 }
 
-// Set timezone ke Indonesia (WIB)
 date_default_timezone_set('Asia/Jakarta');
+
 ?>
