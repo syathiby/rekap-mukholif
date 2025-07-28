@@ -47,7 +47,7 @@ unset($_SESSION['error']);
     .sidebar .nav-link[href='../rekap'] i {
         color: #6f42c1 !important; /* ungu - rekap */
     }
-    .sidebar .nav-link[href='../pelanggaran/kebersihan-kamar/eksekusi'] i {
+    .sidebar .nav-link[href='../eksekusi'] i {
         color: #e83e8c !important; /* pink - eksekusi */
     }
     .sidebar .nav-link:hover i {
@@ -161,7 +161,7 @@ unset($_SESSION['error']);
                     </a>
                 </li>
                 <li class="nav-item">
-                    <a class="nav-link <?= strpos($_SERVER['REQUEST_URI'], 'eksekusi') !== false ? 'active' : '' ?>" href="../pelanggaran/kebersihan-kamar/eksekusi">
+                    <a class="nav-link <?= strpos($_SERVER['REQUEST_URI'], 'eksekusi') !== false ? 'active' : '' ?>" href="../eksekusi">
                         <i class="fas fa-broom me-2"></i>Eksekusi Kebersihan
                     </a>
                 </li>
@@ -208,7 +208,7 @@ unset($_SESSION['error']);
                             </a>
                         </li>
                         <li class="nav-item">
-                            <a class="nav-link <?= strpos($_SERVER['REQUEST_URI'], 'eksekusi') !== false ? 'active' : '' ?>" href="../pelanggaran/kebersihan-kamar/eksekusi">
+                            <a class="nav-link <?= strpos($_SERVER['REQUEST_URI'], 'eksekusi') !== false ? 'active' : '' ?>" href="../eksekusi">
                                 <i class="fas fa-broom me-2"></i>Eksekusi Kebersihan
                             </a>
                         </li>
