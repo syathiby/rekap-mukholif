@@ -1,6 +1,6 @@
 <?php
-include '../../../db.php';
-include '../../../header.php';
+include '../db.php';
+include '../header.php';
 
 if (!$conn) {
     die("Koneksi database gagal: " . mysqli_connect_error());
