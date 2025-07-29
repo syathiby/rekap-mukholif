@@ -256,7 +256,7 @@ unset($_SESSION['error']);
     <div class="mx-auto d-flex align-items-center text-success fw-bold">
       <img src="../assets/logo.png?v=2" alt="Logo" class="header-logo me-2">
       <span class="d-none d-sm-inline">Pendataan Mukholif</span>
-      <span class="d-inline d-sm-none">Pendataan Mukholif</span>
+      <span class="d-inline d-sm-none">Mukholif</span>
     </div>
 
     <!-- POJOK KANAN: Logout -->
