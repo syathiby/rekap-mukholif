@@ -32,13 +32,19 @@ unset($_SESSION['error']);
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/jqueryui/1.12.1/jquery-ui.min.css">
 <style>
-    /* === Sidebar Link Style === */
-    .sidebar .nav-link[href='../index.php'] i { color: #0d6efd !important; }
-    .sidebar .nav-link[href='../santri/'] i { color: #20c997 !important; }
-    .sidebar .nav-link[href='../jenis-pelanggaran'] i { color: #fd7e14 !important; }
-    .sidebar .nav-link[href='../pelanggaran'] i { color: #6c757d !important; }
-    .sidebar .nav-link[href='../rekap'] i { color: #6f42c1 !important; }
-    .sidebar .nav-link[href='../eksekusi'] i { color: #e83e8c !important; }
+    /* Warna default semua ikon */
+    .sidebar .nav-link i {
+        color: #0d6efd; /* Default warna ikon (misal biru) */
+    }
+
+    /* Warna per-halaman */
+    .sidebar .nav-link[href*='/index.php'] i { color: #0d6efd !important; }
+    .sidebar .nav-link[href*='/santri'] i { color: #20c997 !important; }
+    .sidebar .nav-link[href*='/jenis-pelanggaran'] i { color: #fd7e14 !important; }
+    .sidebar .nav-link[href*='/pelanggaran'] i { color: #6c757d !important; }
+    .sidebar .nav-link[href*='/rekap'] i { color: #6f42c1 !important; }
+    .sidebar .nav-link[href*='/eksekusi'] i { color: #e83e8c !important; }
+
 
     .sidebar .nav-link:hover i {
         transform: scale(1.1);
