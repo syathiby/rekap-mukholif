@@ -35,9 +35,9 @@ unset($_SESSION['error']);
     /* === Sidebar Link Style === */
     .sidebar .nav-link[href='../index.php'] i { color: #0d6efd !important; }
     .sidebar .nav-link[href='../santri/'] i { color: #20c997 !important; }
-    .sidebar .nav-link[href='../jenis-pelanggaran/'] i { color: #fd7e14 !important; }
-    .sidebar .nav-link[href='../pelanggaran/'] i { color: #6c757d !important; }
-    .sidebar .nav-link[href='../rekap/'] i { color: #6f42c1 !important; }
+    .sidebar .nav-link[href='../jenis-pelanggaran'] i { color: #fd7e14 !important; }
+    .sidebar .nav-link[href='../pelanggaran'] i { color: #6c757d !important; }
+    .sidebar .nav-link[href='../rekap'] i { color: #6f42c1 !important; }
     .sidebar .nav-link[href='../eksekusi'] i { color: #e83e8c !important; }
 
     .sidebar .nav-link:hover i {
@@ -254,7 +254,7 @@ unset($_SESSION['error']);
 
     <!-- TENGAH: Logo + Judul -->
     <div class="mx-auto d-flex align-items-center text-success fw-bold">
-      <img src="../assets/logo.png?v=2" alt="Logo" class="header-logo me-2">
+      <img src="/assets/logo.png?v=2" alt="Logo" class="header-logo me-2">
       <span class="d-none d-sm-inline">Pendataan Mukholif</span>
       <span class="d-inline d-sm-none">Mukholif</span>
     </div>
