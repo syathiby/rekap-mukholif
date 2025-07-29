@@ -214,7 +214,7 @@ $pelanggaranQuery = mysqli_query($conn, "
     </form>
 </div>
 
-<?php include '../../../footer.php'; mysqli_close($conn); ?>
+<?php include '../footer.php'; mysqli_close($conn); ?>
 
 <!-- Animation trigger script -->
 <script>

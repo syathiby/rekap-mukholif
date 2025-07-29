@@ -3,7 +3,51 @@ require_once __DIR__ . '/../db.php';
 require_once __DIR__ . '/../header.php'; 
 ?>
 
-<div class="container-fluid mt-4">
+<style>
+/* Responsive tweaks khusus halaman jenis pelanggaran */
+@media (max-width: 576px) {
+    .card-header h3 {
+        font-size: 1.1rem;
+    }
+    .card-header .btn {
+        font-size: 0.8rem;
+        padding: 0.3rem 0.5rem;
+    }
+    .table th, .table td {
+        font-size: 0.85rem;
+        padding: 0.4rem;
+    }
+    .card-body {
+        padding: 0.75rem 0.5rem;
+    }
+    .card-header {
+        flex-direction: column;
+        align-items: flex-start !important;
+        gap: 0.5rem;
+    }
+    .card-header > div {
+        width: 100%;
+        display: flex;
+        justify-content: flex-end;
+        gap: 0.5rem;
+    }
+}
+
+    /* Tambahan: kasih jarak antar tombol di kolom Aksi */
+    .table td .btn + .btn {
+        margin-left: 0.4rem;
+    }
+
+    /* Tambahan responsif tombol aksi di HP */
+    @media (max-width: 576px) {
+        .table td .btn {
+            padding: 0.3rem 0.5rem;
+            font-size: 0.8rem;
+        }
+    }
+</style>
+
+<div class="container-fluid mt-4 px-2 px-sm-4">
     <div class="card shadow">
         <div class="card-header bg-primary text-white d-flex justify-content-between align-items-center">
             <h3 class="mb-0"><i class="fas fa-exclamation-triangle mr-2"></i>Data Jenis Pelanggaran</h3>
@@ -47,13 +91,15 @@ require_once __DIR__ . '/../header.php';
                         <tr>
                             <td class="text-center"><?= $no++; ?></td>
                             <td><?= htmlspecialchars($row['nama_pelanggaran']); ?></td>
-                            <td class="text-center">
-                                <a href="edit.php?id=<?= $row['id']; ?>" class="btn btn-warning btn-sm" title="Edit">
-                                    <i class="fas fa-edit"></i>
+                           <td class="text-center">
+                            <div class="d-flex justify-content-center gap-1 flex-wrap">
+                                <a href="edit.php?id=<?= $row['id']; ?>" class="btn btn-warning btn-xs p-1 px-2" title="Edit">
+                                    <i class="fas fa-edit fa-sm"></i>
                                 </a>
-                                <a href="delete.php?id=<?= $row['id']; ?>" class="btn btn-danger btn-sm" title="Hapus" onclick="return confirm('Yakin ingin menghapus data ini?')">
-                                    <i class="fas fa-trash-alt"></i>
+                                <a href="delete.php?id=<?= $row['id']; ?>" class="btn btn-danger btn-xs p-1 px-2" title="Hapus" onclick="return confirm('Yakin ingin menghapus data ini?')">
+                                    <i class="fas fa-trash-alt fa-sm"></i>
                                 </a>
+                            </div>
                             </td>
                         </tr>
                         <?php } ?>

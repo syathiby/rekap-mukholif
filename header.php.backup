@@ -32,93 +32,70 @@ unset($_SESSION['error']);
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/jqueryui/1.12.1/jquery-ui.min.css">
 <style>
-    /* === Sidebar Link Style === */
-    .sidebar .nav-link[href='/mukholif.syathiby.id/index.php'] i { color: #0d6efd !important; }
-    .sidebar .nav-link[href='/mukholif.syathiby.id/santri/'] i { color: #20c997 !important; }
-    .sidebar .nav-link[href='/mukholif.syathiby.id/jenis-pelanggaran/'] i { color: #fd7e14 !important; }
-    .sidebar .nav-link[href='/mukholif.syathiby.id/pelanggaran/'] i { color: #6c757d !important; }
-    .sidebar .nav-link[href='/mukholif.syathiby.id/rekap/'] i { color: #6f42c1 !important; }
-    .sidebar .nav-link[href='/mukholif.syathiby.id/eksekusi'] i { color: #e83e8c !important; }
-
+    .sidebar .nav-link[href='/rekap-mukholif/index.php'] i {
+        color: #0d6efd !important; /* biru - dashboard */
+    }
+    .sidebar .nav-link[href='/rekap-mukholif/santri/'] i {
+        color: #20c997 !important; /* teal - data santri */
+    }
+    .sidebar .nav-link[href='/rekap-mukholif/jenis-pelanggaran/'] i {
+        color: #fd7e14 !important; /* oranye - jenis pelanggaran */
+    }
+    .sidebar .nav-link[href='/rekap-mukholif/pelanggaran/'] i {
+        color: #6c757d !important; /* abu abu - catatan pelanggaran */
+    }
+    .sidebar .nav-link[href='/rekap-mukholif/rekap/'] i {
+        color: #6f42c1 !important; /* ungu - rekap */
+    }
+    .sidebar .nav-link[href='/rekap-mukholif/eksekusi'] i {
+        color: #e83e8c !important; /* pink - eksekusi */
+    }
     .sidebar .nav-link:hover i {
         transform: scale(1.1);
         transition: 0.2s ease-in-out;
     }
-
     .sidebar .nav-link {
         padding-left: 1rem;
-        color: #333 !important;
+    }
+    .sidebar .nav-link {
+        color: #333 !important; /* warna teks: abu gelap, netral */
         font-weight: 500;
+    }
+
+    .sidebar .nav-link:hover {
+        background-color: #e9ecef;
+        color: #000 !important; /* saat hover, teks tetap netral */
+    }
+
+    .sidebar .nav-link i {
+        margin-right: 0.5rem;
+    }
+    .sidebar .nav-link {
         display: flex;
         align-items: center;
         gap: 0.5rem;
         font-family: 'Poppins', sans-serif;
         font-size: 15px;
     }
-
-    .sidebar .nav-link:hover {
-        background-color: #e9ecef;
-        color: #000 !important;
+    .navbar .datetime-info {
+        margin-left: auto;
+        margin-right: 1rem;
     }
-
-    .sidebar .nav-link i {
-        margin-right: 0.5rem;
-    }
-
-    /* === Navbar Style === */
-    .navbar {
-        padding-top: 0.5rem;
-        padding-bottom: 0.5rem;
-    }
-
-    .navbar-brand {
-        font-size: 1rem;
+    .apk-title {
+        font-size: 0.85rem;
+        font-weight: 600;
     }
 
     @media (min-width: 576px) {
-        .navbar-brand { font-size: 1.15rem; }
-        .apk-title { font-size: 1rem; }
-        .header-logo { height: 48px; }
-    }
-
-    @media (min-width: 768px) {
-        .apk-title { font-size: 1.2rem; }
-    }
-
-    @media (min-width: 992px) {
-        .navbar-brand { font-size: 1.25rem; }
-        .header-logo { height: 58px; }
-    }
-
-    /* === Logo & Layout === */
-    .header-logo {
-        height: 40px;
-        width: auto;
-    }
-
-    .datetime-info {
-        font-size: 0.85rem;
-    }
-
-    @media (max-width: 991.98px) {
-        .main-content {
-            padding-left: 0.5rem;
-            padding-right: 0.5rem;
+        .apk-title {
+            font-size: 1rem;
         }
     }
 
-    /* Ukuran dan spacing tombol logout */
-    .navbar .btn-logout {
-        font-size: 0.85rem;
-        padding: 0.3rem 0.6rem;
-        gap: 0.3rem;
-    }
-
-    .navbar .btn-logout {
-        font-size: 0.85rem;
-        padding: 0.3rem 0.6rem;
-        gap: 0.3rem;
-        box-shadow: 0 1px 4px rgba(0,0,0,0.1); /* opsional */
+    @media (min-width: 768px) {
+        .apk-title {
+            font-size: 1.2rem;
+        }
     }
 </style>
 </head>
@@ -159,32 +136,32 @@ unset($_SESSION['error']);
         <div class="offcanvas-body">
             <ul class="nav flex-column">
                 <li class="nav-item">
-                    <a class="nav-link <?= basename($_SERVER['PHP_SELF']) == 'index.php' ? 'active' : '' ?>" href="/mukholif.syathiby.id/index.php">
+                    <a class="nav-link <?= basename($_SERVER['PHP_SELF']) == 'index.php' ? 'active' : '' ?>" href="/rekap-mukholif/index.php">
                         <i class="fas fa-home me-2"></i>Dashboard
                     </a>
                 </li>
                 <li class="nav-item">
-                    <a class="nav-link <?= strpos($_SERVER['REQUEST_URI'], 'santri') !== false ? 'active' : '' ?>" href="/mukholif.syathiby.id/santri/">
+                    <a class="nav-link <?= strpos($_SERVER['REQUEST_URI'], 'santri') !== false ? 'active' : '' ?>" href="/rekap-mukholif/santri/">
                         <i class="fas fa-users me-2"></i>Data Santri
                     </a>
                 </li>
                 <li class="nav-item">
-                    <a class="nav-link <?= strpos($_SERVER['REQUEST_URI'], 'jenis-pelanggaran') !== false ? 'active' : '' ?>" href="/mukholif.syathiby.id/jenis-pelanggaran/">
+                    <a class="nav-link <?= strpos($_SERVER['REQUEST_URI'], 'jenis-pelanggaran') !== false ? 'active' : '' ?>" href="/rekap-mukholif/jenis-pelanggaran/">
                         <i class="fas fa-exclamation-triangle me-2"></i>Jenis Pelanggaran
                     </a>
                 </li>
                 <li class="nav-item">
-                    <a class="nav-link <?= strpos($_SERVER['REQUEST_URI'], 'pelanggaran') !== false ? 'active' : '' ?>" href="/mukholif.syathiby.id/pelanggaran/">
+                    <a class="nav-link <?= strpos($_SERVER['REQUEST_URI'], 'pelanggaran') !== false ? 'active' : '' ?>" href="/rekap-mukholif/pelanggaran/">
                         <i class="fas fa-clipboard-list me-2"></i>Catatan Pelanggaran
                     </a>
                 </li>
                 <li class="nav-item">
-                    <a class="nav-link <?= strpos($_SERVER['REQUEST_URI'], 'rekap') !== false ? 'active' : '' ?>" href="/mukholif.syathiby.id/rekap/">
+                    <a class="nav-link <?= strpos($_SERVER['REQUEST_URI'], 'rekap') !== false ? 'active' : '' ?>" href="/rekap-mukholif/rekap/">
                         <i class="fas fa-chart-bar me-2"></i>Rekap Pelanggaran
                     </a>
                 </li>
                 <li class="nav-item">
-                    <a class="nav-link <?= strpos($_SERVER['REQUEST_URI'], 'eksekusi') !== false ? 'active' : '' ?>" href="/mukholif.syathiby.id/eksekusi">
+                    <a class="nav-link <?= strpos($_SERVER['REQUEST_URI'], 'eksekusi') !== false ? 'active' : '' ?>" href="/rekap-mukholif/eksekusi">
                         <i class="fas fa-broom me-2"></i>Eksekusi Kebersihan
                     </a>
                 </li>
@@ -206,32 +183,32 @@ unset($_SESSION['error']);
                     <ul class="nav flex-column">
                         <!-- Sidebar list duplicate untuk desktop -->
                         <li class="nav-item">
-                            <a class="nav-link <?= basename($_SERVER['PHP_SELF']) == 'index.php' ? 'active' : '' ?>" href="/mukholif.syathiby.id/index.php">
+                            <a class="nav-link <?= basename($_SERVER['PHP_SELF']) == 'index.php' ? 'active' : '' ?>" href="/rekap-mukholif/index.php">
                                 <i class="fas fa-home me-2"></i>Dashboard
                             </a>
                         </li>
                         <li class="nav-item">
-                            <a class="nav-link <?= strpos($_SERVER['REQUEST_URI'], 'santri') !== false ? 'active' : '' ?>" href="/mukholif.syathiby.id/santri/">
+                            <a class="nav-link <?= strpos($_SERVER['REQUEST_URI'], 'santri') !== false ? 'active' : '' ?>" href="/rekap-mukholif/santri/">
                                 <i class="fas fa-users me-2"></i>Data Santri
                             </a>
                         </li>
                         <li class="nav-item">
-                            <a class="nav-link <?= strpos($_SERVER['REQUEST_URI'], 'jenis-pelanggaran') !== false ? 'active' : '' ?>" href="/mukholif.syathiby.id/jenis-pelanggaran/">
+                            <a class="nav-link <?= strpos($_SERVER['REQUEST_URI'], 'jenis-pelanggaran') !== false ? 'active' : '' ?>" href="/rekap-mukholif/jenis-pelanggaran/">
                                 <i class="fas fa-exclamation-triangle me-2"></i>Jenis Pelanggaran
                             </a>
                         </li>
                         <li class="nav-item">
-                            <a class="nav-link <?= strpos($_SERVER['REQUEST_URI'], 'pelanggaran') !== false ? 'active' : '' ?>" href="/mukholif.syathiby.id/pelanggaran/">
+                            <a class="nav-link <?= strpos($_SERVER['REQUEST_URI'], 'pelanggaran') !== false ? 'active' : '' ?>" href="/rekap-mukholif/pelanggaran/">
                                 <i class="fas fa-clipboard-list me-2"></i>Catatan Pelanggaran
                             </a>
                         </li>
                         <li class="nav-item">
-                            <a class="nav-link <?= strpos($_SERVER['REQUEST_URI'], 'rekap') !== false ? 'active' : '' ?>" href="/mukholif.syathiby.id/rekap/">
+                            <a class="nav-link <?= strpos($_SERVER['REQUEST_URI'], 'rekap') !== false ? 'active' : '' ?>" href="/rekap-mukholif/rekap/">
                                 <i class="fas fa-chart-bar me-2"></i>Rekap Pelanggaran
                             </a>
                         </li>
                         <li class="nav-item">
-                            <a class="nav-link <?= strpos($_SERVER['REQUEST_URI'], 'eksekusi') !== false ? 'active' : '' ?>" href="/mukholif.syathiby.id/eksekusi">
+                            <a class="nav-link <?= strpos($_SERVER['REQUEST_URI'], 'eksekusi') !== false ? 'active' : '' ?>" href="/rekap-mukholif/eksekusi">
                                 <i class="fas fa-broom me-2"></i>Eksekusi Kebersihan
                             </a>
                         </li>
@@ -243,32 +220,91 @@ unset($_SESSION['error']);
             <div class="col-lg-10 ms-sm-auto px-md-4 main-content">
 <!-- Replace your current navbar section with this improved version -->
 <nav class="navbar navbar-expand-lg mb-4 shadow-sm rounded bg-white border border-success">
-  <div class="container-fluid px-2 px-sm-3 position-relative">
+    <div class="container-fluid px-2 px-sm-3">
+        <!-- Toggle Sidebar Button (Mobile) -->
+        <button class="btn btn-success d-lg-none me-2" type="button" data-bs-toggle="offcanvas" data-bs-target="#sidebarOffcanvas">
+            <i class="fas fa-bars text-white"></i>
+        </button>
 
-    <!-- POJOK KIRI: Burger -->
-    <div class="position-absolute top-50 translate-middle-y" style="left: 1rem;">
-      <button class="btn btn-success d-lg-none" type="button" data-bs-toggle="offcanvas" data-bs-target="#sidebarOffcanvas">
-        <i class="fas fa-bars text-white"></i>
-      </button>
+        <!-- Logo & Judul Aplikasi -->
+        <a class="navbar-brand text-success fw-bold d-flex align-items-center me-auto" href="../">
+            <img src="/rekap-mukholif/assets/logo.png?v=2" alt="Logo" class="header-logo me-2">
+            <span class="d-none d-sm-inline">Aplikasi Pendataan Mukholif</span>
+            <span class="d-inline d-sm-none">Aplikasi Pendataan Mukholif</span>
+        </a>
+
+        <!-- System Time Info for mobile -->
+        <div class="datetime-info d-lg-none text-center px-2">
+            <small><span id="live-time"></span></small>
+        </div>
+
+        <!-- User Info + Logout -->
+        <div class="d-flex align-items-center">
+            <div class="d-none d-lg-block me-3 text-success fw-semibold">
+                <i class="fas fa-user-circle me-1"></i> <?= $_SESSION['username'] ?? 'Admin' ?>
+            </div>
+           <a class="btn btn-sm btn-danger text-white d-flex align-items-center" href="/rekap-mukholif/logout.php">
+                <i class="fas fa-sign-out-alt"></i>
+                <span class="d-none d-sm-inline ms-2">Logout</span>
+            </a>
+        </div>
     </div>
-
-    <!-- TENGAH: Logo + Judul -->
-    <div class="mx-auto d-flex align-items-center text-success fw-bold">
-      <img src="/mukholif.syathiby.id/assets/logo.png?v=2" alt="Logo" class="header-logo me-2">
-      <span class="d-none d-sm-inline">Pendataan Mukholif</span>
-      <span class="d-inline d-sm-none">Pendataan Mukholif</span>
-    </div>
-
-    <!-- POJOK KANAN: Logout -->
-    <div class="position-absolute top-50 translate-middle-y pe-3" style="right: 0;">
-      <a class="btn btn-sm btn-danger text-white d-flex align-items-center btn-logout" href="/mukholif.syathiby.id/logout.php">
-        <i class="fas fa-sign-out-alt"></i>
-        <span class="d-none d-sm-inline ms-2">Logout</span>
-      </a>
-    </div>
-
-  </div>
 </nav>
+
+<!-- Add this to your existing style section -->
+<style>
+    /* Header responsive styles */
+    .header-logo {
+        height: 40px;
+        width: auto;
+    }
+    
+    @media (min-width: 576px) {
+        .header-logo {
+            height: 48px;
+        }
+    }
+    
+    @media (min-width: 992px) {
+        .header-logo {
+            height: 58px;
+        }
+    }
+    
+    .datetime-info {
+        font-size: 0.85rem;
+    }
+    
+    /* Adjust the main content padding for mobile */
+    @media (max-width: 991.98px) {
+        .main-content {
+            padding-left: 0.5rem;
+            padding-right: 0.5rem;
+        }
+    }
+    
+    /* Better spacing for navbar items */
+    .navbar {
+        padding-top: 0.5rem;
+        padding-bottom: 0.5rem;
+    }
+    
+    .navbar-brand {
+        font-size: 1rem;
+    }
+    
+    @media (min-width: 576px) {
+        .navbar-brand {
+            font-size: 1.15rem;
+        }
+    }
+    
+    @media (min-width: 992px) {
+        .navbar-brand {
+            font-size: 1.25rem;
+        }
+    }
+</style>
 
 <!-- Update your existing time script to include mobile time -->
 <script>

@@ -13,9 +13,57 @@ include '../../header.php';
     <link rel="stylesheet" href="style.css">
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/jqueryui/1.12.1/jquery-ui.min.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/jqueryui/1.12.1/jquery-ui.min.css">
 </head>
+
+<style>
+    body {
+        background-color: #f8f9fa;
+    }
+
+    .container {
+        padding-left: 1rem;
+        padding-right: 1rem;
+    }
+
+    @media (max-width: 576px) {
+        h2.text-center {
+            font-size: 1.2rem;
+        }
+
+        .btn {
+            font-size: 0.85rem;
+            padding: 0.4rem 0.75rem;
+        }
+
+        .table th, .table td {
+            font-size: 0.8rem;
+            padding: 0.5rem;
+        }
+    }
+
+    .card {
+        border-radius: 10px;
+    }
+
+    .card-header h5 {
+        font-size: 1rem;
+        margin: 0;
+    }
+
+    #tambahSantri {
+        width: 100%;
+    }
+
+    @media (min-width: 576px) {
+        #tambahSantri {
+            width: auto;
+        }
+    }
+</style>
+
 <body>
-    <div class="container mt-5">
+    <div class="container mt-4 px-3 px-sm-4">
         <h2 class="text-center mb-4">Pencatatan Pelanggaran Telat Sholat</h2>
         
         <div class="card shadow">
@@ -29,8 +77,8 @@ include '../../header.php';
                             <label for="santriSearch" class="form-label">Cari Santri:</label>
                             <input type="text" id="santriSearch" class="form-control" placeholder="Ketik nama santri...">
                         </div>
-                        <div class="col-md-4 d-flex align-items-end">
-                            <button type="button" id="tambahSantri" class="btn btn-primary">Tambah ke Daftar</button>
+                        <div class="col-md-4 d-flex align-items-end mt-3 mt-md-0">
+                            <button type="button" id="tambahSantri" class="btn btn-primary w-100 w-md-auto">Tambah ke Daftar</button>
                         </div>
                     </div>
                     

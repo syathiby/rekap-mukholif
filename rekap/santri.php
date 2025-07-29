@@ -114,6 +114,7 @@ while ($row = mysqli_fetch_assoc($chart_result)) {
             border-radius: 10px;
             box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
             animation: fadeIn 0.5s ease-in-out;
+            padding: 20px 15px;
         }
         
         @keyframes fadeIn {
@@ -134,17 +135,19 @@ while ($row = mysqli_fetch_assoc($chart_result)) {
         }
         
         .filter-form {
-            background-color: var(--light-color);
-            padding: 20px;
-            border-radius: 8px;
-            margin-bottom: 30px;
-            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
-            display: grid;
-            grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+            display: flex;
+            flex-wrap: wrap;
             gap: 15px;
-            align-items: end;
         }
-        
+        .filter-form > div {
+            flex: 1 1 100%;
+        }
+        @media(min-width: 576px) {
+            .filter-form > div {
+                flex: 1 1 calc(33.333% - 10px);
+            }
+        }
+
         .filter-form label {
             display: block;
             margin-bottom: 8px;
@@ -206,6 +209,7 @@ while ($row = mysqli_fetch_assoc($chart_result)) {
             width: 100%;
             border-collapse: collapse;
             margin-top: 20px;
+            font-size: 14px;
         }
         
         th {
@@ -341,10 +345,19 @@ while ($row = mysqli_fetch_assoc($chart_result)) {
             font-weight: 700;
             font-size: 24px;
         }
+
+        @media(max-width: 576px) {
+            table {
+                font-size: 13px;
+            }
+            th, td {
+                padding: 8px 10px;
+            }
+        }
     </style>
 </head>
 <body>
-    <div class="container">
+    <div class="container px-2 px-sm-4">
         <h2><i class="fas fa-clipboard-list"></i> Rekap Pelanggaran Santri per Kategori Waktu</h2>
 
         <form method="GET" class="filter-form">
