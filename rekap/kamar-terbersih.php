@@ -50,7 +50,7 @@ $result = mysqli_query($conn, $query) or die("Query Error: " . mysqli_error($con
         }
         
         .container {
-            padding: 30px;
+            padding: 30px 20px 60px; /* dari: padding: 30px */
             max-width: 800px;
             margin: 0 auto;
             animation: fadeIn 0.6s ease-out;
@@ -88,13 +88,14 @@ $result = mysqli_query($conn, $query) or die("Query Error: " . mysqli_error($con
         .filter-form {
             display: flex;
             flex-wrap: wrap;
-            gap: 15px;
+            gap: 25px;
             align-items: flex-end;
         }
         
         .form-group {
             display: flex;
             flex-direction: column;
+            margin-bottom: 10px;
         }
         
         label {
@@ -168,8 +169,9 @@ $result = mysqli_query($conn, $query) or die("Query Error: " . mysqli_error($con
         }
         
         #terbersihTable tbody td {
-            padding: 14px 12px;
+            padding: 18px 12px;
             border-bottom: 1px solid #f0f0f0;
+            font-size: 15px;
         }
         
         .medal {
@@ -235,6 +237,26 @@ $result = mysqli_query($conn, $query) or die("Query Error: " . mysqli_error($con
                 width: 100%;
             }
         }
+
+        .header-card {
+            margin-bottom: 40px;
+        }
+
+        .filter-card {
+            margin-bottom: 40px;
+        }
+
+        @media (max-width: 768px) {
+        .filter-form {
+            flex-direction: column;
+            align-items: stretch;
+        }
+
+        button {
+            width: 100%;
+            justify-content: center;
+        }
+    }
     </style>
 </head>
 <body>

@@ -77,6 +77,58 @@ require_once __DIR__ . '/../header.php';
         .pagination .page-link {
             color: var(--secondary-color);
         }
+        @media (max-width: 768px) {
+        .header h2 {
+            font-size: 1.25rem;
+        }
+
+        .btn-group {
+            flex-direction: column;
+            width: 100%;
+        }
+
+        .btn-group .btn {
+            margin-bottom: 8px;
+            width: 100%;
+        }
+
+        form.d-flex {
+            flex-direction: column;
+            gap: 10px;
+            width: 100%;
+        }
+
+        .form-control, .btn {
+            width: 100% !important;
+        }
+
+        .table-container {
+            overflow-x: auto;
+        }
+
+        .d-flex.align-items-center {
+            flex-direction: row;
+            gap: 10px;
+        }
+
+        .d-flex > a.btn {
+            flex: 1;
+            min-width: 0;
+            margin-right: 4px;
+        }
+
+        .action-cell {
+            width: auto;
+        }
+
+        .checkbox-cell {
+            width: 30px;
+        }
+
+        .text-muted.small {
+                font-size: 0.75rem;
+            }
+        }
     </style>
 </head>
 <body>
@@ -132,7 +184,8 @@ require_once __DIR__ . '/../header.php';
     </div>
 
     <div class="table-container">
-        <form id="form-bulk-delete" method="post" action="bulk-delete.php">
+    <form id="form-bulk-delete" method="post" action="bulk-delete.php">
+        <div class="table-responsive">
             <table class="table table-hover mb-0">
                 <thead>
                     <tr>
