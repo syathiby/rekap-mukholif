@@ -32,14 +32,14 @@ while ($row = mysqli_fetch_assoc($q_kamar)) {
     $data_kamar[] = $row['total'];
 }
 
-// 3. Top 10 Santri Terbanyak Pelanggaran
+// 3. Top 5 Santri Terbanyak Pelanggaran
 $q_santri = mysqli_query($conn, "
     SELECT s.id, s.nama, COUNT(*) AS total 
     FROM pelanggaran p 
     JOIN santri s ON s.id = p.santri_id 
     GROUP BY s.id 
     ORDER BY total DESC 
-    LIMIT 10
+    LIMIT 5
 ");
 $label_santri = [];
 $data_santri = [];
@@ -310,6 +310,12 @@ $total_jenis = count($label_jenis);
                 padding: 20px 15px;
             }
         }
+
+        #kategoriChart {
+        max-width: 100%;
+        height: auto;
+        }
+
     </style>
 </head>
 <body>
@@ -392,7 +398,7 @@ $total_jenis = count($label_jenis);
         </div>
         
         <div class="chart-container">
-            <h2><i class="fas fa-user-graduate"></i> Top 10 Santri Terbanyak Pelanggaran</h2>
+            <h2><i class="fas fa-user-graduate"></i> Top 5 Santri Terbanyak Pelanggaran</h2>
             <canvas id="santriChart"></canvas>
         </div>
         

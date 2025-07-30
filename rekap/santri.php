@@ -571,9 +571,10 @@ while ($row = mysqli_fetch_assoc($chart_result)) {
             );
             
             <?php if (count($chart_data) > 0): ?>
-                // Chart untuk distribusi kategori pelanggaran
-                const ctx = document.getElementById('kategoriChart').getContext('2d');
-                const chart = new Chart(ctx, {
+                const canvas = document.getElementById('kategoriChart');
+                if (canvas) {
+                    const ctx = canvas.getContext('2d');
+                    const chart = new Chart(ctx, {
                     type: 'pie',
                     data: {
                         labels: <?= json_encode($chart_labels) ?>,
