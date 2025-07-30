@@ -4,7 +4,6 @@ require_once __DIR__ . '/../header.php';
 ?>
 
 <style>
-/* Responsive tweaks khusus halaman jenis pelanggaran */
 @media (max-width: 576px) {
     .card-header h3 {
         font-size: 1.1rem;
@@ -16,6 +15,10 @@ require_once __DIR__ . '/../header.php';
     .table th, .table td {
         font-size: 0.85rem;
         padding: 0.4rem;
+    }
+    .thead-dark th {
+        font-size: 0.85rem;
+        padding: 0.4rem 0.3rem;
     }
     .card-body {
         padding: 0.75rem 0.5rem;
@@ -31,20 +34,24 @@ require_once __DIR__ . '/../header.php';
         justify-content: flex-end;
         gap: 0.5rem;
     }
+    .table td .btn {
+        padding: 0.25rem 0.4rem;
+        font-size: 0.75rem;
+    }
+    .table td .d-flex {
+        gap: 0.3rem;
+        justify-content: center;
+        flex-wrap: wrap;
+    }
 }
 
-    /* Tambahan: kasih jarak antar tombol di kolom Aksi */
-    .table td .btn + .btn {
-        margin-left: 0.4rem;
-    }
+.table td .btn + .btn {
+    margin-left: 0.4rem;
+}
 
-    /* Tambahan responsif tombol aksi di HP */
-    @media (max-width: 576px) {
-        .table td .btn {
-            padding: 0.3rem 0.5rem;
-            font-size: 0.8rem;
-        }
-    }
+.table-responsive .table {
+    min-width: 480px;
+}
 </style>
 
 <div class="container-fluid mt-4 px-2 px-sm-4">

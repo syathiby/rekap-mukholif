@@ -32,13 +32,19 @@ unset($_SESSION['error']);
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/jqueryui/1.12.1/jquery-ui.min.css">
 <style>
-    /* === Sidebar Link Style === */
-    .sidebar .nav-link[href='/rekap-mukholif/index.php'] i { color: #0d6efd !important; }
-    .sidebar .nav-link[href='/rekap-mukholif/santri/'] i { color: #20c997 !important; }
-    .sidebar .nav-link[href='/rekap-mukholif/jenis-pelanggaran/'] i { color: #fd7e14 !important; }
-    .sidebar .nav-link[href='/rekap-mukholif/pelanggaran/'] i { color: #6c757d !important; }
-    .sidebar .nav-link[href='/rekap-mukholif/rekap/'] i { color: #6f42c1 !important; }
-    .sidebar .nav-link[href='/rekap-mukholif/eksekusi'] i { color: #e83e8c !important; }
+    /* Warna default semua ikon */
+    .sidebar .nav-link i {
+        color: #0d6efd; /* Default warna ikon (misal biru) */
+    }
+
+    /* Warna per-halaman */
+    .sidebar .nav-link[href*='/index.php'] i { color: #0d6efd !important; }
+    .sidebar .nav-link[href*='/santri'] i { color: #20c997 !important; }
+    .sidebar .nav-link[href*='/jenis-pelanggaran'] i { color: #fd7e14 !important; }
+    .sidebar .nav-link[href*='/pelanggaran'] i { color: #6c757d !important; }
+    .sidebar .nav-link[href*='/rekap'] i { color: #6f42c1 !important; }
+    .sidebar .nav-link[href*='/eksekusi'] i { color: #e83e8c !important; }
+
 
     .sidebar .nav-link:hover i {
         transform: scale(1.1);
@@ -159,32 +165,32 @@ unset($_SESSION['error']);
         <div class="offcanvas-body">
             <ul class="nav flex-column">
                 <li class="nav-item">
-                    <a class="nav-link <?= basename($_SERVER['PHP_SELF']) == 'index.php' ? 'active' : '' ?>" href="/rekap-mukholif/index.php">
+                    <a class="nav-link <?= basename($_SERVER['PHP_SELF']) == 'index.php' ? 'active' : '' ?>" href="../index.php">
                         <i class="fas fa-home me-2"></i>Dashboard
                     </a>
                 </li>
                 <li class="nav-item">
-                    <a class="nav-link <?= strpos($_SERVER['REQUEST_URI'], 'santri') !== false ? 'active' : '' ?>" href="/rekap-mukholif/santri/">
+                    <a class="nav-link <?= strpos($_SERVER['REQUEST_URI'], 'santri') !== false ? 'active' : '' ?>" href="../santri/">
                         <i class="fas fa-users me-2"></i>Data Santri
                     </a>
                 </li>
                 <li class="nav-item">
-                    <a class="nav-link <?= strpos($_SERVER['REQUEST_URI'], 'jenis-pelanggaran') !== false ? 'active' : '' ?>" href="/rekap-mukholif/jenis-pelanggaran/">
+                    <a class="nav-link <?= strpos($_SERVER['REQUEST_URI'], 'jenis-pelanggaran') !== false ? 'active' : '' ?>" href="../jenis-pelanggaran/">
                         <i class="fas fa-exclamation-triangle me-2"></i>Jenis Pelanggaran
                     </a>
                 </li>
                 <li class="nav-item">
-                    <a class="nav-link <?= strpos($_SERVER['REQUEST_URI'], 'pelanggaran') !== false ? 'active' : '' ?>" href="/rekap-mukholif/pelanggaran/">
+                    <a class="nav-link <?= strpos($_SERVER['REQUEST_URI'], 'pelanggaran') !== false ? 'active' : '' ?>" href="../pelanggaran/">
                         <i class="fas fa-clipboard-list me-2"></i>Catatan Pelanggaran
                     </a>
                 </li>
                 <li class="nav-item">
-                    <a class="nav-link <?= strpos($_SERVER['REQUEST_URI'], 'rekap') !== false ? 'active' : '' ?>" href="/rekap-mukholif/rekap/">
+                    <a class="nav-link <?= strpos($_SERVER['REQUEST_URI'], 'rekap') !== false ? 'active' : '' ?>" href="../rekap/">
                         <i class="fas fa-chart-bar me-2"></i>Rekap Pelanggaran
                     </a>
                 </li>
                 <li class="nav-item">
-                    <a class="nav-link <?= strpos($_SERVER['REQUEST_URI'], 'eksekusi') !== false ? 'active' : '' ?>" href="/rekap-mukholif/eksekusi">
+                    <a class="nav-link <?= strpos($_SERVER['REQUEST_URI'], 'eksekusi') !== false ? 'active' : '' ?>" href="../eksekusi">
                         <i class="fas fa-broom me-2"></i>Eksekusi Kebersihan
                     </a>
                 </li>
@@ -206,32 +212,32 @@ unset($_SESSION['error']);
                     <ul class="nav flex-column">
                         <!-- Sidebar list duplicate untuk desktop -->
                         <li class="nav-item">
-                            <a class="nav-link <?= basename($_SERVER['PHP_SELF']) == 'index.php' ? 'active' : '' ?>" href="/rekap-mukholif/index.php">
+                            <a class="nav-link <?= basename($_SERVER['PHP_SELF']) == 'index.php' ? 'active' : '' ?>" href="../index.php">
                                 <i class="fas fa-home me-2"></i>Dashboard
                             </a>
                         </li>
                         <li class="nav-item">
-                            <a class="nav-link <?= strpos($_SERVER['REQUEST_URI'], 'santri') !== false ? 'active' : '' ?>" href="/rekap-mukholif/santri/">
+                            <a class="nav-link <?= strpos($_SERVER['REQUEST_URI'], 'santri') !== false ? 'active' : '' ?>" href="../santri/">
                                 <i class="fas fa-users me-2"></i>Data Santri
                             </a>
                         </li>
                         <li class="nav-item">
-                            <a class="nav-link <?= strpos($_SERVER['REQUEST_URI'], 'jenis-pelanggaran') !== false ? 'active' : '' ?>" href="/rekap-mukholif/jenis-pelanggaran/">
+                            <a class="nav-link <?= strpos($_SERVER['REQUEST_URI'], 'jenis-pelanggaran') !== false ? 'active' : '' ?>" href="../jenis-pelanggaran">
                                 <i class="fas fa-exclamation-triangle me-2"></i>Jenis Pelanggaran
                             </a>
                         </li>
                         <li class="nav-item">
-                            <a class="nav-link <?= strpos($_SERVER['REQUEST_URI'], 'pelanggaran') !== false ? 'active' : '' ?>" href="/rekap-mukholif/pelanggaran/">
+                            <a class="nav-link <?= strpos($_SERVER['REQUEST_URI'], 'pelanggaran') !== false ? 'active' : '' ?>" href="../pelanggaran">
                                 <i class="fas fa-clipboard-list me-2"></i>Catatan Pelanggaran
                             </a>
                         </li>
                         <li class="nav-item">
-                            <a class="nav-link <?= strpos($_SERVER['REQUEST_URI'], 'rekap') !== false ? 'active' : '' ?>" href="/rekap-mukholif/rekap/">
+                            <a class="nav-link <?= strpos($_SERVER['REQUEST_URI'], 'rekap') !== false ? 'active' : '' ?>" href="../rekap">
                                 <i class="fas fa-chart-bar me-2"></i>Rekap Pelanggaran
                             </a>
                         </li>
                         <li class="nav-item">
-                            <a class="nav-link <?= strpos($_SERVER['REQUEST_URI'], 'eksekusi') !== false ? 'active' : '' ?>" href="/rekap-mukholif/eksekusi">
+                            <a class="nav-link <?= strpos($_SERVER['REQUEST_URI'], 'eksekusi') !== false ? 'active' : '' ?>" href="../eksekusi">
                                 <i class="fas fa-broom me-2"></i>Eksekusi Kebersihan
                             </a>
                         </li>
@@ -254,14 +260,14 @@ unset($_SESSION['error']);
 
     <!-- TENGAH: Logo + Judul -->
     <div class="mx-auto d-flex align-items-center text-success fw-bold">
-      <img src="/rekap-mukholif/assets/logo.png?v=2" alt="Logo" class="header-logo me-2">
+      <img src="/assets/logo.png?v=2" alt="Logo" class="header-logo me-2">
       <span class="d-none d-sm-inline">Pendataan Mukholif</span>
-      <span class="d-inline d-sm-none">Pendataan Mukholif</span>
+      <span class="d-inline d-sm-none">Mukholif</span>
     </div>
 
     <!-- POJOK KANAN: Logout -->
     <div class="position-absolute top-50 translate-middle-y pe-3" style="right: 0;">
-      <a class="btn btn-sm btn-danger text-white d-flex align-items-center btn-logout" href="/rekap-mukholif/logout.php">
+      <a class="btn btn-sm btn-danger text-white d-flex align-items-center btn-logout" href="../logout.php">
         <i class="fas fa-sign-out-alt"></i>
         <span class="d-none d-sm-inline ms-2">Logout</span>
       </a>
