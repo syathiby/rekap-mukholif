@@ -34,7 +34,6 @@ $result = mysqli_query($conn, $query) or die("Query Error: " . mysqli_error($con
     <link rel="stylesheet" href="https://cdn.datatables.net/1.13.6/css/jquery.dataTables.min.css">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="/assets/table-responsive.css">
     <style>
         :root {
             --primary: #4361ee;
@@ -258,6 +257,39 @@ $result = mysqli_query($conn, $query) or die("Query Error: " . mysqli_error($con
             justify-content: center;
         }
     }
+
+    /* === Responsive Table Fix === */
+        .table-responsive {
+            width: 100%;
+            overflow-x: auto;
+            -webkit-overflow-scrolling: touch;
+        }
+
+        .table-responsive table {
+            min-width: 600px;
+        }
+
+        @media (max-width: 768px) {
+            #terbersihTable thead th,
+            #terbersihTable tbody td {
+                white-space: nowrap;
+                font-size: 14px;
+                padding: 12px 8px;
+            }
+
+            .clean-count {
+                font-size: 13px;
+                padding: 5px 10px;
+            }
+
+            .medal {
+                width: 20px;
+                height: 20px;
+                font-size: 12px;
+                line-height: 20px;
+            }
+        }
+
     </style>
 </head>
 <body>
@@ -282,7 +314,9 @@ $result = mysqli_query($conn, $query) or die("Query Error: " . mysqli_error($con
             </form>
         </div>
 
+    <div class="table-responsive">
         <table id="terbersihTable" class="display">
+
             <thead>
                 <tr>
                     <th>Peringkat</th>

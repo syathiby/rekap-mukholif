@@ -147,6 +147,45 @@ $pelanggaranQuery = mysqli_query($conn, "
             color: var(--accent-color);
             opacity: 0.7;
         }
+
+        /* === Responsive Table for HP === */
+        .table-responsive {
+            width: 100%;
+            overflow-x: auto;
+            -webkit-overflow-scrolling: touch;
+        }
+
+        .table-responsive table {
+            min-width: 600px;
+        }
+
+        @media (max-width: 768px) {
+            table th,
+            table td {
+                white-space: nowrap;
+                font-size: 14px;
+                padding: 10px 8px;
+            }
+
+            .form-label {
+                font-size: 14px;
+            }
+
+            .input-group-text {
+                font-size: 14px;
+                padding: 8px 10px;
+            }
+
+            .form-control,
+            textarea {
+                font-size: 14px;
+            }
+
+            .btn-submit {
+                font-size: 14px;
+                padding: 10px 18px;
+            }
+        }
     </style>
 </head>
 <body>
@@ -156,62 +195,64 @@ $pelanggaranQuery = mysqli_query($conn, "
     </h4>
 
     <form action="process.php" method="POST">
-        <table class="table table-bordered table-hover animate__animated animate__slideInUp">
-            <thead>
-                <tr>
-                    <th>No</th>
-                    <th class="icon-cell"><i class="fas fa-check-circle"></i></th>
-                    <th><i class="fas fa-door-open me-2"></i>Kamar</th>
-                    <th><i class="fas fa-calendar-alt me-2"></i>Tanggal Pelanggaran</th>
-                </tr>
-            </thead>
-            <tbody>
-            <?php
-            $no = 1;
-            $adaData = false;
-            while ($row = mysqli_fetch_assoc($pelanggaranQuery)):
-                $adaData = true;
-            ?>
-                <tr class="animate__animated animate__fadeIn">
-                    <td><?= $no++ ?></td>
-                    <td class="icon-cell"><input type="checkbox" name="pelanggaran_id[]" value="<?= $row['pelanggaran_id'] ?>" class="form-check-input" style="cursor: pointer;"></td>
-                    <td><i class="fas fa-door-closed me-2"></i><?= htmlspecialchars($row['kamar']) ?></td>
-                    <td><i class="far fa-clock me-2"></i><?= date('d M Y H:i', strtotime($row['tanggal_pelanggaran'])) ?></td>
-                </tr>
-            <?php endwhile; ?>
-            <?php if (!$adaData): ?>
-                <tr class="no-data"><td colspan="4" class="text-center py-4" style="color: var(--accent-color);"><i class="far fa-smile-beam fa-2x mb-2"></i><br>Tidak ada pelanggaran yang bisa dieksekusi.</td></tr>
-            <?php endif; ?>
-            </tbody>
-        </table>
-
-        <div class="mb-4 animate__animated animate__fadeIn">
-            <label class="form-label"><i class="fas fa-gavel me-2" style="color: var(--accent-color);"></i>Jenis Hukuman:</label>
-            <div class="input-group">
-                <span class="input-group-text"><i class="fas fa-exclamation-circle"></i></span>
-                <input type="text" name="jenis_hukuman" class="form-control" required>
-            </div>
+        <div class="table-responsive">
+            <table class="table table-bordered table-hover animate__animated animate__slideInUp">
+                    <thead>
+                        <tr>
+                            <th>No</th>
+                            <th class="icon-cell"><i class="fas fa-check-circle"></i></th>
+                            <th><i class="fas fa-door-open me-2"></i>Kamar</th>
+                            <th><i class="fas fa-calendar-alt me-2"></i>Tanggal Pelanggaran</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                    <?php
+                    $no = 1;
+                    $adaData = false;
+                    while ($row = mysqli_fetch_assoc($pelanggaranQuery)):
+                        $adaData = true;
+                    ?>
+                        <tr class="animate__animated animate__fadeIn">
+                            <td><?= $no++ ?></td>
+                            <td class="icon-cell"><input type="checkbox" name="pelanggaran_id[]" value="<?= $row['pelanggaran_id'] ?>" class="form-check-input" style="cursor: pointer;"></td>
+                            <td><i class="fas fa-door-closed me-2"></i><?= htmlspecialchars($row['kamar']) ?></td>
+                            <td><i class="far fa-clock me-2"></i><?= date('d M Y H:i', strtotime($row['tanggal_pelanggaran'])) ?></td>
+                        </tr>
+                    <?php endwhile; ?>
+                    <?php if (!$adaData): ?>
+                        <tr class="no-data"><td colspan="4" class="text-center py-4" style="color: var(--accent-color);"><i class="far fa-smile-beam fa-2x mb-2"></i><br>Tidak ada pelanggaran yang bisa dieksekusi.</td></tr>
+                    <?php endif; ?>
+                    </tbody>
+            </table>
         </div>
 
-        <div class="mb-4 animate__animated animate__fadeIn">
-            <label class="form-label"><i class="far fa-calendar-check me-2" style="color: var(--secondary-color);"></i>Tanggal Eksekusi:</label>
-            <div class="input-group">
-                <span class="input-group-text"><i class="fas fa-clock"></i></span>
-                <input type="datetime-local" name="tanggal" class="form-control" value="<?= date('Y-m-d\TH:i') ?>" required>
-            </div>
-        </div>
+                <div class="mb-4 animate__animated animate__fadeIn">
+                    <label class="form-label"><i class="fas fa-gavel me-2" style="color: var(--accent-color);"></i>Jenis Hukuman:</label>
+                    <div class="input-group">
+                        <span class="input-group-text"><i class="fas fa-exclamation-circle"></i></span>
+                        <input type="text" name="jenis_hukuman" class="form-control" required>
+                    </div>
+                </div>
 
-        <div class="mb-4 animate__animated animate__fadeIn">
-            <label class="form-label"><i class="fas fa-sticky-note me-2" style="color: var(--primary-color);"></i>Catatan (Opsional):</label>
-            <div class="input-group">
-                <span class="input-group-text"><i class="fas fa-pen"></i></span>
-                <textarea name="catatan" class="form-control" rows="3" style="resize: none;"></textarea>
-            </div>
-        </div>
+                <div class="mb-4 animate__animated animate__fadeIn">
+                    <label class="form-label"><i class="far fa-calendar-check me-2" style="color: var(--secondary-color);"></i>Tanggal Eksekusi:</label>
+                    <div class="input-group">
+                        <span class="input-group-text"><i class="fas fa-clock"></i></span>
+                        <input type="datetime-local" name="tanggal" class="form-control" value="<?= date('Y-m-d\TH:i') ?>" required>
+                    </div>
+                </div>
 
-        <button type="submit" class="btn btn-submit btn-lg animate__animated animate__pulse animate__infinite animate__slower">
-            <i class="fas fa-save me-2"></i>Simpan Eksekusi
-        </button>
+                <div class="mb-4 animate__animated animate__fadeIn">
+                    <label class="form-label"><i class="fas fa-sticky-note me-2" style="color: var(--primary-color);"></i>Catatan (Opsional):</label>
+                    <div class="input-group">
+                        <span class="input-group-text"><i class="fas fa-pen"></i></span>
+                        <textarea name="catatan" class="form-control" rows="3" style="resize: none;"></textarea>
+                    </div>
+                </div>
+
+            <button type="submit" class="btn btn-submit btn-lg animate__animated animate__pulse animate__infinite animate__slower">
+                <i class="fas fa-save me-2"></i>Simpan Eksekusi
+            </button>
     </form>
 </div>
 
