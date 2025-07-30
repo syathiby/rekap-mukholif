@@ -90,271 +90,324 @@ while ($row = mysqli_fetch_assoc($chart_result)) {
     <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600&display=swap" rel="stylesheet">
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <style>
-        :root {
-            --primary-color: #4a6fa5;
-            --secondary-color: #166088;
-            --accent-color: #4fc3f7;
-            --light-color: #f8f9fa;
-            --dark-color: #343a40;
-        }
-        
-        body {
-            font-family: 'Poppins', sans-serif;
-            background-color: #f5f7fa;
-            color: #333;
-            margin: 0;
-            padding: 20px;
-        }
-        
-        .container {
-            max-width: 1200px;
-            margin: 0 auto;
-            padding: 20px;
-            background-color: white;
-            border-radius: 10px;
-            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
-            animation: fadeIn 0.5s ease-in-out;
-            padding: 20px 15px;
-        }
-        
-        @keyframes fadeIn {
-            from { opacity: 0; transform: translateY(20px); }
-            to { opacity: 1; transform: translateY(0); }
-        }
-        
-        h2 {
-            color: var(--secondary-color);
-            margin-bottom: 25px;
-            display: flex;
-            align-items: center;
-            gap: 10px;
-        }
-        
-        h2 i {
-            color: var(--accent-color);
-        }
-        
-        .filter-form {
-            display: flex;
-            flex-wrap: wrap;
-            gap: 15px;
-        }
-        .filter-form > div {
-            flex: 1 1 100%;
-        }
-        @media(min-width: 576px) {
-            .filter-form > div {
-                flex: 1 1 calc(33.333% - 10px);
-            }
-        }
+    :root {
+        --primary-color: #4a6fa5;
+        --secondary-color: #166088;
+        --accent-color: #4fc3f7;
+        --light-color: #f8f9fa;
+        --dark-color: #343a40;
+    }
 
-        .filter-form label {
-            display: block;
-            margin-bottom: 8px;
-            font-weight: 500;
-            color: var(--dark-color);
+    body {
+        font-family: 'Poppins', sans-serif;
+        background-color: #f5f7fa;
+        color: #333;
+        margin: 0;
+        padding: 20px;
+    }
+
+    .container {
+        max-width: 1200px;
+        margin: 0 auto;
+        padding: 20px;
+        background-color: white;
+        border-radius: 10px;
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+        animation: fadeIn 0.5s ease-in-out;
+        padding: 20px 15px;
+    }
+
+    @keyframes fadeIn {
+        from { opacity: 0; transform: translateY(20px); }
+        to { opacity: 1; transform: translateY(0); }
+    }
+
+    h2 {
+        color: var(--secondary-color);
+        margin-bottom: 25px;
+        display: flex;
+        align-items: center;
+        gap: 10px;
+    }
+
+    h2 i {
+        color: var(--accent-color);
+    }
+
+    .filter-form {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 15px;
+    }
+
+    .filter-form > div {
+        flex: 1 1 100%;
+    }
+
+    @media(min-width: 576px) {
+        .filter-form > div {
+            flex: 1 1 calc(33.333% - 10px);
         }
-        
-        .filter-form input, 
-        .filter-form select,
-        .filter-form .checkbox-group {
-            width: 100%;
-            padding: 10px;
-            border: 1px solid #ddd;
-            border-radius: 5px;
-            font-family: 'Poppins', sans-serif;
-            transition: all 0.3s;
-            background-color: white;
+    }
+
+    .filter-form label {
+        display: block;
+        margin-bottom: 8px;
+        font-weight: 500;
+        color: var(--dark-color);
+    }
+
+    .filter-form input, 
+    .filter-form select,
+    .filter-form .checkbox-group {
+        width: 100%;
+        padding: 10px;
+        border: 1px solid #ddd;
+        border-radius: 5px;
+        font-family: 'Poppins', sans-serif;
+        transition: all 0.3s;
+        background-color: white;
+    }
+
+    .filter-form .checkbox-group {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        padding: 8px 10px;
+    }
+
+    .filter-form input:focus, 
+    .filter-form select:focus {
+        border-color: var(--accent-color);
+        box-shadow: 0 0 0 3px rgba(79, 195, 247, 0.2);
+        outline: none;
+    }
+
+    button {
+        background-color: var(--primary-color);
+        color: white;
+        border: none;
+        padding: 10px 15px;
+        border-radius: 5px;
+        cursor: pointer;
+        font-weight: 500;
+        transition: all 0.3s;
+        display: flex;
+        align-items: center;
+        gap: 8px;
+    }
+
+    button:hover {
+        background-color: var(--secondary-color);
+        transform: translateY(-2px);
+        box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+    }
+
+    button i {
+        font-size: 0.9em;
+    }
+
+    table {
+        width: 100%;
+        border-collapse: collapse;
+        margin-top: 20px;
+        font-size: 14px;
+    }
+
+    th {
+        background-color: var(--primary-color);
+        color: white;
+        padding: 12px 15px;
+        text-align: left;
+        position: sticky;
+        top: 0;
+    }
+
+    td {
+        padding: 12px 15px;
+        border-bottom: 1px solid #eee;
+        transition: all 0.2s;
+    }
+
+    tr:hover td {
+        background-color: rgba(79, 195, 247, 0.1);
+    }
+
+    .kategori-badge {
+        display: inline-block;
+        padding: 5px 10px;
+        border-radius: 20px;
+        font-size: 0.8em;
+        font-weight: 500;
+        color: white;
+    }
+
+    .Sholat-Subuh { background-color: #3498db; }
+    .KBM { background-color: #2ecc71; }
+    .Sholat-Dzuhur { background-color: #f39c12; }
+    .Sholat-Ashar { background-color: #e74c3c; }
+    .Sholat-Maghrib { background-color: #9b59b6; }
+    .Sholat-Isya { background-color: #1abc9c; }
+    .Luar-Jam-Ketentuan { background-color: #95a5a6; }
+
+    .dataTables_wrapper {
+        margin-top: 20px;
+    }
+
+    .dataTables_filter input {
+        padding: 8px;
+        border-radius: 5px;
+        border: 1px solid #ddd;
+    }
+
+    .dataTables_paginate .paginate_button {
+        padding: 6px 12px;
+        margin: 0 3px;
+        border-radius: 5px;
+        border: 1px solid #ddd;
+        transition: all 0.3s;
+    }
+
+    .dataTables_paginate .paginate_button:hover {
+        background-color: var(--primary-color);
+        color: white !important;
+        border-color: var(--primary-color);
+    }
+
+    .dataTables_paginate .paginate_button.current {
+        background-color: var(--primary-color);
+        color: white !important;
+        border-color: var(--primary-color);
+    }
+
+    .empty-table {
+        text-align: center;
+        padding: 30px;
+        color: #777;
+    }
+
+    .empty-table i {
+        font-size: 50px;
+        margin-bottom: 15px;
+        color: #ddd;
+    }
+
+    .chart-container {
+        margin-top: 30px;
+        background-color: white;
+        padding: 20px;
+        border-radius: 8px;
+        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+    }
+
+    .chart-title {
+        color: var(--secondary-color);
+        margin-bottom: 15px;
+        display: flex;
+        align-items: center;
+        gap: 10px;
+    }
+
+    .chart-title i {
+        color: var(--accent-color);
+    }
+
+    .summary-card {
+        background-color: white;
+        padding: 15px;
+        border-radius: 8px;
+        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+        margin-bottom: 20px;
+        display: flex;
+        align-items: center;
+        gap: 15px;
+    }
+
+    .summary-icon {
+        font-size: 24px;
+        width: 50px;
+        height: 50px;
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        color: white;
+        background-color: var(--primary-color);
+    }
+
+    .summary-content h3 {
+        margin: 0;
+        color: var(--dark-color);
+        font-size: 18px;
+    }
+
+    .summary-content p {
+        margin: 5px 0 0;
+        color: var(--dark-color);
+        font-weight: 700;
+        font-size: 24px;
+    }
+
+    /* ======================= RESPONSIVE FIX ======================= */
+    @media (max-width: 576px) {
+        table {
+            font-size: 13px;
         }
-        
-        .filter-form .checkbox-group {
-            display: flex;
-            align-items: center;
-            gap: 10px;
+        th, td {
             padding: 8px 10px;
         }
-        
-        .filter-form input:focus, 
-        .filter-form select:focus {
-            border-color: var(--accent-color);
-            box-shadow: 0 0 0 3px rgba(79, 195, 247, 0.2);
-            outline: none;
+
+        .card-header h3 {
+            font-size: 1.1rem;
         }
-        
-        button {
-            background-color: var(--primary-color);
-            color: white;
-            border: none;
-            padding: 10px 15px;
-            border-radius: 5px;
-            cursor: pointer;
-            font-weight: 500;
-            transition: all 0.3s;
-            display: flex;
-            align-items: center;
-            gap: 8px;
+        .card-header .btn {
+            font-size: 0.8rem;
+            padding: 0.3rem 0.5rem;
         }
-        
-        button:hover {
-            background-color: var(--secondary-color);
-            transform: translateY(-2px);
-            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+        .table th, .table td {
+            font-size: 0.85rem;
+            padding: 0.4rem;
         }
-        
-        button i {
-            font-size: 0.9em;
+        .card-body {
+            padding: 0.75rem 0.5rem;
         }
-        
-        table {
+        .card-header {
+            flex-direction: column;
+            align-items: flex-start !important;
+            gap: 0.5rem;
+        }
+        .card-header > div {
             width: 100%;
-            border-collapse: collapse;
-            margin-top: 20px;
-            font-size: 14px;
-        }
-        
-        th {
-            background-color: var(--primary-color);
-            color: white;
-            padding: 12px 15px;
-            text-align: left;
-            position: sticky;
-            top: 0;
-        }
-        
-        td {
-            padding: 12px 15px;
-            border-bottom: 1px solid #eee;
-            transition: all 0.2s;
-        }
-        
-        tr:hover td {
-            background-color: rgba(79, 195, 247, 0.1);
-        }
-        
-        .kategori-badge {
-            display: inline-block;
-            padding: 5px 10px;
-            border-radius: 20px;
-            font-size: 0.8em;
-            font-weight: 500;
-            color: white;
-        }
-        
-        .Sholat-Subuh { background-color: #3498db; }
-        .KBM { background-color: #2ecc71; }
-        .Sholat-Dzuhur { background-color: #f39c12; }
-        .Sholat-Ashar { background-color: #e74c3c; }
-        .Sholat-Maghrib { background-color: #9b59b6; }
-        .Sholat-Isya { background-color: #1abc9c; }
-        .Luar-Jam-Ketentuan { background-color: #95a5a6; }
-        
-        .dataTables_wrapper {
-            margin-top: 20px;
-        }
-        
-        .dataTables_filter input {
-            padding: 8px;
-            border-radius: 5px;
-            border: 1px solid #ddd;
-        }
-        
-        .dataTables_paginate .paginate_button {
-            padding: 6px 12px;
-            margin: 0 3px;
-            border-radius: 5px;
-            border: 1px solid #ddd;
-            transition: all 0.3s;
-        }
-        
-        .dataTables_paginate .paginate_button:hover {
-            background-color: var(--primary-color);
-            color: white !important;
-            border-color: var(--primary-color);
-        }
-        
-        .dataTables_paginate .paginate_button.current {
-            background-color: var(--primary-color);
-            color: white !important;
-            border-color: var(--primary-color);
-        }
-        
-        .empty-table {
-            text-align: center;
-            padding: 30px;
-            color: #777;
-        }
-        
-        .empty-table i {
-            font-size: 50px;
-            margin-bottom: 15px;
-            color: #ddd;
-        }
-        
-        .chart-container {
-            margin-top: 30px;
-            background-color: white;
-            padding: 20px;
-            border-radius: 8px;
-            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
-        }
-        
-        .chart-title {
-            color: var(--secondary-color);
-            margin-bottom: 15px;
             display: flex;
-            align-items: center;
-            gap: 10px;
-        }
-        
-        .chart-title i {
-            color: var(--accent-color);
-        }
-        
-        .summary-card {
-            background-color: white;
-            padding: 15px;
-            border-radius: 8px;
-            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
-            margin-bottom: 20px;
-            display: flex;
-            align-items: center;
-            gap: 15px;
-        }
-        
-        .summary-icon {
-            font-size: 24px;
-            width: 50px;
-            height: 50px;
-            border-radius: 50%;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            color: white;
-            background-color: var(--primary-color);
-        }
-        
-        .summary-content h3 {
-            margin: 0;
-            color: var(--dark-color);
-            font-size: 18px;
-        }
-        
-        .summary-content p {
-            margin: 5px 0 0;
-            color: var(--dark-color);
-            font-weight: 700;
-            font-size: 24px;
+            justify-content: flex-end;
+            gap: 0.5rem;
         }
 
-        @media(max-width: 576px) {
-            table {
-                font-size: 13px;
-            }
-            th, td {
-                padding: 8px 10px;
-            }
+        .table td .btn {
+            padding: 0.3rem 0.5rem;
+            font-size: 0.8rem;
         }
-    </style>
+    }
+
+    .table td .btn + .btn {
+        margin-left: 0.4rem;
+    }
+
+    .table-responsive {
+        overflow-x: auto;
+        -webkit-overflow-scrolling: touch;
+    }
+
+    .table-responsive .table {
+        min-width: 600px;
+    }
+
+    .table td, .table th {
+        white-space: nowrap;
+        font-size: 0.85rem;
+        padding: 0.4rem;
+    }
+</style>
 </head>
 <body>
     <div class="container px-2 px-sm-4">
@@ -421,8 +474,8 @@ while ($row = mysqli_fetch_assoc($chart_result)) {
                 </div>
             <?php endif; ?>
         <?php endif; ?>
-
-        <table id="rekapTable" class="display">
+    <div class="table-responsive">
+        <table class="table table-striped table-hover table-bordered">
             <thead>
                 <tr>
                     <th>No</th>
