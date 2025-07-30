@@ -34,7 +34,6 @@ $result = mysqli_query($conn, $query) or die("Query Error: " . mysqli_error($con
     <link rel="stylesheet" href="https://cdn.datatables.net/1.13.6/css/jquery.dataTables.min.css">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="/assets/table-responsive.css">
     <style>
         :root {
             --primary: #4361ee;
@@ -222,6 +221,37 @@ $result = mysqli_query($conn, $query) or die("Query Error: " . mysqli_error($con
                 width: 100%;
             }
         }
+
+        /* === Responsive Fix for Tables === */
+        .table-responsive {
+            width: 100%;
+            overflow-x: auto;
+            -webkit-overflow-scrolling: touch;
+        }
+
+        .table-responsive .table {
+            min-width: 700px; /* Bisa diubah sesuai isi tabel */
+            width: 100%;
+        }
+
+        .table th, .table td {
+            white-space: nowrap; /* Hindari teks meluber ke bawah */
+            font-size: 0.85rem;
+            padding: 0.5rem;
+        }
+
+        /* Tambahan spacing tombol aksi */
+        .table td .btn + .btn {
+            margin-left: 0.4rem;
+        }
+
+        /* Responsive padding tombol aksi */
+        @media (max-width: 576px) {
+            .table td .btn {
+                padding: 0.3rem 0.5rem;
+                font-size: 0.8rem;
+            }
+        }
     </style>
 </head>
 <body>
@@ -254,7 +284,8 @@ $result = mysqli_query($conn, $query) or die("Query Error: " . mysqli_error($con
             </form>
         </div>
 
-        <table id="rekapTable" class="display">
+    <div class="table-responsive">
+        <table class="table table-bordered table-striped">
             <thead>
                 <tr>
                     <th>No</th>
