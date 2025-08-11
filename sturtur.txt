@@ -2,38 +2,38 @@
 │
 ├──assets
     └──logo.png
+├──eksekusi/
+    ├──index.php
+    ├──process.php
 ├── santri/
-    ├── index.php         // Menampilkan data santri (Read)
-    ├── create.php        // Form tambah santri (Create)
-    ├── edit.php          // Form edit santri (Update)
-    ├── delete.php        // Hapus santri (Delete)
+    ├── index.php         
+    ├── create.php        
+    ├── edit.php          
+    ├── delete.php        
     ├── search.php
     ├── bulk-delete.php   
     └── bulk-create.php
     └── bulk-edit.php
 ├── jenis-pelanggaran/
-│   ├── index.php // Menampilkan data jenis pelanggaran
-│   ├── create.php // Form tambah jenis pelanggaran
-│   ├── edit.php // Form edit jenis pelanggaran
-│   ├── delete.php // Hapus jenis pelanggaran
-│   └── process.php // Proses create/update (bisa digabung) 
+│   ├── index.php 
+│   ├── create.php 
+│   ├── edit.php 
+│   ├── delete.php 
+│   └── process.php 
 ├── pelanggaran/
     ├── index.php
     ├── kebersihan-kamar/
-    │   ├── index.php       // Halaman utama dengan form dropdown kamar & daftar santri
-    │   └── process.php     // Proses penyimpanan data pelanggaran
-        ├──eksekusi/
-            ├──index.php
-            ├──process.php
+    │   ├── index.php       
+    │   └── process.php     
 │   ├── telat-sholat/
-│   │   ├── index.php       // Halaman utama pencatatan
-│   │   ├── process.php     // Proses penyimpanan data
-│   │   ├── style.css       // Styling khusus
+│   │   ├── index.php       
+│   │   ├── process.php     
+│   │   ├── style.css       
         └── script.js
     ├── telat-kbm/
-│   │   ├── index.php       // Halaman utama pencatatan
-│   │   ├── process.php     // Proses penyimpanan data
-│   │   ├── style.css       // Styling khusus
+│   │   ├── index.php       
+│   │   ├── process.php     
+│   │   ├── style.css       
         └── script.js  
 ├──rekap/
     ├──index.php
@@ -42,8 +42,7 @@
     ├──kamar-terbersih.php
     ├──kamar-terkotor.php
     ├──chart.php
-    ├──style.css
-├─db.php                    // Koneksi database
+├─db.php                    
 ├─footer.php
 ├─header.php
 ├─index.php
