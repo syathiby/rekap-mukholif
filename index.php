@@ -729,7 +729,7 @@ $best_students = mysqli_query($conn, "
                             <i class="fas fa-medal"></i>
                             Santri Teladan
                         </h3>
-                        <a href="rekap/santri.php?filter=best" class="view-all-link">
+                        <a href="rekap/santri-teladan.php" class="view-all-link">
                             Lihat semua <i class="fas fa-chevron-right"></i>
                         </a>
                     </div>

@@ -10,7 +10,7 @@ function deteksiKategoriPelanggaran($datetime) {
     elseif ($jam >= '07:30' && $jam <= '08:15') return 'KBM';
     elseif ($jam >= '11:30' && $jam <= '13:00') return 'Sholat Dzuhur';
     elseif ($jam >= '14:45' && $jam <= '16:00') return 'Sholat Ashar';
-    elseif ($jam >= '17:45' && $jam <= '19:00') return 'Sholat Maghrib';
+    elseif ($jam >= '17:30' && $jam <= '19:00') return 'Sholat Maghrib';
     elseif ($jam >= '19:00' && $jam <= '20:00') return 'Sholat Isya';
     else return 'Luar Jam Ketentuan';
 }
@@ -53,7 +53,7 @@ $chart_query = "
             WHEN TIME(tanggal) BETWEEN '07:30:00' AND '08:15:00' THEN 'KBM'
             WHEN TIME(tanggal) BETWEEN '11:30:00' AND '13:00:00' THEN 'Sholat Dzuhur'
             WHEN TIME(tanggal) BETWEEN '14:45:00' AND '16:00:00' THEN 'Sholat Ashar'
-            WHEN TIME(tanggal) BETWEEN '17:45:00' AND '19:00:00' THEN 'Sholat Maghrib'
+            WHEN TIME(tanggal) BETWEEN '17:30:00' AND '19:00:00' THEN 'Sholat Maghrib'
             WHEN TIME(tanggal) BETWEEN '19:00:00' AND '20:00:00' THEN 'Sholat Isya'
             ELSE 'Luar Jam Ketentuan'
         END AS kategori,
