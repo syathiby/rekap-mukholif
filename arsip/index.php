@@ -1,6 +1,8 @@
 <?php
 include '../db.php';
 include '../header.php';
+checkRole(['admin']);
+
 
 // Ambil semua arsip beserta jumlah datanya
 $sql = "

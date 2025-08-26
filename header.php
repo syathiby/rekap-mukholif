@@ -10,6 +10,31 @@ if (!isset($_SESSION['user']) && basename($_SERVER['PHP_SELF']) != 'login.php') 
     exit;
 }
 
+// 🔹 Role helper
+function currentRole() {
+    if (isset($_SESSION['role'])) return $_SESSION['role'];
+    if (isset($_SESSION['user']['role'])) return $_SESSION['user']['role'];
+    return null;
+}
+
+function checkRole(array $allowedRoles = []) {
+    $role = currentRole();
+    if (!$role) {
+        header("Location: /login.php");
+        exit;
+    }
+
+    if (!in_array($role, $allowedRoles)) {
+        // Redirect balik ke dashboard kalau role gak cocok
+        header("Location: ../index.php");
+        exit;
+    }
+}
+
+function isAdmin() {
+    return currentRole() === 'admin';
+}
+
 // Set default timezone to Asia/Jakarta
 date_default_timezone_set('Asia/Jakarta');
 

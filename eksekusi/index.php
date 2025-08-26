@@ -1,6 +1,8 @@
 <?php
 include '../db.php';
 include '../header.php';
+checkRole(['admin']);
+
 
 if (!$conn) {
     die("Koneksi database gagal: " . mysqli_connect_error());

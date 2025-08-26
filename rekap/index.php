@@ -1,5 +1,7 @@
 <?php
 include '../header.php';
+checkRole(['admin','pj']);
+
 ?>
 
 <!DOCTYPE html>
