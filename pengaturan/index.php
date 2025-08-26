@@ -1,6 +1,8 @@
 <?php
 include '../db.php';
 include '../header.php';
+checkRole(['admin']);
+
 ?>
 
 <!DOCTYPE html>
