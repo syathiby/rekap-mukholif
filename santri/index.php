@@ -1,137 +1,121 @@
 <?php 
 include '../db.php'; 
 require_once __DIR__ . '/../header.php'; 
+
+// ✅ definisi search dipindah ke atas biar ga error
+$search = $_GET['search'] ?? '';
 ?>
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Data Santri - Pesantren</title>
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    <style>
-        :root {
-            --primary-color: #3498db;
-            --secondary-color: #2c3e50;
-            --accent-color: #e74c3c;
-        }
-        body {
-            background-color: #f8f9fa;
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-        }
-        .container {
-            max-width: 1200px;
-        }
-        .header {
-            background: linear-gradient(135deg, var(--secondary-color), var(--primary-color));
-            color: white;
-            padding: 1.5rem;
-            border-radius: 8px;
-            margin-bottom: 2rem;
-            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
-        }
-        .table-container {
-            background-color: white;
-            border-radius: 8px;
-            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.05);
-            overflow: hidden;
-        }
-        .table thead {
-            background-color: var(--secondary-color);
-            color: white;
-        }
-        .table th {
-            font-weight: 500;
-        }
-        .btn-action {
-            padding: 0.25rem 0.5rem;
-            font-size: 0.875rem;
-        }
-        .checkbox-cell {
-            width: 40px;
-        }
-        .action-cell {
-            width: 120px;
-        }
-        .btn-primary {
-            background-color: var(--primary-color);
-            border-color: var(--primary-color);
-        }
-        .btn-danger {
-            background-color: var(--accent-color);
-            border-color: var(--accent-color);
-        }
-        .btn-success {
-            background-color: #27ae60;
-            border-color: #27ae60;
-        }
-        .btn-warning {
-            background-color: #f39c12;
-            border-color: #f39c12;
-        }
-        .pagination .page-item.active .page-link {
-            background-color: var(--primary-color);
-            border-color: var(--primary-color);
-        }
-        .pagination .page-link {
-            color: var(--secondary-color);
-        }
-        @media (max-width: 768px) {
-        .header h2 {
-            font-size: 1.25rem;
-        }
 
-        .btn-group {
-            flex-direction: column;
-            width: 100%;
-        }
+<style>
+    /* CSS khusus halaman ini */
+    :root {
+        --primary-color: #3498db;
+        --secondary-color: #2c3e50;
+        --accent-color: #e74c3c;
+    }
+    body {
+        background-color: #f8f9fa;
+        font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    }
+    .container {
+        max-width: 1200px;
+    }
+    .header {
+        background: linear-gradient(135deg, var(--secondary-color), var(--primary-color));
+        color: white;
+        padding: 1.5rem;
+        border-radius: 8px;
+        margin-bottom: 2rem;
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+    }
+    .table-container {
+        background-color: white;
+        border-radius: 8px;
+        box-shadow: 0 2px 10px rgba(0, 0, 0, 0.05);
+        overflow: hidden;
+    }
+    .table thead {
+        background-color: var(--secondary-color);
+        color: white;
+    }
+    .table th {
+        font-weight: 500;
+    }
+    .btn-action {
+        padding: 0.25rem 0.5rem;
+        font-size: 0.875rem;
+    }
+    .checkbox-cell {
+        width: 40px;
+    }
+    .action-cell {
+        width: 120px;
+    }
+    .btn-primary {
+        background-color: var(--primary-color);
+        border-color: var(--primary-color);
+    }
+    .btn-danger {
+        background-color: var(--accent-color);
+        border-color: var(--accent-color);
+    }
+    .btn-success {
+        background-color: #27ae60;
+        border-color: #27ae60;
+    }
+    .btn-warning {
+        background-color: #f39c12;
+        border-color: #f39c12;
+    }
+    .pagination .page-item.active .page-link {
+        background-color: var(--primary-color);
+        border-color: var(--primary-color);
+    }
+    .pagination .page-link {
+        color: var(--secondary-color);
+    }
 
-        .btn-group .btn {
-            margin-bottom: 8px;
-            width: 100%;
-        }
+    /* ✅ FIX MOBILE */
+    @media (max-width: 768px) {
+      .header h2 { font-size: 1.25rem; }
 
-        form.d-flex {
-            flex-direction: column;
-            gap: 10px;
-            width: 100%;
-        }
+      /* toolbar di atas tabel */
+      .toolbar { 
+        gap: 10px;
+        flex-wrap: wrap;
+      }
 
-        .form-control, .btn {
-            width: 100% !important;
-        }
+      .toolbar .btn-group {
+        display: flex;
+        flex-direction: column;
+        width: 100%;
+      }
+      .toolbar .btn-group .btn {
+        margin-bottom: 8px;
+        width: 100%;
+      }
 
-        .table-container {
-            overflow-x: auto;
-        }
+      .toolbar form.d-flex {
+        flex-direction: column;
+        gap: 10px;
+        width: 100%;
+      }
+      .toolbar .form-control,
+      .toolbar .btn {
+        width: 100% !important;
+      }
 
-        .d-flex.align-items-center {
-            flex-direction: row;
-            gap: 10px;
-        }
+      .table-container { overflow-x: auto; }
+      .d-flex.align-items-center { flex-direction: row; gap: 10px; }
+      .action-cell { width: auto; }
+      .checkbox-cell { width: 30px; }
+      .text-muted.small { font-size: 0.75rem; }
 
-        .d-flex > a.btn {
-            flex: 1;
-            min-width: 0;
-            margin-right: 4px;
-        }
+      /* biar tombol Aksi di tabel ga melebar full */
+      td .btn-action { width: auto !important; }
+    }
+</style>
 
-        .action-cell {
-            width: auto;
-        }
-
-        .checkbox-cell {
-            width: 30px;
-        }
-
-        .text-muted.small {
-                font-size: 0.75rem;
-            }
-        }
-    </style>
-</head>
-<body>
 <div class="container mt-4 mb-5">
     <div class="header">
         <div class="d-flex justify-content-between align-items-center">
@@ -140,7 +124,6 @@ require_once __DIR__ . '/../header.php';
                 <span class="badge bg-light text-dark fs-6">
                     <i class="fas fa-database me-1"></i>
                     <?php 
-                    $search = isset($_GET['search']) ? $_GET['search'] : '';
                     $count_query = "SELECT COUNT(*) as total FROM santri";
                     
                     if (!empty($search)) {
@@ -156,7 +139,8 @@ require_once __DIR__ . '/../header.php';
         </div>
     </div>
 
-    <div class="d-flex justify-content-between mb-3">
+    <!-- ✅ tambahin class toolbar biar CSS mobile lebih spesifik -->
+    <div class="d-flex justify-content-between mb-3 toolbar">
         <div class="btn-group">
             <a href="create.php" class="btn btn-success me-2">
                 <i class="fas fa-user-plus me-1"></i> Tambah Santri
@@ -257,15 +241,13 @@ require_once __DIR__ . '/../header.php';
                     ?>
                 </tbody>
             </table>
-        </form>
-    </div>
-
-    <!-- Pagination would go here when implemented -->
+        </div>
+    </form>
 </div>
 
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+
 <script>
-    // Select all checkbox functionality
     document.getElementById("select-all").onclick = function() {
         const checkboxes = document.querySelectorAll('input[name="ids[]"]');
         for (let checkbox of checkboxes) {
@@ -273,7 +255,6 @@ require_once __DIR__ . '/../header.php';
         }
     }
 
-    // Confirm before bulk delete
     function confirmBulkDelete() {
         const checkedBoxes = document.querySelectorAll('input[name="ids[]"]:checked');
         if (checkedBoxes.length === 0) {
@@ -286,12 +267,9 @@ require_once __DIR__ . '/../header.php';
         }
     }
 
-    // Confirm before single delete
     function confirmDelete() {
         return confirm('Apakah Anda yakin ingin menghapus santri ini?');
     }
 </script>
-</body>
-</html>
 
 <?php require_once __DIR__ . '/../footer.php'; ?>

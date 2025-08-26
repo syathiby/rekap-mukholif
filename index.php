@@ -4,23 +4,56 @@ require_once __DIR__ . '/header.php';
 $start_date = $_GET['start_date'] ?? null;
 $end_date = $_GET['end_date'] ?? null;
 
+// 🔹 Ambil periode aktif dari tabel pengaturan
+$q = mysqli_query($conn, "SELECT nilai FROM pengaturan WHERE nama = 'periode_aktif' LIMIT 1");
+$row = mysqli_fetch_assoc($q);
+$periode_aktif = $row ? $row['nilai'] : '2000-01-01'; // default biar gak error kalau kosong
+
 $filter_where = '';
 if ($start_date && $end_date) {
     $filter_where = "AND p.tanggal BETWEEN '$start_date 00:00:00' AND '$end_date 23:59:59'";
 }
 
+// 🔧 Build filter tanggal fleksibel untuk LEFT JOIN (aman saat kosong)
+$between_filter = '';
+
+if (!empty($start_date) && !empty($end_date)) {
+    // amankan input
+    $start = mysqli_real_escape_string($conn, $start_date . ' 00:00:00');
+    $end   = mysqli_real_escape_string($conn, $end_date   . ' 23:59:59');
+    $between_filter = "AND p.tanggal BETWEEN '$start' AND '$end'";
+} elseif (!empty($start_date)) {
+    $start = mysqli_real_escape_string($conn, $start_date . ' 00:00:00');
+    $between_filter = "AND p.tanggal >= '$start'";
+} elseif (!empty($end_date)) {
+    $end = mysqli_real_escape_string($conn, $end_date . ' 23:59:59');
+    $between_filter = "AND p.tanggal <= '$end'";
+}
+// kalau dua-duanya kosong, $between_filter tetap '', jadi hanya pakai periode_aktif
+
+
 // Get statistics
 $stats = [
-    'santri' => mysqli_fetch_assoc(mysqli_query($conn, "SELECT COUNT(*) AS total FROM santri"))['total'],
-    'jenis_pelanggaran' => mysqli_fetch_assoc(mysqli_query($conn, "SELECT COUNT(*) AS total FROM jenis_pelanggaran"))['total'],
-    'total_pelanggaran' => mysqli_fetch_assoc(mysqli_query($conn, "SELECT COUNT(*) AS total FROM pelanggaran"))['total'],
-    'santri_tanpa_pelanggaran' => mysqli_fetch_assoc(mysqli_query($conn, "
-        SELECT COUNT(*) as total 
-        FROM santri s
-        LEFT JOIN pelanggaran p ON s.id = p.santri_id
-        WHERE p.id IS NULL
-    "))['total']
+    'santri' => (int) (mysqli_fetch_assoc(mysqli_query($conn, "SELECT COUNT(*) AS total FROM santri"))['total'] ?? 0),
+    'jenis_pelanggaran' => (int) (mysqli_fetch_assoc(mysqli_query($conn, "SELECT COUNT(*) AS total FROM jenis_pelanggaran"))['total'] ?? 0),
+    // total pelanggaran
+'total_pelanggaran' => (int) (mysqli_fetch_assoc(mysqli_query($conn, "
+    SELECT COUNT(*) AS total 
+    FROM pelanggaran 
+    WHERE tanggal >= '$periode_aktif' $between_filter
+"))['total'] ?? 0),
+
+// santri tanpa pelanggaran
+'santri_tanpa_pelanggaran' => (int) (mysqli_fetch_assoc(mysqli_query($conn, "
+    SELECT COUNT(*) as total 
+    FROM santri s
+    LEFT JOIN pelanggaran p 
+        ON s.id = p.santri_id 
+        AND p.tanggal >= '$periode_aktif' $between_filter
+    WHERE p.id IS NULL
+"))['total'] ?? 0),
 ];
+
 
 // Get recent violations (last 5)
 $recent_violations = mysqli_query($conn, "
@@ -28,6 +61,7 @@ $recent_violations = mysqli_query($conn, "
     FROM pelanggaran p
     JOIN santri s ON p.santri_id = s.id
     JOIN jenis_pelanggaran jp ON p.jenis_pelanggaran_id = jp.id
+    WHERE p.tanggal >= '$periode_aktif' $between_filter
     ORDER BY p.tanggal DESC
     LIMIT 5
 ");
@@ -37,6 +71,7 @@ $frequent_violation = mysqli_fetch_assoc(mysqli_query($conn, "
     SELECT jp.nama_pelanggaran, COUNT(*) as total 
     FROM pelanggaran p
     JOIN jenis_pelanggaran jp ON p.jenis_pelanggaran_id = jp.id
+    WHERE p.tanggal >= '$periode_aktif' $between_filter
     GROUP BY jp.nama_pelanggaran
     ORDER BY total DESC
     LIMIT 1
@@ -46,21 +81,25 @@ $top_violators = mysqli_query($conn, "
     SELECT s.nama, s.kamar, COUNT(*) as total 
     FROM pelanggaran p
     JOIN santri s ON p.santri_id = s.id
-    WHERE 1=1 $filter_where
+    WHERE p.tanggal >= '$periode_aktif' $between_filter
     GROUP BY s.id
     ORDER BY total DESC
     LIMIT 5
 ");
 
+
 $best_students = mysqli_query($conn, "
     SELECT s.nama, s.kelas, s.kamar 
     FROM santri s
-    LEFT JOIN pelanggaran p ON s.id = p.santri_id 
-        AND p.tanggal BETWEEN '$start_date 00:00:00' AND '$end_date 23:59:59'
+    LEFT JOIN pelanggaran p 
+    ON s.id = p.santri_id 
+    AND p.tanggal >= '$periode_aktif' $between_filter
     WHERE p.id IS NULL
+
     ORDER BY s.nama ASC
     LIMIT 5
 ");
+
 ?>
 
 <!DOCTYPE html>
@@ -623,7 +662,7 @@ $best_students = mysqli_query($conn, "
                     <i class="fas fa-user-graduate"></i>
                 </div>
                 <h3>Total Santri</h3>
-                <div class="stat-value"><?= number_format($stats['santri']) ?></div>
+                <div class="stat-value"><?= number_format($stats['santri'] ?? 0) ?></div>
                 <p class="stat-description">Santri terdaftar</p>
             </a>
             
@@ -632,7 +671,7 @@ $best_students = mysqli_query($conn, "
                     <i class="fas fa-clipboard-check"></i>
                 </div>
                 <h3>Jenis Pelanggaran</h3>
-                <div class="stat-value"><?= number_format($stats['jenis_pelanggaran']) ?></div>
+                <div class="stat-value"><?= number_format($stats['jenis_pelanggaran'] ?? 0) ?></div>
                 <p class="stat-description">Kategori pelanggaran</p>
             </a>
             
@@ -641,7 +680,7 @@ $best_students = mysqli_query($conn, "
                     <i class="fas fa-exclamation-circle"></i>
                 </div>
                 <h3>Total Pelanggaran</h3>
-                <div class="stat-value"><?= number_format($stats['total_pelanggaran']) ?></div>
+                <div class="stat-value"><?= number_format($stats['total_pelanggaran'] ?? 0) ?></div>
                 <p class="stat-description">Pelanggaran tercatat</p>
                 <?php if(!empty($frequent_violation)): ?>
                     <div class="additional-info">
@@ -655,7 +694,7 @@ $best_students = mysqli_query($conn, "
                     <i class="fas fa-award"></i>
                 </div>
                 <h3>Santri Teladan</h3>
-                <div class="stat-value"><?= number_format($stats['santri_tanpa_pelanggaran']) ?></div>
+                <div class="stat-value"><?= number_format($stats['santri_tanpa_pelanggaran'] ?? 0) ?></div>
                 <p class="stat-description">Tanpa pelanggaran</p>
             </div>
         </div>

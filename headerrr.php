@@ -59,20 +59,20 @@ unset($_SESSION['error']);
     }
 
     /* Warna per halaman - desktop */
-    .sidebar-desktop .nav-link[href*='../index.php'] i { color: #0d6efd !important; }
-    .sidebar-desktop .nav-link[href*='../santri'] i { color: #20c997 !important; }
-    .sidebar-desktop .nav-link[href*='../jenis-pelanggaran'] i { color: #fd7e14 !important; }
-    .sidebar-desktop .nav-link[href*='../pelanggaran'] i { color: #6c757d !important; }
-    .sidebar-desktop .nav-link[href*='../rekap'] i { color: #6f42c1 !important; }
-    .sidebar-desktop .nav-link[href*='../eksekusi'] i { color: #e83e8c !important; }
+    .sidebar-desktop .nav-link[href*='/rekap-mukholif/index.php'] i { color: #0d6efd !important; }
+    .sidebar-desktop .nav-link[href*='/rekap-mukholif/santri'] i { color: #20c997 !important; }
+    .sidebar-desktop .nav-link[href*='/rekap-mukholif/jenis-pelanggaran'] i { color: #fd7e14 !important; }
+    .sidebar-desktop .nav-link[href*='/rekap-mukholif/pelanggaran'] i { color: #6c757d !important; }
+    .sidebar-desktop .nav-link[href*='/rekap-mukholif/rekap'] i { color: #6f42c1 !important; }
+    .sidebar-desktop .nav-link[href*='/rekap-mukholif/eksekusi'] i { color: #e83e8c !important; }
 
     /* Warna per halaman - mobile */
-    .offcanvas .nav-link[href*='../index.php'] i { color: #0d6efd !important; }
-    .offcanvas .nav-link[href*='../santri'] i { color: #20c997 !important; }
-    .offcanvas .nav-link[href*='../jenis-pelanggaran'] i { color: #fd7e14 !important; }
-    .offcanvas .nav-link[href*='../pelanggaran'] i { color: #6c757d !important; }
-    .offcanvas .nav-link[href*='../rekap'] i { color: #6f42c1 !important; }
-    .offcanvas .nav-link[href*='../eksekusi'] i { color: #e83e8c !important; }
+    .offcanvas .nav-link[href*='/rekap-mukholif/index.php'] i { color: #0d6efd !important; }
+    .offcanvas .nav-link[href*='/rekap-mukholif/santri'] i { color: #20c997 !important; }
+    .offcanvas .nav-link[href*='/rekap-mukholif/jenis-pelanggaran'] i { color: #fd7e14 !important; }
+    .offcanvas .nav-link[href*='/rekap-mukholif/pelanggaran'] i { color: #6c757d !important; }
+    .offcanvas .nav-link[href*='/rekap-mukholif/rekap'] i { color: #6f42c1 !important; }
+    .offcanvas .nav-link[href*='/rekap-mukholif/eksekusi'] i { color: #e83e8c !important; }
 
     /* Hover effect */
     .sidebar-desktop .nav-link:hover i,
@@ -237,14 +237,14 @@ unset($_SESSION['error']);
 
                 <!-- Logo & Judul -->
                 <div class="mx-auto d-flex align-items-center text-success fw-bold">
-                    <img src="/assets/logo.png?v=2" alt="Logo" class="header-logo me-2">
+                    <img src="/rekap-mukholif/assets/logo.png?v=2" alt="Logo" class="header-logo me-2">
                     <span class="d-none d-sm-inline">Pendataan Mukholif</span>
                     <span class="d-inline d-sm-none">Mukholif</span>
                 </div>
 
                 <!-- Logout -->
                 <div class="ms-auto">
-                    <a class="btn btn-sm btn-danger text-white d-flex align-items-center btn-logout" href="/logout.php">
+                    <a class="btn btn-sm btn-danger text-white d-flex align-items-center btn-logout" href="/rekap-mukholif/logout.php">
                         <i class="fas fa-sign-out-alt"></i>
                         <span class="d-none d-sm-inline ms-2">Logout</span>
                     </a>

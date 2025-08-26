@@ -1,51 +1,65 @@
 /rekap-mukholif/
 │
+├──arsip/
+│    ├──index.php
+│    ├──procees.php
+│    ├──view.php
 ├──assets
-    └──logo.png
+│    └──logo.png
 ├──eksekusi/
-    ├──index.php
-    ├──process.php
-├── santri/
-    ├── index.php         
-    ├── create.php        
-    ├── edit.php          
-    ├── delete.php        
-    ├── search.php
-    ├── bulk-delete.php   
-    └── bulk-create.php
-    └── bulk-edit.php
+│    ├──index.php
+│    ├──process.php
 ├── jenis-pelanggaran/
-│   ├── index.php 
-│   ├── create.php 
-│   ├── edit.php 
-│   ├── delete.php 
-│   └── process.php 
+│    ├── index.php 
+│    ├── create.php 
+│    ├── edit.php 
+│    ├── delete.php 
+│    └── process.php 
 ├── pelanggaran/
-    ├── index.php
-    ├── kebersihan-kamar/
-    │   ├── index.php       
-    │   └── process.php     
-│   ├── telat-sholat/
-│   │   ├── index.php       
-│   │   ├── process.php     
-│   │   ├── style.css       
-        └── script.js
-    ├── telat-kbm/
-│   │   ├── index.php       
-│   │   ├── process.php     
-│   │   ├── style.css       
-        └── script.js  
+│    ├── index.php
+│    ├── kebersihan-kamar/
+│    │   ├── index.php       
+│    │   └── process.php     
+│    ├── telat-sholat/
+│    │   ├── index.php       
+│    │   ├── process.php     
+│    │   ├── style.css       
+│    │    └── script.js
+│    ├── telat-kbm/
+│    │   ├── index.php       
+│    │   ├── process.php     
+│    │   ├── style.css       
+│    │    └── script.js 
+pengaturan/
+│    ├──index.php
+│    ├──ganti-password
+│    │    ├──index.php
+│    │    └──procees.php
+│    ├──periode-aktif
+│    │    ├──index.php
+│    │    └──procees.php
 ├──rekap/
-    ├──index.php
-    ├──santri.php
-    ├──per-kamar.php
-    ├──kamar-terbersih.php
-    ├──kamar-terkotor.php
-    ├──chart.php
+│    ├──index.php
+│    ├──santri.php
+│    ├──per-kamar.php
+│    ├──kamar-terbersih.php
+│    ├──kamar-terkotor.php
+│    ├──chart.php
+├── santri/
+│    ├── index.php         
+│    ├── create.php        
+│    ├── edit.php          
+│    ├── delete.php        
+│    ├── search.php
+│    ├── bulk-delete.php   
+│    └── bulk-create.php
+│    └── bulk-edit.php
+│
 ├─db.php                    
 ├─footer.php
 ├─header.php
 ├─index.php
 ├─login.php
 ├─logout.php
+├─sidebar.php
 ├─style.css

@@ -2,579 +2,775 @@
 include '../db.php';
 include '../header.php';
 
-// 1. Rekap Harian (7 hari terakhir)
+
+
+// Ambil periode aktif
+$q = mysqli_query($conn, "SELECT nilai FROM pengaturan WHERE nama = 'periode_aktif' LIMIT 1");
+$row = mysqli_fetch_assoc($q);
+$periode_aktif = $row ? $row['nilai'] : date('Y-m-d');
+
+// 1. Total Pelanggaran (gabungan pelanggaran + kebersihan)
+$q_total1 = mysqli_query($conn, "
+    SELECT COUNT(*) as total 
+    FROM pelanggaran 
+    WHERE tanggal >= '$periode_aktif'
+");
+
+$q_total2 = mysqli_query($conn, "
+    SELECT COUNT(*) as total 
+    FROM pelanggaran_kebersihan 
+    WHERE tanggal >= '$periode_aktif'
+");
+
+$total1 = mysqli_fetch_assoc($q_total1)['total'];
+$total2 = mysqli_fetch_assoc($q_total2)['total'];
+$total_pelanggaran = $total1 + $total2;
+
+// 2. Pelanggaran 7 hari terakhir (gabungan)
 $q_harian = mysqli_query($conn, "
     SELECT DATE(tanggal) as tanggal, COUNT(*) AS total 
-    FROM pelanggaran 
-    WHERE tanggal >= DATE_SUB(CURDATE(), INTERVAL 7 DAY)
+    FROM (
+        SELECT tanggal FROM pelanggaran 
+        WHERE tanggal >= DATE_SUB(CURDATE(), INTERVAL 7 DAY)
+        UNION ALL
+        SELECT tanggal FROM pelanggaran_kebersihan 
+        WHERE tanggal >= DATE_SUB(CURDATE(), INTERVAL 7 DAY)
+    ) AS combined 
     GROUP BY DATE(tanggal) 
     ORDER BY tanggal ASC
 ");
-$label_harian = [];
-$data_harian = [];
-while ($row = mysqli_fetch_assoc($q_harian)) {
-    $label_harian[] = date('d M', strtotime($row['tanggal']));
-    $data_harian[] = $row['total'];
-}
 
-// 2. Rekap per Kamar (termasuk kamar terbersih dan terkotor)
-$q_kamar = mysqli_query($conn, "
-    SELECT p.kamar, COUNT(*) AS total 
-    FROM pelanggaran_kebersihan p 
-    GROUP BY p.kamar 
-    ORDER BY total DESC
-    LIMIT 10
+// 2a. Pelanggaran 1 Bulan Terakhir (gabungan)
+$q_bulanan = mysqli_query($conn, "
+    SELECT DATE(tanggal) as tanggal, COUNT(*) AS total 
+    FROM (
+        SELECT tanggal FROM pelanggaran 
+        WHERE tanggal >= DATE_SUB(CURDATE(), INTERVAL 1 MONTH)
+        UNION ALL
+        SELECT tanggal FROM pelanggaran_kebersihan 
+        WHERE tanggal >= DATE_SUB(CURDATE(), INTERVAL 1 MONTH)
+    ) AS combined 
+    GROUP BY DATE(tanggal) 
+    ORDER BY tanggal ASC
 ");
-$label_kamar = [];
-$data_kamar = [];
-while ($row = mysqli_fetch_assoc($q_kamar)) {
-    $label_kamar[] = "Kamar " . $row['kamar'];
-    $data_kamar[] = $row['total'];
-}
 
-// 3. Top 5 Santri Terbanyak Pelanggaran
+// 2b. Pelanggaran 3 Bulan Terakhir (gabungan)
+$q_triwulan = mysqli_query($conn, "
+    SELECT DATE(tanggal) as tanggal, COUNT(*) AS total 
+    FROM (
+        SELECT tanggal FROM pelanggaran 
+        WHERE tanggal >= DATE_SUB(CURDATE(), INTERVAL 3 MONTH)
+        UNION ALL
+        SELECT tanggal FROM pelanggaran_kebersihan 
+        WHERE tanggal >= DATE_SUB(CURDATE(), INTERVAL 3 MONTH)
+    ) AS combined 
+    GROUP BY DATE(tanggal) 
+    ORDER BY tanggal ASC
+");
+
+// 2c. Pelanggaran 1 Tahun Terakhir (gabungan)
+$q_tahunan = mysqli_query($conn, "
+    SELECT DATE(tanggal) as tanggal, COUNT(*) AS total 
+    FROM (
+        SELECT tanggal FROM pelanggaran 
+        WHERE tanggal >= DATE_SUB(CURDATE(), INTERVAL 1 YEAR)
+        UNION ALL
+        SELECT tanggal FROM pelanggaran_kebersihan 
+        WHERE tanggal >= DATE_SUB(CURDATE(), INTERVAL 1 YEAR)
+    ) AS combined 
+    GROUP BY DATE(tanggal) 
+    ORDER BY tanggal ASC
+");
+
+
+// 3. Top 5 Santri (hanya dari tabel pelanggaran)
 $q_santri = mysqli_query($conn, "
-    SELECT s.id, s.nama, COUNT(*) AS total 
+    SELECT s.nama, COUNT(*) AS total 
     FROM pelanggaran p 
     JOIN santri s ON s.id = p.santri_id 
+    WHERE p.tanggal >= '$periode_aktif'
     GROUP BY s.id 
     ORDER BY total DESC 
     LIMIT 5
 ");
-$label_santri = [];
-$data_santri = [];
-$santri_ids = [];
-$total_top_santri = 0;
-while ($row = mysqli_fetch_assoc($q_santri)) {
-    $label_santri[] = $row['nama'];
-    $data_santri[] = $row['total'];
-    $santri_ids[] = $row['id'];
-    $total_top_santri += $row['total'];
-}
 
-// 4. Rekap per Kelas
+// 4. Per Kelas (hanya dari tabel pelanggaran)
 $q_kelas = mysqli_query($conn, "
     SELECT s.kelas, COUNT(*) AS total 
     FROM pelanggaran p 
     JOIN santri s ON s.id = p.santri_id 
+    WHERE p.tanggal >= '$periode_aktif'
     GROUP BY s.kelas
     ORDER BY total DESC
 ");
-$label_kelas = [];
-$data_kelas = [];
-while ($row = mysqli_fetch_assoc($q_kelas)) {
-    $label_kelas[] = "Kelas " . $row['kelas'];
-    $data_kelas[] = $row['total'];
-}
 
-// 5. Rekap Jenis Pelanggaran
+// 5. Per Kamar (dari tabel pelanggaran_kebersihan)
+$q_kamar = mysqli_query($conn, "
+    SELECT kamar, COUNT(*) AS total 
+    FROM pelanggaran_kebersihan 
+    WHERE tanggal >= '$periode_aktif'
+    GROUP BY kamar 
+    ORDER BY total DESC
+");
+
+// 6. Jenis Pelanggaran
 $q_jenis = mysqli_query($conn, "
     SELECT j.nama_pelanggaran, COUNT(*) as total
     FROM pelanggaran p
     JOIN jenis_pelanggaran j ON p.jenis_pelanggaran_id = j.id
+    WHERE p.tanggal >= '$periode_aktif'
     GROUP BY j.id
+
+    UNION ALL
+
+    SELECT 'KEBERSIHAN KAMAR' as nama_pelanggaran, COUNT(*) as total
+    FROM pelanggaran_kebersihan pk
+    WHERE pk.tanggal >= '$periode_aktif'
+    
     ORDER BY total DESC
-    LIMIT 5
 ");
-$label_jenis = [];
-$data_jenis = [];
-while ($row = mysqli_fetch_assoc($q_jenis)) {
-    $label_jenis[] = $row['nama_pelanggaran'];
-    $data_jenis[] = $row['total'];
+
+// Function biar gak nulis ulang fetch data chart
+function fetchChartData($query) {
+    $data = [];
+    while($row = mysqli_fetch_assoc($query)) {
+        $data[] = [
+            'tanggal' => $row['tanggal'],
+            'total' => $row['total']
+        ];
+    }
+    return $data;
 }
 
-// 6. Rekap Jam Pelanggaran
-$q_jam = mysqli_query($conn, "
-    SELECT HOUR(tanggal) as jam, COUNT(*) as total
-    FROM pelanggaran
-    GROUP BY HOUR(tanggal)
-    ORDER BY jam ASC
-");
-$label_jam = [];
-$data_jam = [];
-while ($row = mysqli_fetch_assoc($q_jam)) {
-    $label_jam[] = $row['jam'] . ':00';
-    $data_jam[] = $row['total'];
-}
+// Simpan data ke variabel
+$data_7hari   = fetchChartData($q_harian);
+$data_bulan   = fetchChartData($q_bulanan);
+$data_3bulan  = fetchChartData($q_triwulan);
+$data_tahun   = fetchChartData($q_tahunan);
 
-// Hitung total statistik
-$total_pelanggaran = array_sum($data_harian);
-$total_hari = count($label_harian);
-$total_kamar = count($label_kamar);
-$total_kelas = count($label_kelas);
-$total_jenis = count($label_jenis);
+
 ?>
+
 <!DOCTYPE html>
 <html lang="id">
 <head>
     <meta charset="UTF-8">
-    <title>Statistik Pelanggaran Lengkap</title>
-    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-datalabels@2.0.0"></script>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Rekap Pelanggaran - Singkat</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600&display=swap" rel="stylesheet">
     <style>
         :root {
-            --primary: #4361ee;
-            --secondary: #3f37c9;
-            --accent: #4895ef;
-            --light: #f8f9fa;
-            --dark: #212529;
-            --danger: #f72585;
-            --warning: #f8961e;
-            --success: #4cc9f0;
-            --info: #7209b7;
+            --primary: #4285F4; /* Biru Google */
+            --secondary: #34A853; /* Hijau Google */
+            --accent: #EA4335; /* Merah Google */
+            --highlight: #FBBC05; /* Kuning Google */
+            --neutral: #5F6368; /* Abu-abu Google */
+            --light: #F8F9FA;
+            --dark: #202124;
+            --card-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+            --hover-shadow: 0 8px 16px rgba(0, 0, 0, 0.15);
         }
-
-        body {
-            font-family: 'Poppins', sans-serif;
-            background-color: #f5f7fa;
-            color: var(--dark);
+        
+        * {
             margin: 0;
             padding: 0;
+            box-sizing: border-box;
+            font-family: 'Roboto', 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
         }
-
+        
+        body {
+            background: linear-gradient(to bottom, #f5f7fa 0%, #e8eaed 100%);
+            color: #333;
+            line-height: 1.6;
+            padding: 20px;
+            min-height: 100vh;
+        }
+        
         .container {
-            padding: 40px 20px;
-            max-width: 1400px;
-            margin: auto;
+            max-width: 1200px;
+            margin: 0 auto;
         }
-
-        .dashboard-header {
-            margin-bottom: 40px;
-            padding: 30px 25px;
-            background: white;
-            border-radius: 12px;
-            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.05);
-            animation: fadeInDown 0.6s ease-out;
-        }
-
-        h1 {
-            margin: 0 0 20px;
-            color: var(--primary);
-            font-size: 28px;
-            font-weight: 600;
-            text-align: center;
-        }
-
-        .stats-summary {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
-            gap: 20px;
-        }
-
-        .stat-card {
-            background: white;
-            padding: 18px 20px;
-            border-radius: 10px;
-            box-shadow: 0 2px 6px rgba(0, 0, 0, 0.05);
-            display: flex;
-            align-items: center;
-            gap: 14px;
-            border-left: 5px solid var(--primary);
-        }
-
-        .stat-card.danger { border-left-color: var(--danger); }
-        .stat-card.warning { border-left-color: var(--warning); }
-        .stat-card.success { border-left-color: var(--success); }
-        .stat-card.info { border-left-color: var(--info); }
-
-        .stat-icon {
-            font-size: 20px;
-            width: 42px;
-            height: 42px;
-            border-radius: 50%;
-            display: flex;
-            align-items: center;
-            justify-content: center;
+        
+        header {
+            background: linear-gradient(135deg, var(--primary) 0%, #1a73e8 100%);
             color: white;
-            flex-shrink: 0;
-        }
-
-        .stat-icon.calendar { background: var(--danger); }
-        .stat-icon.bed { background: var(--info); }
-        .stat-icon.user { background: var(--primary); }
-        .stat-icon.bullhorn { background: var(--warning); }
-        .stat-icon.school { background: var(--secondary); }
-        .stat-icon.clock { background: var(--success); }
-        .stat-icon.list { background: var(--accent); }
-
-        .stat-value {
-            font-weight: 600;
-            font-size: 20px;
-            color: var(--dark);
-            line-height: 1.3;
-        }
-
-        .stat-label {
-            font-size: 13px;
-            color: #6c757d;
-        }
-
-        h2 {
-            font-size: 18px;
-            font-weight: 600;
-            color: var(--secondary);
-            margin: 0;
-        }
-
-        .chart-grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(480px, 1fr));
-            gap: 30px;
-        }
-
-        .chart-container {
-            background: white;
             padding: 25px;
-            border-radius: 12px;
-            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.05);
+            border-radius: 15px;
+            margin-bottom: 25px;
+            box-shadow: var(--card-shadow);
+            position: relative;
+            overflow: hidden;
+        }
+        
+        header::after {
+            content: "";
+            position: absolute;
+            top: -50%;
+            right: -50%;
+            width: 100%;
+            height: 200%;
+            background: rgba(255, 255, 255, 0.1);
+            transform: rotate(30deg);
+        }
+        
+        h2 {
+            font-size: 28px;
+            margin-bottom: 10px;
+            position: relative;
+            z-index: 1;
+        }
+        
+        h3 {
+            font-size: 22px;
+            margin: 25px 0 20px;
+            padding-bottom: 12px;
+            border-bottom: 3px solid var(--primary);
+            color: var(--dark);
+        }
+        
+        .card {
+            background: white;
+            border-radius: 15px;
+            box-shadow: var(--card-shadow);
+            padding: 25px;
+            margin-bottom: 25px;
+            transition: transform 0.3s ease, box-shadow 0.3s ease;
+            border-top: 4px solid var(--primary);
+        }
+        
+        .card:hover {
+            transform: translateY(-5px);
+            box-shadow: var(--hover-shadow);
+        }
+        
+        .stats {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 25px;
+            margin-bottom: 35px;
+        }
+        
+        .stat-card {
+            background: linear-gradient(135deg, #ffffff 0%, #f8f9fc 100%);
+            border-radius: 15px;
+            padding: 25px;
+            box-shadow: var(--card-shadow);
+            text-align: center;
+            border-top: 5px solid var(--primary);
+            position: relative;
+            overflow: hidden;
             transition: all 0.3s ease;
-            animation: fadeInUp 0.6s ease-out;
-            min-height: 360px;
         }
-
-        .chart-container:hover {
-            transform: translateY(-4px);
-            box-shadow: 0 8px 15px rgba(0, 0, 0, 0.08);
+        
+        .stat-card:nth-child(2) {
+            border-top-color: var(--accent);
         }
-
-        canvas {
-            width: 100% !important;
-            height: 300px !important;
+        
+        .stat-card:nth-child(3) {
+            border-top-color: var(--secondary);
         }
-
-        .filter-section {
-            display: flex;
-            gap: 10px;
-            flex-wrap: wrap;
-            margin: 15px 0 25px;
+        
+        .stat-card:hover {
+            transform: translateY(-5px);
+            box-shadow: var(--hover-shadow);
         }
-
-        .filter-btn {
-            padding: 6px 16px;
-            border-radius: 20px;
-            font-size: 12px;
-            background: #f1f3ff;
+        
+        .stat-card i {
+            position: absolute;
+            top: -15px;
+            right: -15px;
+            font-size: 80px;
+            opacity: 0.1;
             color: var(--primary);
-            border: 1px solid #dee2e6;
-            cursor: pointer;
+        }
+        
+        .stat-card:nth-child(2) i {
+            color: var(--accent);
+        }
+        
+        .stat-card:nth-child(3) i {
+            color: var(--secondary);
+        }
+        
+        .stat-card h4 {
+            font-size: 18px;
+            color: var(--neutral);
+            margin-bottom: 15px;
+        }
+        
+        .stat-card .number {
+            font-size: 36px;
+            font-weight: bold;
+            color: var(--primary);
+            margin: 10px 0;
+        }
+        
+        .stat-card:nth-child(2) .number {
+            color: var(--accent);
+        }
+        
+        .stat-card:nth-child(3) .number {
+            color: var(--secondary);
+        }
+        
+        .chart-wrapper {
+            position: relative;
+            margin-bottom: 30px;
+            overflow-x: auto;
+            -webkit-overflow-scrolling: touch;
+        }
+        
+        .chart-container {
+            position: relative;
+            height: 350px;
+            min-width: 600px;
+        }
+        
+        select {
+            padding: 12px 20px;
+            border-radius: 50px;
+            border: 2px solid var(--primary);
+            margin-bottom: 20px;
+            background-color: white;
+            font-size: 16px;
+            width: 100%;
+            max-width: 300px;
+            outline: none;
             transition: all 0.3s ease;
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
         }
-
-        .filter-btn:hover,
-        .filter-btn.active {
-            background: var(--primary);
+        
+        select:focus {
+            border-color: var(--accent);
+            box-shadow: 0 5px 15px rgba(234, 67, 53, 0.2);
+        }
+        
+        .table-container {
+            overflow-x: auto;
+            margin-bottom: 30px;
+            border-radius: 10px;
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
+        }
+        
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            background: white;
+            border-radius: 10px;
+            overflow: hidden;
+        }
+        
+        th, td {
+            padding: 16px 20px;
+            text-align: left;
+            border-bottom: 1px solid #e0e0e0;
+        }
+        
+        th {
+            background: linear-gradient(135deg, var(--primary) 0%, #1a73e8 100%);
             color: white;
-            border-color: var(--primary);
+            font-weight: 600;
+            font-size: 16px;
+            position: sticky;
+            top: 0;
         }
-
-        /* Animations */
-        @keyframes fadeInUp {
-            from {
-                opacity: 0;
-                transform: translateY(20px);
-            }
-            to {
-                opacity: 1;
-                transform: translateY(0);
-            }
+        
+        tr:nth-child(even) {
+            background-color: #f9f9f9;
         }
-
-        @keyframes fadeInDown {
-            from {
-                opacity: 0;
-                transform: translateY(-20px);
-            }
-            to {
-                opacity: 1;
-                transform: translateY(0);
-            }
+        
+        tr:hover {
+            background-color: #f1f3f9;
         }
-
-        /* Responsive tweaks */
+        
+        .badge {
+            display: inline-block;
+            padding: 8px 16px;
+            border-radius: 50px;
+            font-size: 14px;
+            font-weight: bold;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+            color: white;
+        }
+        
+        .badge-primary {
+            background: linear-gradient(135deg, var(--primary) 0%, #1a73e8 100%);
+        }
+        
+        .badge-success {
+            background: linear-gradient(135deg, var(--secondary) 0%, #2da44e 100%);
+        }
+        
+        .badge-warning {
+            background: linear-gradient(135deg, var(--highlight) 0%, #e6a700 100%);
+        }
+        
+        .badge-danger {
+            background: linear-gradient(135deg, var(--accent) 0%, #d93025 100%);
+        }
+        
+        .badge-info {
+            background: linear-gradient(135deg, #17a2b8 0%, #138496 100%);
+        }
+        
+        .period-info {
+            background: linear-gradient(135deg, #ffeaa7 0%, #FFD93D 100%);
+            padding: 15px 20px;
+            border-radius: 10px;
+            margin: 20px 0;
+            display: inline-flex;
+            align-items: center;
+            font-weight: bold;
+            color: var(--dark);
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
+        }
+        
+        .period-info i {
+            margin-right: 10px;
+            font-size: 20px;
+        }
+        
         @media (max-width: 768px) {
-            .chart-grid {
-                grid-template-columns: 1fr;
+            body {
+                padding: 15px;
             }
-
-            .stats-summary {
+            
+            .stats {
                 grid-template-columns: 1fr;
+                gap: 15px;
             }
-
+            
+            h2 {
+                font-size: 24px;
+            }
+            
+            h3 {
+                font-size: 20px;
+            }
+            
+            .stat-card .number {
+                font-size: 30px;
+            }
+            
+            th, td {
+                padding: 12px 15px;
+                font-size: 14px;
+            }
+            
             .chart-container {
-                padding: 20px 15px;
+                height: 300px;
+                min-width: 100%;
             }
-
-            .dashboard-header {
-                padding: 20px 15px;
+            
+            select {
+                max-width: 100%;
+            }
+            
+            .card {
+                padding: 20px;
             }
         }
-
-        #kategoriChart {
-        max-width: 100%;
-        height: auto;
+        
+        @media (max-width: 480px) {
+            header {
+                padding: 20px;
+            }
+            
+            h2 {
+                font-size: 20px;
+            }
+            
+            h3 {
+                font-size: 18px;
+            }
+            
+            .stat-card {
+                padding: 20px;
+            }
+            
+            .stat-card .number {
+                font-size: 26px;
+            }
+            
+            th, td {
+                padding: 10px 12px;
+                font-size: 13px;
+            }
+            
+            .badge {
+                padding: 6px 12px;
+                font-size: 12px;
+            }
         }
-
+        
+        /* Scrollbar styling */
+        ::-webkit-scrollbar {
+            width: 8px;
+            height: 8px;
+        }
+        
+        ::-webkit-scrollbar-track {
+            background: #f1f1f1;
+            border-radius: 10px;
+        }
+        
+        ::-webkit-scrollbar-thumb {
+            background: linear-gradient(135deg, var(--primary) 0%, #1a73e8 100%);
+            border-radius: 10px;
+        }
+        
+        ::-webkit-scrollbar-thumb:hover {
+            background: linear-gradient(135deg, #1a73e8 0%, var(--primary) 100%);
+        }
     </style>
 </head>
 <body>
-<div class="container">
-    <div class="dashboard-header">
-        <h1><i class="fas fa-chart-line"></i> Dashboard Statistik Pelanggaran</h1>
-        <div class="stats-summary">
-            <div class="stat-card danger">
-                <div class="stat-icon calendar">
-                    <i class="fas fa-calendar-alt"></i>
-                </div>
-                <div>
-                    <div class="stat-value"><?= $total_pelanggaran ?></div>
-                    <div class="stat-label">Total Pelanggaran</div>
-                </div>
+    <div class="container">
+        <header>
+            <h2>REKAP PELANGGARAN</h2>
+            <div class="period-info">
+                <i class="fas fa-calendar-alt"></i>
+                <span>Periode Aktif: <?= $periode_aktif ?></span>
             </div>
-            <div class="stat-card warning">
-                <div class="stat-icon bullhorn">
-                    <i class="fas fa-bullhorn"></i>
-                </div>
-                <div>
-                    <div class="stat-value"><?= $total_hari ?></div>
-                    <div class="stat-label">Hari dengan Pelanggaran</div>
-                </div>
+        </header>
+        
+        <div class="stats">
+            <div class="stat-card">
+                <i class="fas fa-exclamation-triangle"></i>
+                <h4>Total Pelanggaran</h4>
+                <div class="number"><?= $total_pelanggaran ?></div>
+                <p>Pelanggaran</p>
             </div>
             <div class="stat-card">
-                <div class="stat-icon user">
-                    <i class="fas fa-users"></i>
-                </div>
-                <div>
-                    <div class="stat-value"><?= count($label_santri) ?></div>
-                    <div class="stat-label">Santri dengan Pelanggaran</div>
-                </div>
-            </div>
-            <div class="stat-card info">
-                <div class="stat-icon school">
-                    <i class="fas fa-school"></i>
-                </div>
-                <div>
-                    <div class="stat-value"><?= $total_kelas ?></div>
-                    <div class="stat-label">Total Kelas</div>
-                </div>
-            </div>
-            <div class="stat-card success">
-                <div class="stat-icon bed">
-                    <i class="fas fa-bed"></i>
-                </div>
-                <div>
-                    <div class="stat-value"><?= $total_kamar ?></div>
-                    <div class="stat-label">Kamar Terdata</div>
-                </div>
+                <i class="fas fa-user-times"></i>
+                <h4>Pelanggaran Umum</h4>
+                <div class="number"><?= $total1 ?></div>
+                <p>Santri Melanggar</p>
             </div>
             <div class="stat-card">
-                <div class="stat-icon list">
-                    <i class="fas fa-list"></i>
+                <i class="fas fa-broom"></i>
+                <h4>Pelanggaran Kebersihan</h4>
+                <div class="number"><?= $total2 ?></div>
+                <p>Pelanggaran</p>
+            </div>
+        </div>
+        
+        <div class="card">
+            <h3>Grafik Pelanggaran</h3>
+            <select id="filterRange">
+                <option value="7">7 Hari Terakhir</option>
+                <option value="30">1 Bulan Terakhir</option>
+                <option value="90">3 Bulan Terakhir</option>
+                <option value="365">1 Tahun Terakhir</option>
+            </select>
+            
+            <div class="chart-wrapper">
+                <div class="chart-container">
+                    <canvas id="chartPelanggaran"></canvas>
                 </div>
-                <div>
-                    <div class="stat-value"><?= $total_jenis ?></div>
-                    <div class="stat-label">Jenis Pelanggaran</div>
-                </div>
+            </div>
+        </div>
+        
+        <div class="card">
+            <h3>Top 5 Santri</h3>
+            <div class="table-container">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Nama Santri</th>
+                            <th>Jumlah Pelanggaran</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <?php while($row = mysqli_fetch_assoc($q_santri)): ?>
+                        <tr>
+                            <td><i class="fas fa-user-graduate"></i> <?= $row['nama'] ?></td>
+                            <td><span class="badge badge-danger"><?= $row['total'] ?> pelanggaran</span></td>
+                        </tr>
+                        <?php endwhile; ?>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+        
+        <div class="card">
+            <h3>Per Kelas</h3>
+            <div class="table-container">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Kelas</th>
+                            <th>Jumlah Pelanggaran</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <?php while($row = mysqli_fetch_assoc($q_kelas)): ?>
+                        <tr>
+                            <td><i class="fas fa-chalkboard"></i> <?= $row['kelas'] ?></td>
+                            <td><span class="badge badge-warning"><?= $row['total'] ?> pelanggaran</span></td>
+                        </tr>
+                        <?php endwhile; ?>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+        
+        <div class="card">
+            <h3>Per Kamar (Kebersihan)</h3>
+            <div class="table-container">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Kamar</th>
+                            <th>Jumlah Pelanggaran</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <?php while($row = mysqli_fetch_assoc($q_kamar)): ?>
+                        <tr>
+                            <td><i class="fas fa-bed"></i> Kamar <?= $row['kamar'] ?></td>
+                            <td><span class="badge badge-primary"><?= $row['total'] ?> pelanggaran</span></td>
+                        </tr>
+                        <?php endwhile; ?>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+        
+        <div class="card">
+            <h3>Jenis Pelanggaran</h3>
+            <div class="table-container">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Jenis Pelanggaran</th>
+                            <th>Jumlah</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <?php while($row = mysqli_fetch_assoc($q_jenis)): ?>
+                        <tr>
+                            <td><i class="fas fa-exclamation-circle"></i> <?= $row['nama_pelanggaran'] ?></td>
+                            <td><span class="badge badge-success"><?= $row['total'] ?> kali</span></td>
+                        </tr>
+                        <?php endwhile; ?>
+                    </tbody>
+                </table>
             </div>
         </div>
     </div>
-    
-    <div class="chart-grid">
-        <div class="chart-container">
-            <h2><i class="fas fa-chart-line"></i> Pelanggaran 7 Hari Terakhir</h2>
-            <div class="filter-section">
-                <button class="filter-btn active" data-range="7">7 Hari</button>
-                <button class="filter-btn" data-range="30">30 Hari</button>
-                <button class="filter-btn" data-range="90">3 Bulan</button>
-                <button class="filter-btn" data-range="365">1 Tahun</button>
-            </div>
-            <canvas id="harianChart"></canvas>
-        </div>
-        
-        <div class="chart-container">
-            <h2><i class="fas fa-home"></i> 10 Kamar Terbanyak Pelanggaran</h2>
-            <canvas id="kamarChart"></canvas>
-        </div>
-        
-        <div class="chart-container">
-            <h2><i class="fas fa-user-graduate"></i> Top 5 Santri Terbanyak Pelanggaran</h2>
-            <canvas id="santriChart"></canvas>
-        </div>
-        
-        <div class="chart-container">
-            <h2><i class="fas fa-chalkboard-teacher"></i> Distribusi Pelanggaran per Kelas</h2>
-            <canvas id="kelasChart"></canvas>
-        </div>
-        
-        <div class="chart-container">
-            <h2><i class="fas fa-list"></i> Jenis Pelanggaran Terbanyak</h2>
-            <canvas id="jenisChart"></canvas>
-        </div>
-        
-        <div class="chart-container">
-            <h2><i class="fas fa-clock"></i> Pelanggaran per Jam</h2>
-            <canvas id="jamChart"></canvas>
-        </div>
-    </div>
-</div>
 
-<script>
-    // Register plugin
-    Chart.register(ChartDataLabels);
-    
-    // Generate colors
-    const generateColors = (count, opacity = 0.7) => {
-        const colors = [];
-        const hueStep = 360 / count;
-        for (let i = 0; i < count; i++) {
-            colors.push(`hsla(${i * hueStep}, 70%, 60%, ${opacity})`);
-        }
-        return colors;
-    }
+    <script>
+        const data7Hari  = <?= json_encode($data_7hari) ?>;
+        const dataBulan  = <?= json_encode($data_bulan) ?>;
+        const data3Bulan = <?= json_encode($data_3bulan) ?>;
+        const dataTahun  = <?= json_encode($data_tahun) ?>;
+    </script>
 
-    // Chart configuration
-    const chartConfig = (id, labels, data, type = 'bar', label = 'Jumlah Pelanggaran') => {
-        const ctx = document.getElementById(id).getContext('2d');
-        const bgColors = generateColors(labels.length);
-        
-        return new Chart(ctx, {
-            type: type,
-            data: {
-                labels: labels,
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+    <script>
+        const ctx = document.getElementById('chartPelanggaran').getContext('2d');
+
+        function formatChartData(rawData) {
+            return {
+                labels: rawData.map(d => {
+                    const date = new Date(d.tanggal);
+                    return date.toLocaleDateString('id-ID', { day: 'numeric', month: 'short' });
+                }),
                 datasets: [{
-                    label: label,
-                    data: data,
-                    backgroundColor: type === 'pie' || type === 'doughnut' ? bgColors : bgColors[0],
-                    borderColor: type === 'pie' || type === 'doughnut' ? 
-                        bgColors.map(c => c.replace('0.7', '1')) : 
-                        bgColors[0].replace('0.7', '1'),
-                    borderWidth: 1,
-                    hoverBackgroundColor: type === 'pie' || type === 'doughnut' ? 
-                        bgColors.map(c => c.replace('60%', '70%')) : 
-                        bgColors[0].replace('60%', '70%'),
-                    hoverBorderWidth: 2
+                    label: "Jumlah Pelanggaran",
+                    data: rawData.map(d => d.total),
+                    borderColor: "#4285F4",
+                    backgroundColor: "rgba(66, 133, 244, 0.1)",
+                    pointBackgroundColor: "#4285F4",
+                    pointBorderColor: "#fff",
+                    pointHoverBackgroundColor: "#fff",
+                    pointHoverBorderColor: "#4285F4",
+                    pointRadius: 5,
+                    pointHoverRadius: 8,
+                    pointHitRadius: 12,
+                    fill: true,
+                    tension: 0.4
                 }]
-            },
+            };
+        }
+
+        let chart = new Chart(ctx, {
+            type: 'line',
+            data: formatChartData(data7Hari),
             options: {
                 responsive: true,
                 maintainAspectRatio: false,
                 plugins: {
                     legend: { 
-                        display: type === 'pie' || type === 'doughnut',
-                        position: 'right'
-                    },
-                    tooltip: { 
-                        mode: 'index', 
-                        intersect: false,
-                        backgroundColor: 'rgba(0,0,0,0.8)',
-                        titleFont: { size: 14 },
-                        bodyFont: { size: 12 },
-                        padding: 12
-                    },
-                    datalabels: {
-                        display: type === 'pie' || type === 'doughnut',
-                        color: '#fff',
-                        font: {
-                            weight: 'bold'
-                        },
-                        formatter: (value) => {
-                            return value > 0 ? value : '';
+                        display: true,
+                        position: 'top',
+                        labels: {
+                            font: {
+                                size: 14,
+                                family: "'Roboto', sans-serif"
+                            },
+                            color: '#2d3436'
                         }
                     },
-                    animation: {
-                        duration: 2000,
-                        easing: 'easeOutQuart'
+                    tooltip: {
+                        backgroundColor: 'rgba(45, 52, 54, 0.9)',
+                        titleFont: { 
+                            size: 15,
+                            family: "'Roboto', sans-serif"
+                        },
+                        bodyFont: { 
+                            size: 14,
+                            family: "'Roboto', sans-serif"
+                        },
+                        padding: 12,
+                        cornerRadius: 8,
+                        displayColors: false
                     }
                 },
-                scales: (type === 'pie' || type === 'doughnut') ? {} : {
+                scales: {
                     y: {
                         beginAtZero: true,
-                        ticks: { stepSize: 1 },
+                        ticks: {
+                            precision: 0,
+                            font: {
+                                family: "'Roboto', sans-serif"
+                            }
+                        },
                         grid: {
+                            drawBorder: false,
                             color: 'rgba(0, 0, 0, 0.05)'
                         }
                     },
                     x: {
                         grid: {
                             display: false
+                        },
+                        ticks: {
+                            font: {
+                                family: "'Roboto', sans-serif"
+                            }
                         }
                     }
                 }
-            },
-            plugins: [ChartDataLabels]
+            }
         });
-    }
 
-    // Initialize charts
-    let harianChart = chartConfig('harianChart', <?= json_encode($label_harian) ?>, <?= json_encode($data_harian) ?>, 'line');
-    let kamarChart = chartConfig('kamarChart', <?= json_encode($label_kamar) ?>, <?= json_encode($data_kamar) ?>, 'bar');
-    let santriChart = new Chart(document.getElementById('santriChart'), {
-    type: 'bar',
-    data: {
-        labels: <?= json_encode($label_santri) ?>,
-        datasets: [{
-            label: 'Jumlah Pelanggaran',
-            data: <?= json_encode($data_santri) ?>,
-            backgroundColor: generateColors(<?= count($label_santri) ?>),
-            borderWidth: 1
-        }]
-    },
-    options: {
-        indexAxis: 'y',
-        responsive: true,
-        plugins: {
-            legend: { display: false },
-            tooltip: {
-                backgroundColor: 'rgba(0,0,0,0.8)',
-                padding: 10
-            },
-            datalabels: {
-                anchor: 'center',
-                align: 'center',
-                color: '#fff',
-                formatter: (value) => value > 0 ? value : ''
-            }
-        },
-        scales: {
-            x: {
-                beginAtZero: true,
-                ticks: { stepSize: 1 }
-            },
-            y: {
-                grid: {
-                    display: false
-                }
-            }
-        }
-    },
-    plugins: [ChartDataLabels]
-});
-    let kelasChart = chartConfig('kelasChart', <?= json_encode($label_kelas) ?>, <?= json_encode($data_kelas) ?>, 'doughnut');
-    let jenisChart = chartConfig('jenisChart', <?= json_encode($label_jenis) ?>, <?= json_encode($data_jenis) ?>, 'pie');
-    let jamChart = chartConfig('jamChart', <?= json_encode($label_jam) ?>, <?= json_encode($data_jam) ?>, 'bar');
-    
-    // Filter functionality
-    document.querySelectorAll('.filter-btn').forEach(btn => {
-        btn.addEventListener('click', function() {
-            // Update active button
-            document.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
-            this.classList.add('active');
-            
-            const days = parseInt(this.dataset.range);
-            
-            // AJAX request to get filtered data
-            fetch(`get_harian_data.php?days=${days}`)
-                .then(response => response.json())
-                .then(data => {
-                    harianChart.data.labels = data.labels;
-                    harianChart.data.datasets[0].data = data.data;
-                    harianChart.update();
-                })
-                .catch(error => console.error('Error:', error));
+        document.getElementById('filterRange').addEventListener('change', function() {
+            let selected = this.value;
+            let newData;
+            if (selected == "7") newData = data7Hari;
+            else if (selected == "30") newData = dataBulan;
+            else if (selected == "90") newData = data3Bulan;
+            else if (selected == "365") newData = dataTahun;
+
+            chart.data = formatChartData(newData);
+            chart.update();
         });
-    });
-</script>
+    </script>
+
 </body>
 </html>
+
 <?php include '../footer.php'; ?>
