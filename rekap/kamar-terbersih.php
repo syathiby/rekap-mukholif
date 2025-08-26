@@ -2,11 +2,16 @@
 include '../db.php';
 include '../header.php';
 
+// Ambil periode aktif dari pengaturan
+$q = mysqli_query($conn, "SELECT nilai FROM pengaturan WHERE nama = 'periode_aktif' LIMIT 1");
+$row = mysqli_fetch_assoc($q);
+$periode_aktif = $row ? $row['nilai'] : '2000-01-01'; // default kalau belum ada
+
 // Ambil filter tanggal (optional)
 $tanggal_awal = $_GET['tanggal_awal'] ?? '';
 $tanggal_akhir = $_GET['tanggal_akhir'] ?? '';
 
-// Query: 3 kamar terbersih + jumlah pelanggaran kebersihannya
+// Query: 3 kamar terbersih + jumlah pelanggaran kebersihan
 $query = "
     SELECT s.kamar, COUNT(pk.id) AS jumlah_pelanggaran
     FROM (
@@ -14,9 +19,10 @@ $query = "
     ) s
     LEFT JOIN pelanggaran_kebersihan pk
         ON pk.kamar = s.kamar
+        AND DATE(pk.tanggal) >= '$periode_aktif'
 ";
 
-// Filter tanggal jika ada
+// Filter tanggal kalau ada input
 if (!empty($tanggal_awal) && !empty($tanggal_akhir)) {
     $query .= " AND DATE(pk.tanggal) BETWEEN '$tanggal_awal' AND '$tanggal_akhir' ";
 }

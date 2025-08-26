@@ -2,11 +2,16 @@
 include '../db.php';
 include '../header.php';
 
+// Ambil periode aktif dari pengaturan
+$q = mysqli_query($conn, "SELECT nilai FROM pengaturan WHERE nama = 'periode_aktif' LIMIT 1");
+$row = mysqli_fetch_assoc($q);
+$periode_aktif = $row ? $row['nilai'] : '2000-01-01'; // default kalau belum ada
+
 // Fungsi buat deteksi jenis pelanggaran berdasarkan jam input
 function deteksiKategoriPelanggaran($datetime) {
     $jam = date('H:i', strtotime($datetime));
 
-    if ($jam >= '03.30' && $jam <= '05:30') return 'Sholat Subuh';
+    if ($jam >= '03:30' && $jam <= '05:30') return 'Sholat Subuh';
     elseif ($jam >= '07:30' && $jam <= '08:15') return 'KBM';
     elseif ($jam >= '11:30' && $jam <= '13:00') return 'Sholat Dzuhur';
     elseif ($jam >= '14:45' && $jam <= '16:00') return 'Sholat Ashar';
@@ -16,34 +21,33 @@ function deteksiKategoriPelanggaran($datetime) {
 }
 
 $tanggal_awal = $_GET['tanggal_awal'] ?? '';
-$tanggal_akhir = $_GET['tanggal_akhir'] ?? $tanggal_awal; // Default sama dengan tanggal_awal jika kosong
+$tanggal_akhir = $_GET['tanggal_akhir'] ?? $tanggal_awal;
 $kategori_filter = $_GET['kategori'] ?? '';
 $sort_order = $_GET['sort'] ?? 'desc';
-$rekap_harian = isset($_GET['rekap_harian']) ? true : false;
+$rekap_harian = isset($_GET['rekap_harian']);
 $order = ($sort_order === 'asc') ? 'ASC' : 'DESC';
 
 $query = "
     SELECT s.nama, s.kamar, p.tanggal
     FROM pelanggaran p
     JOIN santri s ON s.id = p.santri_id
+    WHERE DATE(p.tanggal) >= '$periode_aktif'
 ";
 
+// Tambah filter tanggal kalau ada input
 if (!empty($tanggal_awal)) {
     if ($rekap_harian) {
-        // Filter untuk satu hari saja
-        $query .= " WHERE DATE(p.tanggal) = '$tanggal_awal' ";
+        $query .= " AND DATE(p.tanggal) = '$tanggal_awal' ";
     } else {
-        // Filter untuk rentang tanggal
-        if (empty($tanggal_akhir)) {
-            $tanggal_akhir = $tanggal_awal;
-        }
-        $query .= " WHERE DATE(p.tanggal) BETWEEN '$tanggal_awal' AND '$tanggal_akhir' ";
+        if (empty($tanggal_akhir)) $tanggal_akhir = $tanggal_awal;
+        $query .= " AND DATE(p.tanggal) BETWEEN '$tanggal_awal' AND '$tanggal_akhir' ";
     }
 }
 
 $query .= " ORDER BY p.tanggal $order ";
 
 $result = mysqli_query($conn, $query) or die("Query Error: " . mysqli_error($conn));
+
 
 // Hitung total pelanggaran per kategori untuk chart
 $chart_query = "

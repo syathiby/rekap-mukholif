@@ -2,6 +2,11 @@
 include '../db.php';
 include '../header.php';
 
+// Ambil periode aktif dari tabel pengaturan
+$q = mysqli_query($conn, "SELECT nilai FROM pengaturan WHERE nama = 'periode_aktif' LIMIT 1");
+$row = mysqli_fetch_assoc($q);
+$periode_aktif = $row ? $row['nilai'] : '2000-01-01'; // default kalau belum ada
+
 // Ambil filter tanggal (optional)
 $tanggal_awal = $_GET['tanggal_awal'] ?? '';
 $tanggal_akhir = $_GET['tanggal_akhir'] ?? '';
@@ -10,11 +15,12 @@ $tanggal_akhir = $_GET['tanggal_akhir'] ?? '';
 $query = "
     SELECT kamar, COUNT(*) AS jumlah_pelanggaran
     FROM pelanggaran_kebersihan
+    WHERE DATE(tanggal) >= '$periode_aktif'
 ";
 
-// Filter berdasarkan tanggal kalau dipilih
+// Filter tambahan dari input tanggal (jika user pilih)
 if (!empty($tanggal_awal) && !empty($tanggal_akhir)) {
-    $query .= " WHERE DATE(tanggal) BETWEEN '$tanggal_awal' AND '$tanggal_akhir' ";
+    $query .= " AND DATE(tanggal) BETWEEN '$tanggal_awal' AND '$tanggal_akhir' ";
 }
 
 $query .= " GROUP BY kamar ORDER BY jumlah_pelanggaran DESC LIMIT 3"; // Hanya ambil 3 teratas
