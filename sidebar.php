@@ -24,11 +24,7 @@ $role = currentRole();
                 <i class="fas fa-exclamation-triangle me-2"></i>Jenis Pelanggaran
             </a>
         </li>
-        <li class="nav-item">
-            <a class="nav-link <?= strpos($current_uri, 'eksekusi') !== false ? 'active' : '' ?>" href="../eksekusi">
-                <i class="fas fa-broom me-2"></i>Eksekusi Kebersihan
-            </a>
-        </li>
+        
         <li class="nav-item">
             <a class="nav-link <?= strpos($current_uri, 'arsip') !== false ? 'active' : '' ?>" href="../arsip">
                 <i class="fas fa-archive me-2"></i>Arsip
@@ -42,6 +38,13 @@ $role = currentRole();
                 <i class="fas fa-clipboard-list me-2"></i>Catatan Pelanggaran
             </a>
         </li>
+
+        <li class="nav-item">
+            <a class="nav-link <?= strpos($current_uri, 'eksekusi') !== false ? 'active' : '' ?>" href="../eksekusi">
+                <i class="fas fa-broom me-2"></i>Eksekusi Kebersihan
+            </a>
+        </li>
+        
         <li class="nav-item">
             <a class="nav-link <?= strpos($current_uri, 'rekap') !== false ? 'active' : '' ?>" href="../rekap">
                 <i class="fas fa-chart-bar me-2"></i>Rekap Pelanggaran

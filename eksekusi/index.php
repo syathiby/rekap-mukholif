@@ -1,7 +1,7 @@
 <?php
 include '../db.php';
 include '../header.php';
-checkRole(['admin']);
+checkRole(['admin','pj']);
 
 
 if (!$conn) {
