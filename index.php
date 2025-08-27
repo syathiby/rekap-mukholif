@@ -733,7 +733,7 @@ $best_students = mysqli_query($conn, "
                             <i class="fas fa-exclamation-triangle"></i>
                             Top Pelanggar
                         </h3>
-                        <a href="rekap/santri.php" class="view-all-link">
+                        <a href="rekap/santri-pelanggar.php" class="view-all-link">
                             Lihat semua <i class="fas fa-chevron-right"></i>
                         </a>
                     </div>
