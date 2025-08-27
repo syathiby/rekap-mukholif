@@ -414,7 +414,11 @@ if (!$query) die("❌ Query error: " . mysqli_error($conn));
                                         <br>
                                         <span style='color:#1D4ED8;'><i class='fas fa-book'></i> Telat KBM: {$row['telat_kbm']}</span>
                                     </td>
-                                    <td><a href='detail-pelanggaran.php?id={$row['id']}' class='btn-detail'><i class='fas fa-info-circle'></i> Detail</a></td>
+                                    <td>
+                                        <a href='detail-pelanggaran.php?id=" . $row['id'] . "&start_date=" . htmlspecialchars($start_date) . "&end_date=" . htmlspecialchars($end_date) . "' class='btn-detail'>
+                                            <i class='fas fa-info-circle'></i> Detail
+                                        </a>
+                                    </td>
                                   </tr>";
                             $no++;
                         }
