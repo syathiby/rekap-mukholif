@@ -7,6 +7,10 @@ if (!$santri_id) {
     die("❌ Santri tidak ditemukan");
 }
 
+// Ambil variabel tanggal dari URL untuk sinkronisasi
+$start_date = $_GET['start_date'] ?? null;
+$end_date   = $_GET['end_date']   ?? null;
+
 // 🔹 Ambil data santri
 $q_santri = mysqli_query($conn, "SELECT * FROM santri WHERE id = " . intval($santri_id));
 $santri = mysqli_fetch_assoc($q_santri);
@@ -15,11 +19,20 @@ if (!$santri) {
 }
 
 // 🔹 Ambil histori pelanggaran santri
+// Persiapan filter tanggal
+$where_tanggal = "";
+if ($start_date && $end_date) {
+    $start_date_esc = mysqli_real_escape_string($conn, $start_date);
+    $end_date_esc   = mysqli_real_escape_string($conn, $end_date);
+    $where_tanggal = "AND DATE(p.tanggal) BETWEEN '{$start_date_esc}' AND '{$end_date_esc}'";
+}
+
+// Ambil histori pelanggaran santri dengan filter tanggal
 $q_pelanggaran = mysqli_query($conn, "
     SELECT p.tanggal, j.nama_pelanggaran AS pelanggaran
     FROM pelanggaran p
     INNER JOIN jenis_pelanggaran j ON p.jenis_pelanggaran_id = j.id
-    WHERE p.santri_id = $santri_id
+    WHERE p.santri_id = " . intval($santri_id) . " {$where_tanggal}
     ORDER BY p.tanggal DESC
 ");
 
@@ -75,7 +88,7 @@ table td {
     border-bottom: 1px solid #ddd;
 }
 
-tr.highlight-red { background: #ffebee; }     /* Pelanggaran berat */
+tr.highlight-red { background: #ffebee; }      /* Pelanggaran berat */
 tr.highlight-orange { background: #fff3e0; } /* Sedang */
 tr.highlight-green { background: #e8f5e9; }  /* Ringan */
 
@@ -119,7 +132,6 @@ h2 {
     <p><b>Kamar:</b> <?= htmlspecialchars($santri['kamar']) ?></p>
 </div>
 
-<!-- Filter berdasarkan waktu -->
 <div class="filter-container">
     <label for="filter-waktu">Filter Waktu:</label>
     <select id="filter-waktu" onchange="filterByTime()">
@@ -163,11 +175,11 @@ h2 {
                     $kategori_waktu = deteksiKategoriPelanggaran($row['tanggal']);
                     
                     echo "<tr class='{$kelas_row}' data-waktu='{$kategori_waktu}'>
-                            <td>{$no}</td>
-                            <td>" . htmlspecialchars($row['tanggal']) . "</td>
-                            <td>" . htmlspecialchars($row['pelanggaran']) . "</td>
-                            <td>{$kategori_waktu}</td>
-                        </tr>";
+                                <td>{$no}</td>
+                                <td>" . htmlspecialchars($row['tanggal']) . "</td>
+                                <td>" . htmlspecialchars($row['pelanggaran']) . "</td>
+                                <td>{$kategori_waktu}</td>
+                            </tr>";
                     $no++;
                 }
             }
