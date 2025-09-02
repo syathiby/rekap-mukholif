@@ -1,298 +1,275 @@
 <?php
-// ✅ Set session lifetime DULU sebelum session dimulai
+// =================================================================
+// MARKAS KOMANDO APLIKASI
+// =================================================================
+
+// Protokol 1: Nyalain HT (Mulai Session)
 if (session_status() === PHP_SESSION_NONE) {
-    ini_set('session.cookie_lifetime', 0); // Auto logout saat browser ditutup
+    ini_set('session.cookie_lifetime', 0);
     session_start();
 }
 
-if (!isset($_SESSION['user']) && basename($_SERVER['PHP_SELF']) != 'login.php') {
-    header("Location: login.php");
-    exit;
-}
+// Protokol 2: Ambil Peta Denah Dufan (Koneksi Database)
+require_once __DIR__ . '/db.php';
 
-// 🔹 Role helper
-function currentRole() {
-    if (isset($_SESSION['role'])) return $_SESSION['role'];
-    if (isset($_SESSION['user']['role'])) return $_SESSION['user']['role'];
-    return null;
-}
+// Protokol 3: Panggil Kepala Satpam (File Otorisasi)
+require_once __DIR__ . '/auth.php';
 
-function checkRole(array $allowedRoles = []) {
-    $role = currentRole();
-    if (!$role) {
-        header("Location: /login.php");
-        exit;
-    }
-
-    if (!in_array($role, $allowedRoles)) {
-        // Redirect balik ke dashboard kalau role gak cocok
-        header("Location: ../index.php");
-        exit;
-    }
-}
-
-function isAdmin() {
-    return currentRole() === 'admin';
-}
-
-// Set default timezone to Asia/Jakarta
+// Protokol 4: Siapin data-data umum
 date_default_timezone_set('Asia/Jakarta');
+$success_message = $_SESSION['success_message'] ?? null;
+$error_message = $_SESSION['error_message'] ?? null;
+unset($_SESSION['success_message'], $_SESSION['error_message']);
 
-// --- FIX: pastikan koneksi DB siap ---
-if (!isset($conn) || !($conn instanceof mysqli)) {
-    // db.php ada di root /rekap-mukholif/
-    include_once __DIR__ . '/db.php';
-}
-
-// --- Ambil periode aktif dengan aman ---
-$periode_aktif = '2000-01-01'; // default kalau belum diatur
-if (isset($conn) && ($conn instanceof mysqli)) {
-    $q_periode = mysqli_query($conn, "SELECT nilai FROM pengaturan WHERE nama='periode_mulai' LIMIT 1");
-    if ($q_periode) {
-        $row_periode = mysqli_fetch_assoc($q_periode);
-        if ($row_periode && !empty($row_periode['nilai'])) {
-            $periode_aktif = $row_periode['nilai'];
-        }
-    }
-}
-
-
-// Check for session messages
-$success_message = $_SESSION['success'] ?? null;
-$error_message = $_SESSION['error'] ?? null;
-
-// Clear session messages after displaying
-unset($_SESSION['success']);
-unset($_SESSION['error']);
+// MARKAS KOMANDO SELESEI
 ?>
-
 <!DOCTYPE html>
-<html lang="id">    
+<html lang="id">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Sistem Pelanggaran Santri</title>
+    <link rel="icon" type="image/png" sizes="64x64" href="/assets/logo.png">
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/jqueryui/1.12.1/jquery-ui.min.css">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600&display=swap" rel="stylesheet">
+    <!-- Google Fonts (Poppins) -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <!-- Font Awesome (Ikon) -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css" integrity="sha512-SnH5WK+bZxgPHs44uWIX+LLJAJ9/2PkPKZ5QiAj6Ta86w+fsb2TkcmfRyVX3pBnMFcV7oQPJkl9QevSCWr3W6A==" crossorigin="anonymous" referrerpolicy="no-referrer" />
 <style>
-    /* Warna default ikon sidebar (desktop & mobile) */
-    .sidebar-desktop .nav-link i,
-    .offcanvas .nav-link i {
-        color: #0d6efd;
-        margin-right: 0.5rem;
+    /* =================================================================
+        KODE DASAR (TIDAK DIUBAH)
+    ================================================================= */
+    :root {
+        --sidebar-width: 260px;
+        --header-height: 70px;
+        --main-bg-color: #f4f7fa;
+        --border-color: #e9ecef;
     }
-
-    /* Warna per halaman - desktop */
-    .sidebar-desktop .nav-link[href*='../index.php'] i { color: #0d6efd !important; }
-    .sidebar-desktop .nav-link[href*='../santri'] i { color: #20c997 !important; }
-    .sidebar-desktop .nav-link[href*='../jenis-pelanggaran'] i { color: #fd7e14 !important; }
-    .sidebar-desktop .nav-link[href*='../pelanggaran'] i { color: #6c757d !important; }
-    .sidebar-desktop .nav-link[href*='../rekap'] i { color: #6f42c1 !important; }
-    .sidebar-desktop .nav-link[href*='../eksekusi'] i { color: #e83e8c !important; }
-
-    /* Warna per halaman - mobile */
-    .offcanvas .nav-link[href*='../index.php'] i { color: #0d6efd !important; }
-    .offcanvas .nav-link[href*='../santri'] i { color: #20c997 !important; }
-    .offcanvas .nav-link[href*='../jenis-pelanggaran'] i { color: #fd7e14 !important; }
-    .offcanvas .nav-link[href*='../pelanggaran'] i { color: #6c757d !important; }
-    .offcanvas .nav-link[href*='../rekap'] i { color: #6f42c1 !important; }
-    .offcanvas .nav-link[href*='../eksekusi'] i { color: #e83e8c !important; }
-
-    /* Hover effect */
-    .sidebar-desktop .nav-link:hover i,
-    .offcanvas .nav-link:hover i {
-        transform: scale(1.1);
-        transition: 0.2s ease-in-out;
-    }
-
-    /* Styling link sidebar */
-    .sidebar-desktop .nav-link,
-    .offcanvas .nav-link {
-        padding-left: 1rem;
-        color: #333 !important;
-        font-weight: 500;
-        display: flex;
-        align-items: center;
-        gap: 0.5rem;
+    body {
+        background-color: var(--main-bg-color);
         font-family: 'Poppins', sans-serif;
-        font-size: 15px;
+        display: flex;
+        min-height: 100vh;
     }
-
-    .sidebar-desktop .nav-link:hover,
-    .offcanvas .nav-link:hover {
-        background-color: #e9ecef;
-        color: #000 !important;
-    }
-
-    /* === Navbar Style === */
-    .navbar {
-        padding-top: 0.5rem;
-        padding-bottom: 0.5rem;
-    }
-
-    .navbar-brand {
-        font-size: 1rem;
-    }
-
-    @media (min-width: 576px) {
-        .navbar-brand { font-size: 1.15rem; }
-        .apk-title { font-size: 1rem; }
-        .header-logo { height: 48px; }
-    }
-
-    @media (min-width: 768px) {
-        .apk-title { font-size: 1.2rem; }
-    }
-
-    @media (min-width: 992px) {
-        .navbar-brand { font-size: 1.25rem; }
-        .header-logo { height: 58px; }
-    }
-
-    /* Logo */
-    .header-logo {
-        height: 40px;
-        width: auto;
-    }
-
-    .datetime-info {
-        font-size: 0.85rem;
-    }
-
-    @media (max-width: 991.98px) {
-        .main-content {
-            padding-left: 0.5rem;
-            padding-right: 0.5rem;
-        }
-    }
-
-    .btn-logout {
-        font-size: 0.85rem;
-        padding: 0.3rem 0.6rem;
-        gap: 0.3rem;
-        box-shadow: 0 1px 4px rgba(0,0,0,0.1);
-    }
-
-    /* Sidebar Desktop */
-    .sidebar-desktop {
+    .sidebar {
+        width: var(--sidebar-width);
         position: fixed;
         top: 0;
         left: 0;
         height: 100vh;
-        overflow-y: auto;
-        border-right: 1px solid #dee2e6;
-        z-index: 1020;
-        padding-top: 50px;
+        background-color: #fff;
+        border-right: 1px solid var(--border-color);
+        padding: 1rem;
+        z-index: 1021;
+        display: flex; /* Tambahan untuk layouting footer */
+        flex-direction: column; /* Tambahan */
     }
-
     .main-content {
-        margin-left: 0;
-        padding-top: 1rem;
+        flex-grow: 1;
+        padding: 1.5rem;
+        width: calc(100% - var(--sidebar-width));
+        margin-left: var(--sidebar-width);
     }
-
-    @media (min-width: 992px) {
+    .header {
+        height: var(--header-height);
+        background-color: #fff;
+        border: 1px solid var(--border-color);
+        z-index: 1020;
+    }
+    @media (max-width: 991.98px) {
         .main-content {
-            margin-left: 16.67%; /* ~2/12 dari 12 kolom */
+            margin-left: 0;
+            width: 100%;
+            padding: 1rem;
+        }
+    }
+    .sidebar .nav-link, .offcanvas .nav-link {
+        color: #5a6a85 !important;
+        font-weight: 500;
+        display: flex;
+        align-items: center;
+        gap: 0.75rem;
+        font-size: 15px;
+        padding: 0.75rem 1rem;
+        border-radius: 8px;
+        margin-bottom: 0.25rem;
+        transition: none; /* MATIKAN SEMUA TRANSISI */
+    }
+    .sidebar .nav-link i, .offcanvas .nav-link i {
+        font-size: 1.1rem;
+        width: 20px;
+        text-align: center;
+    }
+    .toast-container { z-index: 1100 !important; }
+    .header-logo { height: 45px; }
+    .app-name { font-size: 1.25rem; }
+
+    @media (max-width: 576px) {
+        .app-name { font-size: 1rem; }
+        .offcanvas.offcanvas-start {
+            width: 85%;
+            max-width: 340px;
         }
     }
 
+    /* =================================================================
+        STYLING SIDEBAR (TIDAK DIUBAH)
+    ================================================================= */
+    :root {
+        --blue: #0d6efd; --green: #198754; --orange: #fd7e14;
+        --purple: #6f42c1; --teal: #20c997; --indigo: #6610f2;
+        --red: #dc3545; --gray: #6c757d;
+    }
+    .sidebar .nav-link.active {
+        background-color: transparent !important;
+        font-weight: 600;
+    }
+    .sidebar .nav-link:hover { background-color: transparent; }
+    .apply-color-hover-active.color-blue { color: var(--blue) !important; }
+    .apply-color-hover-active.color-blue i { color: var(--blue) !important; }
+    .apply-color-hover-active.color-green { color: var(--green) !important; }
+    .apply-color-hover-active.color-green i { color: var(--green) !important; }
+    .apply-color-hover-active.color-orange { color: var(--orange) !important; }
+    .apply-color-hover-active.color-orange i { color: var(--orange) !important; }
+    .apply-color-hover-active.color-purple { color: var(--purple) !important; }
+    .apply-color-hover-active.color-purple i { color: var(--purple) !important; }
+    .apply-color-hover-active.color-teal { color: var(--teal) !important; }
+    .apply-color-hover-active.color-teal i { color: var(--teal) !important; }
+    .apply-color-hover-active.color-indigo { color: var(--indigo) !important; }
+    .apply-color-hover-active.color-indigo i { color: var(--indigo) !important; }
+    .apply-color-hover-active.color-red { color: var(--red) !important; }
+    .apply-color-hover-active.color-red i { color: var(--red) !important; }
+    .apply-color-hover-active.color-gray { color: var(--gray) !important; }
+    .apply-color-hover-active.color-gray i { color: var(--gray) !important; }
+
+    /* =================================================================
+        ✅ CSS BARU: INFO USER DI HEADER & SIDEBAR MOBILE ✅
+    ================================================================= */
+    .user-info .user-details { line-height: 1.3; }
+    .user-info .user-name {
+        font-weight: 600;
+        color: #334155;
+        font-size: 0.9rem;
+    }
+    .user-info .user-role { font-size: 0.75rem; }
+    .user-avatar {
+        width: 40px;
+        height: 40px;
+        border-radius: 50%;
+        background-color: #e0e7ff;
+        color: #4f46e5;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-weight: 600;
+        font-size: 1rem;
+        text-transform: uppercase;
+    }
+    .btn-logout {
+        border: none;
+        background-color: #fee2e2;
+        color: #dc2626;
+    }
+    .btn-logout:hover {
+        background-color: #dc2626;
+        color: #fff;
+    }
+    
+    /* Style untuk info user di dalam offcanvas (sidebar mobile) */
+    .offcanvas-user-info {
+        padding-top: 1rem;
+        margin-top: auto; /* Ini kunci buat nempelin ke bawah */
+        border-top: 1px solid var(--border-color);
+    }
+    .offcanvas-user-info .user-details {
+        line-height: 1.4;
+    }
+    .offcanvas-body {
+        display: flex;
+        flex-direction: column;
+    }
 </style>
 </head>
 <body>
-    <!-- Toast Notifications -->
-    <div class="toast-container">
-        <?php if ($success_message): ?>
-        <div class="toast show" role="alert" aria-live="assertive" aria-atomic="true">
-            <div class="toast-header bg-success text-white">
-                <strong class="me-auto">Sukses</strong>
-                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="toast" aria-label="Close"></button>
-            </div>
-            <div class="toast-body">
-                <?= $success_message ?>
-            </div>
+    <!-- Sidebar untuk Desktop -->
+    <nav class="sidebar d-none d-lg-block shadow-sm">
+        <!-- Taruh menu utama di sini -->
+        <?php include __DIR__ . '/sidebar.php'; ?>
+    </nav>
+
+    <!-- Sidebar untuk Mobile (Offcanvas) -->
+    <div class="offcanvas offcanvas-start" tabindex="-1" id="sidebarOffcanvas">
+        <div class="offcanvas-header border-bottom">
+            <h5 class="offcanvas-title fw-bold" style="color: #25396f;">Menu Navigasi</h5>
+            <button type="button" class="btn-close" data-bs-dismiss="offcanvas"></button>
         </div>
-        <?php endif; ?>
-        
-        <?php if ($error_message): ?>
-        <div class="toast show" role="alert" aria-live="assertive" aria-atomic="true">
-            <div class="toast-header bg-danger text-white">
-                <strong class="me-auto">Error</strong>
-                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="toast" aria-label="Close"></button>
-            </div>
-            <div class="toast-body">
-                <?= $error_message ?>
-            </div>
-        </div>
-        <?php endif; ?>
-    </div>
-
-    <!-- Sidebar Mobile (Offcanvas) -->
-        <div class="offcanvas offcanvas-start bg-light" tabindex="-1" id="sidebarOffcanvas">
-
-            <div class="offcanvas-header">
-                <h5 class="offcanvas-title">Menu</h5>
-                <button type="button" class="btn-close" data-bs-dismiss="offcanvas"></button>
-            </div>
-            <div class="offcanvas-body d-flex flex-column">
-                <?php include __DIR__ . '/sidebar.php'; ?>
-            </div>
-        </div>
-
-    <div class="container-fluid">
-    <!-- System Time Info -->
-    <div class="datetime-info text-end pe-3">
-        Sistem: <span id="live-time"></span>
-    </div>
-
-    <div class="row">
-        <!-- Sidebar -->
-        <div class="col-lg-2 d-none d-lg-flex flex-column bg-light sidebar-desktop pt-3">
+        <div class="offcanvas-body">
+            <!-- Menu utama, sama seperti desktop -->
             <?php include __DIR__ . '/sidebar.php'; ?>
-        </div>
-
-        <!-- Main Content -->
-    <div class="col-lg-10 ms-sm-auto px-md-4 main-content">
-        <nav class="navbar navbar-expand-lg mb-4 shadow-sm rounded bg-white border border-success position-sticky top-0" style="z-index: 1030;">
-            <div class="container-fluid d-flex align-items-center px-2 px-sm-3">
-                <!-- Burger Menu -->
-                <button class="btn btn-success d-lg-none" type="button" data-bs-toggle="offcanvas" data-bs-target="#sidebarOffcanvas">
-                    <i class="fas fa-bars text-white"></i>
-                </button>
-
-                <!-- Logo & Judul -->
-                <div class="mx-auto d-flex align-items-center text-success fw-bold">
-                    <img src="/assets/logo.png?v=2" alt="Logo" class="header-logo me-2">
-                    <span class="d-none d-sm-inline">Pendataan Mukholif</span>
-                    <span class="d-inline d-sm-none">Mukholif</span>
+            
+            <!-- ✅ BAGIAN INFO USER KHUSUS MOBILE ✅ -->
+            <div class="offcanvas-user-info">
+                <div class="d-flex align-items-center mb-3">
+                    <div class="user-avatar me-3">
+                        <span><?= htmlspecialchars(substr($_SESSION['nama_lengkap'] ?? 'P', 0, 1)) ?></span>
+                    </div>
+                    <div class="user-details">
+                        <span class="user-name"><?= htmlspecialchars($_SESSION['nama_lengkap'] ?? 'Pengguna') ?></span>
+                        <span class="user-role text-muted"><?= htmlspecialchars(ucfirst($_SESSION['role'] ?? 'Role')) ?></span>
+                    </div>
                 </div>
-
-                <!-- Logout -->
-                <div class="ms-auto">
-                    <a class="btn btn-sm btn-danger text-white d-flex align-items-center btn-logout" href="/logout.php">
-                        <i class="fas fa-sign-out-alt"></i>
-                        <span class="d-none d-sm-inline ms-2">Logout</span>
-                    </a>
-                </div>
+                <a class="btn btn-sm d-flex align-items-center justify-content-center rounded-pill px-3 py-2 btn-logout w-100" href="/logout.php">
+                    <i class="fas fa-sign-out-alt me-2"></i>Keluar
+                </a>
             </div>
-        </nav>
+        </div>
+    </div>
 
-<!-- Update your existing time script to include mobile time -->
-<script>
-  function updateTime() {
-    const now = new Date();
-    const options = {
-      day: '2-digit', month: '2-digit', year: 'numeric',
-      hour: '2-digit', minute: '2-digit', second: '2-digit',
-      hour12: false,
-      timeZone: 'Asia/Jakarta'
-    };
-    const formatter = new Intl.DateTimeFormat('id-ID', options);
-    document.getElementById('live-time').textContent = formatter.format(now);
-  }
+    <!-- Konten Utama (Kanan) -->
+    <main class="main-content">
+        <!-- Header yang nempel di atas -->
+        <header class="header sticky-top mb-4 shadow-sm rounded">
+            <nav class="navbar h-100">
+                <div class="container-fluid d-flex align-items-center justify-content-between">
+                    <!-- Kiri: Burger (Mobile) & Logo (Semua Tampilan) -->
+                    <div class="d-flex align-items-center">
+                        <button class="btn btn-light d-lg-none me-3" type="button" data-bs-toggle="offcanvas" data-bs-target="#sidebarOffcanvas">
+                            <i class="fas fa-bars"></i>
+                        </button>
+                        <div class="d-flex align-items-center">
+                            <img src="/assets/logo.png?v=2" alt="Logo" class="header-logo me-2">
+                            <span class="fw-bold app-name" style="color: #25396f;">Pendataan Mukholif</span>
+                        </div>
+                    </div>
+                    
+                    <!-- ✅ BAGIAN KANAN HEADER (HANYA UNTUK DESKTOP) ✅ -->
+                    <div class="d-none d-lg-flex align-items-center">
+                        <!-- Info User -->
+                        <div class="user-info d-flex align-items-center">
+                            <div class="user-details text-end me-3">
+                                <span class="user-name"><?= htmlspecialchars($_SESSION['nama_lengkap'] ?? 'Pengguna') ?></span>
+                                <span class="user-role text-muted"><?= htmlspecialchars(ucfirst($_SESSION['role'] ?? 'Role')) ?></span>
+                            </div>
+                            <div class="user-avatar">
+                                <span><?= htmlspecialchars(substr($_SESSION['nama_lengkap'] ?? 'P', 0, 1)) ?></span>
+                            </div>
+                        </div>
+                        <!-- Pemisah -->
+                        <div class="vr mx-3"></div>
+                        <!-- Tombol Logout -->
+                        <a class="btn btn-sm d-flex align-items-center rounded-pill px-3 py-2 btn-logout" href="/logout.php" title="Logout">
+                            <i class="fas fa-sign-out-alt"></i>
+                            <span class="ms-2">Keluar</span>
+                        </a>
+                    </div>
+                </div>
+            </nav>
+        </header>
 
-  setInterval(updateTime, 1000);
-  updateTime();
-</script>
-</body>
-</html>
+        <!-- KONTEN HALAMAN DIMULAI DI SINI -->

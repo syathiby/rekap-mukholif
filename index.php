@@ -1,18 +1,28 @@
 <?php
-include 'db.php';
+// =================================================================
+// PROTOKOL BARU UNTUK PINTU LOBI UTAMA (DASHBOARD)
+// =================================================================
+
+// 1. Lapor ke "Markas Komando". 
+//    Semua persiapan (session, db, auth) otomatis beres di sini.
 require_once __DIR__ . '/header.php'; 
+
+// 2. Langsung kasih perintah ke satpam yang udah standby.
+guard(); // Perintah: Siapapun yang udah login, boleh masuk lobi ini.
+
+// =================================================================
+// Di bawah ini adalah SEMUA KODE LOGIKA DASHBOARD LU YANG LAMA.
+// Nggak ada yang diubah, cuma dipindahin ke sini.
+// =================================================================
+
 $start_date = $_GET['start_date'] ?? null;
 $end_date = $_GET['end_date'] ?? null;
 
 // 🔹 Ambil periode aktif dari tabel pengaturan
+// Variabel $conn udah siap dari header.php
 $q = mysqli_query($conn, "SELECT nilai FROM pengaturan WHERE nama = 'periode_aktif' LIMIT 1");
 $row = mysqli_fetch_assoc($q);
 $periode_aktif = $row ? $row['nilai'] : '2000-01-01'; // default biar gak error kalau kosong
-
-$filter_where = '';
-if ($start_date && $end_date) {
-    $filter_where = "AND p.tanggal BETWEEN '$start_date 00:00:00' AND '$end_date 23:59:59'";
-}
 
 // 🔧 Build filter tanggal fleksibel untuk LEFT JOIN (aman saat kosong)
 $between_filter = '';
@@ -29,41 +39,53 @@ if (!empty($start_date) && !empty($end_date)) {
     $end = mysqli_real_escape_string($conn, $end_date . ' 23:59:59');
     $between_filter = "AND p.tanggal <= '$end'";
 }
-// kalau dua-duanya kosong, $between_filter tetap '', jadi hanya pakai periode_aktif
-
 
 // Get statistics
 $stats = [
     'santri' => (int) (mysqli_fetch_assoc(mysqli_query($conn, "SELECT COUNT(*) AS total FROM santri"))['total'] ?? 0),
     'jenis_pelanggaran' => (int) (mysqli_fetch_assoc(mysqli_query($conn, "SELECT COUNT(*) AS total FROM jenis_pelanggaran"))['total'] ?? 0),
-    // total pelanggaran
-'total_pelanggaran' => (int) (mysqli_fetch_assoc(mysqli_query($conn, "
-    SELECT COUNT(*) AS total 
-    FROM pelanggaran 
-    WHERE tanggal >= '$periode_aktif' $between_filter
-"))['total'] ?? 0),
-
-// santri tanpa pelanggaran
-'santri_tanpa_pelanggaran' => (int) (mysqli_fetch_assoc(mysqli_query($conn, "
-    SELECT COUNT(*) as total 
-    FROM santri s
-    LEFT JOIN pelanggaran p 
-        ON s.id = p.santri_id 
-        AND p.tanggal >= '$periode_aktif' $between_filter
-    WHERE p.id IS NULL
-"))['total'] ?? 0),
+    'total_pelanggaran' => (int) (mysqli_fetch_assoc(mysqli_query($conn, "
+        SELECT COUNT(*) AS total 
+        FROM pelanggaran p
+        WHERE p.tanggal >= '$periode_aktif' $between_filter
+    "))['total'] ?? 0),
+    'santri_tanpa_pelanggaran' => (int) (mysqli_fetch_assoc(mysqli_query($conn, "
+        SELECT COUNT(*) as total 
+        FROM santri s
+        LEFT JOIN pelanggaran p 
+            ON s.id = p.santri_id 
+            AND p.tanggal >= '$periode_aktif' $between_filter
+        WHERE p.id IS NULL
+    "))['total'] ?? 0),
 ];
 
-
-// Get recent violations (last 5)
+// Get recent violations (last 10)
 $recent_violations = mysqli_query($conn, "
-    SELECT p.id, s.nama, s.kamar, jp.nama_pelanggaran, p.tanggal 
-    FROM pelanggaran p
-    JOIN santri s ON p.santri_id = s.id
-    JOIN jenis_pelanggaran jp ON p.jenis_pelanggaran_id = jp.id
-    WHERE p.tanggal >= '$periode_aktif' $between_filter
-    ORDER BY p.tanggal DESC
-    LIMIT 5
+    (
+        SELECT 
+            p.id, 
+            s.nama, 
+            s.kamar, 
+            jp.nama_pelanggaran, 
+            p.tanggal
+        FROM pelanggaran p
+        JOIN santri s ON p.santri_id = s.id
+        JOIN jenis_pelanggaran jp ON p.jenis_pelanggaran_id = jp.id
+        WHERE p.tanggal >= '$periode_aktif'
+    )
+    UNION ALL
+    (
+        SELECT 
+            pk.id,
+            'Penghuni Kamar' AS nama,
+            pk.kamar,
+            'Kebersihan Kamar' AS nama_pelanggaran,
+            pk.tanggal
+        FROM pelanggaran_kebersihan pk
+        WHERE pk.tanggal >= '$periode_aktif'
+    )
+    ORDER BY tanggal DESC
+    LIMIT 10
 ");
 
 // Get most frequent violation type
@@ -77,17 +99,18 @@ $frequent_violation = mysqli_fetch_assoc(mysqli_query($conn, "
     LIMIT 1
 "));
 
+// Top violators
 $top_violators = mysqli_query($conn, "
     SELECT s.nama, s.kamar, COUNT(*) as total 
     FROM pelanggaran p
     JOIN santri s ON p.santri_id = s.id
-    WHERE p.tanggal >= '$periode_aktif' $between_filter
+    WHERE p.tanggal >= '$periode_aktif' $between_filter AND p.jenis_pelanggaran_id IN (1, 2)
     GROUP BY s.id
     ORDER BY total DESC
     LIMIT 5
 ");
 
-
+// Best students
 $best_students = mysqli_query($conn, "
     SELECT s.nama, s.kelas, s.kamar 
     FROM santri s
@@ -95,11 +118,9 @@ $best_students = mysqli_query($conn, "
     ON s.id = p.santri_id 
     AND p.tanggal >= '$periode_aktif' $between_filter
     WHERE p.id IS NULL
-
     ORDER BY s.nama ASC
     LIMIT 5
 ");
-
 ?>
 
 <!DOCTYPE html>
@@ -199,6 +220,8 @@ $best_students = mysqli_query($conn, "
             position: relative;
             overflow: hidden;
             border: none;
+            text-decoration: none;
+            color: inherit;
         }
         
         .stat-card:hover {
@@ -657,7 +680,7 @@ $best_students = mysqli_query($conn, "
         
         <!-- Stats Overview -->
         <div class="stats-grid">
-            <a href="santri/index.php" class="stat-card santri">
+            <a class="stat-card santri">
                 <div class="stat-icon">
                     <i class="fas fa-user-graduate"></i>
                 </div>
@@ -666,7 +689,7 @@ $best_students = mysqli_query($conn, "
                 <p class="stat-description">Santri terdaftar</p>
             </a>
             
-            <a href="jenis-pelanggaran/index.php" class="stat-card pelanggaran">
+            <a class="stat-card pelanggaran">
                 <div class="stat-icon">
                     <i class="fas fa-clipboard-check"></i>
                 </div>
@@ -684,7 +707,7 @@ $best_students = mysqli_query($conn, "
                 <p class="stat-description">Pelanggaran tercatat</p>
                 <?php if(!empty($frequent_violation)): ?>
                     <div class="additional-info">
-                        <i class="fas fa-fire" style="color: var(--warning);"></i> Paling sering: <?= $frequent_violation['nama_pelanggaran'] ?>
+                        <i class="fas fa-fire" style="color: var(--warning);"></i> Paling sering: <?= htmlspecialchars($frequent_violation['nama_pelanggaran']) ?>
                     </div>
                 <?php endif; ?>
             </a>
@@ -703,11 +726,11 @@ $best_students = mysqli_query($conn, "
         <form method="GET" class="filter-form">
             <div>
                 <label for="start_date"><i class="fas fa-calendar-day"></i> Dari Tanggal:</label>
-                <input type="date" name="start_date" id="start_date" value="<?= $_GET['start_date'] ?? '' ?>">
+                <input type="date" name="start_date" id="start_date" value="<?= htmlspecialchars($_GET['start_date'] ?? '') ?>">
             </div>
             <div>
                 <label for="end_date"><i class="fas fa-calendar-week"></i> Sampai Tanggal:</label>
-                <input type="date" name="end_date" id="end_date" value="<?= $_GET['end_date'] ?? '' ?>">
+                <input type="date" name="end_date" id="end_date" value="<?= htmlspecialchars($_GET['end_date'] ?? '') ?>">
             </div>
             <div style="align-self: flex-end;">
                 <button type="submit">
@@ -731,7 +754,7 @@ $best_students = mysqli_query($conn, "
                     <div class="list-header">
                         <h3 class="list-title">
                             <i class="fas fa-exclamation-triangle"></i>
-                            Top Pelanggar
+                            Top Pelanggar Hirosah
                         </h3>
                         <a href="rekap/santri-pelanggar.php" class="view-all-link">
                             Lihat semua <i class="fas fa-chevron-right"></i>
@@ -742,12 +765,12 @@ $best_students = mysqli_query($conn, "
                         <?php while($violator = mysqli_fetch_assoc($top_violators)): ?>
                             <div class="student-item">
                                 <div class="student-avatar">
-                                    <?= substr($violator['nama'], 0, 1) ?>
+                                    <?= htmlspecialchars(substr($violator['nama'], 0, 1)) ?>
                                 </div>
                                 <div class="student-info">
-                                    <div class="student-name"><?= $violator['nama'] ?></div>
+                                    <div class="student-name"><?= htmlspecialchars($violator['nama']) ?></div>
                                     <div class="student-details">
-                                        <span><i class="fas fa-home"></i> Kamar <?= $violator['kamar'] ?></span>
+                                        <span><i class="fas fa-home"></i> Kamar <?= htmlspecialchars($violator['kamar']) ?></span>
                                     </div>
                                 </div>
                                 <div class="violation-count"><?= $violator['total'] ?></div>
@@ -777,13 +800,13 @@ $best_students = mysqli_query($conn, "
                         <?php while($student = mysqli_fetch_assoc($best_students)): ?>
                             <div class="student-item">
                                 <div class="student-avatar">
-                                    <?= substr($student['nama'], 0, 1) ?>
+                                    <?= htmlspecialchars(substr($student['nama'], 0, 1)) ?>
                                 </div>
                                 <div class="student-info">
-                                    <div class="student-name"><?= $student['nama'] ?></div>
+                                    <div class="student-name"><?= htmlspecialchars($student['nama']) ?></div>
                                     <div class="student-details">
-                                        <span><i class="fas fa-home"></i> Kamar <?= $student['kamar'] ?></span>
-                                        <span><i class="fas fa-graduation-cap"></i> <?= $student['kelas'] ?></span>
+                                        <span><i class="fas fa-home"></i> Kamar <?= htmlspecialchars($student['kamar']) ?></span>
+                                        <span><i class="fas fa-graduation-cap"></i> <?= htmlspecialchars($student['kelas']) ?></span>
                                     </div>
                                 </div>
                                 <div class="violation-count zero">
@@ -808,9 +831,6 @@ $best_students = mysqli_query($conn, "
                     <i class="fas fa-history"></i>
                     Pelanggaran Terkini
                 </h2>
-                <a href="rekap/santri.php" class="view-all-link">
-                    Lihat semua <i class="fas fa-chevron-right"></i>
-                </a>
             </div>
             
             <div class="recent-violations">
@@ -834,9 +854,9 @@ $best_students = mysqli_query($conn, "
                             ?>
                                 <tr>
                                     <td><?= $no++ ?></td>
-                                    <td><?= $violation['nama'] ?></td>
-                                    <td><?= $violation['kamar'] ?></td>
-                                    <td><?= $violation['nama_pelanggaran'] ?></td>
+                                    <td><?= htmlspecialchars($violation['nama']) ?></td>
+                                    <td><?= htmlspecialchars($violation['kamar']) ?></td>
+                                    <td><?= htmlspecialchars($violation['nama_pelanggaran']) ?></td>
                                     <td class="violation-time">
                                         <?= date('d M Y H:i', strtotime($violation['tanggal'])) ?>
                                         <span class="time-ago"><?= $time_ago ?></span>

@@ -1,9 +1,11 @@
 <?php
-ob_start(); // Mulai output buffering paling awal, sebelum output apapun
-
-session_start();
-include '../db.php';
-require_once __DIR__ . '/../header.php';
+// Protokol Khusus Ruang Mesin
+if (session_status() === PHP_SESSION_NONE) { session_start(); }
+require_once __DIR__ . '/../db.php';
+require_once __DIR__ . '/../auth.php';
+// Tentukan tiket sesuai file
+// Untuk delete.php & bulk-delete.php:
+guard('santri_delete'); 
 
 if ($_SERVER["REQUEST_METHOD"] == "POST" && !empty($_POST['ids'])) {
     // Validasi dan sanitasi ID

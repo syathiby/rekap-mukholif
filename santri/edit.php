@@ -1,13 +1,37 @@
 <?php
-ob_start();
-session_start();
-include '../db.php';
+// BAGIAN 1: LOGIKA RUANG MESIN (SEBELUM ADA TAMPILAN APAPUN)
+// Di sini kita pake Protokol Khusus Ruang Mesin secara manual
+if (session_status() === PHP_SESSION_NONE) { session_start(); }
+require_once __DIR__ . '/../db.php';
+require_once __DIR__ . '/../auth.php';
+guard('santri_edit'); 
+
+// Logika proses form-nya taruh di sini
+if ($_SERVER["REQUEST_METHOD"] == "POST") {
+    // ... (semua logika INSERT data lu) ...
+    header("Location: index.php"); // Redirect di sini aman
+    exit;
+}
+
+// BAGIAN 2: PERSIAPAN TAMPILAN WAHANA
+// Setelah semua logika redirect selesai, baru kita panggil Markas Komando
+require_once __DIR__ . '/../header.php';
+?>
+
+<?php
+
 
 // Secure the ID parameter
 $id = isset($_GET['id']) ? intval($_GET['id']) : 0;
 
+if ($id === 0) {
+    $_SESSION['operation_result'] = ['success' => false, 'message' => "ID Santri tidak valid!"];
+    header("Location: index.php");
+    exit;
+}
+
 // Fetch santri data using prepared statement
-$stmt = mysqli_prepare($conn, "SELECT * FROM santri WHERE id = ?");
+$stmt = mysqli_prepare($conn, "SELECT nama, kelas, kamar FROM santri WHERE id = ?");
 mysqli_stmt_bind_param($stmt, "i", $id);
 mysqli_stmt_execute($stmt);
 $result = mysqli_stmt_get_result($stmt);
@@ -15,29 +39,44 @@ $row = mysqli_fetch_assoc($result);
 mysqli_stmt_close($stmt);
 
 if (!$row) {
-    $_SESSION['error_message'] = "Santri tidak ditemukan!";
+    $_SESSION['operation_result'] = ['success' => false, 'message' => "Santri dengan ID $id tidak ditemukan!"];
     header("Location: index.php");
     exit;
 }
 
 if ($_SERVER["REQUEST_METHOD"] == "POST") {
     try {
-        // Validate and sanitize input
-        $nama = mysqli_real_escape_string($conn, htmlspecialchars(trim($_POST['nama'])));
-        $kelas = mysqli_real_escape_string($conn, htmlspecialchars(trim($_POST['kelas'])));
-        $kamar = mysqli_real_escape_string($conn, htmlspecialchars(trim($_POST['kamar'])));
+        // Ambil data mentah dari form
+        $nama_input = $_POST['nama'] ?? '';
+        $kelas_input = $_POST['kelas'] ?? '';
+        $kamar_input = $_POST['kamar'] ?? '';
 
-        // Validate required fields
-        if (empty($nama) || empty($kelas) || empty($kamar)) {
+        // Bersihkan dan validasi
+        $nama = trim($nama_input);
+        $kelas_mentah = trim($kelas_input);
+        $kamar_mentah = trim($kamar_input);
+
+        if (empty($nama) || empty($kelas_mentah) || empty($kamar_mentah)) {
             throw new Exception("Semua field harus diisi!");
         }
+        
+        // --- INI DIA JAGOANNYA ---
+        // Normalisasi nomor kelas dan kamar menjadi angka murni (integer)
+        $kelas_bersih = intval($kelas_mentah);
+        $kamar_bersih = intval($kamar_mentah);
 
         // Update data using prepared statement
         $stmt = mysqli_prepare($conn, "UPDATE santri SET nama=?, kelas=?, kamar=? WHERE id=?");
-        mysqli_stmt_bind_param($stmt, "sssi", $nama, $kelas, $kamar, $id);
+        
+        // --- PERUBAHAN KEDUA: ganti "sssi" jadi "siii" ---
+        // s = string, i = integer, i = integer, i = integer
+        mysqli_stmt_bind_param($stmt, "siii", $nama, $kelas_bersih, $kamar_bersih, $id);
         
         if (mysqli_stmt_execute($stmt)) {
-            $_SESSION['success_message'] = "Data santri berhasil diperbarui!";
+            $_SESSION['operation_result'] = [
+                'success' => true, 
+                'message' => "Data santri $nama berhasil diperbarui!"
+            ];
             header("Location: index.php");
             exit;
         } else {
@@ -45,12 +84,15 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
         }
         
     } catch (Exception $e) {
-        $_SESSION['error_message'] = $e->getMessage();
+        $_SESSION['operation_result'] = ['success' => false, 'message' => $e->getMessage()];
+        // Refresh halaman edit untuk menampilkan error
+        header("Location: edit.php?id=" . $id);
+        exit;
     }
 }
 ?>
 <!DOCTYPE html>
-<html lang="en">
+<html lang="id">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -63,91 +105,24 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
             --secondary-color: #2c3e50;
             --warning-color: #f39c12;
         }
-        body {
-            background-color: #f8f9fa;
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        body { background-color: #f8f9fa; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; }
+        .edit-container { max-width: 600px; margin: 2rem auto; background-color: white; border-radius: 10px; box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1); overflow: hidden; }
+        .edit-header { background: linear-gradient(135deg, var(--secondary-color), var(--warning-color)); color: white; padding: 1.5rem; margin-bottom: 1.5rem; }
+        .edit-body { padding: 0 2rem 2rem; }
+        .form-label { font-weight: 500; color: var(--secondary-color); }
+        .form-control { border-radius: 5px; padding: 10px 15px; border: 1px solid #ddd; transition: all 0.3s; }
+        .form-control:focus { border-color: var(--warning-color); box-shadow: 0 0 0 0.25rem rgba(243, 156, 18, 0.25); }
+        .btn-update { background-color: var(--warning-color); border-color: var(--warning-color); color: white; padding: 10px 25px; font-weight: 500; transition: all 0.3s; }
+        .btn-update:hover { background-color: #e67e22; transform: translateY(-2px); box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1); }
+        .input-icon { position: relative; }
+        .input-icon i { position: absolute; left: 15px; top: 50%; transform: translateY(-50%); color: var(--warning-color); }
+        .input-icon input { padding-left: 40px; }
+        /* Sembunyikan panah di input number */
+        input[type=number]::-webkit-inner-spin-button, 
+        input[type=number]::-webkit-outer-spin-button { 
+            -webkit-appearance: none; margin: 0; 
         }
-        .edit-container {
-            max-width: 600px;
-            margin: 2rem auto;
-            background-color: white;
-            border-radius: 10px;
-            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
-            overflow: hidden;
-        }
-        .edit-header {
-            background: linear-gradient(135deg, var(--secondary-color), var(--warning-color));
-            color: white;
-            padding: 1.5rem;
-            margin-bottom: 1.5rem;
-            position: relative;
-        }
-        .edit-header:after {
-            content: "";
-            position: absolute;
-            bottom: -10px;
-            left: 0;
-            right: 0;
-            height: 10px;
-            background: linear-gradient(135deg, var(--warning-color), transparent);
-        }
-        .edit-body {
-            padding: 0 2rem 2rem;
-        }
-        .form-label {
-            font-weight: 500;
-            color: var(--secondary-color);
-        }
-        .form-control {
-            border-radius: 5px;
-            padding: 10px 15px;
-            border: 1px solid #ddd;
-            transition: all 0.3s;
-        }
-        .form-control:focus {
-            border-color: var(--warning-color);
-            box-shadow: 0 0 0 0.25rem rgba(243, 156, 18, 0.25);
-        }
-        .btn-update {
-            background-color: var(--warning-color);
-            border-color: var(--warning-color);
-            padding: 10px 25px;
-            font-weight: 500;
-            transition: all 0.3s;
-        }
-        .btn-update:hover {
-            background-color: #e67e22;
-            transform: translateY(-2px);
-            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
-        }
-        .input-icon {
-            position: relative;
-        }
-        .input-icon i {
-            position: absolute;
-            left: 15px;
-            top: 50%;
-            transform: translateY(-50%);
-            color: var(--warning-color);
-        }
-        .input-icon input {
-            padding-left: 40px;
-        }
-        .current-photo {
-            width: 100px;
-            height: 100px;
-            object-fit: cover;
-            border-radius: 5px;
-            border: 2px solid #eee;
-        }
-        @media (max-width: 576px) {
-            .edit-container {
-                margin: 1rem;
-            }
-            .edit-body {
-                padding: 0 1rem 1rem;
-            }
-        }
+        input[type=number] { -moz-appearance: textfield; }
     </style>
 </head>
 <body>
@@ -158,12 +133,12 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
         </div>
         
         <div class="edit-body">
-            <?php if (isset($_SESSION['error_message'])): ?>
+            <?php if (isset($_SESSION['operation_result']) && !$_SESSION['operation_result']['success']): ?>
                 <div class="alert alert-danger alert-dismissible fade show">
-                    <?= $_SESSION['error_message'] ?>
+                    <?= htmlspecialchars($_SESSION['operation_result']['message']) ?>
                     <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
                 </div>
-                <?php unset($_SESSION['error_message']); ?>
+                <?php unset($_SESSION['operation_result']); ?>
             <?php endif; ?>
 
             <form method="post" id="editForm">
@@ -171,27 +146,25 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
                     <label for="nama" class="form-label">Nama Lengkap</label>
                     <i class="fas fa-user"></i>
                     <input type="text" id="nama" name="nama" class="form-control" 
-                           value="<?= htmlspecialchars($row['nama']) ?>" 
-                           placeholder="Masukkan nama lengkap santri" required
-                           minlength="3" maxlength="100">
+                           value="<?= htmlspecialchars($row['nama']) ?>" required>
                 </div>
                 
                 <div class="mb-4 input-icon">
                     <label for="kelas" class="form-label">Kelas</label>
                     <i class="fas fa-graduation-cap"></i>
-                    <input type="text" id="kelas" name="kelas" class="form-control" 
-                           value="<?= htmlspecialchars($row['kelas']) ?>" 
-                           placeholder="Masukkan kelas santri" required
-                           minlength="2" maxlength="10">
+                    <!-- PERUBAHAN DI SINI -->
+                    <input type="number" id="kelas" name="kelas" class="form-control" 
+                           value="<?= htmlspecialchars($row['kelas']) ?>" required min="1">
+                    <div class="form-text">Cukup masukkan angkanya saja (misal: 7, 8, 9).</div>
                 </div>
                 
                 <div class="mb-4 input-icon">
                     <label for="kamar" class="form-label">Nomor Kamar</label>
                     <i class="fas fa-door-open"></i>
-                    <input type="text" id="kamar" name="kamar" class="form-control" 
-                           value="<?= htmlspecialchars($row['kamar']) ?>" 
-                           placeholder="Masukkan nomor kamar" required
-                           minlength="1" maxlength="10">
+                    <!-- DAN DI SINI -->
+                    <input type="number" id="kamar" name="kamar" class="form-control" 
+                           value="<?= htmlspecialchars($row['kamar']) ?>" required min="1">
+                    <div class="form-text">Boleh diisi 1 digit (6) atau 2 digit (06).</div>
                 </div>
                 
                 <div class="d-flex justify-content-between pt-3">
@@ -205,25 +178,7 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
             </form>
         </div>
     </div>
-
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
-    <script>
-        // Form validation
-        document.getElementById('editForm').addEventListener('submit', function(e) {
-            const submitBtn = this.querySelector('button[type="submit"]');
-            submitBtn.innerHTML = '<span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span> Memproses...';
-            submitBtn.disabled = true;
-            
-            // Additional validation can be added here
-            return true;
-        });
-
-        // Auto-focus first field
-        document.addEventListener('DOMContentLoaded', function() {
-            document.getElementById('nama').focus();
-        });
-    </script>
 </body>
 </html>
-
-<?php require_once __DIR__ . '/../footer.php'; ?>
+<?php ob_end_flush(); ?>

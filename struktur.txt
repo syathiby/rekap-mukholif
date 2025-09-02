@@ -1,0 +1,84 @@
+/rekap-mukholif/
+│
+├──arsip/
+│    ├──index.php
+│    ├──procees.php
+│    ├──view.php
+├──assets
+│    └──logo.png
+├──eksekusi/
+│    ├──index.php
+│    ├──process.php
+├── jenis-pelanggaran/
+│    ├── index.php 
+│    ├── create.php 
+│    ├── edit.php 
+│    ├── delete.php 
+│    └── process.php 
+├── pelanggaran/
+│    ├── index.php
+│    ├── bahasa/
+│    │    ├──create.php
+│    │    ├──process.php
+│    │    ├──rekap.php
+│    │    ├──search_santri.php
+│    │    ├──detail-bahasa.php
+│    ├── diniyyah/
+│    │    ├──create.php  
+│    │    ├──process.php
+│    │    ├──rekap.php
+│    │    ├──search_santri.php
+│    │    ├──detail-diniyyah.php
+│    ├── kesantrian/
+│    │    ├──create.php  
+│    │    ├──process.php
+│    │    ├──search_santri.php     
+│    ├── pengabdian/
+│    │    ├──create.php  
+│    │    ├──process.php
+│    │    ├──search_santri.php 
+├──pengaturan/
+│    ├──index.php
+│    ├──ganti-password
+│    │    ├──index.php
+│    ├──periode-aktif
+│    │    ├──index.php
+│    │    └──procees.php
+│    ├──izin
+│    │    ├──index.php
+│    │    └──procees.php
+│    ├──reset-poin
+│    │    ├──index.php
+│    │    └──procees.php
+│    ├──users
+│    │    ├──create.php
+│    │    └──procees-create.php
+├──rekap/
+│    ├──index.php
+│    ├──per-kamar.php
+│    ├──chart.php
+│    ├──detail-pelanggaran.php  ( sambungan untuk santri-pelanggar.php )
+│    ├──get_harian_data.php     ( sambungan untuk chart.php )
+│    ├──santri-pelanggar.php
+│    ├──santri-teladan.php
+│    ├──umum.php
+│    ├──detail.php      ( sambungan untuk umum.php )
+├── santri/
+│    ├── index.php         
+│    ├── create.php        
+│    ├── edit.php          
+│    ├── delete.php        
+│    ├── search.php
+│    ├── bulk-delete.php   
+│    └── bulk-create.php
+│    └── bulk-edit.php
+│
+├─auth.php
+├─db.php                    
+├─footer.php
+├─header.php
+├─index.php
+├─login.php
+├─logout.php
+├─sidebar.php
+├─style.css

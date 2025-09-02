@@ -1,64 +1,133 @@
 <?php
-include '../db.php';
-session_start();
+if (session_status() === PHP_SESSION_NONE) { session_start(); }
+require_once __DIR__ . '/../db.php';
+require_once __DIR__ . '/../auth.php';
+guard('arsip_manage');
+?>
+
+<?php
 
 $action = $_POST['action'] ?? '';
 
+// ===================================
+// === PROSES PEMBUATAN ARSIP BARU ===
+// ===================================
 if ($action === 'create') {
     $judul = trim($_POST['judul'] ?? '');
     $tgl_mulai = $_POST['tgl_mulai'] ?? '';
     $tgl_selesai = $_POST['tgl_selesai'] ?? '';
 
-    // Validasi sederhana
-    if ($judul === '' || $tgl_mulai === '' || $tgl_selesai === '') {
-        die('⚠ Input tidak lengkap.');
-    }
-    if ($tgl_mulai > $tgl_selesai) {
-        die('⚠ Tanggal mulai tidak boleh lebih besar dari tanggal selesai.');
+    // Validasi
+    if (empty($judul) || empty($tgl_mulai) || empty($tgl_selesai) || $tgl_mulai > $tgl_selesai) {
+        die('Input tidak lengkap atau periode tidak valid.');
     }
 
-    // 1. Simpan meta arsip
-    $stmt = mysqli_prepare($conn, "INSERT INTO arsip (judul, tanggal_mulai, tanggal_selesai) VALUES (?,?,?)");
-    mysqli_stmt_bind_param($stmt, 'sss', $judul, $tgl_mulai, $tgl_selesai);
-    mysqli_stmt_execute($stmt);
-    $arsip_id = mysqli_insert_id($conn);
-    mysqli_stmt_close($stmt);
+    // Mulai Transaksi Database
+    $conn->begin_transaction();
 
-    // 2. Masukkan data pelanggaran ke arsip_pelanggaran
-    mysqli_query($conn, "
-        INSERT INTO arsip_pelanggaran (arsip_id, pelanggaran_id)
-        SELECT $arsip_id, p.id
-        FROM pelanggaran p
-        WHERE p.tanggal BETWEEN '$tgl_mulai 00:00:00' AND '$tgl_selesai 23:59:59'
-    ");
+    try {
+        // 1. Simpan meta arsip
+        $stmt_arsip = $conn->prepare("INSERT INTO arsip (judul, tanggal_mulai, tanggal_selesai) VALUES (?, ?, ?)");
+        $stmt_arsip->bind_param('sss', $judul, $tgl_mulai, $tgl_selesai);
+        $stmt_arsip->execute();
+        $arsip_id = $conn->insert_id;
+        $stmt_arsip->close();
 
-    // 3. Masukkan data kebersihan ke arsip_pelanggaran_kebersihan
-    mysqli_query($conn, "
-        INSERT INTO arsip_pelanggaran_kebersihan (arsip_id, kebersihan_id)
-        SELECT $arsip_id, k.id
-        FROM pelanggaran_kebersihan k
-        WHERE k.tanggal BETWEEN '$tgl_mulai 00:00:00' AND '$tgl_selesai 23:59:59'
-    ");
+        // 2. Query sakti: Ambil semua data pelanggaran (umum & kebersihan), gabungkan, lalu masukkan ke tabel arsip
+        $sql_snapshot = "
+            INSERT INTO arsip_data_pelanggaran 
+                (arsip_id, santri_id, santri_nama, santri_kelas, santri_kamar, jenis_pelanggaran_id, 
+                jenis_pelanggaran_nama, bagian, poin, tanggal, tipe)
+            SELECT
+                ?, -- arsip_id
+                v.santri_id, v.santri_nama, v.santri_kelas, v.santri_kamar, v.jenis_pelanggaran_id,
+                v.jenis_pelanggaran_nama, v.bagian, v.poin, v.tanggal, v.tipe
+            FROM (
+                -- Data dari tabel pelanggaran (umum)
+                SELECT 
+                    p.tanggal,
+                    s.id AS santri_id,
+                    s.nama AS santri_nama,
+                    s.kelas AS santri_kelas,
+                    s.kamar AS santri_kamar,
+                    jp.id AS jenis_pelanggaran_id,
+                    jp.nama_pelanggaran AS jenis_pelanggaran_nama,
+                    jp.bagian,
+                    jp.poin,
+                    'Umum' AS tipe
+                FROM pelanggaran p
+                JOIN santri s ON p.santri_id = s.id
+                JOIN jenis_pelanggaran jp ON p.jenis_pelanggaran_id = jp.id
+                WHERE DATE(p.tanggal) BETWEEN ? AND ?
 
-    // ✅ 4. Copy snapshot data santri ke arsip_santri
-    mysqli_query($conn, "
-        INSERT INTO arsip_santri (arsip_id, santri_id, nama, kelas, kamar)
-        SELECT $arsip_id, s.id, s.nama, s.kelas, s.kamar
-        FROM santri s
-    ");
+                UNION ALL
 
-    // Redirect ke view arsip
-    header('Location: view.php?id=' . $arsip_id);
-    exit;
+                -- Data dari tabel pelanggaran_kebersihan
+                SELECT 
+                    pk.tanggal,
+                    NULL AS santri_id, -- Kebersihan tidak terikat santri_id
+                    'N/A' AS santri_nama,
+                    'N/A' AS santri_kelas,
+                    pk.kamar AS santri_kamar,
+                    3 AS jenis_pelanggaran_id, -- Asumsi ID 3 adalah Kebersihan Kamar
+                    'Kebersihan Kamar' AS jenis_pelanggaran_nama,
+                    'Kebersihan' AS bagian, -- Asumsi bagian
+                    0 AS poin,
+                    'Kebersihan' AS tipe
+                FROM pelanggaran_kebersihan pk
+                WHERE DATE(pk.tanggal) BETWEEN ? AND ?
+            ) AS v
+        ";
+        
+        $stmt_snapshot = $conn->prepare($sql_snapshot);
+        // bind_param: i = integer (arsip_id), s = string (tanggal)
+        $stmt_snapshot->bind_param('issss', $arsip_id, $tgl_mulai, $tgl_selesai, $tgl_mulai, $tgl_selesai);
+        $stmt_snapshot->execute();
+        $stmt_snapshot->close();
+
+        // Jika semua berhasil, commit transaksi
+        $conn->commit();
+        
+        header('Location: view.php?id=' . $arsip_id);
+        exit;
+
+    } catch (mysqli_sql_exception $exception) {
+        // Jika ada error, batalkan semua perubahan
+        $conn->rollback();
+        die('Gagal membuat arsip: ' . $exception->getMessage());
+    }
 }
 
+// =================================
+// === PROSES PENGHAPUSAN ARSIP ===
+// =================================
 if ($action === 'delete') {
     $id = (int)($_POST['id'] ?? 0);
-    if ($id < 1) die('⚠ ID tidak valid.');
+    if ($id < 1) die('ID tidak valid.');
 
-    mysqli_query($conn, "DELETE FROM arsip WHERE id = $id");
-    header('Location: index.php');
-    exit;
+    // Cukup hapus dari tabel 'arsip', data di 'arsip_data_pelanggaran' akan ikut terhapus
+    // jika kamu set ON DELETE CASCADE di database. Jika tidak, hapus manual dulu.
+    
+    $conn->begin_transaction();
+    try {
+        $stmt_delete_data = $conn->prepare("DELETE FROM arsip_data_pelanggaran WHERE arsip_id = ?");
+        $stmt_delete_data->bind_param('i', $id);
+        $stmt_delete_data->execute();
+        $stmt_delete_data->close();
+        
+        $stmt_delete_arsip = $conn->prepare("DELETE FROM arsip WHERE id = ?");
+        $stmt_delete_arsip->bind_param('i', $id);
+        $stmt_delete_arsip->execute();
+        $stmt_delete_arsip->close();
+        
+        $conn->commit();
+
+        header('Location: index.php');
+        exit;
+    } catch (mysqli_sql_exception $exception) {
+        $conn->rollback();
+        die('Gagal menghapus arsip: ' . $exception->getMessage());
+    }
 }
 
-die('⚠ Aksi tidak dikenali.');
+die('Aksi tidak dikenali.');

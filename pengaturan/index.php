@@ -1,8 +1,6 @@
-<?php
-include '../db.php';
-include '../header.php';
-checkRole(['admin']);
-
+<?php 
+require_once __DIR__ . '/../header.php';
+guard('pengaturan_view'); 
 ?>
 
 <!DOCTYPE html>
@@ -11,126 +9,177 @@ checkRole(['admin']);
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Pengaturan Sistem</title>
+    <!-- Font Awesome tetap kita pakai untuk ikon -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
     <style>
+        /*
+        =================================================================
+        ✅ CSS UPDATE: PALET WARNA BARU UNTUK SETIAP KARTU ✅
+        =================================================================
+        */
         :root {
-            --primary: #4361ee;
-            --secondary: #3f37c9;
-            --success: #4cc9f0;
-            --light: #f8f9fa;
-            --dark: #212529;
-            --gray: #6c757d;
-            --card-shadow: 0 4px 12px rgba(0,0,0,0.08);
-            --transition: all 0.3s ease;
+            /* Palet Warna Utama */
+            --text-dark: #1e293b;
+            --text-light: #64748b;
+            --bg-light: #f8fafc;
+            --border-color: #e2e8f0;
+            --card-bg: #ffffff;
+            
+            /* ✅ Palet Warna Baru untuk Kartu Pengaturan */
+            --color-izin: #fd7e14;     /* Oranye */
+            --color-user: #198754;     /* Hijau */
+            --color-periode: #6f42c1;   /* Ungu */
+            --color-keamanan: #dc3545;  /* Merah */
+            --color-reset: #0d6efd;     /* ✅ Biru untuk Reset Poin */
         }
         
+        /* Kontainer utama halaman pengaturan */
         .settings-container {
-            max-width: 800px;
-            margin: 2rem auto;
-            padding: 0 15px;
+            max-width: 960px;
+            margin: 0 auto;
+            padding: 1rem;
         }
         
-        .settings-header {
-            text-align: center;
+        /* Header halaman (Judul & Deskripsi) */
+        .page-header {
+            text-align: left;
             margin-bottom: 2.5rem;
+            padding-bottom: 1.5rem;
+            border-bottom: 1px solid var(--border-color);
         }
         
-        .settings-header h2 {
-            color: var(--dark);
-            font-size: 2.2rem;
-            margin-bottom: 0.5rem;
+        .page-header h1 {
+            font-size: 2rem;
             font-weight: 700;
+            color: var(--text-dark);
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
         }
         
-        .settings-header p {
-            color: var(--gray);
-            font-size: 1.1rem;
+        .page-header p {
+            font-size: 1rem;
+            color: var(--text-light);
+            margin-top: 0.5rem;
+            max-width: 600px;
         }
         
+        /* Grid untuk kartu-kartu pengaturan */
         .settings-grid {
             display: grid;
-            grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
             gap: 1.5rem;
         }
         
+        /* Desain kartu yang baru */
         .settings-card {
-            background: white;
-            border-radius: 12px;
-            overflow: hidden;
-            box-shadow: var(--card-shadow);
-            transition: var(--transition);
-            height: 100%;
+            background-color: var(--card-bg);
+            border: 1px solid var(--border-color);
+            border-radius: 0.75rem;
+            padding: 1.75rem;
+            transition: all 0.2s ease-in-out;
             display: flex;
             flex-direction: column;
+            height: 100%;
         }
         
-        .settings-card:hover {
-            transform: translateY(-5px);
-            box-shadow: 0 8px 24px rgba(0,0,0,0.12);
-        }
-        
-        .card-header {
-            padding: 1.5rem 1.5rem 0.5rem;
-            display: flex;
-            align-items: center;
-        }
-        
-        .card-icon {
-            font-size: 1.8rem;
-            margin-right: 12px;
-            width: 50px;
-            height: 50px;
-            border-radius: 50%;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            background: rgba(67, 97, 238, 0.1);
-            color: var(--primary);
-        }
-        
-        .card-title {
-            font-size: 1.3rem;
-            font-weight: 600;
-            color: var(--dark);
-            margin: 0;
-        }
-        
-        .card-body {
-            padding: 0 1.5rem 1rem;
+        .card-content {
             flex-grow: 1;
         }
         
+        .card-icon {
+            font-size: 2rem;
+            margin-bottom: 1.25rem;
+        }
+        
+        .card-title {
+            font-size: 1.25rem;
+            font-weight: 600;
+            color: var(--text-dark);
+            margin: 0 0 0.5rem 0;
+        }
+        
         .card-description {
-            color: var(--gray);
-            line-height: 1.5;
+            color: var(--text-light);
+            line-height: 1.6;
             margin-bottom: 1.5rem;
         }
         
-        .card-footer {
-            padding: 0 1.5rem 1.5rem;
+        .card-action {
+            margin-top: auto;
         }
         
         .settings-link {
-            display: inline-block;
-            padding: 10px 20px;
-            background: var(--primary);
-            color: white;
+            display: inline-flex;
+            align-items: center;
+            gap: 0.5rem;
             text-decoration: none;
-            border-radius: 6px;
-            font-weight: 500;
-            transition: var(--transition);
+            font-weight: 600;
+            transition: gap 0.2s ease-in-out;
         }
         
         .settings-link:hover {
-            background: var(--secondary);
-            transform: translateY(-2px);
+            gap: 0.75rem;
+        }
+
+        /* ✅ ATURAN WARNA UNTUK SETIAP KARTU */
+        /* Kartu Izin (Oranye) */
+        .settings-card.color-izin .card-icon,
+        .settings-card.color-izin .settings-link {
+            color: var(--color-izin);
+        }
+        .settings-card.color-izin:hover {
+            transform: translateY(-4px);
+            box-shadow: 0 4px 20px rgba(30, 41, 59, 0.05);
+            border-color: var(--color-izin);
+        }
+
+        /* Kartu User (Hijau) */
+        .settings-card.color-user .card-icon,
+        .settings-card.color-user .settings-link {
+            color: var(--color-user);
+        }
+        .settings-card.color-user:hover {
+            transform: translateY(-4px);
+            box-shadow: 0 4px 20px rgba(30, 41, 59, 0.05);
+            border-color: var(--color-user);
+        }
+
+        /* Kartu Periode (Ungu) */
+        .settings-card.color-periode .card-icon,
+        .settings-card.color-periode .settings-link {
+            color: var(--color-periode);
+        }
+        .settings-card.color-periode:hover {
+            transform: translateY(-4px);
+            box-shadow: 0 4px 20px rgba(30, 41, 59, 0.05);
+            border-color: var(--color-periode);
+        }
+
+        /* Kartu Keamanan (Merah) */
+        .settings-card.color-keamanan .card-icon,
+        .settings-card.color-keamanan .settings-link {
+            color: var(--color-keamanan);
+        }
+        .settings-card.color-keamanan:hover {
+            transform: translateY(-4px);
+            box-shadow: 0 4px 20px rgba(30, 41, 59, 0.05);
+            border-color: var(--color-keamanan);
+        }
+        
+        /* ✅ KARTU BARU: Kartu Reset Poin (Biru) */
+        .settings-card.color-reset .card-icon,
+        .settings-card.color-reset .settings-link {
+            color: var(--color-reset);
+        }
+        .settings-card.color-reset:hover {
+            transform: translateY(-4px);
+            box-shadow: 0 4px 20px rgba(30, 41, 59, 0.05);
+            border-color: var(--color-reset);
         }
         
         @media (max-width: 768px) {
-            .settings-grid {
-                grid-template-columns: 1fr;
-            }
-            
-            .settings-header h2 {
+            .page-header h1 {
                 font-size: 1.8rem;
             }
         }
@@ -138,37 +187,86 @@ checkRole(['admin']);
 </head>
 <body>
     <div class="settings-container">
-        <div class="settings-header">
-            <h2>⚙️ Pengaturan Sistem</h2>
-            <p>Kelola preferensi dan konfigurasi sistem sesuai kebutuhan Anda</p>
+        <div class="page-header">
+            <h1><i class="fas fa-cogs"></i>Pengaturan Sistem</h1>
+            <p>Kelola semua konfigurasi inti aplikasi dan manajemen pengguna dari satu tempat terpusat.</p>
         </div>
         
         <div class="settings-grid">
-            <div class="settings-card">
-                <div class="card-header">
-                    <div class="card-icon">📅</div>
-                    <h3 class="card-title">Periode Aktif</h3>
+
+            <!-- KARTU: Pengaturan Izin (Tiket) - Warna Oranye -->
+            <div class="settings-card color-izin">
+                <div class="card-content">
+                    <div class="card-icon"><i class="fas fa-ticket-alt"></i></div>
+                    <h3 class="card-title">Manajemen Hak Akses</h3>
+                    <p class="card-description">Atur "tiket" atau izin akses untuk setiap user secara detail dan fleksibel.</p>
                 </div>
-                <div class="card-body">
-                    <p class="card-description">Atur periode aktif untuk sistem akademik, termasuk tanggal mulai dan akhir semester.</p>
+                <div class="card-action">
+                    <a href="izin/index.php" class="settings-link">
+                        Kelola Izin <i class="fas fa-arrow-right"></i>
+                    </a>
                 </div>
-                <div class="card-footer">
-                    <a href="periode-aktif/index.php" class="settings-link">Kelola Periode</a>
+            </div>
+
+            <!-- KARTU: Manajemen User - Warna Hijau -->
+            <div class="settings-card color-user">
+                <div class="card-content">
+                    <div class="card-icon"><i class="fas fa-user-plus"></i></div>
+                    <h3 class="card-title">Manajemen User</h3>
+                    <p class="card-description">Buat, lihat, dan kelola akun untuk penanggung jawab setiap bagian.</p>
+                </div>
+                <div class="card-action">
+                    <a href="users/create.php" class="settings-link">
+                        Kelola User <i class="fas fa-arrow-right"></i>
+                    </a>
                 </div>
             </div>
             
-            <div class="settings-card">
-                <div class="card-header">
-                    <div class="card-icon">🔑</div>
-                    <h3 class="card-title">Keamanan Akun</h3>
+            <!-- KARTU: Periode Aktif - Warna Ungu -->
+            <div class="settings-card color-periode">
+                <div class="card-content">
+                    <div class="card-icon"><i class="fas fa-calendar-alt"></i></div>
+                    <h3 class="card-title">Periode Aktif</h3>
+                    <p class="card-description">Atur rentang waktu rekap data pelanggaran yang sedang berjalan di sistem.</p>
                 </div>
-                <div class="card-body">
-                    <p class="card-description">Ubah kata sandi akun Anda untuk menjaga keamanan dan privasi data sistem.</p>
-                </div>
-                <div class="card-footer">
-                    <a href="ganti-password/index.php" class="settings-link">Ganti Password</a>
+                <div class="card-action">
+                    <a href="periode-aktif/index.php" class="settings-link">
+                        Kelola Periode <i class="fas fa-arrow-right"></i>
+                    </a>
                 </div>
             </div>
+            
+            <!-- KARTU: Ganti Password - Warna Merah -->
+            <div class="settings-card color-keamanan">
+                <div class="card-content">
+                    <div class="card-icon"><i class="fas fa-key"></i></div>
+                    <h3 class="card-title">Keamanan Akun</h3>
+                    <p class="card-description">Ubah kata sandi akun Anda secara berkala untuk menjaga keamanan data.</p>
+                </div>
+                <div class="card-action">
+                    <a href="ganti-password/index.php" class="settings-link">
+                        Ganti Password <i class="fas fa-arrow-right"></i>
+                    </a>
+                </div>
+            </div>
+
+            <!-- ✅ KARTU BARU: Reset Poin Santri - Warna Biru -->
+            <!-- Kartu ini hanya muncul jika user punya izin 'reset_poin_manage' -->
+            <?php if (has_permission('reset_poin_manage')): ?>
+            <div class="settings-card color-reset">
+                <div class="card-content">
+                    <div class="card-icon"><i class="fas fa-sync-alt"></i></div>
+                    <h3 class="card-title">Reset Poin Santri</h3>
+                    <p class="card-description">Kembalikan poin pelanggaran santri ke nol. Gunakan dengan sangat hati-hati.</p>
+                </div>
+                <div class="card-action">
+                    <a href="reset-poin/index.php" class="settings-link">
+                        Reset Poin <i class="fas fa-arrow-right"></i>
+                    </a>
+                </div>
+            </div>
+            <?php endif; ?>
+
         </div>
     </div>
 </body>

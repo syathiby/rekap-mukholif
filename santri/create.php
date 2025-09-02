@@ -1,23 +1,53 @@
-<?php ob_start(); ?>
 <?php
-include '../db.php';
-require_once __DIR__ . '/../header.php'; 
+// BAGIAN 1: LOGIKA RUANG MESIN (SEBELUM ADA TAMPILAN APAPUN)
+// Di sini kita pake Protokol Khusus Ruang Mesin secara manual
+if (session_status() === PHP_SESSION_NONE) { session_start(); }
+require_once __DIR__ . '/../db.php';
+require_once __DIR__ . '/../auth.php';
+guard('santri_create'); 
 
+// Logika proses form-nya taruh di sini
+if ($_SERVER["REQUEST_METHOD"] == "POST") {
+    // ... (semua logika INSERT data lu) ...
+    header("Location: index.php"); // Redirect di sini aman
+    exit;
+}
+
+// BAGIAN 2: PERSIAPAN TAMPILAN WAHANA
+// Setelah semua logika redirect selesai, baru kita panggil Markas Komando
+require_once __DIR__ . '/../header.php';
+?>
+ 
+
+<?php
 if ($_SERVER["REQUEST_METHOD"] == "POST") {
     try {
-        // Validate and sanitize input
-        $nama = mysqli_real_escape_string($conn, htmlspecialchars($_POST['nama']));
-        $kelas = mysqli_real_escape_string($conn, htmlspecialchars($_POST['kelas']));
-        $kamar = mysqli_real_escape_string($conn, htmlspecialchars($_POST['kamar']));
+        // Ambil data mentah dari form
+        $nama_input = $_POST['nama'] ?? '';
+        $kelas_input = $_POST['kelas'] ?? '';
+        $kamar_input = $_POST['kamar'] ?? '';
         
-        // Validate required fields
-        if (empty($nama) || empty($kelas) || empty($kamar)) {
+        // Bersihkan dan validasi
+        $nama = trim($nama_input);
+        $kelas_mentah = trim($kelas_input);
+        $kamar_mentah = trim($kamar_input);
+
+        // Validasi required fields
+        if (empty($nama) || empty($kelas_mentah) || empty($kamar_mentah)) {
             throw new Exception("Semua field harus diisi!");
         }
-        
-        // Insert data using prepared statement
+
+        // --- INI DIA JAGOANNYA (VERSI UPGRADE) ---
+        // Normalisasi nomor kelas dan kamar menjadi angka murni (integer)
+        $kelas_bersih = intval($kelas_mentah);
+        $kamar_bersih = intval($kamar_mentah);
+
+        // Insert data menggunakan prepared statement
         $stmt = mysqli_prepare($conn, "INSERT INTO santri (nama, kelas, kamar) VALUES (?, ?, ?)");
-        mysqli_stmt_bind_param($stmt, "sss", $nama, $kelas, $kamar);
+        
+        // --- PERUBAHAN: ganti "ssi" jadi "sii" ---
+        // s = string, i = integer, i = integer
+        mysqli_stmt_bind_param($stmt, "sii", $nama, $kelas_bersih, $kamar_bersih);
         
         if (mysqli_stmt_execute($stmt)) {
             $_SESSION['operation_result'] = [
@@ -36,7 +66,7 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
     } catch (Exception $e) {
         $_SESSION['operation_result'] = [
             'success' => false,
-            'message' => $e->getMessage(),
+            'message' => $e.getMessage(),
             'timestamp' => date('Y-m-d H:i:s')
         ];
         header("Location: index.php");
@@ -45,7 +75,7 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
 }
 ?>
 <!DOCTYPE html>
-<html lang="en">
+<html lang="id">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -76,54 +106,23 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
             padding: 1.5rem;
             margin-bottom: 1.5rem;
         }
-        .form-body {
-            padding: 0 2rem 2rem;
+        .form-body { padding: 0 2rem 2rem; }
+        .form-label { font-weight: 500; color: var(--secondary-color); }
+        .form-control { border-radius: 5px; padding: 10px 15px; border: 1px solid #ddd; transition: all 0.3s; }
+        .form-control:focus { border-color: var(--primary-color); box-shadow: 0 0 0 0.25rem rgba(52, 152, 219, 0.25); }
+        .btn-submit { background-color: var(--success-color); border-color: var(--success-color); padding: 10px 25px; font-weight: 500; transition: all 0.3s; }
+        .btn-submit:hover { background-color: #219653; transform: translateY(-2px); }
+        .btn-cancel { padding: 10px 25px; transition: all 0.3s; }
+        .btn-cancel:hover { transform: translateY(-2px); }
+        .input-icon { position: relative; }
+        .input-icon i { position: absolute; left: 15px; top: 50%; transform: translateY(-50%); color: var(--primary-color); }
+        .input-icon input { padding-left: 40px; }
+        /* Sembunyikan panah di input number */
+        input[type=number]::-webkit-inner-spin-button, 
+        input[type=number]::-webkit-outer-spin-button { 
+            -webkit-appearance: none; margin: 0; 
         }
-        .form-label {
-            font-weight: 500;
-            color: var(--secondary-color);
-        }
-        .form-control {
-            border-radius: 5px;
-            padding: 10px 15px;
-            border: 1px solid #ddd;
-            transition: all 0.3s;
-        }
-        .form-control:focus {
-            border-color: var(--primary-color);
-            box-shadow: 0 0 0 0.25rem rgba(52, 152, 219, 0.25);
-        }
-        .btn-submit {
-            background-color: var(--success-color);
-            border-color: var(--success-color);
-            padding: 10px 25px;
-            font-weight: 500;
-            transition: all 0.3s;
-        }
-        .btn-submit:hover {
-            background-color: #219653;
-            transform: translateY(-2px);
-        }
-        .btn-cancel {
-            padding: 10px 25px;
-            transition: all 0.3s;
-        }
-        .btn-cancel:hover {
-            transform: translateY(-2px);
-        }
-        .input-icon {
-            position: relative;
-        }
-        .input-icon i {
-            position: absolute;
-            left: 15px;
-            top: 50%;
-            transform: translateY(-50%);
-            color: var(--primary-color);
-        }
-        .input-icon input {
-            padding-left: 40px;
-        }
+        input[type=number] { -moz-appearance: textfield; }
     </style>
 </head>
 <body>
@@ -142,25 +141,25 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
                         <input type="text" id="nama" name="nama" class="form-control" 
                                placeholder="Masukkan nama lengkap santri" required
                                minlength="3" maxlength="100">
-                        <div class="form-text">Contoh: Ahmad Budiman</div>
                     </div>
                     
                     <div class="mb-4 input-icon">
                         <label for="kelas" class="form-label">Kelas</label>
                         <i class="fas fa-graduation-cap"></i>
-                        <input type="text" id="kelas" name="kelas" class="form-control" 
-                               placeholder="Masukkan kelas santri" required
-                               minlength="2" maxlength="10">
-                        <div class="form-text">Contoh: 7A, 8B, 9C</div>
+                        <!-- PERUBAHAN DI SINI -->
+                        <input type="number" id="kelas" name="kelas" class="form-control" 
+                               placeholder="Contoh: 7 atau 8" required
+                               min="1">
+                        <div class="form-text">Cukup masukkan angkanya saja (misal: 7, 8, 9).</div>
                     </div>
                     
                     <div class="mb-4 input-icon">
                         <label for="kamar" class="form-label">Nomor Kamar</label>
                         <i class="fas fa-door-open"></i>
-                        <input type="text" id="kamar" name="kamar" class="form-control" 
-                               placeholder="Masukkan nomor kamar" required
-                               minlength="1" maxlength="10">
-                        <div class="form-text">Contoh: A1, B2, C3</div>
+                        <input type="number" id="kamar" name="kamar" class="form-control" 
+                               placeholder="Contoh: 6 atau 12" required
+                               min="1">
+                        <div class="form-text">Boleh diisi 1 digit (6) atau 2 digit (06).</div>
                     </div>
                     
                     <div class="d-flex justify-content-between pt-3">
@@ -177,22 +176,6 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
     </div>
 
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
-    <script>
-        // Form validation
-        document.getElementById('santriForm').addEventListener('submit', function(e) {
-            // Additional client-side validation can be added here
-            const nama = document.getElementById('nama').value.trim();
-            const kelas = document.getElementById('kelas').value.trim();
-            const kamar = document.getElementById('kamar').value.trim();
-            
-            if (nama.length < 3 || kelas.length < 1 || kamar.length < 1) {
-                e.preventDefault();
-                alert('Harap isi semua field dengan benar!');
-                return false;
-            }
-            return true;
-        });
-    </script>
 </body>
 </html>
 

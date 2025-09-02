@@ -1,6 +1,9 @@
-<?php
-include '../db.php';
+<?php 
+require_once __DIR__ . '/../header.php';
+guard('santri_view'); 
+?>
 
+<?php
 header('Content-Type: application/json');
 
 $term = isset($_GET['term']) ? mysqli_real_escape_string($conn, $_GET['term']) : '';

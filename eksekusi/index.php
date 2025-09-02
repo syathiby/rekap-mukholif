@@ -1,19 +1,29 @@
-<?php
-include '../db.php';
-include '../header.php';
-checkRole(['admin','pj']);
+<?php 
+require_once __DIR__ . '/../header.php';
+guard('eksekusi_manage'); 
+?>
 
+<?php
 
 if (!$conn) {
     die("Koneksi database gagal: " . mysqli_connect_error());
 }
+
+// LANGKAH 1: Ambil periode aktif (copy dari dashboard)
+$q = mysqli_query($conn, "SELECT nilai FROM pengaturan WHERE nama = 'periode_aktif' LIMIT 1");
+$row = mysqli_fetch_assoc($q);
+$periode_aktif = $row ? $row['nilai'] : '2000-01-01'; // default biar gak error
+
 
 // Ambil pelanggaran yang belum dieksekusi
 $pelanggaranQuery = mysqli_query($conn, "
     SELECT pk.id AS pelanggaran_id, pk.kamar, pk.tanggal AS tanggal_pelanggaran
     FROM pelanggaran_kebersihan pk
     LEFT JOIN eksekusi_kebersihan ek ON ek.pelanggaran_id = pk.id
-    WHERE ek.id IS NULL AND pk.kamar IS NOT NULL AND pk.kamar != ''
+    WHERE ek.id IS NULL 
+      AND pk.kamar IS NOT NULL 
+      AND pk.kamar != ''
+      AND pk.tanggal >= '$periode_aktif' -- LANGKAH 2: Tambahkan filter periode_aktif di sini
     ORDER BY
         REGEXP_REPLACE(pk.kamar, '[0-9]', '') ASC,
         CAST(REGEXP_REPLACE(pk.kamar, '[^0-9]', '') AS UNSIGNED) ASC,
