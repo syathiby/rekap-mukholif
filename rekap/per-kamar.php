@@ -15,11 +15,7 @@ $tanggal_awal = $_GET['tanggal_awal'] ?? $periode_aktif;
 $tanggal_akhir = $_GET['tanggal_akhir'] ?? date("Y-m-d");
 $sort_order = $_GET['sort'] ?? 'desc'; // default: terbanyak
 
-// =======================================================
-// === PERUBAHAN UTAMA: QUERY DIUBAH TOTAL ===
-// =======================================================
-// Tujuannya: Mengambil SEMUA kamar dari tabel santri, lalu LEFT JOIN data pelanggaran.
-// Ini memastikan kamar dengan 0 pelanggaran tetap muncul.
+// Query
 $sql = "
     SELECT 
         k.kamar,
@@ -38,7 +34,7 @@ $sql = "
 $order = ($sort_order === 'asc') ? 'ASC' : 'DESC';
 $sql .= " ORDER BY total_pelanggaran $order, CAST(k.kamar AS UNSIGNED) ASC";
 
-// Menggunakan Prepared Statement agar lebih aman
+// Prepared Statement
 $stmt = $conn->prepare($sql);
 $stmt->bind_param("ss", $tanggal_awal, $tanggal_akhir);
 $stmt->execute();
@@ -73,6 +69,7 @@ if (!$result) die("Query Error: " . $stmt->error);
             font-family: 'Poppins', sans-serif;
             background-color: #f5f7fa;
             color: var(--dark);
+            margin: 0; /* <<< Perbaikan kecil */
         }
         
         .container {
@@ -119,6 +116,7 @@ if (!$result) die("Query Error: " . $stmt->error);
         .form-group {
             display: flex;
             flex-direction: column;
+            flex-grow: 1; /* <<< Perbaikan kecil */
         }
         
         label {
@@ -137,7 +135,8 @@ if (!$result) die("Query Error: " . $stmt->error);
             border-radius: 8px;
             font-family: 'Poppins', sans-serif;
             transition: all 0.3s ease;
-            min-width: 200px;
+            width: 100%; /* <<< Perbaikan kecil */
+            box-sizing: border-box; /* <<< Perbaikan kecil */
         }
         
         input[type="date"]:focus, select:focus {
@@ -171,20 +170,24 @@ if (!$result) die("Query Error: " . $stmt->error);
             padding: 25px;
             border-radius: 12px;
             box-shadow: 0 4px 12px rgba(0,0,0,0.08);
+            /* === INI KUNCI UTAMANYA === */
+            overflow-x: auto;
         }
 
         table {
-            width: 100% !important;
+            width: 100%;
             border-collapse: collapse;
         }
         
         table thead th {
-            background-color: var(--light) !important;
-            color: var(--dark) !important;
+            background-color: var(--light);
+            color: var(--dark);
             font-weight: 600;
             padding: 16px 12px;
             text-align: center;
             border-bottom: 2px solid #e0e0e0;
+            /* === TAMBAHAN BIAR RAPI PAS DI-SCROLL === */
+            white-space: nowrap;
         }
         
         table tbody tr {
@@ -192,13 +195,15 @@ if (!$result) die("Query Error: " . $stmt->error);
         }
         
         table tbody tr:hover {
-            background-color: rgba(67, 97, 238, 0.05) !important;
+            background-color: rgba(67, 97, 238, 0.05);
         }
         
         table tbody td {
             padding: 14px 12px;
             border-bottom: 1px solid #f0f0f0;
             text-align: center;
+             /* === TAMBAHAN BIAR RAPI PAS DI-SCROLL === */
+            white-space: nowrap;
         }
 
         table tbody tr:last-child td {
@@ -222,7 +227,6 @@ if (!$result) die("Query Error: " . $stmt->error);
              color: #2e7d32;
         }
         
-        /* === CSS Untuk Ikon Piala === */
         .rank-icon {
             font-size: 1.8rem;
         }
@@ -235,10 +239,23 @@ if (!$result) die("Query Error: " . $stmt->error);
             to { opacity: 1; transform: translateY(0); }
         }
         
+        /* === BAGIAN RESPONSIVE UNTUK MOBILE === */
         @media (max-width: 768px) {
+            .container {
+                padding: 15px; /* Padding dikecilin biar gak mepet */
+            }
+
+            h2 {
+                font-size: 22px; /* Ukuran judul dikecilin */
+            }
+
             .filter-form {
                 flex-direction: column;
                 align-items: stretch;
+            }
+
+            .header-card, .filter-card, .table-wrapper {
+                padding: 15px; /* Padding di dalem card dikecilin */
             }
         }
     </style>
@@ -274,8 +291,7 @@ if (!$result) die("Query Error: " . $stmt->error);
         </div>
 
     <div class="table-wrapper">
-        <table id="rekapTable">
-            <thead>
+        <table> <thead>
                 <tr>
                     <th style="width: 10%;">Peringkat</th>
                     <th>Kamar</th>
@@ -287,22 +303,19 @@ if (!$result) die("Query Error: " . $stmt->error);
                 if (mysqli_num_rows($result) > 0) {
                     $no = 1;
                     while ($row = mysqli_fetch_assoc($result)) {
-                        // Tentukan class untuk styling (misal: piala hanya untuk urutan terbanyak)
                         $rank_class = ($sort_order == 'desc' && $no <=3) ? "rank-$no" : "";
                         echo "<tr class='$rank_class'>";
 
-                        // === PENAMBAHAN LOGIKA PIALA ===
                         echo "<td class='text-center'>";
                         if ($sort_order == 'desc' && $no <= 3) {
-                             echo "<i class='fas fa-trophy rank-icon'></i>";
+                                echo "<i class='fas fa-trophy rank-icon'></i>";
                         } else {
-                             echo $no;
+                                echo $no;
                         }
                         echo "</td>";
                         
                         echo "<td>Kamar " . htmlspecialchars($row['kamar']) . "</td>";
                         
-                        // Tentukan class untuk badge poin
                         $count_class = $row['total_pelanggaran'] > 0 ? 'banyak' : 'nol';
                         echo "<td><span class='pelanggaran-count $count_class'>{$row['total_pelanggaran']}</span></td>";
 
@@ -317,7 +330,6 @@ if (!$result) die("Query Error: " . $stmt->error);
         </table>
     </div>
     
-    <!-- Hapus DataTables karena kita sudah sorting via PHP -->
 </body>
 </html>
 

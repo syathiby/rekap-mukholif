@@ -18,7 +18,6 @@ $kamarQuery = mysqli_query($conn, "
 ");
 ?>
 
-<!-- Include JQuery UI CSS -->
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/jqueryui/1.13.2/themes/base/jquery-ui.min.css">
 
 <style>
@@ -29,7 +28,6 @@ $kamarQuery = mysqli_query($conn, "
     .nav-tabs .nav-link {
         cursor: pointer;
     }
-    /* === Penyesuaian Warna Tema Kuning === */
     .nav-tabs .nav-link.active {
         background-color: #fff;
         border-color: #dee2e6 #dee2e6 #fff;
@@ -56,38 +54,10 @@ $kamarQuery = mysqli_query($conn, "
         background-color: #ffc107;
         color: #000;
     }
-    /* === STYLE BARU UNTUK PILIHAN BOX PELANGGARAN (WARNA BIRU) === */
-    .radio-grid {
-        display: grid;
-        grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
-        gap: 10px;
-    }
-    .radio-grid .btn-check:checked + .btn-outline-primary {
-        background-color: #0d6efd;
-        color: #fff;
-        border-color: #0d6efd;
-    }
-    .radio-grid .btn {
-        text-align: left;
-        padding: 0.5rem 0.75rem;
-        font-size: 0.9rem;
-        line-height: 1.5;
-        display: flex;
-        justify-content: space-between;
-        align-items: center;
-        height: 100%;
-    }
-    .radio-grid .btn .poin {
-        font-weight: bold;
-        background-color: rgba(0,0,0,0.05);
-        padding: 2px 8px;
-        border-radius: 5px;
-        white-space: nowrap;
-        margin-left: 8px;
-    }
-    .radio-grid .btn-check:checked + .btn-outline-primary .poin {
-         background-color: rgba(255,255,255,0.25);
-    }
+
+    /* === CSS YANG TIDAK DIPAKAI DIHAPUS === */
+    /* Style untuk .radio-grid sudah dihapus karena elemennya diganti dropdown */
+    
     @media (max-width: 767px) {
         h4, h5 { font-size: 1.1rem; }
         .form-label, .form-control, .form-select, .table th, .table td { font-size: 0.9rem; }
@@ -97,7 +67,6 @@ $kamarQuery = mysqli_query($conn, "
 <div class="container my-4">
     <div class="card col-xl-10 col-lg-12 mx-auto shadow-sm">
         
-        <!-- Header dengan Navigasi Tab -->
         <div class="card-header bg-warning text-dark d-flex justify-content-between align-items-center">
              <h4 class="mb-0"><i class="fas fa-exclamation-triangle me-2"></i> Catat Pelanggaran Pengabdian</h4>
         </div>
@@ -128,32 +97,26 @@ $kamarQuery = mysqli_query($conn, "
 
             <div class="tab-content" id="pelanggaranTabContent">
                 
-                <!-- TAB 1: FORM PELANGGARAN INDIVIDU -->
                 <div class="tab-pane fade show active" id="individu" role="tabpanel" aria-labelledby="individu-tab">
                     <form action="process.php" method="POST">
                         <input type="hidden" name="tipe_pelanggaran" value="individu">
                         <div class="row g-3 mb-3">
-                            <div class="col-md-8">
-                                <label class="form-label fw-bold">1. Pilih Jenis Pelanggaran</label>
-                                <div class="radio-grid">
-                                    <?php
-                                    $is_first_radio = true;
-                                    while ($jp = mysqli_fetch_assoc($jp_individu_list)):
-                                    ?>
-                                        <div>
-                                            <input type="radio" class="btn-check" name="jenis_pelanggaran_id" id="jp-<?= $jp['id'] ?>" value="<?= $jp['id'] ?>" autocomplete="off" <?= $is_first_radio ? 'required' : '' ?>>
-                                            <label class="btn btn-outline-primary w-100" for="jp-<?= $jp['id'] ?>">
-                                                <span><?= htmlspecialchars($jp['nama_pelanggaran']) ?></span>
-                                                <span class="poin"><?= $jp['poin'] ?> Poin</span>
-                                            </label>
-                                        </div>
-                                    <?php
-                                    $is_first_radio = false;
-                                    endwhile;
-                                    ?>
-                                </div>
+                            
+                            <div class="col-md-7">
+                                <label for="jenis_pelanggaran_id" class="form-label fw-bold">1. Pilih Jenis Pelanggaran</label>
+                                <select name="jenis_pelanggaran_id" id="jenis_pelanggaran_id" class="form-select" required>
+                                    <option value="" disabled selected>-- Pilih salah satu --</option>
+                                    <?php 
+                                    // Reset pointer query untuk looping
+                                    mysqli_data_seek($jp_individu_list, 0); 
+                                    while ($jp = mysqli_fetch_assoc($jp_individu_list)): ?>
+                                        <option value="<?= $jp['id'] ?>">
+                                            <?= htmlspecialchars($jp['nama_pelanggaran']) ?> (<?= $jp['poin'] ?> Poin)
+                                        </option>
+                                    <?php endwhile; ?>
+                                </select>
                             </div>
-                            <div class="col-md-4">
+                            <div class="col-md-5">
                                 <label for="tanggal_individu" class="form-label fw-bold">2. Tentukan Tanggal</label>
                                 <input type="datetime-local" name="tanggal_individu" id="tanggal_individu" class="form-control" value="<?php echo date('Y-m-d\TH:i'); ?>" required>
                             </div>
@@ -162,13 +125,12 @@ $kamarQuery = mysqli_query($conn, "
                             <label for="santri-search" class="form-label fw-bold">3. Cari dan Tambahkan Santri</label>
                             <div class="input-group">
                                     <input type="text" id="santri-search" class="form-control" placeholder="Ketik nama santri...">
-                                    <!-- ✅ FIX: Tombol diubah jadi ikon di mobile -->
                                     <button class="btn btn-primary" type="button" id="btn-tambah-santri" disabled>
                                         <i class="fas fa-plus"></i>
                                         <span class="d-none d-sm-inline"> Tambah</span>
                                     </button>
-                                </div>
                             </div>
+                        </div>
                             <div class="table-responsive">
                                 <table class="table table-bordered table-striped" id="tabel-santri-pelanggar">
                                 <thead class="table-dark">
@@ -191,7 +153,6 @@ $kamarQuery = mysqli_query($conn, "
                     </form>
                 </div>
 
-                <!-- TAB 2: FORM PELANGGARAN KEBERSIHAN KAMAR -->
                 <div class="tab-pane fade" id="kamar" role="tabpanel" aria-labelledby="kamar-tab">
                     <form action="process.php" method="POST">
                         <input type="hidden" name="tipe_pelanggaran" value="kamar">
@@ -230,7 +191,6 @@ $kamarQuery = mysqli_query($conn, "
     </div>
 </div>
 
-<!-- JQuery & JQuery UI Scripts -->
 <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
 <script src="https://code.jquery.com/ui/1.13.2/jquery-ui.min.js"></script>
 
