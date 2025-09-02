@@ -1,5 +1,5 @@
 <?php
-// ✅ Cek dulu: kalau session belum aktif, baru kita atur dan mulai
+// Cek dulu: kalau session belum aktif, baru kita atur dan mulai
 if (session_status() === PHP_SESSION_NONE) {
     ini_set('session.cookie_lifetime', 0); // Auto logout saat browser ditutup
     session_start();
@@ -13,23 +13,32 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $username = $_POST['username'] ?? '';
     $password = $_POST['password'] ?? '';
 
-    $stmt = $conn->prepare("SELECT * FROM users WHERE username = ?");
+    // Query baru buat ngambil data user + SEMUA TIKET yang dia punya
+    $stmt = $conn->prepare("
+        SELECT 
+            u.id, u.username, u.password, u.nama_lengkap, u.role, 
+            GROUP_CONCAT(p.nama_izin) AS permissions
+        FROM users u
+        LEFT JOIN user_permissions up ON u.id = up.user_id
+        LEFT JOIN permissions p ON up.permission_id = p.id
+        WHERE u.username = ?
+        GROUP BY u.id
+    ");
     $stmt->bind_param("s", $username);
     $stmt->execute();
     $result = $stmt->get_result();
 
     if ($user = $result->fetch_assoc()) {
         if (hash('sha256', $password) === $user['password']) {
-            // ✅ Simpan session
-            $_SESSION['user'] = [
-                'id' => $user['id'],
-                'username' => $user['username'],
-                'role' => $user['role']
-            ];
-
-            // ✅ Tambahan biar fitur lain bisa baca
-            $_SESSION['user_id'] = $user['id'];  
+            
+            // Simpan semua info penting ke session, termasuk kantong tiketnya
+            $_SESSION['user_id'] = $user['id'];
             $_SESSION['username'] = $user['username'];
+            $_SESSION['nama_lengkap'] = $user['nama_lengkap'];
+            $_SESSION['role'] = $user['role']; // Kita simpen role buat ngecek admin
+            
+            // Buat "kantong tiket" buat user
+            $_SESSION['permissions'] = $user['permissions'] ? explode(',', $user['permissions']) : [];
 
             header("Location: index.php");
             exit;
@@ -47,90 +56,117 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Login</title>
+    <title>Login Sistem</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600&display=swap" rel="stylesheet">
     <style>
         body {
-            background-color: #f8f9fa;
+            background-color: #f4f7fa; /* Warna background dari tema utama */
             display: flex;
             justify-content: center;
             align-items: center;
             min-height: 100vh;
             margin: 0;
             padding: 20px;
+            font-family: 'Poppins', sans-serif;
         }
         .login-card {
             background: #fff;
-            border-radius: 10px;
-            box-shadow: 0 4px 12px rgba(0,0,0,0.1);
-            padding: 2rem;
+            border-radius: 12px; /* Lebih rounded */
+            box-shadow: 0 8px 24px rgba(0,0,0,0.08); /* Shadow lebih soft */
+            padding: 2.5rem; /* Padding lebih luas */
             width: 100%;
             max-width: 400px;
         }
         .login-header {
             text-align: center;
-            margin-bottom: 1.5rem;
-            color: #333;
+            margin-bottom: 2rem;
+        }
+        .login-logo {
+            max-width: 60px; /* Ukuran logo */
+            margin-bottom: 1rem;
+        }
+        .login-header h4 {
+            font-weight: 600;
+            color: #1e293b; /* Warna teks gelap dari tema utama */
         }
         .form-control {
-            border-radius: 6px;
-            padding: 0.75rem;
+            border-radius: 8px;
+            padding: 0.75rem 1rem;
+            border: 1px solid #e2e8f0; /* Border lebih soft */
         }
         .form-control:focus {
             border-color: #0d6efd;
-            box-shadow: 0 0 0 0.25rem rgba(13, 110, 253, 0.15);
+            box-shadow: 0 0 0 0.25rem rgba(13, 110, 253, 0.1);
         }
         .btn-login {
             background-color: #0d6efd;
             border: none;
             padding: 0.75rem;
             font-weight: 500;
-            border-radius: 6px;
+            border-radius: 8px;
         }
         .btn-login:hover {
             background-color: #0b5ed7;
         }
+        /* ✅ FIX: CSS UNTUK IKON PASSWORD */
+        .password-wrapper {
+            position: relative;
+            display: flex;
+            align-items: center;
+        }
+        .password-wrapper .form-control {
+            padding-right: 40px; /* Beri ruang untuk ikon di dalam input */
+        }
         .password-toggle {
             position: absolute;
             right: 12px;
-            top: 50%;
-            transform: translateY(-50%);
+            /* Hapus top & transform, karena flex udah nanganin vertical centering */
             cursor: pointer;
             background: none;
             border: none;
             color: #6c757d;
+            padding: 0;
+            line-height: 1; /* Biar ikonnya gak punya tinggi aneh */
         }
         .alert {
-            border-radius: 6px;
+            border-radius: 8px;
         }
     </style>
 </head>
 <body>
     <div class="login-card">
         <div class="login-header">
+            <!-- ✅ FIX: Tambahin logo aplikasi di sini -->
+            <img src="../assets/logo.png" alt="Logo Aplikasi" class="login-logo">
             <h4>Login Sistem</h4>
-            <p class="text-muted">Masukkan kredensial Anda</p>
+            <p class="text-muted">Masukkan kredensial Anda untuk melanjutkan</p>
         </div>
 
         <?php if ($error): ?>
-            <div class="alert alert-danger"><?= $error ?></div>
+            <div class="alert alert-danger"><?= htmlspecialchars($error) ?></div>
         <?php endif; ?>
 
         <form method="post">
             <div class="mb-3">
                 <label for="username" class="form-label">Username</label>
-                <input type="text" class="form-control" id="username" name="username" required placeholder="Username">
+                <input type="text" class="form-control" id="username" name="username" required placeholder="Contoh: admin">
             </div>
 
-            <div class="mb-3 position-relative">
+            <div class="mb-3">
                 <label for="password" class="form-label">Password</label>
-                <input type="password" class="form-control" id="password" name="password" required placeholder="Password">
-                <button type="button" class="password-toggle" onclick="togglePassword()">
-                    <span id="toggle-icon">👁️</span>
-                </button>
+                <!-- ✅ FIX: Bikin wadah baru buat input & ikonnya -->
+                <div class="password-wrapper">
+                    <input type="password" class="form-control" id="password" name="password" required placeholder="••••••••">
+                    <button type="button" class="password-toggle" onclick="togglePassword()">
+                        <span id="toggle-icon">👁️</span>
+                    </button>
+                </div>
             </div>
 
-            <button type="submit" class="btn btn-primary btn-login w-100">Masuk</button>
+            <button type="submit" class="btn btn-primary btn-login w-100 mt-3">Masuk</button>
         </form>
     </div>
 

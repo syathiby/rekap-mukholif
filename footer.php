@@ -1,20 +1,43 @@
-                </div> <!-- Tutup container-fluid content -->
-            </div> <!-- Tutup main-content -->
-        </div> <!-- Tutup row -->
-    </div> <!-- Tutup container-fluid -->
+        <!-- KONTEN HALAMAN SELESAI DI SINI -->
+    </main> <!-- Penutup .main-content -->
 
-    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
-    <script>
-        // Aktifkan tooltip
-        var tooltipTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggle="tooltip"]'))
-        var tooltipList = tooltipTriggerList.map(function (tooltipTriggerEl) {
-            return new bootstrap.Tooltip(tooltipTriggerEl)
-        });
+    <!-- Toast Notifications -->
+    <div class="toast-container position-fixed bottom-0 end-0 p-3">
+        <?php if ($success_message): ?>
+        <div class="toast show" role="alert" aria-live="assertive" aria-atomic="true">
+            <div class="toast-header bg-success text-white">
+                <strong class="me-auto">Sukses</strong>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="toast" aria-label="Close"></button>
+            </div>
+            <div class="toast-body"><?= htmlspecialchars($success_message) ?></div>
+        </div>
+        <?php endif; ?>
         
-        // Konfirmasi sebelum hapus
-        function confirmDelete() {
-            return confirm('Apakah Anda yakin ingin menghapus data ini?');
+        <?php if ($error_message): ?>
+        <div class="toast show" role="alert" aria-live="assertive" aria-atomic="true">
+            <div class="toast-header bg-danger text-white">
+                <strong class="me-auto">Error</strong>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="toast" aria-label="Close"></button>
+            </div>
+            <div class="toast-body"><?= htmlspecialchars($error_message) ?></div>
+        </div>
+        <?php endif; ?>
+    </div>
+    
+    <!-- JavaScript Bootstrap (WAJIB ADA DI AKHIR) -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+
+    <!-- Script untuk jam live -->
+    <script>
+        function updateLiveTime() {
+            const timeEl = document.getElementById('live-time');
+            if (timeEl) {
+                const now = new Date();
+                timeEl.textContent = now.toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit', second: '2-digit' });
+            }
         }
+        setInterval(updateLiveTime, 1000);
+        updateLiveTime();
     </script>
 </body>
 </html>

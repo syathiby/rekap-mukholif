@@ -1,6 +1,11 @@
 <?php
-include '../../db.php';
-session_start();
+if (session_status() === PHP_SESSION_NONE) { session_start(); }
+require_once __DIR__ . '/../../db.php';
+require_once __DIR__ . '/../../auth.php';
+guard('periode_aktif_manage');
+?>
+
+<?php
 
 $periode_aktif = $_POST['periode_aktif'] ?? '';
 

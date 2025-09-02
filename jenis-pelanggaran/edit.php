@@ -1,5 +1,9 @@
 <?php 
-include '../db.php';
+require_once __DIR__ . '/../header.php';
+guard('jenis_pelanggaran_manage'); 
+?>
+
+<?php
 
 if (!isset($_GET['id'])) {
     header("Location: index.php");
@@ -7,71 +11,93 @@ if (!isset($_GET['id'])) {
 }
 
 $id = $_GET['id'];
-$query = "SELECT * FROM jenis_pelanggaran WHERE id = $id";
-$result = mysqli_query($conn, $query);
+
+// Menggunakan Prepared Statement untuk mencegah SQL Injection
+$query = "SELECT * FROM jenis_pelanggaran WHERE id = ?";
+$stmt = mysqli_prepare($conn, $query);
+mysqli_stmt_bind_param($stmt, "i", $id);
+mysqli_stmt_execute($stmt);
+$result = mysqli_stmt_get_result($stmt);
 $data = mysqli_fetch_assoc($result);
 
 if (!$data) {
+    // Jika data tidak ditemukan, redirect ke halaman utama
+    $_SESSION['message'] = ['type' => 'danger', 'text' => 'Data tidak ditemukan.'];
     header("Location: index.php");
     exit;
 }
 ?>
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Edit Jenis Pelanggaran</title>
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    <style>
-        .card-edit {
-            max-width: 600px;
-            margin: 2rem auto;
-            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
-        }
-        .form-label {
-            font-weight: 500;
-        }
-        .btn-submit {
-            width: 120px;
-        }
-    </style>
-</head>
-<body>
-    <div class="container py-4">
-        <div class="card card-edit">
-            <div class="card-header bg-primary text-white">
-                <div class="d-flex justify-content-between align-items-center">
-                    <h4 class="mb-0"><i class="fas fa-edit me-2"></i>Edit Jenis Pelanggaran</h4>
-                    <a href="index.php" class="btn btn-light btn-sm">
-                        <i class="fas fa-arrow-left me-1"></i> Kembali
-                    </a>
-                </div>
-            </div>
-            
-            <div class="card-body">
-                <form action="process.php" method="POST">
-                    <input type="hidden" name="id" value="<?= $data['id']; ?>">
-                    
-                    <div class="mb-4">
-                        <label for="nama_pelanggaran" class="form-label">Nama Pelanggaran</label>
-                        <input type="text" class="form-control form-control-lg" id="nama_pelanggaran" 
-                               name="nama_pelanggaran" value="<?= htmlspecialchars($data['nama_pelanggaran']); ?>" 
-                               placeholder="Masukkan nama pelanggaran" required>
-                        <div class="form-text">Isikan jenis pelanggaran yang akan diperbarui</div>
-                    </div>
-                    
-                    <div class="d-grid gap-2 d-md-flex justify-content-md-end">
-                        <button type="submit" name="update" class="btn btn-primary btn-submit">
-                            <i class="fas fa-save me-1"></i> Simpan Perubahan
-                        </button>
-                    </div>
-                </form>
+
+<style>
+    /* Styling ini bisa dipindah ke file CSS utama jika perlu */
+    .card-edit { 
+        max-width: 600px; 
+        margin: 2rem auto; 
+    }
+</style>
+
+<div class="container my-4">
+    <div class="card card-edit shadow-sm">
+        <div class="card-header bg-primary text-white">
+            <div class="d-flex justify-content-between align-items-center">
+                <h4 class="mb-0"><i class="fas fa-edit me-2"></i>Edit Jenis Pelanggaran</h4>
+                <a href="index.php" class="btn btn-light btn-sm"><i class="fas fa-arrow-left me-1"></i> Kembali</a>
             </div>
         </div>
-    </div>
+        
+        <div class="card-body p-4">
+            <form action="process.php" method="POST">
+                <input type="hidden" name="id" value="<?php echo $data['id']; ?>">
+                
+                <div class="mb-3">
+                    <label for="nama_pelanggaran" class="form-label">Nama Pelanggaran</label>
+                    <input type="text" class="form-control" id="nama_pelanggaran" 
+                           name="nama_pelanggaran" value="<?php echo htmlspecialchars($data['nama_pelanggaran']); ?>" 
+                           placeholder="Masukkan nama pelanggaran" required>
+                </div>
 
-    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
-</body>
-</html>
+                <!-- ======================================================= -->
+                <!-- === INI DIA FIELD BARUNYA === -->
+                <!-- ======================================================= -->
+                <div class="mb-3">
+                    <label for="bagian" class="form-label">Bagian</label>
+                    <select class="form-select" id="bagian" name="bagian" required>
+                        <option value="Kesantrian" <?php echo ($data['bagian'] == 'Kesantrian') ? 'selected' : ''; ?>>Kesantrian</option>
+                        <option value="Bahasa" <?php echo ($data['bagian'] == 'Bahasa') ? 'selected' : ''; ?>>Bahasa</option>
+                        <option value="Diniyyah" <?php echo ($data['bagian'] == 'Diniyyah') ? 'selected' : ''; ?>>Diniyyah</option>
+                        <option value="Pengabdian" <?php echo ($data['bagian'] == 'Pengabdian') ? 'selected' : ''; ?>>Pengabdian</option>
+                    </select>
+                </div>
+
+                <div class="row">
+                    <div class="col-md-6 mb-3">
+                        <label for="poin" class="form-label">Poin</label>
+                        <input type="number" class="form-control" id="poin" 
+                               name="poin" value="<?php echo htmlspecialchars($data['poin']); ?>" 
+                               placeholder="Masukkan poin" required min="0">
+                    </div>
+
+                    <div class="col-md-6 mb-3">
+                        <label for="kategori" class="form-label">Kategori</label>
+                        <select class="form-select" id="kategori" name="kategori" required>
+                            <option value="Ringan" <?php echo ($data['kategori'] == 'Ringan') ? 'selected' : ''; ?>>Ringan</option>
+                            <option value="Sedang" <?php echo ($data['kategori'] == 'Sedang') ? 'selected' : ''; ?>>Sedang</option>
+                            <option value="Berat" <?php echo ($data['kategori'] == 'Berat') ? 'selected' : ''; ?>>Berat</option>
+                            <option value="Sangat Berat" <?php echo ($data['kategori'] == 'Sangat Berat') ? 'selected' : ''; ?>>Sangat Berat</option>
+                        </select>
+                    </div>
+                </div>
+                
+                <hr class="my-3">
+
+                <div class="d-grid">
+                    <button type="submit" name="update" class="btn btn-primary">
+                        <i class="fas fa-save me-1"></i> Simpan Perubahan
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<?php require_once __DIR__ . '/../footer.php'; ?>

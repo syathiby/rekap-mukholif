@@ -1,7 +1,6 @@
 <?php 
-include '../header.php';
-checkRole(['admin','pj']);
-
+require_once __DIR__ . '/../header.php';
+guard(); 
 ?>
 
 <!DOCTYPE html>
@@ -9,6 +8,7 @@ checkRole(['admin','pj']);
 <head>
   <meta charset="UTF-8">
   <title>Pilih Jenis Pelanggaran</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
   <style>
@@ -22,10 +22,18 @@ checkRole(['admin','pj']);
       transition: all 0.3s ease;
       background: linear-gradient(135deg, #ffffff 0%, #f8f9fa 100%);
       height: 100%;
+      display: flex;
+      flex-direction: column;
     }
     .card-option:hover {
       transform: translateY(-5px);
       box-shadow: 0 10px 20px rgba(0,0,0,0.1);
+    }
+    .card-option .card-body {
+        flex-grow: 1;
+        display: flex;
+        flex-direction: column;
+        justify-content: center;
     }
     .card-icon {
       font-size: 2.5rem;
@@ -43,6 +51,7 @@ checkRole(['admin','pj']);
       border-radius: 8px;
       font-weight: 500;
       padding: 10px;
+      margin-top: auto; /* Mendorong tombol ke bawah */
     }
     .card-title {
       font-weight: 600;
@@ -52,6 +61,7 @@ checkRole(['admin','pj']);
     .card-text {
       color: #6c757d;
       margin-bottom: 1.5rem;
+      flex-grow: 1;
     }
     .header-title {
       color: #343a40;
@@ -74,52 +84,70 @@ checkRole(['admin','pj']);
 </head>
 <body>
 <div class="container py-5">
-  <h2 class="text-center header-title mb-5">Pilih Jenis Pelanggaran</h2>
-  <div class="row g-4">
+  <h2 class="text-center header-title mb-5">Pilih Jenis Pencatatan</h2>
+  <div class="row g-4 justify-content-center">
     
-    <div class="col-md-4">
-      <div class="card card-option shadow-sm">
-        <div class="card-body text-center p-4">
-          <div class="card-icon bg-primary">
-            <i class="fas fa-clock"></i>
-          </div>
-          <h5 class="card-title">Telat Sholat</h5>
-          <p class="card-text">Catat santri yang telat melaksanakan sholat wajib atau sunnah.</p>
-          <a href="telat-sholat/index.php" class="btn btn-primary btn-block">
-            <i class="fas fa-sign-in-alt me-2"></i> Masuk
-          </a>
+    <div class="col-lg-3 col-md-6">
+        <div class="card card-option shadow-sm">
+            <div class="card-body text-center p-4">
+                <div class="card-icon" style="background: linear-gradient(135deg, #f7971e 0%, #ffd200 100%);">
+                    <!-- ======================================================= -->
+                    <!-- === INI DIA PERUBAHANNYA === -->
+                    <!-- ======================================================= -->
+                    <i class="fas fa-hands-helping"></i>
+                </div>
+                <h5 class="card-title">Pengabdian</h5>
+                <p class="card-text">Catat pelanggaran individu (telat) & kebersihan kamar.</p>
+                <a href="pengabdian/create.php" class="btn btn-warning btn-block">
+                    <i class="fas fa-sign-in-alt me-2"></i> Masuk
+                </a>
+            </div>
         </div>
-      </div>
     </div>
-    
-    <div class="col-md-4">
+
+    <div class="col-lg-3 col-md-6">
       <div class="card card-option shadow-sm">
         <div class="card-body text-center p-4">
-          <div class="card-icon bg-warning" style="background: linear-gradient(135deg, #f7971e 0%, #ffd200 100%);">
-            <i class="fas fa-user-clock"></i>
+          <div class="card-icon" style="background: linear-gradient(135deg, #89f7fe 0%, #66a6ff 100%);">
+              <i class="fas fa-user-shield"></i>
           </div>
-          <h5 class="card-title">Telat KBM</h5>
-          <p class="card-text">Catat santri yang telat mengikuti Kegiatan Belajar Mengajar.</p>
-          <a href="telat-kbm/index.php" class="btn btn-warning btn-block">
-            <i class="fas fa-sign-in-alt me-2"></i> Masuk
+          <h5 class="card-title">Kesantrian</h5>
+          <p class="card-text">Catat berbagai jenis pelanggaran umum Kesantrian.</p>
+          <a href="kesantrian/create.php" class="btn btn-info btn-block">
+              <i class="fas fa-sign-in-alt me-2"></i> Masuk
           </a>
         </div>
       </div>
     </div>
 
-    <div class="col-md-4">
-      <div class="card card-option shadow-sm">
-        <div class="card-body text-center p-4">
-          <div class="card-icon bg-success" style="background: linear-gradient(135deg, #11998e 0%, #38ef7d 100%);">
-            <i class="fas fa-broom"></i>
-          </div>
-          <h5 class="card-title">Kebersihan Kamar</h5>
-          <p class="card-text">Catat pelanggaran kebersihan berdasarkan kamar santri.</p>
-          <a href="kebersihan-kamar/index.php" class="btn btn-success btn-block">
-            <i class="fas fa-sign-in-alt me-2"></i> Masuk
-          </a>
+    <div class="col-lg-3 col-md-6">
+        <div class="card card-option shadow-sm">
+            <div class="card-body text-center p-4">
+                <div class="card-icon" style="background: linear-gradient(135deg, #6a11cb 0%, #2575fc 100%);">
+                    <i class="fas fa-language"></i>
+                </div>
+                <h5 class="card-title">Pelanggaran Bahasa</h5>
+                <p class="card-text">Catat pelanggaran berbahasa, seperti muhadatsah & kosa kata.</p>
+                <a href="bahasa/create.php" class="btn btn-primary btn-block">
+                    <i class="fas fa-sign-in-alt me-2"></i> Masuk
+                </a>
+            </div>
         </div>
-      </div>
+    </div>
+
+    <div class="col-lg-3 col-md-6">
+        <div class="card card-option shadow-sm">
+            <div class="card-body text-center p-4">
+                <div class="card-icon" style="background: linear-gradient(135deg, #11998e 0%, #38ef7d 100%);">
+                    <i class="fas fa-book-quran"></i>
+                </div>
+                <h5 class="card-title">Pelanggaran Diniyyah</h5>
+                <p class="card-text">Catat pelanggaran terkait kegiatan diniyyah atau keagamaan.</p>
+                <a href="diniyyah/create.php" class="btn btn-success btn-block">
+                    <i class="fas fa-sign-in-alt me-2"></i> Masuk
+                </a>
+            </div>
+        </div>
     </div>
 
   </div>

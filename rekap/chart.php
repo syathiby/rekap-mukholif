@@ -1,776 +1,510 @@
 <?php
-include '../db.php';
-include '../header.php';
+require_once __DIR__ . '/../header.php';
+guard('rekap_view_statistik');
 
-
-
-// Ambil periode aktif
+// Ambil periode aktif dari pengaturan (ini tetap kita pakai sebagai default)
 $q = mysqli_query($conn, "SELECT nilai FROM pengaturan WHERE nama = 'periode_aktif' LIMIT 1");
 $row = mysqli_fetch_assoc($q);
-$periode_aktif = $row ? $row['nilai'] : date('Y-m-d');
+$default_periode_aktif = $row['nilai'] ?? date('Y-m-d', strtotime('-1 year'));
 
-// 1. Total Pelanggaran (gabungan pelanggaran + kebersihan)
-$q_total1 = mysqli_query($conn, "
-    SELECT COUNT(*) as total 
-    FROM pelanggaran 
-    WHERE tanggal >= '$periode_aktif'
-");
+// Menangkap nilai filter tanggal dari URL, jika ada
+// Jika nggak ada, kita pakai periode aktif sebagai default
+$tgl_mulai = $_GET['tgl_mulai'] ?? $default_periode_aktif;
+$tgl_selesai = $_GET['tgl_selesai'] ?? date('Y-m-d');
 
-$q_total2 = mysqli_query($conn, "
-    SELECT COUNT(*) as total 
-    FROM pelanggaran_kebersihan 
-    WHERE tanggal >= '$periode_aktif'
-");
-
-$total1 = mysqli_fetch_assoc($q_total1)['total'];
-$total2 = mysqli_fetch_assoc($q_total2)['total'];
+// 1. Total Pelanggaran (query disesuaikan dengan filter tanggal)
+$stmt_total1 = $conn->prepare("SELECT COUNT(*) as total FROM pelanggaran WHERE tanggal >= ? AND tanggal <= ?");
+$stmt_total1->bind_param("ss", $tgl_mulai, $tgl_selesai);
+$stmt_total1->execute();
+$total1 = $stmt_total1->get_result()->fetch_assoc()['total'];
+$stmt_total2 = $conn->prepare("SELECT COUNT(*) as total FROM pelanggaran_kebersihan WHERE tanggal >= ? AND tanggal <= ?");
+$stmt_total2->bind_param("ss", $tgl_mulai, $tgl_selesai);
+$stmt_total2->execute();
+$total2 = $stmt_total2->get_result()->fetch_assoc()['total'];
 $total_pelanggaran = $total1 + $total2;
 
-// 2. Pelanggaran 7 hari terakhir (gabungan)
-$q_harian = mysqli_query($conn, "
-    SELECT DATE(tanggal) as tanggal, COUNT(*) AS total 
-    FROM (
-        SELECT tanggal FROM pelanggaran 
-        WHERE tanggal >= DATE_SUB(CURDATE(), INTERVAL 7 DAY)
-        UNION ALL
-        SELECT tanggal FROM pelanggaran_kebersihan 
-        WHERE tanggal >= DATE_SUB(CURDATE(), INTERVAL 7 DAY)
-    ) AS combined 
-    GROUP BY DATE(tanggal) 
-    ORDER BY tanggal ASC
-");
+// 2. Top 10 Santri (query disesuaikan)
+$stmt_santri = $conn->prepare("SELECT s.nama, COUNT(*) AS total FROM pelanggaran p JOIN santri s ON s.id = p.santri_id WHERE p.tanggal >= ? AND p.tanggal <= ? GROUP BY s.id ORDER BY total DESC LIMIT 10");
+$stmt_santri->bind_param("ss", $tgl_mulai, $tgl_selesai);
+$stmt_santri->execute();
+$q_santri = $stmt_santri->get_result();
 
-// 2a. Pelanggaran 1 Bulan Terakhir (gabungan)
-$q_bulanan = mysqli_query($conn, "
-    SELECT DATE(tanggal) as tanggal, COUNT(*) AS total 
-    FROM (
-        SELECT tanggal FROM pelanggaran 
-        WHERE tanggal >= DATE_SUB(CURDATE(), INTERVAL 1 MONTH)
-        UNION ALL
-        SELECT tanggal FROM pelanggaran_kebersihan 
-        WHERE tanggal >= DATE_SUB(CURDATE(), INTERVAL 1 MONTH)
-    ) AS combined 
-    GROUP BY DATE(tanggal) 
-    ORDER BY tanggal ASC
-");
+// 3. Data Jenis Pelanggaran (query disesuaikan)
+$stmt_jenis1 = $conn->prepare("SELECT j.nama_pelanggaran, COUNT(*) as total FROM pelanggaran p JOIN jenis_pelanggaran j ON p.jenis_pelanggaran_id = j.id WHERE p.tanggal >= ? AND p.tanggal <= ? GROUP BY j.id");
+$stmt_jenis1->bind_param("ss", $tgl_mulai, $tgl_selesai);
+$stmt_jenis1->execute();
+$data_jenis_pelanggaran = $stmt_jenis1->get_result()->fetch_all(MYSQLI_ASSOC);
+if ($total2 > 0) { $data_jenis_pelanggaran[] = ['nama_pelanggaran' => 'KEBERSIHAN KAMAR', 'total' => $total2]; }
+usort($data_jenis_pelanggaran, fn($a, $b) => $b['total'] <=> $a['total']);
+$total_semua_jenis = array_sum(array_column($data_jenis_pelanggaran, 'total'));
 
-// 2b. Pelanggaran 3 Bulan Terakhir (gabungan)
-$q_triwulan = mysqli_query($conn, "
-    SELECT DATE(tanggal) as tanggal, COUNT(*) AS total 
-    FROM (
-        SELECT tanggal FROM pelanggaran 
-        WHERE tanggal >= DATE_SUB(CURDATE(), INTERVAL 3 MONTH)
-        UNION ALL
-        SELECT tanggal FROM pelanggaran_kebersihan 
-        WHERE tanggal >= DATE_SUB(CURDATE(), INTERVAL 3 MONTH)
-    ) AS combined 
-    GROUP BY DATE(tanggal) 
-    ORDER BY tanggal ASC
-");
+// 4. Data Per Kelas (query disesuaikan)
+$stmt_kelas = $conn->prepare("SELECT s.kelas, COUNT(*) AS total FROM pelanggaran p JOIN santri s ON s.id = p.santri_id WHERE p.tanggal >= ? AND p.tanggal <= ? GROUP BY s.kelas ORDER BY total DESC");
+$stmt_kelas->bind_param("ss", $tgl_mulai, $tgl_selesai);
+$stmt_kelas->execute();
+$data_per_kelas = $stmt_kelas->get_result()->fetch_all(MYSQLI_ASSOC);
+$json_per_kelas = json_encode(['labels' => array_column($data_per_kelas, 'kelas'), 'data' => array_column($data_per_kelas, 'total')]);
 
-// 2c. Pelanggaran 1 Tahun Terakhir (gabungan)
-$q_tahunan = mysqli_query($conn, "
-    SELECT DATE(tanggal) as tanggal, COUNT(*) AS total 
-    FROM (
-        SELECT tanggal FROM pelanggaran 
-        WHERE tanggal >= DATE_SUB(CURDATE(), INTERVAL 1 YEAR)
-        UNION ALL
-        SELECT tanggal FROM pelanggaran_kebersihan 
-        WHERE tanggal >= DATE_SUB(CURDATE(), INTERVAL 1 YEAR)
-    ) AS combined 
-    GROUP BY DATE(tanggal) 
-    ORDER BY tanggal ASC
-");
+// 5. Data Per Kamar (query disesuaikan)
+$stmt_kamar = $conn->prepare("SELECT kamar, COUNT(*) AS total FROM pelanggaran_kebersihan WHERE tanggal >= ? AND tanggal <= ? GROUP BY kamar ORDER BY total DESC");
+$stmt_kamar->bind_param("ss", $tgl_mulai, $tgl_selesai);
+$stmt_kamar->execute();
+$data_per_kamar = $stmt_kamar->get_result()->fetch_all(MYSQLI_ASSOC);
+$labels_kamar = array_map(fn($item) => "Kamar " . $item['kamar'], $data_per_kamar);
+$json_per_kamar = json_encode(['labels' => $labels_kamar, 'data' => array_column($data_per_kamar, 'total')]);
 
-
-// 3. Top 5 Santri (hanya dari tabel pelanggaran)
-$q_santri = mysqli_query($conn, "
-    SELECT s.nama, COUNT(*) AS total 
+// 6. DATA BARU: SEBARAN PER BAGIAN (DITAMBAHKAN)
+$stmt_bagian = $conn->prepare("
+    SELECT jp.bagian, COUNT(p.id) AS total 
     FROM pelanggaran p 
-    JOIN santri s ON s.id = p.santri_id 
-    WHERE p.tanggal >= '$periode_aktif'
-    GROUP BY s.id 
-    ORDER BY total DESC 
-    LIMIT 5
-");
-
-// 4. Per Kelas (hanya dari tabel pelanggaran)
-$q_kelas = mysqli_query($conn, "
-    SELECT s.kelas, COUNT(*) AS total 
-    FROM pelanggaran p 
-    JOIN santri s ON s.id = p.santri_id 
-    WHERE p.tanggal >= '$periode_aktif'
-    GROUP BY s.kelas
+    JOIN jenis_pelanggaran jp ON p.jenis_pelanggaran_id = jp.id 
+    WHERE p.tanggal >= ? AND p.tanggal <= ? 
+    GROUP BY jp.bagian 
     ORDER BY total DESC
 ");
-
-// 5. Per Kamar (dari tabel pelanggaran_kebersihan)
-$q_kamar = mysqli_query($conn, "
-    SELECT kamar, COUNT(*) AS total 
-    FROM pelanggaran_kebersihan 
-    WHERE tanggal >= '$periode_aktif'
-    GROUP BY kamar 
-    ORDER BY total DESC
-");
-
-// 6. Jenis Pelanggaran
-$q_jenis = mysqli_query($conn, "
-    SELECT j.nama_pelanggaran, COUNT(*) as total
-    FROM pelanggaran p
-    JOIN jenis_pelanggaran j ON p.jenis_pelanggaran_id = j.id
-    WHERE p.tanggal >= '$periode_aktif'
-    GROUP BY j.id
-
-    UNION ALL
-
-    SELECT 'KEBERSIHAN KAMAR' as nama_pelanggaran, COUNT(*) as total
-    FROM pelanggaran_kebersihan pk
-    WHERE pk.tanggal >= '$periode_aktif'
-    
-    ORDER BY total DESC
-");
-
-// Function biar gak nulis ulang fetch data chart
-function fetchChartData($query) {
-    $data = [];
-    while($row = mysqli_fetch_assoc($query)) {
-        $data[] = [
-            'tanggal' => $row['tanggal'],
-            'total' => $row['total']
-        ];
-    }
-    return $data;
-}
-
-// Simpan data ke variabel
-$data_7hari   = fetchChartData($q_harian);
-$data_bulan   = fetchChartData($q_bulanan);
-$data_3bulan  = fetchChartData($q_triwulan);
-$data_tahun   = fetchChartData($q_tahunan);
-
+$stmt_bagian->bind_param("ss", $tgl_mulai, $tgl_selesai);
+$stmt_bagian->execute();
+$data_per_bagian = $stmt_bagian->get_result()->fetch_all(MYSQLI_ASSOC);
+$json_per_bagian = json_encode(['labels' => array_column($data_per_bagian, 'bagian'), 'data' => array_column($data_per_bagian, 'total')]);
 
 ?>
 
-<!DOCTYPE html>
-<html lang="id">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Rekap Pelanggaran - Singkat</title>
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    <style>
-        :root {
-            --primary: #4285F4; /* Biru Google */
-            --secondary: #34A853; /* Hijau Google */
-            --accent: #EA4335; /* Merah Google */
-            --highlight: #FBBC05; /* Kuning Google */
-            --neutral: #5F6368; /* Abu-abu Google */
-            --light: #F8F9FA;
-            --dark: #202124;
-            --card-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
-            --hover-shadow: 0 8px 16px rgba(0, 0, 0, 0.15);
+<style>
+    /* === FONDASI & PALET WARNA BARU === */
+    :root {
+        --primary: #4f46e5;
+        --primary-light: #e0e7ff;
+        --secondary: #10b981;
+        --accent: #ef4444;
+        --text-dark: #111827;
+        --text-light: #6b7280;
+        --bg-light: #f9fafb;
+        --border-color: #e5e7eb;
+        --card-bg: #ffffff;
+        --card-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05), 0 2px 4px -2px rgba(0, 0, 0, 0.05);
+        --hover-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.07), 0 4px 6px -4px rgba(0, 0, 0, 0.07);
+    }
+
+    body {
+        background-color: var(--bg-light);
+        color: var(--text-dark);
+        font-family: 'Poppins', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+    }
+
+    /* === HEADER DASHBOARD === */
+    .dashboard-header {
+        background-color: var(--card-bg);
+        color: var(--text-dark);
+        padding: 25px;
+        border-radius: 16px;
+        margin-bottom: 25px;
+        border: 1px solid var(--border-color);
+    }
+    h2.dashboard-title {
+        font-size: 26px;
+        font-weight: 600;
+        margin: 0 0 5px 0;
+        display: flex;
+        align-items: center;
+        gap: 10px;
+    }
+    .dashboard-header p {
+        color: var(--text-light);
+        font-size: 15px;
+    }
+
+    /* === DESAIN KARTU (CARD) BARU === */
+    .card.dashboard-card {
+        background: var(--card-bg);
+        border-radius: 16px; /* Sudut lebih tumpul, lebih modern */
+        border: 1px solid var(--border-color);
+        box-shadow: none; /* Bayangan awal kita hilangkan, biar clean */
+        padding: 25px;
+        display: flex;
+        flex-direction: column;
+        transition: border-color 0.3s ease, box-shadow 0.3s ease;
+    }
+    .card.dashboard-card:hover {
+        border-color: var(--primary); /* Efek hover lebih subtle */
+        box-shadow: var(--hover-shadow);
+    }
+
+    /* === JUDUL DALAM KARTU === */
+    h3.card-title {
+        font-size: 18px;
+        margin: 0 0 20px 0;
+        color: var(--text-dark);
+        font-weight: 600;
+        padding-bottom: 0;
+        border-bottom: none; /* Hapus garis bawah, kita pakai spasi */
+        display: flex;
+        align-items: center;
+        gap: 8px;
+    }
+
+    /* === KARTU STATISTIK ANGKA === */
+    .stat-card {
+        text-align: center;
+    }
+    .stat-card .icon {
+        font-size: 24px;
+        color: var(--primary);
+        background-color: var(--primary-light);
+        width: 50px;
+        height: 50px;
+        border-radius: 50%;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        margin-bottom: 15px;
+    }
+    .stat-card .number {
+        font-size: 32px;
+        font-weight: 700;
+        color: var(--text-dark);
+        margin-bottom: 5px;
+    }
+    .stat-card h4 {
+        font-size: 15px;
+        color: var(--text-light);
+        margin: 0;
+        font-weight: 500;
+    }
+
+    /* === AREA GRAFIK (CHART) === */
+    .chart-container {
+        position: relative;
+        height: 350px;
+        flex-grow: 1;
+    }
+
+    /* === TABEL LEBIH CLEAN === */
+    .table-container { overflow-x: auto; flex-grow: 1; }
+    table { width: 100%; border-collapse: collapse; }
+    th, td {
+        padding: 14px 10px;
+        text-align: left;
+        border-bottom: 1px solid var(--border-color);
+        white-space: nowrap;
+        color: var(--text-dark);
+    }
+    th {
+        background-color: transparent; /* Header transparan */
+        font-weight: 600;
+        color: var(--text-light);
+        font-size: 13px;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+    }
+    tr:last-child td { border-bottom: none; } /* Baris terakhir tanpa border */
+    .badge {
+        padding: 4px 12px;
+        border-radius: 20px;
+        font-size: 12px;
+        font-weight: 600;
+        color: var(--accent);
+        background-color: #fee2e2; /* Warna lebih soft */
+    }
+
+    /* === FILTER TANGGAL & TOMBOL === */
+    .date-filter-form {
+        display: flex;
+        gap: 15px;
+        align-items: flex-end;
+        flex-wrap: wrap;
+    }
+    .date-input-group label {
+        font-size: 13px;
+        color: var(--text-light);
+        font-weight: 500;
+        margin-bottom: 5px;
+        display: block;
+    }
+    .form-control, .btn {
+        padding: 10px 15px;
+        border-radius: 10px;
+        font-size: 14px;
+        transition: all 0.3s ease;
+    }
+    .form-control {
+        border: 1px solid var(--border-color);
+    }
+    .form-control:focus {
+        border-color: var(--primary);
+        box-shadow: 0 0 0 3px var(--primary-light);
+        outline: none;
+    }
+    .btn-primary {
+        background-color: var(--primary);
+        color: white;
+        border: none;
+        cursor: pointer;
+        font-weight: 600;
+    }
+    .btn-primary:hover {
+        background-color: #4338ca; /* Sedikit lebih gelap saat hover */
+    }
+    .chart-filters { display: flex; gap: 10px; margin-bottom: 20px; flex-wrap: wrap; }
+    .chart-filters button {
+        background-color: var(--card-bg);
+        color: var(--text-light);
+        border: 1px solid var(--border-color);
+        padding: 8px 16px;
+        border-radius: 20px;
+        font-weight: 500;
+        cursor: pointer;
+        transition: all 0.3s ease;
+    }
+    .chart-filters button.active {
+        background-color: var(--primary-light);
+        color: var(--primary);
+        border-color: var(--primary);
+        font-weight: 600;
+    }
+
+    /* === PROGRESS BAR === */
+    .progress-bar-container { background-color: #e5e7eb; border-radius: 10px; height: 8px; width: 100px; overflow: hidden; }
+    .progress-bar { background-color: var(--secondary); height: 100%; border-radius: 10px; }
+
+    /* === RESPONSIVE UNTUK HP === */
+    @media (max-width: 768px) {
+        .dashboard-card { padding: 20px; }
+        h2.dashboard-title { font-size: 22px; }
+        .stat-card .number { font-size: 28px; }
+        .date-filter-form {
+            flex-direction: column;
+            align-items: stretch;
+            gap: 15px;
         }
-        
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
-            font-family: 'Roboto', 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-        }
-        
-        body {
-            background: linear-gradient(to bottom, #f5f7fa 0%, #e8eaed 100%);
-            color: #333;
-            line-height: 1.6;
-            padding: 20px;
-            min-height: 100vh;
-        }
-        
-        .container {
-            max-width: 1200px;
-            margin: 0 auto;
-        }
-        
-        header {
-            background: linear-gradient(135deg, var(--primary) 0%, #1a73e8 100%);
-            color: white;
-            padding: 25px;
-            border-radius: 15px;
-            margin-bottom: 25px;
-            box-shadow: var(--card-shadow);
-            position: relative;
-            overflow: hidden;
-        }
-        
-        header::after {
-            content: "";
-            position: absolute;
-            top: -50%;
-            right: -50%;
-            width: 100%;
-            height: 200%;
-            background: rgba(255, 255, 255, 0.1);
-            transform: rotate(30deg);
-        }
-        
-        h2 {
-            font-size: 28px;
-            margin-bottom: 10px;
-            position: relative;
-            z-index: 1;
-        }
-        
-        h3 {
-            font-size: 22px;
-            margin: 25px 0 20px;
-            padding-bottom: 12px;
-            border-bottom: 3px solid var(--primary);
-            color: var(--dark);
-        }
-        
-        .card {
-            background: white;
-            border-radius: 15px;
-            box-shadow: var(--card-shadow);
-            padding: 25px;
-            margin-bottom: 25px;
-            transition: transform 0.3s ease, box-shadow 0.3s ease;
-            border-top: 4px solid var(--primary);
-        }
-        
-        .card:hover {
-            transform: translateY(-5px);
-            box-shadow: var(--hover-shadow);
-        }
-        
-        .stats {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
-            gap: 25px;
-            margin-bottom: 35px;
-        }
-        
-        .stat-card {
-            background: linear-gradient(135deg, #ffffff 0%, #f8f9fc 100%);
-            border-radius: 15px;
-            padding: 25px;
-            box-shadow: var(--card-shadow);
-            text-align: center;
-            border-top: 5px solid var(--primary);
-            position: relative;
-            overflow: hidden;
-            transition: all 0.3s ease;
-        }
-        
-        .stat-card:nth-child(2) {
-            border-top-color: var(--accent);
-        }
-        
-        .stat-card:nth-child(3) {
-            border-top-color: var(--secondary);
-        }
-        
-        .stat-card:hover {
-            transform: translateY(-5px);
-            box-shadow: var(--hover-shadow);
-        }
-        
-        .stat-card i {
-            position: absolute;
-            top: -15px;
-            right: -15px;
-            font-size: 80px;
-            opacity: 0.1;
-            color: var(--primary);
-        }
-        
-        .stat-card:nth-child(2) i {
-            color: var(--accent);
-        }
-        
-        .stat-card:nth-child(3) i {
-            color: var(--secondary);
-        }
-        
-        .stat-card h4 {
-            font-size: 18px;
-            color: var(--neutral);
-            margin-bottom: 15px;
-        }
-        
-        .stat-card .number {
-            font-size: 36px;
-            font-weight: bold;
-            color: var(--primary);
-            margin: 10px 0;
-        }
-        
-        .stat-card:nth-child(2) .number {
-            color: var(--accent);
-        }
-        
-        .stat-card:nth-child(3) .number {
-            color: var(--secondary);
-        }
-        
-        .chart-wrapper {
-            position: relative;
-            margin-bottom: 30px;
-            overflow-x: auto;
-            -webkit-overflow-scrolling: touch;
-        }
-        
-        .chart-container {
-            position: relative;
-            height: 350px;
-            min-width: 600px;
-        }
-        
-        select {
-            padding: 12px 20px;
-            border-radius: 50px;
-            border: 2px solid var(--primary);
-            margin-bottom: 20px;
-            background-color: white;
-            font-size: 16px;
-            width: 100%;
-            max-width: 300px;
-            outline: none;
-            transition: all 0.3s ease;
-            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
-        }
-        
-        select:focus {
-            border-color: var(--accent);
-            box-shadow: 0 5px 15px rgba(234, 67, 53, 0.2);
-        }
-        
-        .table-container {
-            overflow-x: auto;
-            margin-bottom: 30px;
-            border-radius: 10px;
-            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
-        }
-        
-        table {
-            width: 100%;
-            border-collapse: collapse;
-            background: white;
-            border-radius: 10px;
-            overflow: hidden;
-        }
-        
-        th, td {
-            padding: 16px 20px;
-            text-align: left;
-            border-bottom: 1px solid #e0e0e0;
-        }
-        
-        th {
-            background: linear-gradient(135deg, var(--primary) 0%, #1a73e8 100%);
-            color: white;
-            font-weight: 600;
-            font-size: 16px;
-            position: sticky;
-            top: 0;
-        }
-        
-        tr:nth-child(even) {
-            background-color: #f9f9f9;
-        }
-        
-        tr:hover {
-            background-color: #f1f3f9;
-        }
-        
-        .badge {
-            display: inline-block;
-            padding: 8px 16px;
-            border-radius: 50px;
-            font-size: 14px;
-            font-weight: bold;
-            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
-            color: white;
-        }
-        
-        .badge-primary {
-            background: linear-gradient(135deg, var(--primary) 0%, #1a73e8 100%);
-        }
-        
-        .badge-success {
-            background: linear-gradient(135deg, var(--secondary) 0%, #2da44e 100%);
-        }
-        
-        .badge-warning {
-            background: linear-gradient(135deg, var(--highlight) 0%, #e6a700 100%);
-        }
-        
-        .badge-danger {
-            background: linear-gradient(135deg, var(--accent) 0%, #d93025 100%);
-        }
-        
-        .badge-info {
-            background: linear-gradient(135deg, #17a2b8 0%, #138496 100%);
-        }
-        
-        .period-info {
-            background: linear-gradient(135deg, #ffeaa7 0%, #FFD93D 100%);
-            padding: 15px 20px;
-            border-radius: 10px;
-            margin: 20px 0;
-            display: inline-flex;
-            align-items: center;
-            font-weight: bold;
-            color: var(--dark);
-            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
-        }
-        
-        .period-info i {
-            margin-right: 10px;
-            font-size: 20px;
-        }
-        
-        @media (max-width: 768px) {
-            body {
-                padding: 15px;
-            }
-            
-            .stats {
-                grid-template-columns: 1fr;
-                gap: 15px;
-            }
-            
-            h2 {
-                font-size: 24px;
-            }
-            
-            h3 {
-                font-size: 20px;
-            }
-            
-            .stat-card .number {
-                font-size: 30px;
-            }
-            
-            th, td {
-                padding: 12px 15px;
-                font-size: 14px;
-            }
-            
-            .chart-container {
-                height: 300px;
-                min-width: 100%;
-            }
-            
-            select {
-                max-width: 100%;
-            }
-            
-            .card {
-                padding: 20px;
-            }
-        }
-        
-        @media (max-width: 480px) {
-            header {
-                padding: 20px;
-            }
-            
-            h2 {
-                font-size: 20px;
-            }
-            
-            h3 {
-                font-size: 18px;
-            }
-            
-            .stat-card {
-                padding: 20px;
-            }
-            
-            .stat-card .number {
-                font-size: 26px;
-            }
-            
-            th, td {
-                padding: 10px 12px;
-                font-size: 13px;
-            }
-            
-            .badge {
-                padding: 6px 12px;
-                font-size: 12px;
-            }
-        }
-        
-        /* Scrollbar styling */
-        ::-webkit-scrollbar {
-            width: 8px;
-            height: 8px;
-        }
-        
-        ::-webkit-scrollbar-track {
-            background: #f1f1f1;
-            border-radius: 10px;
-        }
-        
-        ::-webkit-scrollbar-thumb {
-            background: linear-gradient(135deg, var(--primary) 0%, #1a73e8 100%);
-            border-radius: 10px;
-        }
-        
-        ::-webkit-scrollbar-thumb:hover {
-            background: linear-gradient(135deg, #1a73e8 0%, var(--primary) 100%);
-        }
-    </style>
-</head>
-<body>
-    <div class="container">
-        <header>
-            <h2>REKAP PELANGGARAN</h2>
-            <div class="period-info">
-                <i class="fas fa-calendar-alt"></i>
-                <span>Periode Aktif: <?= $periode_aktif ?></span>
+    }
+</style>
+
+<div class="container-fluid mt-4 mb-5">
+    <div class="dashboard-header">
+        <h2 class="dashboard-title"><i class="fa-solid fa-chart-pie"></i> Dashboard Pelanggaran</h2>
+        <p style="margin: 0;">Ringkasan data untuk periode: <strong><?= date('d M Y', strtotime($tgl_mulai)) ?></strong> sampai <strong><?= date('d M Y', strtotime($tgl_selesai)) ?></strong></p>
+    </div>
+
+    <div class="card dashboard-card mb-4">
+        <h3 class="card-title"><i class="fa-solid fa-filter"></i> Filter Data Berdasarkan Tanggal</h3>
+        <form action="" method="GET" class="date-filter-form">
+            <div class="date-input-group">
+                <label for="tgl_mulai">Dari Tanggal</label>
+                <input type="date" id="tgl_mulai" name="tgl_mulai" value="<?= htmlspecialchars($tgl_mulai) ?>" class="form-control">
             </div>
-        </header>
-        
-        <div class="stats">
-            <div class="stat-card">
-                <i class="fas fa-exclamation-triangle"></i>
-                <h4>Total Pelanggaran</h4>
+            <div class="date-input-group">
+                <label for="tgl_selesai">Sampai Tanggal</label>
+                <input type="date" id="tgl_selesai" name="tgl_selesai" value="<?= htmlspecialchars($tgl_selesai) ?>" class="form-control">
+            </div>
+            <div class="date-input-group">
+                <button type="submit" class="btn btn-primary">Terapkan Filter</button>
+            </div>
+        </form>
+    </div>
+
+    <div class="row g-4 mb-4">
+        <div class="col-lg-4 col-md-6">
+            <div class="card dashboard-card stat-card">
+                <div class="icon"><i class="fa-solid fa-triangle-exclamation"></i></div>
                 <div class="number"><?= $total_pelanggaran ?></div>
-                <p>Pelanggaran</p>
+                <h4>Total Pelanggaran</h4>
             </div>
-            <div class="stat-card">
-                <i class="fas fa-user-times"></i>
-                <h4>Pelanggaran Umum</h4>
+        </div>
+        <div class="col-lg-4 col-md-6">
+            <div class="card dashboard-card stat-card">
+                <div class="icon"><i class="fa-solid fa-book"></i></div>
                 <div class="number"><?= $total1 ?></div>
-                <p>Santri Melanggar</p>
+                <h4>Pelanggaran Umum</h4>
             </div>
-            <div class="stat-card">
-                <i class="fas fa-broom"></i>
-                <h4>Pelanggaran Kebersihan</h4>
+        </div>
+        <div class="col-lg-4 col-md-12">
+            <div class="card dashboard-card stat-card">
+                <div class="icon"><i class="fa-solid fa-broom"></i></div>
                 <div class="number"><?= $total2 ?></div>
-                <p>Pelanggaran</p>
-            </div>
-        </div>
-        
-        <div class="card">
-            <h3>Grafik Pelanggaran</h3>
-            <select id="filterRange">
-                <option value="7">7 Hari Terakhir</option>
-                <option value="30">1 Bulan Terakhir</option>
-                <option value="90">3 Bulan Terakhir</option>
-                <option value="365">1 Tahun Terakhir</option>
-            </select>
-            
-            <div class="chart-wrapper">
-                <div class="chart-container">
-                    <canvas id="chartPelanggaran"></canvas>
-                </div>
-            </div>
-        </div>
-        
-        <div class="card">
-            <h3>Top 5 Santri</h3>
-            <div class="table-container">
-                <table>
-                    <thead>
-                        <tr>
-                            <th>Nama Santri</th>
-                            <th>Jumlah Pelanggaran</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        <?php while($row = mysqli_fetch_assoc($q_santri)): ?>
-                        <tr>
-                            <td><i class="fas fa-user-graduate"></i> <?= $row['nama'] ?></td>
-                            <td><span class="badge badge-danger"><?= $row['total'] ?> pelanggaran</span></td>
-                        </tr>
-                        <?php endwhile; ?>
-                    </tbody>
-                </table>
-            </div>
-        </div>
-        
-        <div class="card">
-            <h3>Per Kelas</h3>
-            <div class="table-container">
-                <table>
-                    <thead>
-                        <tr>
-                            <th>Kelas</th>
-                            <th>Jumlah Pelanggaran</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        <?php while($row = mysqli_fetch_assoc($q_kelas)): ?>
-                        <tr>
-                            <td><i class="fas fa-chalkboard"></i> <?= $row['kelas'] ?></td>
-                            <td><span class="badge badge-warning"><?= $row['total'] ?> pelanggaran</span></td>
-                        </tr>
-                        <?php endwhile; ?>
-                    </tbody>
-                </table>
-            </div>
-        </div>
-        
-        <div class="card">
-            <h3>Per Kamar (Kebersihan)</h3>
-            <div class="table-container">
-                <table>
-                    <thead>
-                        <tr>
-                            <th>Kamar</th>
-                            <th>Jumlah Pelanggaran</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        <?php while($row = mysqli_fetch_assoc($q_kamar)): ?>
-                        <tr>
-                            <td><i class="fas fa-bed"></i> Kamar <?= $row['kamar'] ?></td>
-                            <td><span class="badge badge-primary"><?= $row['total'] ?> pelanggaran</span></td>
-                        </tr>
-                        <?php endwhile; ?>
-                    </tbody>
-                </table>
-            </div>
-        </div>
-        
-        <div class="card">
-            <h3>Jenis Pelanggaran</h3>
-            <div class="table-container">
-                <table>
-                    <thead>
-                        <tr>
-                            <th>Jenis Pelanggaran</th>
-                            <th>Jumlah</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        <?php while($row = mysqli_fetch_assoc($q_jenis)): ?>
-                        <tr>
-                            <td><i class="fas fa-exclamation-circle"></i> <?= $row['nama_pelanggaran'] ?></td>
-                            <td><span class="badge badge-success"><?= $row['total'] ?> kali</span></td>
-                        </tr>
-                        <?php endwhile; ?>
-                    </tbody>
-                </table>
+                <h4>Pelanggaran Kebersihan</h4>
             </div>
         </div>
     </div>
 
-    <script>
-        const data7Hari  = <?= json_encode($data_7hari) ?>;
-        const dataBulan  = <?= json_encode($data_bulan) ?>;
-        const data3Bulan = <?= json_encode($data_3bulan) ?>;
-        const dataTahun  = <?= json_encode($data_tahun) ?>;
-    </script>
+    <div class="card dashboard-card mb-4">
+        <h3 class="card-title"><i class="fa-solid fa-chart-line"></i> Tren Pelanggaran Harian</h3>
+        <div class="chart-filters">
+            <button id="filter-7d" class="active">7 Hari</button> <button id="filter-1m">1 Bulan</button>
+            <button id="filter-3m">3 Bulan</button> <button id="filter-1y">1 Tahun</button>
+        </div>
+        <div class="chart-container" style="height: 300px;"><canvas id="chartTrenPelanggaran"></canvas></div>
+    </div>
 
-    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <div class="row g-4">
+        <div class="col-xl-6">
+            <div class="card dashboard-card h-100">
+                <h3 class="card-title"><i class="fa-solid fa-list-check"></i> Komposisi Jenis Pelanggaran</h3>
+                <div class="table-container">
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>Jenis Pelanggaran</th>
+                                <th class="text-center">Jumlah</th>
+                                <th class="text-center">%</th>
+                                <th>Distribusi</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <?php if (!empty($data_jenis_pelanggaran)): foreach ($data_jenis_pelanggaran as $row): ?>
+                                <?php $persentase = ($total_semua_jenis > 0) ? ($row['total'] / $total_semua_jenis) * 100 : 0; ?>
+                                <tr>
+                                    <td><?= htmlspecialchars($row['nama_pelanggaran']) ?></td>
+                                    <td class="text-center"><?= $row['total'] ?></td>
+                                    <td class="text-center"><?= round($persentase) ?>%</td>
+                                    <td><div class="progress-bar-container"><div class="progress-bar" style="width: <?= $persentase ?>%;"></div></div></td>
+                                </tr>
+                            <?php endforeach; else: ?>
+                                <tr><td colspan="4" class="text-center text-muted">Belum ada data.</td></tr>
+                            <?php endif; ?>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
 
-    <script>
-        const ctx = document.getElementById('chartPelanggaran').getContext('2d');
+        <div class="col-xl-6">
+             <div class="card dashboard-card h-100">
+                <h3 class="card-title"><i class="fa-solid fa-users"></i> Top 10 Santri Pelanggar</h3>
+                <div class="table-container">
+                    <table>
+                        <thead><tr><th>Nama Santri</th><th class="text-center">Jumlah</th></tr></thead>
+                        <tbody>
+                            <?php if (mysqli_num_rows($q_santri) > 0): while($row = mysqli_fetch_assoc($q_santri)): ?>
+                            <tr>
+                                <td><?= htmlspecialchars($row['nama']) ?></td>
+                                <td class="text-center"><span class="badge"><?= $row['total'] ?></span></td>
+                            </tr>
+                            <?php endwhile; else: ?>
+                            <tr><td colspan="2" class="text-center text-muted">Belum ada data.</td></tr>
+                            <?php endif; ?>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
 
-        function formatChartData(rawData) {
-            return {
-                labels: rawData.map(d => {
-                    const date = new Date(d.tanggal);
-                    return date.toLocaleDateString('id-ID', { day: 'numeric', month: 'short' });
-                }),
-                datasets: [{
-                    label: "Jumlah Pelanggaran",
-                    data: rawData.map(d => d.total),
-                    borderColor: "#4285F4",
-                    backgroundColor: "rgba(66, 133, 244, 0.1)",
-                    pointBackgroundColor: "#4285F4",
-                    pointBorderColor: "#fff",
-                    pointHoverBackgroundColor: "#fff",
-                    pointHoverBorderColor: "#4285F4",
-                    pointRadius: 5,
-                    pointHoverRadius: 8,
-                    pointHitRadius: 12,
-                    fill: true,
-                    tension: 0.4
-                }]
-            };
+        <div class="col-xl-4 mt-4">
+            <div class="card dashboard-card h-100">
+                <h3 class="card-title"><i class="fa-solid fa-tags"></i> Sebaran per Bagian</h3>
+                <div class="chart-container"><canvas id="chartPerBagian"></canvas></div>
+            </div>
+        </div>
+
+        <div class="col-xl-4 mt-4">
+            <div class="card dashboard-card h-100">
+                <h3 class="card-title"><i class="fa-solid fa-chalkboard-user"></i> Sebaran per Kelas</h3>
+                <div class="chart-container"><canvas id="chartPerKelas"></canvas></div>
+            </div>
+        </div>
+        
+        <div class="col-xl-4 mt-4">
+            <div class="card dashboard-card h-100">
+                <h3 class="card-title"><i class="fa-solid fa-door-open"></i> Sebaran per Kamar (Kebersihan)</h3>
+                <div class="chart-container"><canvas id="chartPerKamar"></canvas></div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script>
+document.addEventListener('DOMContentLoaded', function () {
+    const dataKelas = <?= $json_per_kelas ?>;
+    const dataKamar = <?= $json_per_kamar ?>;
+    const dataBagian = <?= $json_per_bagian ?>;
+    
+    const doughnutChartOptions = {
+        responsive: true, maintainAspectRatio: false,
+        plugins: {
+            legend: { position: 'bottom', labels: { padding: 15, font: { family: "'Poppins', sans-serif" }, usePointStyle: true, pointStyle: 'circle' } },
+            tooltip: { backgroundColor: 'rgba(17, 24, 39, 0.9)', titleFont: { family: "'Poppins', sans-serif" }, bodyFont: { family: "'Poppins', sans-serif" }, padding: 12, cornerRadius: 8 }
+        },
+        cutout: '60%'
+    };
+
+    function generateDistinctColors(count) {
+        const colors = [];
+        const saturation = 70;
+        const lightness = 55;
+        if (count === 0) return colors;
+        for (let i = 0; i < count; i++) {
+            const hue = Math.floor((i * (360 / count)));
+            colors.push(`hsl(${hue}, ${saturation}%, ${lightness}%)`);
         }
+        return colors;
+    }
 
-        let chart = new Chart(ctx, {
-            type: 'line',
-            data: formatChartData(data7Hari),
-            options: {
-                responsive: true,
-                maintainAspectRatio: false,
-                plugins: {
-                    legend: { 
-                        display: true,
-                        position: 'top',
-                        labels: {
-                            font: {
-                                size: 14,
-                                family: "'Roboto', sans-serif"
-                            },
-                            color: '#2d3436'
-                        }
-                    },
-                    tooltip: {
-                        backgroundColor: 'rgba(45, 52, 54, 0.9)',
-                        titleFont: { 
-                            size: 15,
-                            family: "'Roboto', sans-serif"
-                        },
-                        bodyFont: { 
-                            size: 14,
-                            family: "'Roboto', sans-serif"
-                        },
-                        padding: 12,
-                        cornerRadius: 8,
-                        displayColors: false
-                    }
-                },
-                scales: {
-                    y: {
-                        beginAtZero: true,
-                        ticks: {
-                            precision: 0,
-                            font: {
-                                family: "'Roboto', sans-serif"
-                            }
-                        },
-                        grid: {
-                            drawBorder: false,
-                            color: 'rgba(0, 0, 0, 0.05)'
-                        }
-                    },
-                    x: {
-                        grid: {
-                            display: false
-                        },
-                        ticks: {
-                            font: {
-                                family: "'Roboto', sans-serif"
-                            }
-                        }
-                    }
-                }
-            }
+    if(dataBagian.labels.length > 0) {
+        const colorsBagian = generateDistinctColors(dataBagian.labels.length);
+        new Chart(document.getElementById('chartPerBagian'), {
+            type: 'doughnut',
+            data: {
+                labels: dataBagian.labels,
+                datasets: [{ data: dataBagian.data, backgroundColor: colorsBagian }]
+            },
+            options: doughnutChartOptions
         });
+    }
 
-        document.getElementById('filterRange').addEventListener('change', function() {
-            let selected = this.value;
-            let newData;
-            if (selected == "7") newData = data7Hari;
-            else if (selected == "30") newData = dataBulan;
-            else if (selected == "90") newData = data3Bulan;
-            else if (selected == "365") newData = dataTahun;
-
-            chart.data = formatChartData(newData);
-            chart.update();
+    if(dataKelas.labels.length > 0) {
+        const colorsKelas = generateDistinctColors(dataKelas.labels.length);
+        new Chart(document.getElementById('chartPerKelas'), {
+            type: 'doughnut',
+            data: {
+                labels: dataKelas.labels,
+                datasets: [{ data: dataKelas.data, backgroundColor: colorsKelas }]
+            },
+            options: doughnutChartOptions
         });
-    </script>
+    }
 
-</body>
-</html>
+    if(dataKamar.labels.length > 0) {
+        const colorsKamar = generateDistinctColors(dataKamar.labels.length);
+        new Chart(document.getElementById('chartPerKamar'), {
+            type: 'doughnut',
+            data: {
+                labels: dataKamar.labels,
+                datasets: [{ data: dataKamar.data, backgroundColor: colorsKamar }]
+            },
+            options: doughnutChartOptions
+        });
+    }
 
-<?php include '../footer.php'; ?>
+    const ctxTren = document.getElementById('chartTrenPelanggaran').getContext('2d');
+    const lineChart = new Chart(ctxTren, {
+        type: 'line',
+        data: { labels: [], datasets: [{ label: 'Jumlah Pelanggaran', data: [], backgroundColor: 'rgba(79, 70, 229, 0.1)', borderColor: 'rgba(79, 70, 229, 1)', borderWidth: 2, pointBackgroundColor: 'rgba(79, 70, 229, 1)', pointRadius: 4, tension: 0.3, fill: true }] },
+        options: { responsive: true, maintainAspectRatio: false, scales: { y: { beginAtZero: true, ticks: { precision: 0 } } }, plugins: { legend: { display: false } } }
+    });
+    const filterButtons = document.querySelectorAll('.chart-filters button');
+    const rangeToDays = { '7d': 7, '1m': 30, '3m': 90, '1y': 365 };
+    async function fetchAndUpdateLineChart(rangeKey) {
+        const days = rangeToDays[rangeKey];
+        if (!days) return;
+        try {
+            const response = await fetch(`get_harian_data.php?days=${days}`);
+            if (!response.ok) throw new Error('Network error');
+            const chartData = await response.json();
+            lineChart.data.labels = chartData.labels;
+            lineChart.data.datasets[0].data = chartData.data;
+            lineChart.update();
+        } catch (error) { console.error('Gagal fetch data:', error); }
+    }
+    filterButtons.forEach(button => {
+        button.addEventListener('click', () => {
+            filterButtons.forEach(btn => btn.classList.remove('active'));
+            button.classList.add('active');
+            const rangeKey = button.id.split('-')[1];
+            fetchAndUpdateLineChart(rangeKey);
+        });
+    });
+    fetchAndUpdateLineChart('7d');
+});
+</script>
+
+<?php require_once __DIR__ . '/../footer.php'; ?>

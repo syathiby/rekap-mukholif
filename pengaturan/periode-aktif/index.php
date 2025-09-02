@@ -1,6 +1,9 @@
+<?php 
+require_once __DIR__ . '/../../header.php';
+guard('periode_aktif_manage'); 
+?>
+
 <?php
-include '../../db.php';
-include '../../header.php';
 
 // Ambil periode aktif dari DB
 $q = mysqli_query($conn, "SELECT nilai FROM pengaturan WHERE nama = 'periode_aktif' LIMIT 1");
