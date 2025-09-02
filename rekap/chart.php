@@ -23,9 +23,8 @@ $stmt_total2->execute();
 $total2 = $stmt_total2->get_result()->fetch_assoc()['total'];
 $total_pelanggaran = $total1 + $total2;
 
-// 2. Top 10 Santri (query disesuaikan)
-$stmt_santri = $conn->prepare("SELECT s.nama, COUNT(*) AS total FROM pelanggaran p JOIN santri s ON s.id = p.santri_id WHERE p.tanggal >= ? AND p.tanggal <= ? GROUP BY s.id ORDER BY total DESC LIMIT 10");
-$stmt_santri->bind_param("ss", $tgl_mulai, $tgl_selesai);
+// 2. Top 10 Santri berdasarkan poin_aktif
+$stmt_santri = $conn->prepare("SELECT nama, poin_aktif FROM santri WHERE poin_aktif > 0 ORDER BY poin_aktif DESC LIMIT 10");
 $stmt_santri->execute();
 $q_santri = $stmt_santri->get_result();
 
@@ -377,7 +376,7 @@ $json_per_bagian = json_encode(['labels' => array_column($data_per_bagian, 'bagi
                             <?php if (mysqli_num_rows($q_santri) > 0): while($row = mysqli_fetch_assoc($q_santri)): ?>
                             <tr>
                                 <td><?= htmlspecialchars($row['nama']) ?></td>
-                                <td class="text-center"><span class="badge"><?= $row['total'] ?></span></td>
+                                <td class="text-center"><span class="badge"><?= $row['poin_aktif'] ?></span></td>
                             </tr>
                             <?php endwhile; else: ?>
                             <tr><td colspan="2" class="text-center text-muted">Belum ada data.</td></tr>

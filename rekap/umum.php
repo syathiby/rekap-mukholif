@@ -85,7 +85,7 @@ if (!empty($filter_bagian) || !empty($filter_kategori)) {
 }
 
 $sql .= "
-ORDER BY s.poin_aktif DESC, total_poin_periode DESC, s.nama ASC
+ORDER BY s.poin_aktif DESC, total_pelanggaran_periode DESC, s.nama ASC
 ";
 
 $stmt = $conn->prepare($sql);
