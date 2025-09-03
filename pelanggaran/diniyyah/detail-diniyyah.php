@@ -1,6 +1,6 @@
 <?php 
 require_once __DIR__ . '/../../header.php';
-guard('pelanggaran_diniyyah_input'); 
+guard('rekap_view_diniyyah'); 
 ?>
 
 <?php

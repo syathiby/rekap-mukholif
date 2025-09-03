@@ -77,14 +77,18 @@ guard();
         .btn-success { background-color: var(--success); }
         .btn-info { background-color: var(--info); color: white; }
         .btn-purple { background-color: var(--purple); }
+        /* ✅ PERUBAHAN: Ganti style .btn-dark jadi .btn-accent */
+        .btn-accent { background-color: var(--accent); }
 
-        /* ✅ FIX: Paksa warna background tetap sama saat di-hover */
+        /* Paksa warna background tetap sama saat di-hover */
         .btn-primary:hover { background-color: var(--primary); }
         .btn-warning:hover { background-color: var(--warning); color: var(--dark); }
         .btn-danger:hover { background-color: var(--danger); }
         .btn-success:hover { background-color: var(--success); }
         .btn-info:hover { background-color: var(--info); color: white; }
         .btn-purple:hover { background-color: var(--purple); }
+        /* ✅ PERUBAHAN: Ganti hover state untuk .btn-accent */
+        .btn-accent:hover { background-color: var(--accent); }
         
         @keyframes fadeIn {
             from { opacity: 0; transform: translateY(20px); }
@@ -101,12 +105,14 @@ guard();
             animation-fill-mode: both;
         }
         
+        /* Animasi berurutan untuk setiap tombol */
         .btn-menu:nth-child(1) { animation-delay: 0.1s; }
         .btn-menu:nth-child(2) { animation-delay: 0.2s; }
         .btn-menu:nth-child(3) { animation-delay: 0.3s; }
         .btn-menu:nth-child(4) { animation-delay: 0.4s; }
         .btn-menu:nth-child(5) { animation-delay: 0.5s; }
         .btn-menu:nth-child(6) { animation-delay: 0.6s; }
+        .btn-menu:nth-child(7) { animation-delay: 0.7s; }
         
     </style>
 </head>
@@ -137,6 +143,13 @@ guard();
             <i class="fas fa-book-quran"></i>
             <span>Rekap Pelanggaran Diniyyah</span>
         </a>
+        
+        <!-- ✅ PERUBAHAN: Kelas tombol diganti dari .btn-dark menjadi .btn-accent -->
+        <a href="../pelanggaran/tahfidz/rekap.php" class="btn btn-accent btn-menu text-white">
+            <i class="fas fa-book-open"></i>
+            <span>Rekap Pelanggaran Tahfidz</span>
+        </a>
+
         <a href="chart.php" class="btn btn-info btn-menu text-white">
             <i class="fas fa-chart-line"></i>
             <span>Grafik Statistik</span>

@@ -37,6 +37,12 @@
 │    │    ├──create.php  
 │    │    ├──process.php
 │    │    ├──search_santri.php 
+│    └── tahfidz/         
+│       ├── create.php
+│       ├── process.php
+│       ├── rekap.php
+│       ├── search_santri.php
+│       └── detail-tahfidz.php
 ├──pengaturan/
 │    ├──index.php
 │    ├──ganti-password

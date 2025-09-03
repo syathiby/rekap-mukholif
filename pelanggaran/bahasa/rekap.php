@@ -1,6 +1,6 @@
 <?php 
 require_once __DIR__ . '/../../header.php';
-guard('pelanggaran_bahasa_input'); 
+guard('rekap_view_bahasa'); 
 ?>
 
 <?php
