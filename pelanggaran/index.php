@@ -1,5 +1,6 @@
 <?php 
 require_once __DIR__ . '/../header.php';
+// guard() akan memastikan user harus login untuk akses halaman ini
 guard(); 
 ?>
 
@@ -87,13 +88,11 @@ guard();
   <h2 class="text-center header-title mb-5">Pilih Jenis Pencatatan</h2>
   <div class="row g-4 justify-content-center">
     
+    <?php if (has_permission('pelanggaran_pengabdian_input')): ?>
     <div class="col-lg-3 col-md-6">
         <div class="card card-option shadow-sm">
             <div class="card-body text-center p-4">
                 <div class="card-icon" style="background: linear-gradient(135deg, #f7971e 0%, #ffd200 100%);">
-                    <!-- ======================================================= -->
-                    <!-- === INI DIA PERUBAHANNYA === -->
-                    <!-- ======================================================= -->
                     <i class="fas fa-hands-helping"></i>
                 </div>
                 <h5 class="card-title">Pengabdian</h5>
@@ -104,7 +103,9 @@ guard();
             </div>
         </div>
     </div>
+    <?php endif; ?>
 
+    <?php if (has_permission('pelanggaran_kesantrian_input')): ?>
     <div class="col-lg-3 col-md-6">
       <div class="card card-option shadow-sm">
         <div class="card-body text-center p-4">
@@ -119,7 +120,9 @@ guard();
         </div>
       </div>
     </div>
+    <?php endif; ?>
 
+    <?php if (has_permission('pelanggaran_bahasa_input')): ?>
     <div class="col-lg-3 col-md-6">
         <div class="card card-option shadow-sm">
             <div class="card-body text-center p-4">
@@ -134,7 +137,9 @@ guard();
             </div>
         </div>
     </div>
+    <?php endif; ?>
 
+    <?php if (has_permission('pelanggaran_diniyyah_input')): ?>
     <div class="col-lg-3 col-md-6">
         <div class="card card-option shadow-sm">
             <div class="card-body text-center p-4">
@@ -142,13 +147,37 @@ guard();
                     <i class="fas fa-book-quran"></i>
                 </div>
                 <h5 class="card-title">Pelanggaran Diniyyah</h5>
-                <p class="card-text">Catat pelanggaran terkait kegiatan diniyyah atau keagamaan.</p>
+                <p class="card-text">Catat pelanggaran terkait kegiatan belajar mengajar.</p>
                 <a href="diniyyah/create.php" class="btn btn-success btn-block">
                     <i class="fas fa-sign-in-alt me-2"></i> Masuk
                 </a>
             </div>
         </div>
     </div>
+    <?php endif; ?>
+
+    <!-- ======================================================= -->
+    <!-- === INI DIA KARTU BARU BUAT TAHFIDZ === -->
+    <!-- ======================================================= -->
+    <?php if (has_permission('pelanggaran_tahfidz_input')): ?>
+    <div class="col-lg-3 col-md-6">
+        <div class="card card-option shadow-sm">
+            <div class="card-body text-center p-4">
+                <div class="card-icon" style="background: linear-gradient(135deg, #dd2476 0%, #ff512f 100%);">
+                    <i class="fas fa-book-reader"></i>
+                </div>
+                <h5 class="card-title">Tahfidz</h5>
+                <p class="card-text">Catat berbagai jenis pelanggaran Divisi Tahfidz.</p>
+                <a href="tahfidz/create.php" class="btn btn-danger btn-block">
+                    <i class="fas fa-sign-in-alt me-2"></i> Masuk
+                </a>
+            </div>
+        </div>
+    </div>
+    <?php endif; ?>
+    <!-- ======================================================= -->
+    <!-- === SELESAI === -->
+    <!-- ======================================================= -->
 
   </div>
 </div>

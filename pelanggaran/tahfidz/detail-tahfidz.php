@@ -1,17 +1,17 @@
 <?php 
 require_once __DIR__ . '/../../header.php';
-guard('rekap_view_bahasa'); 
+// Pastikan guard merujuk ke izin yang sama dengan halaman rekap
+guard('rekap_view_tahfidz'); 
 ?>
 
 <?php
 
-$bagian = 'Bahasa';
+$bagian = 'Tahfidz';
 
 // =======================================================
 // BAGIAN 1: TANGKAP "SURAT TUGAS" DARI URL
 // =======================================================
 
-// Pastikan semua parameter yang dibutuhkan ada
 if (!isset($_GET['santri_id']) || !isset($_GET['start_date']) || !isset($_GET['end_date'])) {
     die("<div class='container my-4'><div class='alert alert-danger'>Informasi tidak lengkap untuk menampilkan detail.</div></div>");
 }
@@ -24,7 +24,7 @@ $end_date = $_GET['end_date'];
 // BAGIAN 2: AMBIL DATA DARI DATABASE
 // =======================================================
 
-// Query 1: Ambil data profil santri yang bersangkutan
+// Query 1: Ambil data profil santri
 $stmt_santri = mysqli_prepare($conn, "SELECT nama, kelas, kamar FROM santri WHERE id = ?");
 mysqli_stmt_bind_param($stmt_santri, "i", $santri_id);
 mysqli_stmt_execute($stmt_santri);
@@ -34,7 +34,7 @@ if (!$santri) {
     die("<div class='container my-4'><div class='alert alert-danger'>Data santri tidak ditemukan.</div></div>");
 }
 
-// Query 2: Ambil semua rincian pelanggaran santri tersebut pada rentang tanggal yang ditentukan
+// Query 2: Ambil rincian pelanggaran
 $sql_detail = "
     SELECT 
         p.tanggal,
@@ -55,14 +55,14 @@ mysqli_stmt_execute($stmt_detail);
 $result_detail = mysqli_stmt_get_result($stmt_detail);
 $detail_list = mysqli_fetch_all($result_detail, MYSQLI_ASSOC);
 
-// Kalkulasi statistik untuk di card summary
+// Kalkulasi statistik
 $total_pelanggaran = count($detail_list);
 $total_poin = array_sum(array_column($detail_list, 'poin'));
 
 ?>
 
 <!-- ======================================================= -->
-<!-- BAGIAN 3: TAMPILAN DETAIL PELANGGARAN -->
+<!-- BAGIAN 3: TAMPILAN DETAIL PELANGGARAN DENGAN TEMA BARU -->
 <!-- ======================================================= -->
 <!DOCTYPE html>
 <html lang="id">
@@ -75,11 +75,17 @@ $total_poin = array_sum(array_column($detail_list, 'poin'));
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700&display=swap" rel="stylesheet">
     <style>
-        /* Pakai style yang sama persis kayak halaman rekap biar konsisten */
+        /* === PERUBAHAN TEMA WARNA (DISAMAKAN DENGAN REKAP) === */
         :root {
-            --primary: #4f46e5; --primary-light: #e0e7ff; --primary-dark: #4338ca;
-            --secondary: #64748b; --light-bg: #f8fafc; --card-bg: #ffffff;
-            --border-color: #e2e8f0; --text-dark: #1e293b; --text-light: #64748b;
+            --primary: #dc3545; /* Merah (danger) */
+            --primary-light: #f8d7da; /* Merah muda */
+            --primary-dark: #b02a37; /* Merah tua */
+            --secondary: #6c757d; 
+            --light-bg: #f8fafc; 
+            --card-bg: #ffffff;
+            --border-color: #e2e8f0; 
+            --text-dark: #1e293b; 
+            --text-light: #64748b;
         }
         body { background-color: var(--light-bg); font-family: 'Poppins', sans-serif; }
         .card { background-color: var(--card-bg); border: 1px solid var(--border-color); border-radius: 0.75rem; box-shadow: 0 1px 3px 0 rgb(0 0 0 / 0.05); }
@@ -95,9 +101,9 @@ $total_poin = array_sum(array_column($detail_list, 'poin'));
 <div class="container py-4">
     
     <!-- Tombol Kembali & Judul -->
-    <div class="d-flex justify-content-between align-items-center mb-4">
-        <a href="javascript:history.back()" class="btn btn-outline-secondary"><i class="fas fa-arrow-left me-2"></i>Kembali</a>
-        <h1 class="page-title mb-0 text-end">Detail Pelanggaran Bahasa</h1>
+    <div class="d-flex justify-content-between align-items-center mb-4 flex-wrap gap-2">
+        <a href="rekap.php?start_date=<?= $start_date ?>&end_date=<?= $end_date ?>" class="btn btn-outline-secondary"><i class="fas fa-arrow-left me-2"></i>Kembali ke Rekap</a>
+        <h1 class="page-title mb-0 text-end h5">Detail Pelanggaran Tahfidz</h1>
     </div>
 
     <!-- Kartu Profil Santri & Periode -->
@@ -143,15 +149,15 @@ $total_poin = array_sum(array_column($detail_list, 'poin'));
         <div class="card-header">
              <h5 class="card-title fw-bold mb-0"><i class="fas fa-list-ul me-2"></i>Rincian Pelanggaran</h5>
         </div>
-        <div class="card-body table-responsive">
+        <div class="card-body table-responsive p-0">
             <table class="table table-hover mb-0">
                 <thead>
                     <tr>
-                        <th style="width: 5%;">No</th>
+                        <th class="ps-4" style="width: 5%;">No</th>
                         <th>Tanggal & Waktu</th>
                         <th>Nama Pelanggaran</th>
                         <th class="text-center">Kategori</th>
-                        <th class="text-center">Poin</th>
+                        <th class="text-center pe-4">Poin</th>
                     </tr>
                 </thead>
                 <tbody>
@@ -160,7 +166,7 @@ $total_poin = array_sum(array_column($detail_list, 'poin'));
                     <?php else: ?>
                         <?php foreach ($detail_list as $index => $row): ?>
                         <tr>
-                            <td class="fw-bold"><?= $index + 1 ?></td>
+                            <td class="ps-4 fw-bold"><?= $index + 1 ?></td>
                             <td><?= date('d M Y, H:i', strtotime($row['tanggal'])) ?></td>
                             <td><?= htmlspecialchars($row['nama_pelanggaran']) ?></td>
                             <td class="text-center">
@@ -172,7 +178,7 @@ $total_poin = array_sum(array_column($detail_list, 'poin'));
                                 ?>
                                 <span class="badge <?= $badge_class ?>"><?= $row['kategori'] ?></span>
                             </td>
-                            <td class="text-center fw-bold fs-5 text-danger"><?= $row['poin'] ?></td>
+                            <td class="text-center pe-4 fw-bold fs-5 text-danger"><?= $row['poin'] ?></td>
                         </tr>
                         <?php endforeach; ?>
                     <?php endif; ?>

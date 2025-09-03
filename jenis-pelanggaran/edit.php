@@ -66,6 +66,7 @@ if (!$data) {
                         <option value="Bahasa" <?php echo ($data['bagian'] == 'Bahasa') ? 'selected' : ''; ?>>Bahasa</option>
                         <option value="Diniyyah" <?php echo ($data['bagian'] == 'Diniyyah') ? 'selected' : ''; ?>>Diniyyah</option>
                         <option value="Pengabdian" <?php echo ($data['bagian'] == 'Pengabdian') ? 'selected' : ''; ?>>Pengabdian</option>
+                        <option value="Tahfidz" <?php echo ($data['bagian'] == 'Tahfidz') ? 'selected' : ''; ?>>Tahfidz</option>
                     </select>
                 </div>
 

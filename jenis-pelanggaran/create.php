@@ -73,6 +73,7 @@ guard('jenis_pelanggaran_manage');
                                 <option value="Bahasa">Bahasa</option>
                                 <option value="Diniyyah">Diniyyah</option>
                                 <option value="Pengabdian">Pengabdian</option>
+                                <option value="Tahfidz">Tahfidz</option>
                             </select>
                         </div>
                         

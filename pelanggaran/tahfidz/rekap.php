@@ -1,38 +1,32 @@
 <?php 
 require_once __DIR__ . '/../../header.php';
-guard('rekap_view_diniyyah'); 
+// Sesuaikan guard dengan izin yang benar
+guard('rekap_view_tahfidz'); 
 ?>
 
 <?php
 
-// === PERUBAHAN UTAMA 1: Ganti bagiannya ===
-$bagian = 'Diniyyah';
+$bagian = 'Tahfidz';
 
 // =======================================================
-// BAGIAN 1: PERSIAPAN DATA & FILTER (Logika sama persis)
+// BAGIAN 1: PERSIAPAN DATA & FILTER (DENGAN LOGIKA PERIODE AKTIF)
 // =======================================================
 
-// Ambil periode aktif dari database
 $q_periode = mysqli_query($conn, "SELECT nilai FROM pengaturan WHERE nama = 'periode_aktif' LIMIT 1");
 $periode_aktif = mysqli_fetch_assoc($q_periode)['nilai'] ?? null;
 
-// Jika periode aktif belum di-set, hentikan eksekusi dan beri pesan
 if (!$periode_aktif) {
     die("<div class='container my-4'><div class='alert alert-warning'><strong>Peringatan:</strong> Periode aktif belum diatur. Silakan atur terlebih dahulu di halaman Pengaturan agar data yang tampil akurat.</div></div>");
 }
 
-// Mengubah urutan kamar menjadi numerik (angka)
 $kamars_result = mysqli_query($conn, "SELECT DISTINCT kamar FROM santri WHERE kamar IS NOT NULL AND kamar != '' ORDER BY CAST(kamar AS UNSIGNED) ASC");
-
-// Ambil filter dari URL (GET), kasih nilai default
 $filter_kamar = $_GET['kamar'] ?? '';
-// Default tanggal awal sekarang diambil dari $periode_aktif
 $start_date = $_GET['start_date'] ?? $periode_aktif; 
 $end_date = $_GET['end_date'] ?? date('Y-m-d');
 
 
 // =======================================================
-// BAGIAN 2: QUERY UTAMA (MODEL PERINGKAT) - Logika sama persis
+// BAGIAN 2: QUERY UTAMA (MODEL PERINGKAT)
 // =======================================================
 
 $sql_peringkat = "
@@ -69,7 +63,7 @@ $result_peringkat = mysqli_stmt_get_result($stmt_peringkat);
 $peringkat_list = mysqli_fetch_all($result_peringkat, MYSQLI_ASSOC);
 
 // =======================================================
-// BAGIAN 3: PERSIAPAN DATA UNTUK GRAFIK - Logika sama persis
+// BAGIAN 3: PERSIAPAN DATA UNTUK GRAFIK
 // =======================================================
 
 $top_5_santri = array_slice($peringkat_list, 0, 5);
@@ -103,26 +97,33 @@ $json_kelas_chart = json_encode([
 ?>
 
 <!-- ======================================================= -->
-<!-- BAGIAN 4: TAMPILAN HTML (Dengan tema Diniyyah) -->
+<!-- BAGIAN 4: TAMPILAN HTML DENGAN TEMA BARU -->
 <!-- ======================================================= -->
 <!DOCTYPE html>
 <html lang="id">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <!-- === PERUBAHAN UTAMA 2: Ganti Judul === -->
-    <title>Peringkat Pelanggaran Diniyyah</title>
+    <title>Rekap Pelanggaran Tahfidz</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700&display=swap" rel="stylesheet">
     <style>
-        /* === PERUBAHAN UTAMA 3: Ganti Tema Warna Jadi Hijau === */
+        /* === PERUBAHAN TEMA WARNA === */
         :root {
-            --primary: #198754; --primary-light: #d1e7dd; --primary-dark: #157347;
-            --secondary: #64748b; --light-bg: #f8fafc; --card-bg: #ffffff;
-            --border-color: #e2e8f0; --text-dark: #1e293b; --text-light: #64748b;
-            --gold: #f59e0b; --silver: #9ca3af; --bronze: #a16207;
+            --primary: #dc3545; /* Merah (danger) */
+            --primary-light: #f8d7da; /* Merah muda */
+            --primary-dark: #b02a37; /* Merah tua */
+            --secondary: #6c757d; 
+            --light-bg: #f8fafc; 
+            --card-bg: #ffffff;
+            --border-color: #e2e8f0; 
+            --text-dark: #1e293b; 
+            --text-light: #64748b;
+            --gold: #f59e0b; 
+            --silver: #9ca3af; 
+            --bronze: #a16207;
         }
         body { background-color: var(--light-bg); font-family: 'Poppins', sans-serif; }
         .card { background-color: var(--card-bg); border: 1px solid var(--border-color); border-radius: 0.75rem; box-shadow: 0 1px 3px 0 rgb(0 0 0 / 0.05); }
@@ -139,11 +140,14 @@ $json_kelas_chart = json_encode([
         .total-poin { font-size: 1.25rem; font-weight: 700; color: var(--primary); }
         .btn-detail { background-color: var(--primary-light); color: var(--primary); font-weight: 600; text-decoration: none; transition: all 0.2s; }
         .btn-detail:hover { background-color: var(--primary); color: white; }
+        .btn-primary { background-color: var(--primary); border-color: var(--primary); }
+        .btn-primary:hover { background-color: var(--primary-dark); border-color: var(--primary-dark); }
     </style>
 </head>
 <body>
 <div class="container py-4">
-    <h1 class="page-title mb-4"><i class="fas fa-book-quran me-3"></i>Peringkat Pelanggaran Diniyyah</h1>
+    <!-- === PERUBAHAN JUDUL & IKON === -->
+    <h1 class="page-title mb-4"><i class="fas fa-book-reader me-3"></i>Rekap Pelanggaran Tahfidz</h1>
 
     <!-- Filter Card -->
     <div class="card mb-4">
@@ -159,7 +163,7 @@ $json_kelas_chart = json_encode([
                     <input type="date" class="form-control" name="end_date" value="<?= htmlspecialchars($end_date) ?>">
                 </div>
                 <div class="col-md-2">
-                    <button type="submit" class="btn btn-success w-100"><i class="fas fa-search"></i> Terapkan</button>
+                    <button type="submit" class="btn btn-primary w-100"><i class="fas fa-search"></i> Terapkan</button>
                 </div>
                 <?php if ($filter_kamar): ?>
                     <input type="hidden" name="kamar" value="<?= htmlspecialchars($filter_kamar) ?>">
@@ -213,7 +217,7 @@ $json_kelas_chart = json_encode([
                 </thead>
                 <tbody>
                     <?php if (empty($peringkat_list)): ?>
-                        <tr><td colspan="5" class="text-center p-5 text-muted"><i class="fas fa-check-circle fa-3x mb-3"></i><br>Alhamdulillah, tidak ada pelanggaran Diniyyah ditemukan.</td></tr>
+                        <tr><td colspan="5" class="text-center p-5 text-muted"><i class="fas fa-check-circle fa-3x mb-3"></i><br>Alhamdulillah, tidak ada pelanggaran Tahfidz ditemukan.</td></tr>
                     <?php else: ?>
                         <?php foreach ($peringkat_list as $index => $row): $no = $index + 1; ?>
                         <tr class="rank-<?= $no ?>">
@@ -235,8 +239,7 @@ $json_kelas_chart = json_encode([
                                 <span class="badge bg-secondary rounded-pill"><?= $row['total_pelanggaran'] ?></span>
                             </td>
                             <td class="text-center">
-                                <!-- === PERUBAHAN UTAMA 4: Link ke detail-diniyyah.php === -->
-                                <a href="detail-diniyyah.php?santri_id=<?= $row['id'] ?>&start_date=<?= $start_date ?>&end_date=<?= $end_date ?>" class="btn btn-sm btn-detail rounded-pill px-3">
+                                <a href="detail-tahfidz.php?santri_id=<?= $row['id'] ?>&start_date=<?= $start_date ?>&end_date=<?= $end_date ?>" class="btn btn-sm btn-detail rounded-pill px-3">
                                     <i class="fas fa-info-circle me-1"></i> Detail
                                 </a>
                             </td>
@@ -256,21 +259,24 @@ document.addEventListener('DOMContentLoaded', function () {
     const ctxTopSantri = document.getElementById('chartTopSantri').getContext('2d');
     if (dataTopSantri.labels.length > 0) {
         new Chart(ctxTopSantri, {
-            type: 'pie',
+            type: 'pie', // Diubah lagi jadi chart bulet (pie)
             data: {
                 labels: dataTopSantri.labels,
                 datasets: [{
                     label: 'Total Poin',
                     data: dataTopSantri.data,
-                    // Diubah warnanya
-                    backgroundColor: ['#198754', '#f59e0b', '#dc3545', '#6c757d', '#0dcaf0'],
+                    backgroundColor: ['#dc3545', '#fd7e14', '#ffc107', '#198754', '#0dcaf0'],
                     hoverOffset: 4
                 }]
             },
             options: {
                 responsive: true,
                 maintainAspectRatio: false,
-                plugins: { legend: { position: 'top' } }
+                plugins: {
+                    legend: {
+                        position: 'top', // Tampilkan legenda di atas
+                    }
+                }
             }
         });
     }
@@ -284,7 +290,7 @@ document.addEventListener('DOMContentLoaded', function () {
                 labels: dataKelas.labels,
                 datasets: [{
                     data: dataKelas.data,
-                    backgroundColor: ['#198754', '#6f42c1', '#d63384', '#fd7e14', '#157347', '#0dcaf0'],
+                    backgroundColor: ['#6f42c1', '#d63384', '#198754', '#0dcaf0', '#fd7e14', '#0d6efd'],
                     hoverOffset: 4
                 }]
             },
