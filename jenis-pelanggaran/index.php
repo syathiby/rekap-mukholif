@@ -107,7 +107,6 @@ $result = mysqli_stmt_get_result($stmt);
     <div class="page-title-card d-flex justify-content-between align-items-center">
         <h3 class="mb-0"><i class="fas fa-exclamation-triangle me-2"></i>Data Jenis Pelanggaran</h3>
         <div class="btn-group">
-            <a href="bulk_create.php" class="btn btn-info"><i class="fas fa-file-import me-1"></i> Bulk Input</a>
             <a href="create.php" class="btn btn-success"><i class="fas fa-plus-circle me-1"></i> Tambah Baru</a>
         </div>
     </div>
