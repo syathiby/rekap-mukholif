@@ -71,6 +71,15 @@ $current_uri = htmlspecialchars($_SERVER['REQUEST_URI']);
         </a>
     </li>
     <?php endif; ?>
+
+    <!-- ✅ MENU EXPORT BARU DISINI ✅ -->
+    <?php if (has_permission('export_laporan')): ?>
+    <li class="nav-item">
+        <a class="nav-link apply-color-hover-active color-cyan <?= strpos($current_uri, 'export') !== false ? 'active' : '' ?>" href="../export">
+            <i class="fas fa-file-excel me-2"></i>Export Laporan
+        </a>
+    </li>
+    <?php endif; ?>
     
     <!-- Menu Pengaturan -->
     <?php if (has_permission('pengaturan_view')): ?>
