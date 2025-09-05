@@ -216,7 +216,7 @@ guard('pengaturan_view');
                     <p class="card-description">Buat, lihat, dan kelola akun untuk penanggung jawab setiap bagian.</p>
                 </div>
                 <div class="card-action">
-                    <a href="users/create.php" class="settings-link">
+                    <a href="users/index.php" class="settings-link">
                         Kelola User <i class="fas fa-arrow-right"></i>
                     </a>
                 </div>
@@ -232,20 +232,6 @@ guard('pengaturan_view');
                 <div class="card-action">
                     <a href="periode-aktif/index.php" class="settings-link">
                         Kelola Periode <i class="fas fa-arrow-right"></i>
-                    </a>
-                </div>
-            </div>
-            
-            <!-- KARTU: Ganti Password - Warna Merah -->
-            <div class="settings-card color-keamanan">
-                <div class="card-content">
-                    <div class="card-icon"><i class="fas fa-key"></i></div>
-                    <h3 class="card-title">Keamanan Akun</h3>
-                    <p class="card-description">Ubah kata sandi akun Anda secara berkala untuk menjaga keamanan data.</p>
-                </div>
-                <div class="card-action">
-                    <a href="ganti-password/index.php" class="settings-link">
-                        Ganti Password <i class="fas fa-arrow-right"></i>
                     </a>
                 </div>
             </div>
