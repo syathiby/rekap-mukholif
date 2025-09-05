@@ -124,7 +124,7 @@ unset($_SESSION['success_message'], $_SESSION['error_message']);
     :root {
         --blue: #0d6efd; --green: #198754; --orange: #fd7e14;
         --purple: #6f42c1; --teal: #20c997; --indigo: #6610f2;
-        --red: #dc3545; --gray: #6c757d;
+        --red: #dc3545; --gray: #6c757d; --cyan: #0dcaf0;
     }
     .sidebar .nav-link.active {
         background-color: transparent !important;
@@ -147,6 +147,8 @@ unset($_SESSION['success_message'], $_SESSION['error_message']);
     .apply-color-hover-active.color-red i { color: var(--red) !important; }
     .apply-color-hover-active.color-gray { color: var(--gray) !important; }
     .apply-color-hover-active.color-gray i { color: var(--gray) !important; }
+    .apply-color-hover-active.color-cyan { color: var(--cyan) !important; }
+    .apply-color-hover-active.color-cyan i { color: var(--cyan) !important; }
 
     /* =================================================================
         ✅ CSS BARU: INFO USER DI HEADER & SIDEBAR MOBILE ✅
