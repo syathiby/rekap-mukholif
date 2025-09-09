@@ -371,7 +371,7 @@ $json_per_bagian = json_encode(['labels' => array_column($data_per_bagian, 'bagi
                 <h3 class="card-title"><i class="fa-solid fa-users"></i> Top 10 Santri Pelanggar</h3>
                 <div class="table-container">
                     <table>
-                        <thead><tr><th>Nama Santri</th><th class="text-center">Jumlah</th></tr></thead>
+                        <thead><tr><th>Nama Santri</th><th class="text-center">Poin</th></tr></thead>
                         <tbody>
                             <?php if (mysqli_num_rows($q_santri) > 0): while($row = mysqli_fetch_assoc($q_santri)): ?>
                             <tr>
