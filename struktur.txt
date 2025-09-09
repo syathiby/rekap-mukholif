@@ -48,8 +48,6 @@
 │       └── detail-tahfidz.php
 ├──pengaturan/
 │    ├──index.php
-│    ├──ganti-password
-│    │    ├──index.php
 │    ├──periode-aktif
 │    │    ├──index.php
 │    │    └──procees.php
