@@ -50,7 +50,7 @@ if (!function_exists('has_permission')) {
  * =================================================================
  * Versi baru yang lebih fleksibel dan menggunakan has_permission().
  *
- * @param string|array|null $permission 
+ * @param string|array|null $permission
  * - null (kosong): Cuma ngecek udah login atau belum. Cocok buat dashboard.
  * - string ('nama_tiket'): Ngecek satu tiket spesifik.
  * - array (['tiket_a', 'tiket_b']): Ngecek beberapa tiket, salah satu aja cukup.
@@ -67,41 +67,88 @@ function guard($permission = null) {
     if ($permission !== null) {
         // ...tapi ternyata user gak punya tiketnya...
         if (!has_permission($permission)) {
-            // ✅ FIX: Jangan redirect, tapi tampilkan halaman "Akses Ditolak" yang keren.
+            // ✅ FIX: Tampilkan card di tengah area konten yang ada.
             http_response_code(403);
-            echo "<!DOCTYPE html>
-            <html lang='id'>
-            <head>
-                <meta charset='UTF-8'>
-                <meta name='viewport' content='width=device-width, initial-scale=1.0'>
-                <title>Akses Ditolak</title>
-                <link href='https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css' rel='stylesheet'>
-                <link rel='stylesheet' href='https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css'>
-                <link href='https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600&display=swap' rel='stylesheet'>
-                <style>
-                    body { font-family: 'Poppins', sans-serif; background-color: #f4f7fa; color: #343a40; display: flex; align-items: center; justify-content: center; height: 100vh; margin: 0; padding: 1rem; }
-                    .card { padding: 2rem 3rem; border-radius: 1rem; box-shadow: 0 4px 15px rgba(0,0,0,0.08); border: none; text-align: center; max-width: 500px; }
-                    .icon { font-size: 4rem; color: #dc3545; margin-bottom: 1rem; }
-                    h1 { font-size: 2rem; font-weight: 600; }
-                    p { font-size: 1.1rem; color: #6c757d; }
-                    .btn-primary { margin-top: 1.5rem; }
-                </style>
-            </head>
-            <body>
-                <div class='container'>
-                    <div class='card'>
-                        <div class='icon'><i class='fas fa-ban'></i></div>
-                        <h1>Akses Ditolak</h1>
-                        <p>Maaf, Anda tidak memiliki izin ('tiket') untuk mengakses halaman ini.</p>
-                        <a href='/index.php' class='btn btn-primary'><i class='fas fa-home me-2'></i>Kembali ke Dashboard</a>
-                    </div>
+            echo "
+            <!-- CSS Links: Mungkin tidak perlu jika sudah ada di header utama website Anda. -->
+            <link href='https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css' rel='stylesheet'>
+            <link rel='stylesheet' href='https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css'>
+            <link href='https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600&display=swap' rel='stylesheet'>
+
+            <style>
+                /* Wrapper ini akan hidup di dalam area konten utama Anda.
+                  Tugasnya adalah mengisi ruang vertikal dan menengahkan card.
+                */
+                .access-denied-container {
+                    width: 100%;
+                    /* Ambil minimal 80% tinggi viewport, biar bisa center vertikal */
+                    min-height: 80vh; 
+                    display: flex;
+                    align-items: center;
+                    justify-content: center;
+                    font-family: 'Poppins', sans-serif;
+                    padding: 1rem;
+                    box-sizing: border-box;
+                }
+                .access-denied-card {
+                    background-color: #ffffff;
+                    padding: 2.5rem 3rem; /* Sedikit lebih lega */
+                    border-radius: 1rem;
+                    box-shadow: 0 8px 25px rgba(0,0,0,0.1);
+                    border: none;
+                    text-align: center;
+                    max-width: 500px;
+                    width: 100%;
+                    /* Animasi subtle biar munculnya smooth */
+                    animation: fadeInZoom 0.6s ease-out forwards;
+                }
+                
+                @keyframes fadeInZoom {
+                    from { 
+                        opacity: 0; 
+                        transform: scale(0.95); 
+                    }
+                    to { 
+                        opacity: 1; 
+                        transform: scale(1); 
+                    }
+                }
+
+                .access-denied-card .icon {
+                    font-size: 4rem;
+                    color: #dc3545;
+                    margin-bottom: 1.5rem; /* Jarak icon ke judul */
+                }
+                .access-denied-card h1 {
+                    font-size: 2rem;
+                    font-weight: 600;
+                    color: #343a40;
+                    margin-bottom: 0.75rem; /* Jarak judul ke paragraf */
+                }
+                .access-denied-card p {
+                    font-size: 1.1rem;
+                    color: #6c757d;
+                    margin-bottom: 2rem; /* Jarak paragraf ke tombol */
+                }
+                .access-denied-card .btn {
+                    padding: 0.75rem 1.5rem;
+                    font-size: 1rem;
+                }
+            </style>
+
+            <div class='access-denied-container'>
+                <div class='access-denied-card'>
+                    <div class='icon'><i class='fas fa-ban'></i></div>
+                    <h1>Akses Ditolak</h1>
+                    <p>Maaf, Anda tidak memiliki izin ('tiket') untuk mengakses halaman ini.</p>
+                    <a href='/index.php' class='btn btn-primary'><i class='fas fa-home me-2'></i>Kembali ke Dashboard</a>
                 </div>
-            </body>
-            </html>";
+            </div>
+            ";
             exit; // Wajib: Hentikan eksekusi skrip setelah menampilkan halaman error.
         }
     }
-    
+
     // Kalau lolos semua, berarti aman. Lanjutkan!
 }
 ?>
