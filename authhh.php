@@ -113,7 +113,7 @@ function guard($permission = null) {
                 <div class='access-denied-card'>
                     <div class='icon'><i class='fas fa-ban'></i></div>
                     <h1>Akses Ditolak</h1>
-                    <p>Maaf, Anda tidak memiliki izin ('tiket') untuk mengakses halaman ini.</p>
+                    <p>Maaf, Anda tidak memiliki izin untuk mengakses halaman ini.</p>
                     <a href='/index.php' class='btn btn-primary'><i class='fas fa-home me-2'></i>Kembali ke Dashboard</a>
                 </div>
             </div>
