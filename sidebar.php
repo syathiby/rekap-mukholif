@@ -82,7 +82,7 @@ $current_uri = htmlspecialchars($_SERVER['REQUEST_URI']);
     <?php endif; ?>
     
     <!-- Menu Pengaturan -->
-    <?php if (has_permission('user_manage', 'periode_aktif_manage', 'reset_poin_manage')): ?>
+    <?php if (has_permission(['user_manage', 'periode_aktif_manage', 'reset_poin_manage'])): ?>
     <li class="nav-item">
         <a class="nav-link apply-color-hover-active color-gray <?= strpos($current_uri, 'pengaturan') !== false ? 'active' : '' ?>" href="/pengaturan">
             <i class="fas fa-cog me-2"></i>Pengaturan
