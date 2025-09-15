@@ -9,8 +9,6 @@ if (session_status() === PHP_SESSION_NONE) {
  * =================================================================
  * FUNGSI SATPAM SAKTI v3: has_permission()
  * =================================================================
- * Ini adalah satu-satunya fungsi pengecek izin yang akan kita pakai
- * di seluruh aplikasi, baik di sidebar maupun di guard.
  */
 if (!function_exists('has_permission')) {
     function has_permission($permission) {
@@ -18,27 +16,19 @@ if (!function_exists('has_permission')) {
         if (isset($_SESSION['role']) && $_SESSION['role'] === 'admin') {
             return true;
         }
-
-        // Kalau kantong tiketnya kosong, ya udah pasti gak punya izin.
         if (!isset($_SESSION['permissions']) || !is_array($_SESSION['permissions'])) {
             return false;
         }
-
-        // Jika kita cuma ngecek satu tiket (string)
         if (is_string($permission)) {
             return in_array($permission, $_SESSION['permissions']);
         }
-
-        // Jika kita ngecek beberapa tiket (array), cukup salah satu ada, langsung lolos.
         if (is_array($permission)) {
             foreach ($permission as $p) {
                 if (in_array($p, $_SESSION['permissions'])) {
-                    return true; // Ditemukan satu tiket yang cocok, langsung kasih izin!
+                    return true;
                 }
             }
         }
-
-        // Kalau semua cara gagal, berarti emang gak punya izin.
         return false;
     }
 }
@@ -48,17 +38,10 @@ if (!function_exists('has_permission')) {
  * =================================================================
  * PROTOKOL PENJAGAAN BARU: guard()
  * =================================================================
- * Versi baru yang lebih fleksibel dan menggunakan has_permission().
- *
- * @param string|array|null $permission
- * - null (kosong): Cuma ngecek udah login atau belum. Cocok buat dashboard.
- * - string ('nama_tiket'): Ngecek satu tiket spesifik.
- * - array (['tiket_a', 'tiket_b']): Ngecek beberapa tiket, salah satu aja cukup.
  */
 function guard($permission = null) {
     // Peraturan #1: Belum login? Tendang ke halaman login.
     if (!isset($_SESSION['user_id'])) {
-        // Jangan tampilkan pesan error di sini, langsung redirect aja.
         header("Location: rekap-mukholif/login.php");
         exit;
     }
@@ -67,7 +50,7 @@ function guard($permission = null) {
     if ($permission !== null) {
         // ...tapi ternyata user gak punya tiketnya...
         if (!has_permission($permission)) {
-            // ✅ FIX: Tampilkan card di tengah area konten yang ada.
+            // ✅ FIX THE REAL FINAL: Balik ke metode inject, tapi suntik viewport pake JS.
             http_response_code(403);
             echo "
             <!-- CSS Links: Mungkin tidak perlu jika sudah ada di header utama website Anda. -->
@@ -76,12 +59,9 @@ function guard($permission = null) {
             <link href='https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600&display=swap' rel='stylesheet'>
 
             <style>
-                /* Wrapper ini akan hidup di dalam area konten utama Anda.
-                  Tugasnya adalah mengisi ruang vertikal dan menengahkan card.
-                */
+                /* Styling ini nargetin div yang disisipin ke konten utama */
                 .access-denied-container {
                     width: 100%;
-                    /* Ambil minimal 80% tinggi viewport, biar bisa center vertikal */
                     min-height: 80vh; 
                     display: flex;
                     align-items: center;
@@ -92,66 +72,40 @@ function guard($permission = null) {
                 }
                 .access-denied-card {
                     background-color: #ffffff;
-                    padding: 2.5rem 3rem; /* Sedikit lebih lega */
+                    padding: 2.5rem 3rem;
                     border-radius: 1rem;
                     box-shadow: 0 8px 25px rgba(0,0,0,0.1);
                     border: none;
                     text-align: center;
                     max-width: 500px;
                     width: 100%;
-                    /* Animasi subtle biar munculnya smooth */
                     animation: fadeInZoom 0.6s ease-out forwards;
                 }
                 
                 @keyframes fadeInZoom {
-                    from { 
-                        opacity: 0; 
-                        transform: scale(0.95); 
-                    }
-                    to { 
-                        opacity: 1; 
-                        transform: scale(1); 
-                    }
+                    from { opacity: 0; transform: scale(0.95); }
+                    to { opacity: 1; transform: scale(1); }
                 }
 
                 .access-denied-card .icon {
-                    font-size: 4rem;
-                    color: #dc3545;
-                    margin-bottom: 1.5rem; /* Jarak icon ke judul */
+                    font-size: 4rem; color: #dc3545; margin-bottom: 1.5rem;
                 }
                 .access-denied-card h1 {
-                    font-size: 2rem;
-                    font-weight: 600;
-                    color: #343a40;
-                    margin-bottom: 0.75rem; /* Jarak judul ke paragraf */
+                    font-size: 2rem; font-weight: 600; color: #343a40; margin-bottom: 0.75rem;
                 }
                 .access-denied-card p {
-                    font-size: 1.1rem;
-                    color: #6c757d;
-                    margin-bottom: 2rem; /* Jarak paragraf ke tombol */
+                    font-size: 1.1rem; color: #6c757d; margin-bottom: 2rem;
                 }
                 .access-denied-card .btn {
-                    padding: 0.75rem 1.5rem;
-                    font-size: 1rem;
+                    padding: 0.75rem 1.5rem; font-size: 1rem;
                 }
-                /* ============================================== */
-                /* ✨ JURUS RESPONSIVE UNTUK TAMPILAN HP ✨ */
-                /* ============================================== */
-                @media (max-width: 768px) {
-                    .access-denied-card {
-                        padding: 2rem 1.5rem; /* Padding kiri-kanan dikurangi biar gak sempit */
-                    }
-                    .access-denied-card .icon {
-                        font-size: 3.5rem; /* Ikon dikecilin dikit */
-                        margin-bottom: 1rem;
-                    }
-                    .access-denied-card h1 {
-                        font-size: 1.75rem; /* Judul dikecilin dikit */
-                    }
-                    .access-denied-card p {
-                        font-size: 1rem; /* Deskripsi dikecilin dikit */
-                        margin-bottom: 1.5rem;
-                    }
+
+                /* Jurus responsive untuk tampilan HP */
+                @media (max-width: 576px) {
+                    .access-denied-card { padding: 2rem 1.5rem; }
+                    .access-denied-card .icon { font-size: 3.5rem; margin-bottom: 1rem; }
+                    .access-denied-card h1 { font-size: 1.75rem; }
+                    .access-denied-card p { font-size: 1rem; margin-bottom: 1.5rem; }
                 }
             </style>
 
@@ -163,6 +117,20 @@ function guard($permission = null) {
                     <a href='/index.php' class='btn btn-primary'><i class='fas fa-home me-2'></i>Kembali ke Dashboard</a>
                 </div>
             </div>
+            
+            <!-- ================================================================== -->
+            <!-- JURUS SAKTI: Cek & Suntik meta viewport jika belum ada -->
+            <!-- ================================================================== -->
+            <script>
+                (function() {
+                    if (!document.querySelector('meta[name=\"viewport\"]')) {
+                        var meta = document.createElement('meta');
+                        meta.name = 'viewport';
+                        meta.content = 'width=device-width, initial-scale=1.0';
+                        document.getElementsByTagName('head')[0].appendChild(meta);
+                    }
+                })();
+            </script>
             ";
             exit; // Wajib: Hentikan eksekusi skrip setelah menampilkan halaman error.
         }
