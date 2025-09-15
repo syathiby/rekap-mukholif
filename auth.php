@@ -134,6 +134,25 @@ function guard($permission = null) {
                     padding: 0.75rem 1.5rem;
                     font-size: 1rem;
                 }
+                /* ============================================== */
+                /* ✨ JURUS RESPONSIVE UNTUK TAMPILAN HP ✨ */
+                /* ============================================== */
+                @media (max-width: 768px) {
+                    .access-denied-card {
+                        padding: 2rem 1.5rem; /* Padding kiri-kanan dikurangi biar gak sempit */
+                    }
+                    .access-denied-card .icon {
+                        font-size: 3.5rem; /* Ikon dikecilin dikit */
+                        margin-bottom: 1rem;
+                    }
+                    .access-denied-card h1 {
+                        font-size: 1.75rem; /* Judul dikecilin dikit */
+                    }
+                    .access-denied-card p {
+                        font-size: 1rem; /* Deskripsi dikecilin dikit */
+                        margin-bottom: 1.5rem;
+                    }
+                }
             </style>
 
             <div class='access-denied-container'>
