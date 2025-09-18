@@ -113,7 +113,8 @@ guard('jenis_pelanggaran_manage');
                         <p class="mb-1 small"><strong>Contoh:</strong></p>
                         <pre class="mb-0 small">Terlambat sholat,Pengabdian,5,Ringan
 Tidak membawa kitab,Diniyyah,10,Sedang
-Merokok di area pondok,Kesantrian,100,Sangat Berat</pre>
+Merokok di area pondok,Kesantrian,100,Sangat Berat
+Tidak masuk halaqoh,Tahfidz,50,berat</pre>
                     </div>
                     <form action="process.php" method="POST">
                         <div class="mb-3">
