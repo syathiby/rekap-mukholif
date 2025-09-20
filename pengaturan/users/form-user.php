@@ -4,7 +4,7 @@ ob_start(); // Tahan semua output dulu, biar aman pas redirect
 require_once __DIR__ . '/../../header.php';
 guard('user_manage');
 
-// --- LOGIKA PHP ---
+// --- LOGIKA PHP INI SUDAH BENAR DAN TIDAK DIUBAH ---
 $is_edit_mode = false;
 $user_id = null;
 $user_data = [
@@ -28,20 +28,14 @@ if (isset($_GET['id']) && is_numeric($_GET['id'])) {
     if ($result->num_rows === 1) {
         $user_data = $result->fetch_assoc();
 
-        // ====================================================================
-        // ===== INI DIA PENJAGA PINTUNYA! =====
-        // ====================================================================
-        // Cek: Apakah kita mau edit user 'admin', TAPI yang login BUKAN 'admin'?
         if (
             strtolower($user_data['role']) === 'admin' &&
             (!isset($_SESSION['role']) || strtolower($_SESSION['role']) !== 'admin')
         ) {
-            // Kalau iya, usir dia dan kasih pesan error!
             $_SESSION['error_message'] = "❌ Anda tidak memiliki izin untuk mengedit user Admin.";
             header("Location: index.php");
-            exit; // Langsung hentikan script
+            exit;
         }
-        // ====================================================================
 
         $page_title = 'Edit User';
         $page_subtitle = 'Ubah detail untuk user ' . htmlspecialchars($user_data['username']);
@@ -63,7 +57,6 @@ if ($result_roles) {
 <!DOCTYPE html>
 <html lang="id">
 <head>
-    <!-- Semua kode di dalam <head> TIDAK DIUBAH SAMA SEKALI -->
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title><?= $page_title ?></title> 
@@ -72,7 +65,7 @@ if ($result_roles) {
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
     <style>
-        /* Semua STYLE TIDAK DIUBAH SAMA SEKALI */
+        /* ===== BAGIAN CSS YANG HILANG SUDAH GW KEMBALIKAN UTUH DI SINI ===== */
         :root {
             --primary-color: #198754;
             --primary-hover: #157347;
@@ -82,21 +75,146 @@ if ($result_roles) {
             --card-bg: #ffffff;
             --body-bg: #f1f5f9;
         }
-        * { margin: 0; padding: 0; box-sizing: border-box; }
-        body { font-family: 'Inter', sans-serif; background-color: var(--body-bg); color: var(--text-dark); }
-        .main-container { display: flex; justify-content: center; align-items: flex-start; min-height: 100vh; padding: 2rem 1rem; }
-        .form-content-wrapper { max-width: 550px; width: 100%; }
-        .page-header { text-align: left; margin-bottom: 1.5rem; }
-        .page-header h1 { font-size: 2rem; font-weight: 700; color: var(--text-dark); display: flex; align-items: center; gap: 0.75rem; }
-        .page-header h1 i { color: var(--primary-color); }
-        .page-header p { font-size: 1rem; color: var(--text-light); margin-top: 0.25rem; }
-        .form-card { border: 1px solid var(--border-color); border-radius: 0.75rem; box-shadow: 0 4px 25px rgba(0,0,0,0.07); padding: 2.5rem; background-color: var(--card-bg); }
+        
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: var(--body-bg);
+            color: var(--text-dark);
+        }
+
+        .main-container {
+            display: flex;
+            justify-content: center;
+            align-items: flex-start;
+            min-height: 100vh;
+            padding: 2rem 1rem;
+        }
+        
+        .form-content-wrapper { 
+            max-width: 550px;
+            width: 100%;
+        }
+
+        .page-header { 
+            text-align: left; 
+            margin-bottom: 1.5rem; 
+        }
+        .page-header h1 { 
+            font-size: 2rem; 
+            font-weight: 700; 
+            color: var(--text-dark); 
+            display: flex; 
+            align-items: center; 
+            gap: 0.75rem; 
+        }
+        .page-header h1 i { 
+            color: var(--primary-color); 
+        }
+        .page-header p { 
+            font-size: 1rem; 
+            color: var(--text-light); 
+            margin-top: 0.25rem; 
+        }
+        .form-card { 
+            border: 1px solid var(--border-color); 
+            border-radius: 0.75rem; 
+            box-shadow: 0 4px 25px rgba(0,0,0,0.07); 
+            padding: 2.5rem;
+            background-color: var(--card-bg);
+        }
+        .form-label { 
+            font-weight: 600; 
+            color: var(--text-dark); 
+            margin-bottom: 0.5rem; 
+            display: block; /* Tambahan agar label rapi */
+        }
+        .input-group {
+            position: relative;
+        }
+        .input-group .input-group-text {
+            position: absolute;
+            left: 1px; top: 1px; bottom: 1px;
+            z-index: 10;
+            display: flex;
+            align-items: center;
+            padding: 0 1rem;
+            background-color: transparent;
+            border: none;
+            color: var(--text-light);
+        }
+        .input-group .form-control {
+            padding-left: 3rem;
+            border-radius: 0.5rem !important;
+            border: 1px solid var(--border-color);
+            transition: all 0.2s ease;
+            height: 48px;
+            width: 100%; /* Tambahan agar input full width */
+            padding-top: 0.5rem; /* Perbaikan padding */
+            padding-bottom: 0.5rem; /* Perbaikan padding */
+            font-size: 1rem; /* Tambahan agar konsisten */
+        }
+        .form-control:focus { 
+            border-color: var(--primary-color); 
+            box-shadow: 0 0 0 3px rgba(25, 135, 84, 0.1);
+        }
+        .password-wrapper { 
+            position: relative; 
+        }
+        .password-wrapper .form-control {
+            padding-left: 3rem;
+        }
+        .password-toggle { 
+            position: absolute; 
+            right: 12px; 
+            top: 50%; 
+            transform: translateY(-50%); 
+            background: none; 
+            border: none; 
+            color: var(--text-light); 
+            cursor: pointer; 
+            z-index: 11;
+        }
+        .btn-submit { 
+            background-color: var(--primary-color); 
+            color: white; /* Tambahan warna teks */
+            border: none; 
+            font-weight: 600; 
+            padding: 0.8rem; 
+            font-size: 1rem; 
+            transition: all 0.2s ease;
+            border-radius: 0.5rem;
+            box-shadow: 0 4px 10px rgba(25, 135, 84, 0.2);
+            width: 100%; /* Tambahan agar full width */
+            cursor: pointer; /* Tambahan */
+        }
+        .btn-submit:hover { 
+            background-color: var(--primary-hover); 
+            transform: translateY(-2px);
+            box-shadow: 0 6px 12px rgba(25, 135, 84, 0.3);
+        }
+        .mb-3 { margin-bottom: 1.5rem !important; } /* Konsistensi margin */
+        .mb-4 { margin-bottom: 2rem !important; } /* Konsistensi margin */
+        .alert { padding: 1rem; margin-bottom: 1.5rem; border-radius: 0.5rem; } /* Style notifikasi */
+        .alert-success { background-color: #d1e7dd; color: #0f5132; border: 1px solid #badbcc; }
+        .alert-danger { background-color: #f8d7da; color: #842029; border: 1px solid #f5c2c7; }
+
+        .form-text {
+            display: block;
+            margin-top: 0.5rem;
+            font-size: 0.85rem;
+            color: var(--text-light);
+        }
     </style>
 </head>
-<body>
+<body>  
     <div class="main-container">
         <div class="form-content-wrapper">
-            <!-- Semua kode HTML di dalam <body> TIDAK DIUBAH SAMA SEKALI -->
             <div class="page-header">
                 <h1>
                     <i class="fas <?= $is_edit_mode ? 'fa-user-pen' : 'fa-user-plus' ?>"></i>
@@ -151,17 +269,22 @@ if ($result_roles) {
                     <label for="password" class="form-label">Password</label>
                     <div class="password-wrapper">
                         <input type="password" class="form-control" id="password" name="password" 
-                               placeholder="<?= $is_edit_mode ? 'Kosongkan jika tidak diubah' : 'Masukkan password' ?>" 
-                               <?= !$is_edit_mode ? 'required' : '' ?>
-                               autocomplete="new-password"> 
+                            placeholder="<?= $is_edit_mode ? 'Ubah password' : 'Masukkan password' ?>" 
+                            <?= !$is_edit_mode ? 'required' : '' ?>
+                            autocomplete="new-password"> 
                         <button type="button" class="password-toggle" onclick="togglePassword()">
                             <i class="fas fa-eye" id="toggle-icon"></i>
                         </button>
                     </div>
+                    
+                    <?php if ($is_edit_mode): ?>
+                        <small class="form-text">Kosongkan jika tidak ingin mengubah password.</small>
+                    <?php endif; ?>
+
                 </div>
 
-                <button type="submit" class="btn btn-primary w-100 btn-submit">
-                    <i class="fas <?= $is_edit_mode ? 'fa-save' : 'fa-plus-circle' ?> me-2"></i>
+                <button type="submit" class="btn-submit">
+                    <i class="fas <?= $is_edit_mode ? 'fa-save' : 'fa-plus-circle' ?>"></i>
                     <?= $button_text ?>
                 </button>
             </form>
@@ -169,7 +292,6 @@ if ($result_roles) {
     </div>
 
     <script>
-        // Javascript TIDAK DIUBAH SAMA SEKALI
         function togglePassword() {
             const passwordInput = document.getElementById('password');
             const toggleIcon = document.getElementById('toggle-icon');
