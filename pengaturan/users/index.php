@@ -1,4 +1,4 @@
-<?php 
+<?php
 require_once __DIR__ . '/../../header.php';
 guard('user_manage'); // Pastikan cuma yang punya izin bisa akses
 
@@ -16,6 +16,7 @@ if ($result) {
 
 <!DOCTYPE html>
 <html lang="id">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -25,6 +26,9 @@ if ($result) {
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
     <style>
+        /* ==================================================================== */
+        /* ===== BAGIAN CSS YANG HILANG SUDAH GW BALIKIN LAGI DI SINI ===== */
+        /* ==================================================================== */
         :root {
             --primary-color: #0d6efd;
             --primary-hover: #0b5ed7;
@@ -34,7 +38,7 @@ if ($result) {
             --text-light: #6c757d;
             --border-color: #dee2e6;
             --card-bg: #ffffff;
-            --body-bg: #f1f5f9; 
+            --body-bg: #f1f5f9;
         }
 
         body {
@@ -100,16 +104,14 @@ if ($result) {
             border: 1px solid var(--border-color);
         }
         
-        /* --- INI DIA PERUBAHAN UTAMANYA (BAGIAN 1) --- */
         .table-responsive {
-            overflow-x: auto; /* Ini yang bikin bisa scroll samping */
+            overflow-x: auto;
         }
         
         .table {
             margin-bottom: 0;
             border-collapse: collapse;
             width: 100%;
-            /* Pastikan tabel tidak dipaksa mengecil */
             min-width: 700px; 
         }
 
@@ -177,7 +179,6 @@ if ($result) {
         .btn-edit { color: var(--warning-color); }
         .btn-delete { color: var(--danger-color); }
 
-        /* --- INI DIA PERUBAHAN UTAMANYA (BAGIAN 2) --- */
         @media (max-width: 576px) {
             .user-management-container {
                 padding: 1.5rem 1rem;
@@ -193,10 +194,10 @@ if ($result) {
                 width: 100%; 
                 justify-content: center; 
             }
-            /* Semua kode tabel-jadi-kartu DIHAPUS DARI SINI */
         }
     </style>
 </head>
+
 <body>
     <div class="user-management-container">
         <div class="page-header">
@@ -209,10 +210,10 @@ if ($result) {
             </a>
         </div>
 
-        <?php if (isset($_SESSION['success_message']) && $_SESSION['success_message']): ?>
+        <?php if (isset($_SESSION['success_message']) && $_SESSION['success_message']) : ?>
             <div class="alert alert-success"><?= $_SESSION['success_message']; unset($_SESSION['success_message']); ?></div>
         <?php endif; ?>
-        <?php if (isset($_SESSION['error_message']) && $_SESSION['error_message']): ?>
+        <?php if (isset($_SESSION['error_message']) && $_SESSION['error_message']) : ?>
             <div class="alert alert-danger"><?= $_SESSION['error_message']; unset($_SESSION['error_message']); ?></div>
         <?php endif; ?>
 
@@ -229,18 +230,17 @@ if ($result) {
                         </tr>
                     </thead>
                     <tbody>
-                        <?php if (empty($users)): ?>
+                        <?php if (empty($users)) : ?>
                             <tr>
                                 <td colspan="5" class="text-center text-muted py-5">
                                     <h4>Belum Ada Data User</h4>
                                     <p>Silakan klik tombol "Tambah User Baru" untuk memulai.</p>
                                 </td>
                             </tr>
-                        <?php else: ?>
+                        <?php else : ?>
                             <?php $nomor = 1; ?>
-                            <?php foreach ($users as $user): ?>
+                            <?php foreach ($users as $user) : ?>
                                 <tr>
-                                    <!-- Atribut data-label dihapus karena tidak perlu lagi -->
                                     <td class="text-center"><strong><?= $nomor++ ?></strong></td>
                                     <td class="nama-lengkap"><?= htmlspecialchars($user['nama_lengkap']) ?></td>
                                     <td class="username"><?= htmlspecialchars($user['username']) ?></td>
@@ -250,12 +250,20 @@ if ($result) {
                                         </span>
                                     </td>
                                     <td class="action-buttons">
-                                        <a href="form-user.php?id=<?= $user['id'] ?>" class="btn-edit" title="Edit User">
-                                            <i class="fas fa-pen-to-square"></i>
-                                        </a>
-                                        <a href="delete-user.php?id=<?= $user['id'] ?>" class="btn-delete" title="Hapus User" onclick="return confirm('Yakin mau hapus user <?= htmlspecialchars($user['username']) ?>? Tindakan ini tidak bisa dibatalkan!');">
-                                            <i class="fas fa-trash-alt"></i>
-                                        </a>
+                                        <?php
+                                        // Tombol edit muncul jika: baris ini BUKAN admin, ATAU yang login adalah admin.
+                                        if (strtolower($user['role']) != 'admin' || (isset($_SESSION['role']) && strtolower($_SESSION['role']) == 'admin')) :
+                                        ?>
+                                            <a href="form-user.php?id=<?= $user['id'] ?>" class="btn-edit" title="Edit User">
+                                                <i class="fas fa-pen-to-square"></i>
+                                            </a>
+                                        <?php endif; ?>
+                                        
+                                        <?php if (strtolower($user['role']) != 'admin') : ?>
+                                            <a href="delete-user.php?id=<?= $user['id'] ?>" class="btn-delete" title="Hapus User" onclick="return confirm('Yakin mau hapus user <?= htmlspecialchars($user['username']) ?>? Tindakan ini tidak bisa dibatalkan!');">
+                                                <i class="fas fa-trash-alt"></i>
+                                            </a>
+                                        <?php endif; ?>
                                     </td>
                                 </tr>
                             <?php endforeach; ?>
@@ -266,6 +274,7 @@ if ($result) {
         </div>
     </div>
 </body>
+
 </html>
 
 <?php

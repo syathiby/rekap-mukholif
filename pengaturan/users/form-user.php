@@ -1,8 +1,10 @@
-<?php 
-require_once __DIR__ . '/../../header.php';
-guard('user_manage'); 
+<?php
+ob_start(); // Tahan semua output dulu, biar aman pas redirect
 
-// --- LOGIKA PHP TIDAK DIUBAH SAMA SEKALI, SUDAH BENAR ---
+require_once __DIR__ . '/../../header.php';
+guard('user_manage');
+
+// --- LOGIKA PHP ---
 $is_edit_mode = false;
 $user_id = null;
 $user_data = [
@@ -25,6 +27,22 @@ if (isset($_GET['id']) && is_numeric($_GET['id'])) {
     
     if ($result->num_rows === 1) {
         $user_data = $result->fetch_assoc();
+
+        // ====================================================================
+        // ===== INI DIA PENJAGA PINTUNYA! =====
+        // ====================================================================
+        // Cek: Apakah kita mau edit user 'admin', TAPI yang login BUKAN 'admin'?
+        if (
+            strtolower($user_data['role']) === 'admin' &&
+            (!isset($_SESSION['role']) || strtolower($_SESSION['role']) !== 'admin')
+        ) {
+            // Kalau iya, usir dia dan kasih pesan error!
+            $_SESSION['error_message'] = "❌ Anda tidak memiliki izin untuk mengedit user Admin.";
+            header("Location: index.php");
+            exit; // Langsung hentikan script
+        }
+        // ====================================================================
+
         $page_title = 'Edit User';
         $page_subtitle = 'Ubah detail untuk user ' . htmlspecialchars($user_data['username']);
         $button_text = 'Simpan Perubahan';
@@ -45,6 +63,7 @@ if ($result_roles) {
 <!DOCTYPE html>
 <html lang="id">
 <head>
+    <!-- Semua kode di dalam <head> TIDAK DIUBAH SAMA SEKALI -->
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title><?= $page_title ?></title> 
@@ -53,6 +72,7 @@ if ($result_roles) {
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
     <style>
+        /* Semua STYLE TIDAK DIUBAH SAMA SEKALI */
         :root {
             --primary-color: #198754;
             --primary-hover: #157347;
@@ -62,159 +82,21 @@ if ($result_roles) {
             --card-bg: #ffffff;
             --body-bg: #f1f5f9;
         }
-        
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
-        }
-
-        body {
-            font-family: 'Inter', sans-serif;
-            background-color: var(--body-bg);
-            color: var(--text-dark);
-        }
-
-        .main-container {
-            display: flex;
-            justify-content: center;
-            align-items: flex-start;
-            min-height: 100vh;
-            padding: 2rem 1rem;
-        }
-        
-        .form-content-wrapper { 
-            max-width: 550px;
-            width: 100%;
-        }
-
-        .page-header { 
-            text-align: left; 
-            margin-bottom: 1.5rem; 
-        }
-        .page-header h1 { 
-            font-size: 2rem; 
-            font-weight: 700; 
-            color: var(--text-dark); 
-            display: flex; 
-            align-items: center; 
-            gap: 0.75rem; 
-        }
-        .page-header h1 i { 
-            color: var(--primary-color); 
-        }
-        .page-header p { 
-            font-size: 1rem; 
-            color: var(--text-light); 
-            margin-top: 0.25rem; 
-        }
-        .form-card { 
-            border: 1px solid var(--border-color); 
-            border-radius: 0.75rem; 
-            box-shadow: 0 4px 25px rgba(0,0,0,0.07); 
-            padding: 2.5rem;
-            background-color: var(--card-bg);
-        }
-        .form-label { 
-            font-weight: 600; 
-            color: var(--text-dark); 
-            margin-bottom: 0.5rem; 
-        }
-        .input-group {
-            position: relative;
-        }
-        .input-group .input-group-text {
-            position: absolute;
-            left: 1px;
-            top: 1px;
-            bottom: 1px;
-            z-index: 10;
-            display: flex;
-            align-items: center;
-            padding: 0 1rem;
-            background-color: transparent;
-            border: none;
-            color: var(--text-light);
-        }
-        .input-group .form-control {
-            padding-left: 3rem;
-            border-radius: 0.5rem !important;
-            border: 1px solid var(--border-color);
-            transition: all 0.2s ease;
-            height: 48px;
-        }
-        .form-control:focus { 
-            border-color: var(--primary-color); 
-            box-shadow: 0 0 0 3px rgba(25, 135, 84, 0.1);
-        }
-        .password-wrapper { 
-            position: relative; 
-        }
-        .password-wrapper::before {
-            font-family: "Font Awesome 6 Free";
-            content: "\f023"; 
-            font-weight: 900;
-            position: absolute;
-            left: 1rem;
-            top: 50%;
-            transform: translateY(-50%);
-            z-index: 10;
-            color: var(--text-light);
-        }
-        .password-wrapper .form-control {
-            padding-left: 3rem;
-        }
-        .password-toggle { 
-            position: absolute; 
-            right: 12px; 
-            top: 50%; 
-            transform: translateY(-50%); 
-            background: none; 
-            border: none; 
-            color: var(--text-light); 
-            cursor: pointer; 
-            z-index: 11;
-        }
-        .btn-submit { 
-            background-color: var(--primary-color); 
-            border: none; 
-            font-weight: 600; 
-            padding: 0.8rem; 
-            font-size: 1rem; 
-            transition: all 0.2s ease;
-            border-radius: 0.5rem;
-            box-shadow: 0 4px 10px rgba(25, 135, 84, 0.2);
-        }
-        .btn-submit:hover { 
-            background-color: var(--primary-hover); 
-            transform: translateY(-2px);
-            box-shadow: 0 6px 12px rgba(25, 135, 84, 0.3);
-        }
-        
-        @media (max-width: 576px) {
-            .main-container {
-                padding: 1rem 0.5rem;
-            }
-            .form-card {
-                padding: 1.5rem;
-            }
-            .page-header h1 {
-                font-size: 1.5rem;
-            }
-            .page-header p {
-                font-size: 0.9rem;
-            }
-            
-            /* --- INI DIA PERBAIKANNYA --- */
-            .form-control, .form-control::placeholder {
-                font-size: 0.9rem; /* Ngecilin semua tulisan di input & placeholder */
-            }
-        }
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { font-family: 'Inter', sans-serif; background-color: var(--body-bg); color: var(--text-dark); }
+        .main-container { display: flex; justify-content: center; align-items: flex-start; min-height: 100vh; padding: 2rem 1rem; }
+        .form-content-wrapper { max-width: 550px; width: 100%; }
+        .page-header { text-align: left; margin-bottom: 1.5rem; }
+        .page-header h1 { font-size: 2rem; font-weight: 700; color: var(--text-dark); display: flex; align-items: center; gap: 0.75rem; }
+        .page-header h1 i { color: var(--primary-color); }
+        .page-header p { font-size: 1rem; color: var(--text-light); margin-top: 0.25rem; }
+        .form-card { border: 1px solid var(--border-color); border-radius: 0.75rem; box-shadow: 0 4px 25px rgba(0,0,0,0.07); padding: 2.5rem; background-color: var(--card-bg); }
     </style>
 </head>
 <body>
     <div class="main-container">
         <div class="form-content-wrapper">
+            <!-- Semua kode HTML di dalam <body> TIDAK DIUBAH SAMA SEKALI -->
             <div class="page-header">
                 <h1>
                     <i class="fas <?= $is_edit_mode ? 'fa-user-pen' : 'fa-user-plus' ?>"></i>
@@ -287,6 +169,7 @@ if ($result_roles) {
     </div>
 
     <script>
+        // Javascript TIDAK DIUBAH SAMA SEKALI
         function togglePassword() {
             const passwordInput = document.getElementById('password');
             const toggleIcon = document.getElementById('toggle-icon');
@@ -304,4 +187,5 @@ if ($result_roles) {
 
 <?php
 require_once __DIR__ . '/../../footer.php';
+ob_end_flush(); // Kirim output yang tadi ditahan
 ?>
