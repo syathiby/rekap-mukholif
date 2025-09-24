@@ -19,19 +19,32 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $userId = (int)$_POST['user_id'];
 
     // --- LOGIKA BARU: CEGAH USER MENGEDIT IZINNYA SENDIRI ---
-    // Ambil ID user yang sedang login dari session
     $loggedInUserId = $_SESSION['user_id'] ?? null; 
     
-    // Bandingkan ID dari form dengan ID dari session
     if ($userId === $loggedInUserId) {
         $_SESSION['error_message'] = "❌ Wih, jago! Tapi sayangnya, Anda tidak bisa mengubah izin untuk diri sendiri.";
-        // Kembalikan ke halaman sebelumnya
         header("Location: index.php?user_id=" . $userId);
         exit;
     }
     // --- AKHIR DARI LOGIKA BARU ---
 
-    // Ambil semua ID tiket yg dicentang. Jika tidak ada yg dicentang, jadi array kosong.
+    // =================================================================
+    // ✅ PERUBAHAN DIMULAI DI SINI
+    // =================================================================
+    // Ambil nama user dulu buat notifikasi yang lebih cakep
+    $userName = ''; // Siapin variabel kosong
+    $stmt_get_name = $conn->prepare("SELECT username FROM users WHERE id = ?");
+    $stmt_get_name->bind_param("i", $userId);
+    $stmt_get_name->execute();
+    $result_name = $stmt_get_name->get_result();
+    if ($user_row = $result_name->fetch_assoc()) {
+        $userName = $user_row['username']; // Dapetin namanya
+    }
+    $stmt_get_name->close();
+    // =================================================================
+    // ✅ AKHIR DARI PERUBAHAN
+    // =================================================================
+
     $permissionIds = $_POST['permissions'] ?? [];
 
     // Gunakan transaksi biar aman!
@@ -56,7 +69,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
         // Jika semua proses di atas lancar, kunci perubahannya!
         $conn->commit();
-        $_SESSION['success_message'] = "✅ Tiket untuk user berhasil diperbarui!";
+        // ✅ UBAH NOTIFIKASI: Sebutin nama user-nya
+        $_SESSION['success_message'] = "✅ Tiket untuk user '" . htmlspecialchars($userName) . "' berhasil diperbarui!";
 
     } catch (mysqli_sql_exception $exception) {
         // Jika ada satu saja error, batalkan semua perubahan!
