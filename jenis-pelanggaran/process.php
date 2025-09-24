@@ -2,7 +2,7 @@
 if (session_status() === PHP_SESSION_NONE) { session_start(); }
 require_once __DIR__ . '/../db.php';
 require_once __DIR__ . '/../auth.php';
-guard('jenis_pelanggaran_manage');
+guard('jenis_pelanggaran_create', 'jenis_pelanggaran_edit');
 
 // Definisikan nilai yang diizinkan untuk validasi
 $allowed_kategori = ['Ringan', 'Sedang', 'Berat', 'Sangat Berat'];

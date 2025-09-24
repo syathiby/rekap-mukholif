@@ -1,6 +1,6 @@
 <?php 
 require_once __DIR__ . '/../header.php';
-guard('jenis_pelanggaran_manage');
+guard('jenis_pelanggaran_view');
 
 // --- AMBIL DATA UNTUK FILTER ---
 $bagian_list_query = "SELECT DISTINCT bagian FROM jenis_pelanggaran ORDER BY bagian ASC";

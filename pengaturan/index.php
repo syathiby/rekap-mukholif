@@ -28,7 +28,7 @@ guard();
             /* ✅ Palet Warna Baru untuk Kartu Pengaturan */
             --color-izin: #fd7e14;     /* Oranye */
             --color-user: #198754;     /* Hijau */
-            --color-periode: #6f42c1;   /* Ungu */
+            --color-periode: #6f42c1;  /* Ungu */
             --color-keamanan: #dc3545;  /* Merah */
             --color-reset: #0d6efd;     /* ✅ Biru untuk Reset Poin */
         }
@@ -194,7 +194,12 @@ guard();
         
         <div class="settings-grid">
 
-            <!-- KARTU: Pengaturan Izin (Tiket) - Warna Oranye -->
+            <!-- ================================================================= -->
+            <!-- LOGIKA BARU: Setiap kartu dibungkus dengan pengecekan izin      -->
+            <!-- ================================================================= -->
+
+            <!-- KARTU: Pengaturan Izin (Tiket) - Muncul jika punya izin 'izin_manage' -->
+            <?php if (has_permission('izin_manage')): ?>
             <div class="settings-card color-izin">
                 <div class="card-content">
                     <div class="card-icon"><i class="fas fa-ticket-alt"></i></div>
@@ -207,8 +212,10 @@ guard();
                     </a>
                 </div>
             </div>
+            <?php endif; ?>
 
-            <!-- KARTU: Manajemen User - Warna Hijau -->
+            <!-- KARTU: Manajemen User - Muncul jika punya izin 'user_manage' -->
+            <?php if (has_permission('user_manage')): ?>
             <div class="settings-card color-user">
                 <div class="card-content">
                     <div class="card-icon"><i class="fas fa-user-plus"></i></div>
@@ -221,8 +228,10 @@ guard();
                     </a>
                 </div>
             </div>
+            <?php endif; ?>
             
-            <!-- KARTU: Periode Aktif - Warna Ungu -->
+            <!-- KARTU: Periode Aktif - Muncul jika punya izin 'periode_aktif_manage' -->
+            <?php if (has_permission('periode_aktif_manage')): ?>
             <div class="settings-card color-periode">
                 <div class="card-content">
                     <div class="card-icon"><i class="fas fa-calendar-alt"></i></div>
@@ -235,9 +244,9 @@ guard();
                     </a>
                 </div>
             </div>
+            <?php endif; ?>
 
-            <!-- ✅ KARTU BARU: Reset Poin Santri - Warna Biru -->
-            <!-- Kartu ini hanya muncul jika user punya izin 'reset_poin_manage' -->
+            <!-- KARTU: Reset Poin Santri - Muncul jika punya izin 'reset_poin_manage' -->
             <?php if (has_permission('reset_poin_manage')): ?>
             <div class="settings-card color-reset">
                 <div class="card-content">

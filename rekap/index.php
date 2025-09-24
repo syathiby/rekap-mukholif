@@ -123,37 +123,56 @@ guard();
     </div>
 
     <div class="d-grid">
+
+        <?php if (has_permission('rekap_view_umum')): ?>
         <a href="umum.php" class="btn btn-purple btn-menu text-white">
             <i class="fas fa-list-alt"></i>
             <span>Rekap Pelanggaran Umum</span>
         </a>
+        <?php endif; ?>
+
+        <?php if (has_permission('rekap_view_santri')): ?>
         <a href="santri-pelanggar.php" class="btn btn-primary btn-menu text-white">
             <i class="fas fa-user-graduate"></i>
             <span>Rekap Keterlambatan Santri</span>
         </a>
+        <?php endif; ?>
+
+        <?php if (has_permission('rekap_view_per_kamar')): ?>
         <a href="per-kamar.php" class="btn btn-warning btn-menu text-dark">
             <i class="fas fa-home"></i>
             <span>Rekap Mukholif Kamar</span>
         </a>
+        <?php endif; ?>
+
+        <?php if (has_permission('rekap_view_bahasa')): ?>
         <a href="../pelanggaran/bahasa/rekap.php" class="btn btn-danger btn-menu text-white">
             <i class="fas fa-language"></i>
             <span>Rekap Pelanggaran Bahasa</span>
         </a>
+        <?php endif; ?>
+
+        <?php if (has_permission('rekap_view_diniyyah')): ?>
         <a href="../pelanggaran/diniyyah/rekap.php" class="btn btn-success btn-menu text-white">
             <i class="fas fa-book-quran"></i>
             <span>Rekap Pelanggaran Diniyyah</span>
         </a>
+        <?php endif; ?>
         
-        <!-- ✅ PERUBAHAN: Kelas tombol diganti dari .btn-dark menjadi .btn-accent -->
+        <?php if (has_permission('rekap_view_tahfidz')): ?>
         <a href="../pelanggaran/tahfidz/rekap.php" class="btn btn-accent btn-menu text-white">
             <i class="fas fa-book-open"></i>
             <span>Rekap Pelanggaran Tahfidz</span>
         </a>
+        <?php endif; ?>
 
+        <?php if (has_permission('rekap_view_statistik')): ?>
         <a href="chart.php" class="btn btn-info btn-menu text-white">
             <i class="fas fa-chart-line"></i>
             <span>Grafik Statistik</span>
         </a>
+        <?php endif; ?>
+
     </div>
 </div>
 

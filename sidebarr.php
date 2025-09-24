@@ -28,7 +28,7 @@ $current_uri = htmlspecialchars($_SERVER['REQUEST_URI']);
     <?php endif; ?>
 
     <!-- Menu Jenis Pelanggaran -->
-    <?php if (has_permission('jenis_pelanggaran_manage')): ?>
+    <?php if (has_permission(['jenis_pelanggaran_view', 'jenis_pelanggaran_create', 'jenis_pelanggaran_edit', 'jenis_pelanggaran_delete'])): ?>
     <li class="nav-item">
         <a class="nav-link apply-color-hover-active color-orange <?= strpos($current_uri, 'jenis-pelanggaran') !== false ? 'active' : '' ?>" href="/rekap-mukholif/jenis-pelanggaran/">
             <i class="fas fa-exclamation-triangle me-2"></i>Jenis Pelanggaran
