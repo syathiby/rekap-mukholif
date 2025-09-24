@@ -40,7 +40,7 @@ unset($_SESSION['success_message'], $_SESSION['error_message']);
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700&display=swap" rel="stylesheet">
     <!-- Font Awesome (Ikon) -->
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css" integrity="sha512-SnH5WK+bZxgPHs44uWIX+LLJAJ9/2PkPKZ5QiAj6Ta86w+fsb2TkcmfRyVX3pBnMFcV7oQPJkl9QevSCWr3W6A==" crossorigin="anonymous" referrerpolicy="no-referrer" />
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css" xintegrity="sha512-SnH5WK+bZxgPHs44uWIX+LLJAJ9/2PkPKZ5QiAj6Ta86w+fsb2TkcmfRyVX3pBnMFcV7oQPJkl9QevSCWr3W6A==" crossorigin="anonymous" referrerpolicy="no-referrer" />
 <style>
     /* =================================================================
         KODE DASAR (TIDAK DIUBAH)
@@ -173,16 +173,23 @@ unset($_SESSION['success_message'], $_SESSION['error_message']);
         font-size: 1rem;
         text-transform: uppercase;
     }
+    
+    /* =================================================================
+        ✅ LOGIKA DAHSYAT DIMULAI DARI SINI ✅
+    ================================================================= */
     .btn-logout {
-        border: none;
-        background-color: #fee2e2;
-        color: #dc2626;
+        border: none !important;
+        background-color: #fee2e2 !important; /* Latar Merah Muda (WAJIB) */
+        color: #dc2626 !important; /* Teks Merah Tua (WAJIB) */
     }
     .btn-logout:hover {
-        background-color: #dc2626;
-        color: #fff;
+        background-color: #dc2626 !important; /* Latar Merah Tua (WAJIB) */
+        color: #fff !important; /* Teks Putih (WAJIB) */
     }
-    
+    /* =================================================================
+        ✅ LOGIKA DAHSYAT SELESAI ✅
+    ================================================================= */
+
     /* Style untuk info user di dalam offcanvas (sidebar mobile) */
     .offcanvas-user-info {
         padding-top: 1rem;
