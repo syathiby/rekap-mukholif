@@ -174,13 +174,13 @@ unset($_SESSION['success_message'], $_SESSION['error_message']);
         text-transform: uppercase;
     }
     .btn-logout {
-        border: none;
-        background-color: #fee2e2;
-        color: #dc2626;
+        border: none !important;
+        background-color: #fee2e2 !important; /* Latar Merah Muda (WAJIB) */
+        color: #dc2626 !important; /* Teks Merah Tua (WAJIB) */
     }
     .btn-logout:hover {
-        background-color: #dc2626;
-        color: #fff;
+        background-color: #dc2626 !important; /* Latar Merah Tua (WAJIB) */
+        color: #fff !important; /* Teks Putih (WAJIB) */
     }
     
     /* Style untuk info user di dalam offcanvas (sidebar mobile) */
