@@ -54,9 +54,6 @@ $kamarQuery = mysqli_query($conn, "
         background-color: #ffc107;
         color: #000;
     }
-
-    /* === CSS YANG TIDAK DIPAKAI DIHAPUS === */
-    /* Style untuk .radio-grid sudah dihapus karena elemennya diganti dropdown */
     
     @media (max-width: 767px) {
         h4, h5 { font-size: 1.1rem; }
@@ -107,7 +104,6 @@ $kamarQuery = mysqli_query($conn, "
                                 <select name="jenis_pelanggaran_id" id="jenis_pelanggaran_id" class="form-select" required>
                                     <option value="" disabled selected>-- Pilih salah satu --</option>
                                     <?php 
-                                    // Reset pointer query untuk looping
                                     mysqli_data_seek($jp_individu_list, 0); 
                                     while ($jp = mysqli_fetch_assoc($jp_individu_list)): ?>
                                         <option value="<?= $jp['id'] ?>">
@@ -167,13 +163,20 @@ $kamarQuery = mysqli_query($conn, "
                                 <?php endwhile; ?>
                             </div>
                         </div>
-                        <div class="row g-3">
-                            <div class="col-md-8">
-                                <label for="catatan" class="form-label">2. Catatan (Opsional)</label>
-                                <textarea name="catatan" id="catatan" class="form-control" rows="1" placeholder="Cth: Sampah tidak dibuang, kasur berantakan."></textarea>
+                        
+                        <!-- ======================================================= -->
+                        <!-- ✅ PERUBAHAN DI SINI: Kolom catatan sekarang dinamis -->
+                        <!-- ======================================================= -->
+                        <div class="mb-3">
+                            <label class="form-label fw-bold">2. Tulis Catatan (Opsional)</label>
+                            <div id="catatan-kamar-container">
+                                <p class="text-muted fst-italic">Pilih kamar terlebih dahulu</p>
                             </div>
-                            <div class="col-md-4">
-                                <label for="tanggal_kamar" class="form-label fw-bold">3. Tanggal</label>
+                        </div>
+                        
+                        <div class="row g-3">
+                            <div class="col-md-12">
+                                <label for="tanggal_kamar" class="form-label fw-bold">3. Tanggal Pelanggaran</label>
                                 <input type="datetime-local" name="tanggal_kamar" id="tanggal_kamar" class="form-control" value="<?php echo date('Y-m-d\TH:i'); ?>" required>
                             </div>
                         </div>
@@ -200,7 +203,7 @@ $(document).ready(function() {
 
     // Fungsi Autocomplete untuk cari santri
     $("#santri-search").autocomplete({
-        source: "search_santri.php", // Pastikan file ini ada dan berfungsi
+        source: "search_santri.php",
         minLength: 2,
         select: function(event, ui) {
             selectedSantri = ui.item;
@@ -212,14 +215,12 @@ $(document).ready(function() {
     function tambahSantri() {
         if (!selectedSantri) return;
 
-        // Cek duplikasi
         if ($('#tabel-santri-pelanggar tr[data-id="' + selectedSantri.id + '"]').length > 0) {
             alert('Santri sudah ada dalam daftar.');
             resetInput();
             return;
         }
 
-        // Bikin baris baru
         let barisBaru = `<tr data-id="${selectedSantri.id}">
             <td>${selectedSantri.value}<input type="hidden" name="santri_ids[]" value="${selectedSantri.id}"></td>
             <td>${selectedSantri.kelas}</td>
@@ -252,11 +253,49 @@ $(document).ready(function() {
         $("#santri-search").focus();
     }
 
+    // =============================================================
+    // ✅ LOGIKA BARU UNTUK CATATAN KAMAR DINAMIS
+    // =============================================================
+    const catatanContainer = $('#catatan-kamar-container');
+    const placeholderText = '<p class="text-muted fst-italic" id="catatan-placeholder">Pilih kamar terlebih dahulu</p>';
+
+    $('input[name="kamar[]"]').on('change', function() {
+        const checkbox = $(this);
+        const kamar = checkbox.val();
+        // Bikin ID yang aman buat elemen HTML
+        const kamarId = kamar.replace(/[^a-zA-Z0-9]/g, '');
+
+        if (checkbox.is(':checked')) {
+            // Kalau ada placeholder, hapus dulu
+            $('#catatan-placeholder').remove();
+
+            // Bikin elemen textarea baru
+            const newCatatanField = `
+                <div class="mb-2" id="catatan-wrapper-${kamarId}">
+                    <label for="catatan-${kamarId}" class="form-label mb-1">
+                        <i class="fas fa-pencil-alt text-warning me-1"></i>
+                        Catatan untuk Kamar <strong>${kamar}</strong>
+                    </label>
+                    <textarea name="catatan[${kamar}]" id="catatan-${kamarId}" class="form-control" rows="1" placeholder="Tuliskan Alasan"></textarea>
+                </div>
+            `;
+            catatanContainer.append(newCatatanField);
+        } else {
+            // Kalau checkbox-nya di-uncheck, hapus textarea-nya
+            $(`#catatan-wrapper-${kamarId}`).remove();
+
+            // Kalau semua textarea udah kehapus, munculin lagi placeholder
+            if (catatanContainer.children().length === 0) {
+                catatanContainer.html(placeholderText);
+            }
+        }
+    });
+
     // Validasi form kamar biar nggak kosong
     $('#kamar form').submit(function(e) {
         if ($('input[name="kamar[]"]:checked').length === 0) {
             alert('Pilih minimal satu kamar yang melanggar.');
-            e.preventDefault(); // Mencegah form dikirim
+            e.preventDefault();
         }
     });
 });

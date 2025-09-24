@@ -24,7 +24,7 @@ if (isset($_POST['submit_pelanggaran'])) {
         // Validasi Awal
         if (empty($santri_ids) || $jenis_pelanggaran_id === 0 || empty($tanggal)) {
             $_SESSION['message'] = ['type' => 'danger', 'text' => 'Untuk pelanggaran individu, Anda harus memilih jenis pelanggaran, tanggal, dan minimal satu santri.'];
-            header("Location: create.php");
+            header("Location: index.php");
             exit();
         }
 
@@ -39,7 +39,7 @@ if (isset($_POST['submit_pelanggaran'])) {
 
         if (!$data_pelanggaran) {
             $_SESSION['message'] = ['type' => 'danger', 'text' => 'Jenis pelanggaran tidak valid.'];
-            header("Location: create.php");
+            header("Location: index.php");
             exit();
         }
         $poin_to_add = (int)$data_pelanggaran['poin'];
@@ -98,22 +98,23 @@ if (isset($_POST['submit_pelanggaran'])) {
             ];
         }
 
-        header("Location: create.php");
+        header("Location: index.php");
         exit();
 
     // =======================================================
-    // === CABANG LOGIKA 2: JIKA TIPE PELANGGARAN KAMAR (TETAP SAMA) ===
+    // === CABANG LOGIKA 2: JIKA TIPE PELANGGARAN KAMAR (DIPERBAIKI) ===
     // =======================================================
     } elseif ($tipe_pelanggaran === 'kamar') {
 
         $kamar_list = $_POST['kamar'] ?? [];
-        $catatan = trim($_POST['catatan'] ?? '');
+        // ✅ PERUBAHAN 1: Ambil semua catatan sebagai array, bukan di-trim
+        $catatan_array = $_POST['catatan'] ?? []; 
         $tanggal = $_POST['tanggal_kamar'] ?? '';
 
         // Validasi
         if (empty($kamar_list) || empty($tanggal)) {
             $_SESSION['message'] = ['type' => 'danger', 'text' => 'Untuk pelanggaran kebersihan, Anda harus memilih tanggal dan minimal satu kamar.'];
-            header("Location: create.php");
+            header("Location: index.php");
             exit();
         }
 
@@ -122,7 +123,12 @@ if (isset($_POST['submit_pelanggaran'])) {
 
         $success_count = 0;
         foreach ($kamar_list as $kamar) {
-            mysqli_stmt_bind_param($stmt, "ssis", $kamar, $tanggal, $dicatat_oleh, $catatan);
+            // ✅ PERUBAHAN 2: Ambil catatan spesifik untuk kamar ini dari array
+            // Fungsi trim() dipindah ke sini, buat ngolah satu per satu
+            $catatan_spesifik = trim($catatan_array[$kamar] ?? '');
+
+            // ✅ PERUBAHAN 3: Bind variabel catatan yang sudah spesifik
+            mysqli_stmt_bind_param($stmt, "ssis", $kamar, $tanggal, $dicatat_oleh, $catatan_spesifik);
             if (mysqli_stmt_execute($stmt)) {
                 $success_count++;
             }
@@ -130,16 +136,16 @@ if (isset($_POST['submit_pelanggaran'])) {
         mysqli_stmt_close($stmt);
 
         $_SESSION['message'] = ['type' => 'success', 'text' => "Berhasil mencatat $success_count pelanggaran kebersihan kamar."];
-        header("Location: create.php");
+        header("Location: index.php");
         exit();
 
     } else {
         $_SESSION['message'] = ['type' => 'danger', 'text' => 'Tipe pelanggaran tidak valid. Silakan coba lagi.'];
-        header("Location: create.php");
+        header("Location: index.php");
         exit();
     }
 }
 
 // Jika file diakses langsung, tendang balik
-header("Location: create.php");
+header("Location: index.php");
 exit();
