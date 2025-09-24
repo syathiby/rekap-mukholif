@@ -17,6 +17,9 @@ $page_subtitle = 'Buat akun baru untuk pengguna sistem.';
 $button_text = 'Buat Akun User';
 $form_action = 'process-user.php';
 
+// --- TAMBAHAN: Variabel untuk menyimpan role asli user saat edit ---
+$original_role_for_js = 'null';
+
 if (isset($_GET['id']) && is_numeric($_GET['id'])) {
     $is_edit_mode = true;
     $user_id = (int)$_GET['id'];
@@ -27,6 +30,9 @@ if (isset($_GET['id']) && is_numeric($_GET['id'])) {
     
     if ($result->num_rows === 1) {
         $user_data = $result->fetch_assoc();
+
+        // --- TAMBAHAN: Simpan role asli ke variabel untuk dikirim ke JavaScript ---
+        $original_role_for_js = json_encode($user_data['role']);
 
         if (
             strtolower($user_data['role']) === 'admin' &&
@@ -65,7 +71,6 @@ if ($result_roles) {
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
     <style>
-        /* ===== BAGIAN CSS YANG HILANG SUDAH GW KEMBALIKAN UTUH DI SINI ===== */
         :root {
             --primary-color: #198754;
             --primary-hover: #157347;
@@ -132,7 +137,7 @@ if ($result_roles) {
             font-weight: 600; 
             color: var(--text-dark); 
             margin-bottom: 0.5rem; 
-            display: block; /* Tambahan agar label rapi */
+            display: block;
         }
         .input-group {
             position: relative;
@@ -154,10 +159,10 @@ if ($result_roles) {
             border: 1px solid var(--border-color);
             transition: all 0.2s ease;
             height: 48px;
-            width: 100%; /* Tambahan agar input full width */
-            padding-top: 0.5rem; /* Perbaikan padding */
-            padding-bottom: 0.5rem; /* Perbaikan padding */
-            font-size: 1rem; /* Tambahan agar konsisten */
+            width: 100%;
+            padding-top: 0.5rem;
+            padding-bottom: 0.5rem;
+            font-size: 1rem;
         }
         .form-control:focus { 
             border-color: var(--primary-color); 
@@ -182,7 +187,7 @@ if ($result_roles) {
         }
         .btn-submit { 
             background-color: var(--primary-color); 
-            color: white; /* Tambahan warna teks */
+            color: white;
             border: none; 
             font-weight: 600; 
             padding: 0.8rem; 
@@ -190,17 +195,17 @@ if ($result_roles) {
             transition: all 0.2s ease;
             border-radius: 0.5rem;
             box-shadow: 0 4px 10px rgba(25, 135, 84, 0.2);
-            width: 100%; /* Tambahan agar full width */
-            cursor: pointer; /* Tambahan */
+            width: 100%;
+            cursor: pointer;
         }
         .btn-submit:hover { 
             background-color: var(--primary-hover); 
             transform: translateY(-2px);
             box-shadow: 0 6px 12px rgba(25, 135, 84, 0.3);
         }
-        .mb-3 { margin-bottom: 1.5rem !important; } /* Konsistensi margin */
-        .mb-4 { margin-bottom: 2rem !important; } /* Konsistensi margin */
-        .alert { padding: 1rem; margin-bottom: 1.5rem; border-radius: 0.5rem; } /* Style notifikasi */
+        .mb-3 { margin-bottom: 1.5rem !important; }
+        .mb-4 { margin-bottom: 2rem !important; }
+        .alert { padding: 1rem; margin-bottom: 1.5rem; border-radius: 0.5rem; }
         .alert-success { background-color: #d1e7dd; color: #0f5132; border: 1px solid #badbcc; }
         .alert-danger { background-color: #f8d7da; color: #842029; border: 1px solid #f5c2c7; }
 
@@ -212,7 +217,7 @@ if ($result_roles) {
         }
     </style>
 </head>
-<body>  
+<body> 
     <div class="main-container">
         <div class="form-content-wrapper">
             <div class="page-header">
@@ -268,8 +273,9 @@ if ($result_roles) {
                 <div class="mb-4">
                     <label for="password" class="form-label">Password</label>
                     <div class="password-wrapper">
+                        <span class="input-group-text" style="z-index: 10; left: 1px;"><i class="fas fa-key fa-fw"></i></span>
                         <input type="password" class="form-control" id="password" name="password" 
-                            placeholder="<?= $is_edit_mode ? 'Ubah password' : 'Masukkan password' ?>" 
+                            placeholder="<?= $is_edit_mode ? 'Ubah password (opsional)' : 'Masukkan password' ?>" 
                             <?= !$is_edit_mode ? 'required' : '' ?>
                             autocomplete="new-password"> 
                         <button type="button" class="password-toggle" onclick="togglePassword()">
@@ -303,6 +309,49 @@ if ($result_roles) {
                 toggleIcon.classList.replace('fa-eye-slash', 'fa-eye');
             }
         }
+
+        // --- LOGIKA BARU DITAMBAHKAN DI SINI UNTUK MENCEGAH ROLE ADMIN GANDA ---
+        document.addEventListener('DOMContentLoaded', function() {
+            const form = document.querySelector('form.form-card');
+            const formWrapper = document.querySelector('.form-content-wrapper');
+            const roleInput = document.getElementById('role');
+            
+            // Variabel ini diambil dari PHP di atas
+            const isEditMode = <?= $is_edit_mode ? 'true' : 'false' ?>;
+            const originalRole = <?= $original_role_for_js ?>;
+
+            form.addEventListener('submit', function(event) {
+                const newRoleValue = roleInput.value.trim().toLowerCase();
+
+                // Cek jika role yang diinput adalah 'admin'
+                if (newRoleValue === 'admin') {
+                    // Cek apakah ini mode 'tambah user' ATAU mode 'edit' tapi role aslinya bukan 'admin'.
+                    // Jika user yang diedit sudah 'admin', maka tidak apa-apa (misal cuma ganti nama).
+                    const isTryingToCreateOrChangeToAdmin = !isEditMode || (isEditMode && originalRole.trim().toLowerCase() !== 'admin');
+                    
+                    if (isTryingToCreateOrChangeToAdmin) {
+                        event.preventDefault(); // Batalkan submit form
+
+                        // Hapus notifikasi error lama jika ada, biar gak numpuk
+                        const existingError = formWrapper.querySelector('.alert.alert-danger.custom-validation');
+                        if (existingError) {
+                            existingError.remove();
+                        }
+
+                        // Buat elemen div untuk pesan error baru
+                        const errorDiv = document.createElement('div');
+                        errorDiv.className = 'alert alert-danger custom-validation'; // Tambah kelas khusus
+                        errorDiv.innerHTML = '<strong>Aksi Ditolak!</strong> Anda tidak bisa menambahkan atau mengubah user menjadi "Admin".';
+                        
+                        // Tampilkan pesan error di atas form card
+                        formWrapper.insertBefore(errorDiv, form);
+                        
+                        // Scroll ke pesan error agar langsung terlihat
+                        errorDiv.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                    }
+                }
+            });
+        });
     </script>
 </body>
 </html>

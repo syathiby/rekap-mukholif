@@ -1,6 +1,6 @@
 <?php 
 require_once __DIR__ . '/../../header.php';
-guard('user_manage'); 
+guard('izin_manage'); 
 ?>
 
 <?php
