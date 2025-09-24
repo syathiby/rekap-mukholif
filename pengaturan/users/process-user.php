@@ -29,6 +29,35 @@ if (!$is_edit_mode && empty($password)) {
     exit;
 }
 
+// --- LOGIKA BARU: VALIDASI ROLE ADMIN DI SISI SERVER ---
+if ($role === 'admin') {
+    if ($is_edit_mode) {
+        // Mode edit: Cek role asli user di database. Boleh save kalau role aslinya emang udah admin.
+        $user_id_check = (int)$_POST['user_id'];
+        $stmt_role_check = $conn->prepare("SELECT role FROM users WHERE id = ?");
+        $stmt_role_check->bind_param("i", $user_id_check);
+        $stmt_role_check->execute();
+        $result_role = $stmt_role_check->get_result();
+        
+        if ($result_role->num_rows === 1) {
+            $user_asli = $result_role->fetch_assoc();
+            // Jika role aslinya BUKAN admin, maka tolak perubahan jadi admin
+            if (strtolower($user_asli['role']) !== 'admin') {
+                $_SESSION['error_message'] = "❌ Aksi Ditolak! Anda tidak bisa mengubah role user lain menjadi 'Admin'.";
+                header("Location: $redirect_url");
+                exit;
+            }
+        }
+        $stmt_role_check->close();
+    } else {
+        // Mode tambah: Langsung tolak jika mencoba membuat user admin baru
+        $_SESSION['error_message'] = "❌ Aksi Ditolak! Anda tidak bisa menambahkan user baru dengan role 'Admin'.";
+        header("Location: $redirect_url");
+        exit;
+    }
+}
+
+// Cek duplikasi username
 if ($is_edit_mode) {
     $user_id = (int)$_POST['user_id'];
     $stmt_check = $conn->prepare("SELECT id FROM users WHERE username = ? AND id != ?");
@@ -48,37 +77,27 @@ if ($stmt_check->num_rows > 0) {
 }
 $stmt_check->close();
 
+// Proses update atau insert data
 if ($is_edit_mode) {
     $user_id = (int)$_POST['user_id'];
 
     if (!empty($password)) {
-        // --- PERBAIKAN 1: KEMBALI KE HASH SHA256 ---
         $hashedPassword = hash('sha256', $password);
         $stmt_update = $conn->prepare("UPDATE users SET nama_lengkap = ?, username = ?, role = ?, password = ? WHERE id = ?");
         $stmt_update->bind_param("ssssi", $nama_lengkap, $username, $role, $hashedPassword, $user_id);
-        
-        // --- PERBAIKAN 2: EKSEKUSI DI DALAM IF ---
-        if ($stmt_update->execute()) {
-            $_SESSION['success_message'] = "✅ Data user '".htmlspecialchars($username)."' berhasil diperbarui!";
-        } else {
-            $_SESSION['error_message'] = "❌ Gagal memperbarui data user.";
-        }
-        $stmt_update->close();
-
     } else {
         $stmt_update = $conn->prepare("UPDATE users SET nama_lengkap = ?, username = ?, role = ? WHERE id = ?");
         $stmt_update->bind_param("sssi", $nama_lengkap, $username, $role, $user_id);
-
-        // --- PERBAIKAN 2: EKSEKUSI JUGA DI SINI ---
-        if ($stmt_update->execute()) {
-            $_SESSION['success_message'] = "✅ Data user '".htmlspecialchars($username)."' berhasil diperbarui!";
-        } else {
-            $_SESSION['error_message'] = "❌ Gagal memperbarui data user.";
-        }
-        $stmt_update->close();
     }
+
+    if ($stmt_update->execute()) {
+        $_SESSION['success_message'] = "✅ Data user '".htmlspecialchars($username)."' berhasil diperbarui!";
+    } else {
+        $_SESSION['error_message'] = "❌ Gagal memperbarui data user.";
+    }
+    $stmt_update->close();
+
 } else {
-    // --- PERBAIKAN 1: KEMBALI KE HASH SHA256 ---
     $hashedPassword = hash('sha256', $password);
     
     $stmt_insert = $conn->prepare("INSERT INTO users (nama_lengkap, username, password, role) VALUES (?, ?, ?, ?)");
@@ -86,7 +105,7 @@ if ($is_edit_mode) {
 
     if ($stmt_insert->execute()){
         $_SESSION['success_message'] = "✅ User '".htmlspecialchars($username)."' berhasil dibuat!";
-        $redirect_url = "form-user.php";
+        $redirect_url = "form-user.php"; // Redirect ke form kosong setelah berhasil
     } else {
         $_SESSION['error_message'] = "❌ Gagal menyimpan data ke database.";
     }
