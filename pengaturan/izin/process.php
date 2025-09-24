@@ -3,12 +3,9 @@ if (session_status() === PHP_SESSION_NONE) { session_start(); }
 require_once __DIR__ . '/../../db.php';
 require_once __DIR__ . '/../../auth.php';
 guard('izin_manage');
-?>
-
-<?php
 
 // =================================================================
-// LOGIKA PROSES DIMULAI DI SINI (TIDAK ADA YANG BERUBAH)
+// LOGIKA PROSES DIMULAI DI SINI
 // =================================================================
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
@@ -20,6 +17,20 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     }
 
     $userId = (int)$_POST['user_id'];
+
+    // --- LOGIKA BARU: CEGAH USER MENGEDIT IZINNYA SENDIRI ---
+    // Ambil ID user yang sedang login dari session
+    $loggedInUserId = $_SESSION['user_id'] ?? null; 
+    
+    // Bandingkan ID dari form dengan ID dari session
+    if ($userId === $loggedInUserId) {
+        $_SESSION['error_message'] = "❌ Wih, jago! Tapi sayangnya, Anda tidak bisa mengubah izin untuk diri sendiri.";
+        // Kembalikan ke halaman sebelumnya
+        header("Location: index.php?user_id=" . $userId);
+        exit;
+    }
+    // --- AKHIR DARI LOGIKA BARU ---
+
     // Ambil semua ID tiket yg dicentang. Jika tidak ada yg dicentang, jadi array kosong.
     $permissionIds = $_POST['permissions'] ?? [];
 
@@ -58,6 +69,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 }
 
 // Setelah selesai, kembalikan ke halaman loket, sambil bawa ID user biar langsung nampilin user yg sama
-header("Location: index.php?user_id=" . ($userId ?? ''));
+$redirect_user_id = $userId ?? ($_POST['user_id'] ?? '');
+header("Location: index.php?user_id=" . $redirect_user_id);
 exit;
 ?>

@@ -30,7 +30,7 @@ if (isset($_GET['id']) && is_numeric($_GET['id'])) {
         $user_data = $result_check->fetch_assoc();
         // Kalau rolenya 'admin', batalkan proses dan kasih notif
         if (strtolower($user_data['role']) === 'admin') {
-            $_SESSION['error_message'] = "❌ Role Admin tidak dapat dihapus.";
+            $_SESSION['error_message'] = "❌ Wih, jago! Tapi sayangnya, Role Admin tidak dapat dihapus.";
             $stmt_check->close();
             $conn->close();
             header("Location: index.php");

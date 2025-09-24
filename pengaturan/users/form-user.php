@@ -38,7 +38,7 @@ if (isset($_GET['id']) && is_numeric($_GET['id'])) {
             strtolower($user_data['role']) === 'admin' &&
             (!isset($_SESSION['role']) || strtolower($_SESSION['role']) !== 'admin')
         ) {
-            $_SESSION['error_message'] = "❌ Anda tidak memiliki izin untuk mengedit user Admin.";
+            $_SESSION['error_message'] = "❌ Wih, jago! Tapi sayangnya, user Admin tidak dapat di edit.";
             header("Location: index.php");
             exit;
         }
@@ -245,7 +245,7 @@ if ($result_roles) {
                     <label for="nama_lengkap" class="form-label">Nama Lengkap</label>
                     <div class="input-group">
                         <span class="input-group-text"><i class="fas fa-user fa-fw"></i></span>
-                        <input type="text" class="form-control" id="nama_lengkap" name="nama_lengkap" value="<?= htmlspecialchars($user_data['nama_lengkap']) ?>" placeholder="Masukkan nama lengkap" required>
+                        <input type="text" class="form-control" id="nama_lengkap" name="nama_lengkap" value="<?= htmlspecialchars($user_data['nama_lengkap']) ?>" placeholder="Tulis nama lengkap" required>
                     </div>
                 </div>
 
@@ -261,7 +261,7 @@ if ($result_roles) {
                     <label for="role" class="form-label">Jabatan (Role)</label>
                     <div class="input-group">
                         <span class="input-group-text"><i class="fas fa-shield-halved fa-fw"></i></span>
-                        <input class="form-control" list="role-list" id="role" name="role" value="<?= htmlspecialchars($user_data['role']) ?>" placeholder="Pilih atau ketik role baru..." required>
+                        <input class="form-control" list="role-list" id="role" name="role" value="<?= htmlspecialchars($user_data['role']) ?>" placeholder="Masukan Role" required>
                     </div>
                     <datalist id="role-list">
                         <?php foreach ($existing_roles as $role_row): ?>
@@ -272,8 +272,9 @@ if ($result_roles) {
 
                 <div class="mb-4">
                     <label for="password" class="form-label">Password</label>
-                    <div class="password-wrapper">
-                        <span class="input-group-text" style="z-index: 10; left: 1px;"><i class="fas fa-key fa-fw"></i></span>
+                    <!-- ===== PERBAIKAN DI SINI: Tambahkan class "input-group" ===== -->
+                    <div class="password-wrapper input-group">
+                        <span class="input-group-text"><i class="fas fa-key fa-fw"></i></span>
                         <input type="password" class="form-control" id="password" name="password" 
                             placeholder="<?= $is_edit_mode ? 'Ubah password (opsional)' : 'Masukkan password' ?>" 
                             <?= !$is_edit_mode ? 'required' : '' ?>
@@ -341,13 +342,13 @@ if ($result_roles) {
                         // Buat elemen div untuk pesan error baru
                         const errorDiv = document.createElement('div');
                         errorDiv.className = 'alert alert-danger custom-validation'; // Tambah kelas khusus
-                        errorDiv.innerHTML = '<strong>Aksi Ditolak!</strong> Anda tidak bisa menambahkan atau mengubah user menjadi "Admin".';
+                        errorDiv.innerHTML = '❌ Wih, jago! Tapi sayangnya, Anda tidak bisa menambahkan atau mengubah user menjadi "Admin".';
                         
                         // Tampilkan pesan error di atas form card
                         formWrapper.insertBefore(errorDiv, form);
                         
                         // Scroll ke pesan error agar langsung terlihat
-                        errorDiv.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                        errorDiv.scrollView({ behavior: 'smooth', block: 'center' });
                     }
                 }
             });

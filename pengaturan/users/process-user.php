@@ -43,7 +43,7 @@ if ($role === 'admin') {
             $user_asli = $result_role->fetch_assoc();
             // Jika role aslinya BUKAN admin, maka tolak perubahan jadi admin
             if (strtolower($user_asli['role']) !== 'admin') {
-                $_SESSION['error_message'] = "❌ Aksi Ditolak! Anda tidak bisa mengubah role user lain menjadi 'Admin'.";
+                $_SESSION['error_message'] = "❌ Wih, jago! Tapi sayangnya, Anda tidak bisa mengubah role user lain menjadi 'Admin'.";
                 header("Location: $redirect_url");
                 exit;
             }
@@ -51,7 +51,7 @@ if ($role === 'admin') {
         $stmt_role_check->close();
     } else {
         // Mode tambah: Langsung tolak jika mencoba membuat user admin baru
-        $_SESSION['error_message'] = "❌ Aksi Ditolak! Anda tidak bisa menambahkan user baru dengan role 'Admin'.";
+        $_SESSION['error_message'] = "❌ Wih, jago! Tapi sayangnya, Anda tidak bisa menambahkan user baru dengan role 'Admin'.";
         header("Location: $redirect_url");
         exit;
     }
