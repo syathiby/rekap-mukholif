@@ -2,7 +2,7 @@
 if (session_status() === PHP_SESSION_NONE) { session_start(); }
 require_once __DIR__ . '/../db.php';
 require_once __DIR__ . '/../auth.php';
-guard('jenis_pelanggaran_manage');
+guard('jenis_pelanggaran_delete');
 
 /**
  * Fungsi ini akan menghitung dan mengurangi poin_aktif santri

@@ -1,6 +1,6 @@
 <?php 
 require_once __DIR__ . '/../header.php';
-guard('jenis_pelanggaran_manage'); 
+guard('jenis_pelanggaran_create'); 
 ?>
 
 <style>
