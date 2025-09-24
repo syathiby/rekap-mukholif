@@ -234,6 +234,29 @@ if (!$result) die("Query Error: " . $stmt->error);
         .rank-2 .rank-icon { color: var(--silver); }
         .rank-3 .rank-icon { color: var(--bronze); }
         
+        /* === STYLE BARU UNTUK TOMBOL DETAIL (SESUAI GAMBAR) === */
+        .btn-detail {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            padding: 8px 16px;
+            font-size: 14px;
+            font-weight: 600;
+            background-color: #eef2ff; /* Warna lavender muda */
+            color: var(--secondary); /* Warna ungu tua untuk teks & ikon */
+            border-radius: 9999px; /* Bikin jadi bentuk pil */
+            text-decoration: none;
+            transition: all 0.3s ease;
+            border: 1px solid transparent;
+        }
+
+        .btn-detail:hover {
+            background-color: #e0e7ff; /* Sedikit lebih gelap pas di-hover */
+            transform: translateY(-2px);
+            box-shadow: 0 4px 10px rgba(63, 55, 201, 0.15);
+        }
+        /* === /STYLE BARU === */
+        
         @keyframes fadeIn {
             from { opacity: 0; transform: translateY(20px); }
             to { opacity: 1; transform: translateY(0); }
@@ -291,11 +314,14 @@ if (!$result) die("Query Error: " . $stmt->error);
         </div>
 
     <div class="table-wrapper">
-        <table> <thead>
+        <table>
+             <thead>
                 <tr>
                     <th style="width: 10%;">Peringkat</th>
                     <th>Kamar</th>
                     <th>Jumlah Pelanggaran</th>
+                    <!-- PENAMBAHAN KOLOM AKSI -->
+                    <th style="width: 15%;">Aksi</th>
                 </tr>
             </thead>
             <tbody>
@@ -319,11 +345,16 @@ if (!$result) die("Query Error: " . $stmt->error);
                         $count_class = $row['total_pelanggaran'] > 0 ? 'banyak' : 'nol';
                         echo "<td><span class='pelanggaran-count $count_class'>{$row['total_pelanggaran']}</span></td>";
 
+                        // <!-- **INI BAGIAN PENTINGNYA** Menambahkan parameter tanggal ke link -->
+                        $link_detail = "detail-kamar.php?kamar=" . urlencode($row['kamar']) . "&tanggal_awal=" . urlencode($tanggal_awal) . "&tanggal_akhir=" . urlencode($tanggal_akhir);
+                        echo "<td><a href='" . $link_detail . "' class='btn-detail'><i class='fas fa-info-circle'></i> Detail</a></td>";
+                        
                         echo "</tr>";
                         $no++;
                     }
                 } else {
-                    echo "<tr><td colspan='3' class='text-center p-4'>Tidak ada data ditemukan</td></tr>";
+                    // <!-- Colspan diubah jadi 4 -->
+                    echo "<tr><td colspan='4' class='text-center p-4'>Tidak ada data ditemukan</td></tr>";
                 }
                 ?>
             </tbody>
