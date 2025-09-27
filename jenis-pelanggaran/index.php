@@ -161,6 +161,7 @@ $result = mysqli_stmt_get_result($stmt);
                 <table class="table table-striped table-hover mb-0">
                     <thead>
                         <tr>
+                            <!-- ✅ PERBAIKAN: Checkbox ini TIDAK perlu atribut name, karena hanya untuk kontrol JavaScript -->
                             <th width="3%" class="text-center"><input type="checkbox" id="selectAll"></th>
                             <th width="5%" class="text-center">No</th>
                             <th>Nama Pelanggaran</th>
