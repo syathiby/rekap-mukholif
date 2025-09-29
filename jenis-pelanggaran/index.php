@@ -118,6 +118,14 @@ $result = mysqli_stmt_get_result($stmt);
     </div>
     <?php unset($_SESSION['success_message']); ?>
     <?php endif; ?>
+
+    <?php if (isset($_SESSION['error_message'])) : ?>
+    <div class="alert alert-danger alert-dismissible fade show" role="alert">
+        <i class="fas fa-times-circle me-2"></i> <?= $_SESSION['error_message']; ?>
+        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+    </div>
+    <?php unset($_SESSION['error_message']); ?>
+    <?php endif; ?>
     
     <div class="filter-card">
         <form method="GET" action="">
@@ -179,6 +187,13 @@ $result = mysqli_stmt_get_result($stmt);
                         
                         $no = 1;
                         while ($row = mysqli_fetch_assoc($result)) {
+                            // --- INI LOGIKA BARUNYA ---
+                            // 1. Definisikan ID mana saja yang mau "dikunci"
+                            $protected_ids = [1, 2, 3];
+                            // 2. Cek apakah ID baris ini termasuk yang dikunci
+                            $is_protected = in_array($row['id'], $protected_ids);
+                            // --- SELESAI LOGIKA BARU ---
+
                             $badge_class = match ($row['kategori']) {
                                 'Ringan' => 'bg-info',
                                 'Sedang' => 'bg-warning',
@@ -189,12 +204,19 @@ $result = mysqli_stmt_get_result($stmt);
                         ?>
                         <tr>
                             <td class="text-center align-middle">
-                                <input type="checkbox" name="ids[]" value="<?= $row['id']; ?>" class="row-checkbox">
+                                <?php if (!$is_protected) : // <-- Tampilkan checkbox HANYA JIKA BUKAN ID yang dikunci ?>
+                                    <input type="checkbox" name="ids[]" value="<?= $row['id']; ?>" class="row-checkbox">
+                                <?php endif; ?>
                             </td>
                             <td class="text-center align-middle"><?= $no++; ?></td>
                             <td class="align-middle">
                                 <div class="fw-bold"><?= htmlspecialchars($row['nama_pelanggaran']); ?></div>
-                                <div class="small text-muted">ID: <?= $row['id']; ?></div>
+                                <div class="small text-muted">
+                                    ID: <?= $row['id']; ?>
+                                    <?php if ($is_protected) : // <-- Tambahin label 'Default' biar jelas ?>
+                                        <span class="badge bg-secondary ms-1">Default</span>
+                                    <?php endif; ?>
+                                </div>
                             </td>
                             <td class="align-middle"><?= htmlspecialchars($row['bagian']); ?></td>
                             <td class="text-center align-middle fw-bold"><?= htmlspecialchars($row['poin']); ?></td>
@@ -204,7 +226,9 @@ $result = mysqli_stmt_get_result($stmt);
                             <td class="text-center align-middle">
                                 <div class="btn-group" role="group">
                                     <a href="edit.php?id=<?= $row['id']; ?>" class="btn btn-sm btn-warning" title="Edit"><i class="fas fa-edit"></i></a>
-                                    <a href="#" onclick="showConfirmDelete('delete.php?id=<?= $row['id']; ?>')" class="btn btn-sm btn-danger" title="Hapus"><i class="fas fa-trash"></i></a>
+                                    <?php if (!$is_protected) : // <-- Tampilkan tombol hapus HANYA JIKA BUKAN ID yang dikunci ?>
+                                        <a href="#" onclick="showConfirmDelete('delete.php?id=<?= $row['id']; ?>')" class="btn btn-sm btn-danger" title="Hapus"><i class="fas fa-trash"></i></a>
+                                    <?php endif; ?>
                                 </div>
                             </td>
                         </tr>
