@@ -7,7 +7,13 @@ require_once __DIR__ . '/../db.php';
 require_once __DIR__ . '/../auth.php';
 guard('jenis_pelanggaran_delete');
 
+// --- PERLINDUNGAN DIMULAI DI SINI ---
+// Definisikan ID yang tidak boleh dihapus sama sekali
+$protected_ids = [1, 2, 3];
+// --- SELESAI ---
+
 // Fungsi ini akan menghitung dan mengurangi poin_aktif santri secara BULK (sekaligus)
+// (Fungsi ini tidak diubah, sudah benar)
 function kurangiPoinBulkSebelumHapus($conn, $ids_to_delete) {
     if (empty($ids_to_delete)) {
         return;
@@ -48,6 +54,16 @@ function kurangiPoinBulkSebelumHapus($conn, $ids_to_delete) {
 // --- Skenario 1: Hapus Satu Data (dari link) ---
 if (isset($_GET['id']) && is_numeric($_GET['id'])) {
     $id = (int)$_GET['id'];
+
+    // --- PERLINDUNGAN ---
+    // Cek apakah ID ini termasuk yang dilindungi
+    if (in_array($id, $protected_ids)) {
+        $_SESSION['error_message'] = "Gagal! Data dengan ID $id adalah data default dan tidak dapat dihapus.";
+        header("Location: index.php");
+        exit; // Langsung hentikan script
+    }
+    // --- SELESAI ---
+
     $ids_to_process = [$id];
     
     kurangiPoinBulkSebelumHapus($conn, $ids_to_process);
@@ -70,10 +86,15 @@ if (isset($_GET['id']) && is_numeric($_GET['id'])) {
 
 // --- Skenario 2: Hapus Banyak Data (dari checkbox) ---
 if (isset($_POST['ids']) && is_array($_POST['ids'])) {
-    $ids_to_delete = array_filter(array_map('intval', $_POST['ids']), function($id) {
+    $ids_from_user = array_filter(array_map('intval', $_POST['ids']), function($id) {
         return $id > 0;
     });
     
+    // --- PERLINDUNGAN ---
+    // Filter ID yang dilindungi dari daftar hapus
+    $ids_to_delete = array_diff($ids_from_user, $protected_ids);
+    // --- SELESAI ---
+
     if (!empty($ids_to_delete)) {
         kurangiPoinBulkSebelumHapus($conn, $ids_to_delete);
 
@@ -97,6 +118,9 @@ if (isset($_POST['ids']) && is_array($_POST['ids'])) {
             $_SESSION['success_message'] = "$count data jenis pelanggaran dan semua riwayatnya berhasil dihapus.";
         }
         mysqli_stmt_close($stmt);
+    } else {
+        // Jika setelah difilter tidak ada ID yang bisa dihapus (misal cuma milih ID 1 dan 2)
+        $_SESSION['error_message'] = "Tidak ada data yang dihapus. Semua data yang dipilih adalah data default yang dilindungi.";
     }
 }
 
