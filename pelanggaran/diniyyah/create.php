@@ -1,12 +1,21 @@
 <?php 
 require_once __DIR__ . '/../../header.php';
 guard('pelanggaran_diniyyah_input'); 
-?>
-
-<?php
 
 // Ambil daftar jenis pelanggaran KHUSUS BAGIAN DINIYYAH
-$jenis_pelanggaran_list = mysqli_query($conn, "SELECT id, nama_pelanggaran, poin FROM jenis_pelanggaran WHERE bagian = 'Diniyyah' ORDER BY nama_pelanggaran ASC");
+$jenis_pelanggaran_list_result = mysqli_query($conn, "SELECT id, nama_pelanggaran, poin FROM jenis_pelanggaran WHERE bagian = 'Diniyyah' ORDER BY nama_pelanggaran ASC");
+
+// ✅ PERUBAHAN 1: Siapkan data pelanggaran untuk JavaScript
+$pelanggaran_list_for_js = [];
+while ($jp = mysqli_fetch_assoc($jenis_pelanggaran_list_result)) {
+    $pelanggaran_list_for_js[] = [
+        'id'    => $jp['id'],
+        'value' => htmlspecialchars($jp['nama_pelanggaran']),
+        'label' => htmlspecialchars($jp['nama_pelanggaran']) . ' (Poin: ' . $jp['poin'] . ')',
+    ];
+}
+// Kembalikan pointer result set ke awal
+mysqli_data_seek($jenis_pelanggaran_list_result, 0);
 ?>
 
 <!-- Butuh jQuery UI untuk autocomplete, jadi kita tambahkan CSS-nya -->
@@ -41,9 +50,6 @@ $jenis_pelanggaran_list = mysqli_query($conn, "SELECT id, nama_pelanggaran, poin
 
 <div class="container my-4">
     <div class="card col-xl-10 col-lg-12 mx-auto shadow-sm">
-        <!-- ======================================================= -->
-        <!-- === INI DIA BAGIAN YANG KITA UBAH === -->
-        <!-- ======================================================= -->
         <div class="card-header bg-success text-white d-grid d-sm-flex justify-content-sm-between align-items-sm-center gap-2">
             <h4 class="mb-0 text-center text-sm-start"><i class="fas fa-book-quran me-2"></i> Catat Pelanggaran Diniyyah</h4>
             <a href="rekap.php" class="btn btn-sm btn-light">Lihat Rekap <i class="fas fa-chart-line ms-1"></i></a>
@@ -62,15 +68,10 @@ $jenis_pelanggaran_list = mysqli_query($conn, "SELECT id, nama_pelanggaran, poin
                 <!-- Step 1: Pilih Pelanggaran & Tanggal -->
                 <div class="row g-3 mb-3">
                     <div class="col-md-8">
-                        <label for="jenis_pelanggaran_id" class="form-label fw-bold">1. Pilih Jenis Pelanggaran</label>
-                        <select name="jenis_pelanggaran_id" id="jenis_pelanggaran_id" class="form-select" required>
-                            <option value="" disabled selected>-- Pilih Pelanggaran Diniyyah --</option>
-                            <?php while ($jp = mysqli_fetch_assoc($jenis_pelanggaran_list)): ?>
-                                <option value="<?php echo $jp['id']; ?>" data-poin="<?php echo $jp['poin']; ?>">
-                                    <?php echo htmlspecialchars($jp['nama_pelanggaran']) . " (" . $jp['poin'] . " Poin)"; ?>
-                                </option>
-                            <?php endwhile; ?>
-                        </select>
+                        <label for="pelanggaranSearch" class="form-label fw-bold">1. Pilih Jenis Pelanggaran</label>
+                        <!-- ✅ PERUBAHAN 2: Ganti <select> menjadi <input> untuk search -->
+                        <input type="text" id="pelanggaranSearch" class="form-control" placeholder="Ketik jenis pelanggaran..." required>
+                        <input type="hidden" name="jenis_pelanggaran_id" id="jenis_pelanggaran_id">
                     </div>
                     <div class="col-md-4">
                         <label for="tanggal" class="form-label fw-bold">2. Tentukan Tanggal</label>
@@ -84,7 +85,6 @@ $jenis_pelanggaran_list = mysqli_query($conn, "SELECT id, nama_pelanggaran, poin
                     <label for="santri-search" class="form-label fw-bold">3. Cari dan Tambahkan Santri</label>
                     <div class="input-group">
                         <input type="text" id="santri-search" class="form-control" placeholder="Ketik nama santri untuk mencari...">
-                        <!-- ✅ FIX: Tombol diubah jadi ikon di mobile -->
                         <button class="btn btn-success" type="button" id="btn-tambah-santri" disabled>
                             <i class="fas fa-plus"></i><span class="d-none d-sm-inline"> Tambah</span>
                         </button>
@@ -123,11 +123,40 @@ $jenis_pelanggaran_list = mysqli_query($conn, "SELECT id, nama_pelanggaran, poin
 <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
 <script src="https://code.jquery.com/ui/1.13.2/jquery-ui.min.js"></script>
 
+<!-- ✅ PERUBAHAN 3: Kirim data PHP ke JavaScript -->
 <script>
-// Script Javascript tidak berubah, sama persis dengan modul Bahasa
+const jenisPelanggaranData = <?= json_encode($pelanggaran_list_for_js); ?>;
+</script>
+
+<script>
 $(document).ready(function() {
     let selectedSantri = null;
+    // ✅ PERUBAHAN 4: Tambahkan variabel untuk pelanggaran terpilih
+    let pelanggaranTerpilih = null;
 
+    // ✅ PERUBAHAN 5: Tambahkan fungsi autocomplete untuk pelanggaran (copy-paste dari file kesantrian)
+    $("#pelanggaranSearch").autocomplete({
+        source: function(request, response) {
+            var matcher = new RegExp($.ui.autocomplete.escapeRegex(request.term), "i");
+            var filteredData = $.grep(jenisPelanggaranData, function(item) {
+                return matcher.test(item.label);
+            });
+            response(filteredData);
+        },
+        minLength: 1,
+        select: function(event, ui) {
+            pelanggaranTerpilih = ui.item;
+            $("#pelanggaranSearch").val(ui.item.value); // Tampilkan nama
+            $("#jenis_pelanggaran_id").val(ui.item.id); // Simpan ID
+            return false;
+        }
+    }).autocomplete("instance")._renderItem = function(ul, item) {
+        return $("<li>")
+            .append("<div>" + item.label + "</div>")
+            .appendTo(ul);
+    };
+
+    // --- Script untuk santri search (tidak diubah) ---
     $("#santri-search").autocomplete({
         source: "search_santri.php",
         minLength: 2,
@@ -187,6 +216,19 @@ $(document).ready(function() {
         $('#btn-tambah-santri').prop('disabled', true);
         selectedSantri = null;
     }
+
+    // ✅ PERUBAHAN 6: Tambahkan validasi form submission untuk pelanggaran
+    $("#form-pelanggaran").on('submit', function(e) {
+        if (!$("#jenis_pelanggaran_id").val()) {
+            e.preventDefault();
+            alert("Jenis pelanggaran belum dipilih!");
+            return;
+        }
+        if ($('#tabel-santri-pelanggar tbody tr').length === 0) {
+            e.preventDefault();
+            alert('Daftar santri pelanggar tidak boleh kosong!');
+        }
+    });
 });
 </script>
 

@@ -2,7 +2,6 @@
 require_once __DIR__ . '/../../header.php';
 guard('pelanggaran_kesantrian_input'); 
 
-// Ganti query dari filter ID, jadi filter berdasarkan 'bagian'
 $bagian = 'Kesantrian';
 $stmt = $conn->prepare("
     SELECT id, nama_pelanggaran, poin 
@@ -13,6 +12,18 @@ $stmt = $conn->prepare("
 $stmt->bind_param("s", $bagian);
 $stmt->execute();
 $jenis_pelanggaran_result = $stmt->get_result();
+
+// Siapkan data pelanggaran untuk JavaScript
+$pelanggaran_list_for_js = [];
+while ($jp = $jenis_pelanggaran_result->fetch_assoc()) {
+    $pelanggaran_list_for_js[] = [
+        'id'    => $jp['id'],
+        'value' => htmlspecialchars($jp['nama_pelanggaran']),
+        'label' => htmlspecialchars($jp['nama_pelanggaran']) . ' (Poin: ' . $jp['poin'] . ')',
+    ];
+}
+// Kembalikan pointer result set ke awal untuk jaga-jaga jika masih dibutuhkan
+$jenis_pelanggaran_result->data_seek(0);
 ?>
 
 <!-- CSS untuk jQuery UI Autocomplete -->
@@ -106,18 +117,9 @@ $jenis_pelanggaran_result = $stmt->get_result();
                 <div class="form-top-section">
                     <div class="row g-3">
                         <div class="col-md-6">
-                            <label for="jenis_pelanggaran_id" class="form-label fw-bold">Jenis Pelanggaran</label>
-                            <select class="form-select" id="jenis_pelanggaran_id" name="jenis_pelanggaran_id" required>
-                                <option value="" disabled selected>-- Pilih Pelanggaran --</option>
-                                <?php 
-                                mysqli_data_seek($jenis_pelanggaran_result, 0);
-                                while ($jp = mysqli_fetch_assoc($jenis_pelanggaran_result)) : 
-                                ?>
-                                    <option value="<?= $jp['id']; ?>">
-                                        <?= htmlspecialchars($jp['nama_pelanggaran']); ?> (Poin: <?= $jp['poin']; ?>)
-                                    </option>
-                                <?php endwhile; ?>
-                            </select>
+                            <label for="pelanggaranSearch" class="form-label fw-bold">Jenis Pelanggaran</label>
+                            <input type="text" id="pelanggaranSearch" class="form-control" placeholder="Ketik jenis pelanggaran..." required>
+                            <input type="hidden" id="jenis_pelanggaran_id" name="jenis_pelanggaran_id">
                         </div>
                         <div class="col-md-6">
                             <label for="tanggal" class="form-label fw-bold">Waktu Kejadian</label>
@@ -133,7 +135,6 @@ $jenis_pelanggaran_result = $stmt->get_result();
                         <input type="text" id="santriSearch" class="form-control" placeholder="Ketik min. 2 huruf nama santri...">
                     </div>
                     <div class="col-md-4 d-flex align-items-end mt-2 mt-md-0">
-                        <!-- ✅ FIX: Tombol diubah jadi ikon di mobile -->
                         <button type="button" id="tambahSantri" class="btn btn-primary w-100">
                             <i class="fas fa-plus"></i>
                             <span class="d-none d-sm-inline"> Tambah ke Daftar</span>
@@ -172,10 +173,41 @@ $jenis_pelanggaran_result = $stmt->get_result();
 <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
 <script src="https://code.jquery.com/ui/1.12.1/jquery-ui.min.js"></script>
 
+<!-- Kirim data PHP ke JavaScript -->
+<script>
+const jenisPelanggaranData = <?= json_encode($pelanggaran_list_for_js); ?>;
+</script>
+
 <script>
 $(document).ready(function() {
 
     let santriTerpilih = null;
+    let pelanggaranTerpilih = null;
+
+    // ✅ FIX: Pencarian pelanggaran diubah agar mencari di semua bagian teks
+    $("#pelanggaranSearch").autocomplete({
+        source: function(request, response) {
+            // Buat pola pencarian (regex) yang case-insensitive
+            var matcher = new RegExp($.ui.autocomplete.escapeRegex(request.term), "i");
+            // Filter data pelanggaran berdasarkan pola di atas
+            var filteredData = $.grep(jenisPelanggaranData, function(item) {
+                // Cek apakah teks yang diketik ada di dalam label pelanggaran
+                return matcher.test(item.label);
+            });
+            response(filteredData);
+        },
+        minLength: 1,
+        select: function(event, ui) {
+            pelanggaranTerpilih = ui.item;
+            $("#pelanggaranSearch").val(ui.item.value); // Tampilkan nama pelanggaran
+            $("#jenis_pelanggaran_id").val(ui.item.id); // Simpan ID di input hidden
+            return false;
+        }
+    }).autocomplete("instance")._renderItem = function(ul, item) {
+        return $("<li>")
+            .append(`<div>${item.label}</div>`) 
+            .appendTo(ul);
+    };
 
     $("#santriSearch").autocomplete({
         source: function(request, response) {
@@ -242,9 +274,19 @@ $(document).ready(function() {
         $("#pelanggaranForm")[0].reset();
         $("#santriSearch").val('');
         santriTerpilih = null;
+        
+        $("#pelanggaranSearch").val('');
+        $("#jenis_pelanggaran_id").val('');
+        pelanggaranTerpilih = null;
     });
 
     $("#pelanggaranForm").on('submit', function(e){
+        if (!$("#jenis_pelanggaran_id").val()) {
+            e.preventDefault();
+            alert("Jenis pelanggaran belum dipilih!");
+            return;
+        }
+
         const jumlahSantri = $("#daftarSantri tbody tr").length;
         if(jumlahSantri === 0){
             e.preventDefault();

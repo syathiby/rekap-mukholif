@@ -71,7 +71,7 @@ $kamarQuery = mysqli_query($conn, "
             <ul class="nav nav-tabs card-header-tabs" id="pelanggaranTab" role="tablist">
                 <li class="nav-item" role="presentation">
                     <button class="nav-link active" id="individu-tab" data-bs-toggle="tab" data-bs-target="#individu" type="button" role="tab" aria-controls="individu" aria-selected="true">
-                        <i class="fas fa-user-clock me-1"></i> Individu (Telat Sholat/KBM)
+                        <i class="fas fa-user-clock me-1"></i> Individu
                     </button>
                 </li>
                 <li class="nav-item" role="presentation">
