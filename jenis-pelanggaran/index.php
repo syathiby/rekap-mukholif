@@ -6,13 +6,22 @@ guard('jenis_pelanggaran_view');
 $bagian_list_query = "SELECT DISTINCT bagian FROM jenis_pelanggaran ORDER BY bagian ASC";
 $bagian_list_result = mysqli_query($conn, $bagian_list_query);
 
-// --- LOGIKA FILTER (SUDAH BENAR, TIDAK DIUBAH) ---
+// --- LOGIKA FILTER (DITAMBAH LOGIKA PENCARIAN) ---
 $filter_bagian = $_GET['bagian'] ?? '';
 $filter_kategori = $_GET['kategori'] ?? '';
+$filter_search = $_GET['search'] ?? ''; 
+
 $query = "SELECT * FROM jenis_pelanggaran";
 $where_clauses = [];
 $params = [];
 $types = '';
+
+// Logika untuk filter pencarian
+if (!empty($filter_search)) {
+    $where_clauses[] = "nama_pelanggaran LIKE ?";
+    $params[] = "%" . $filter_search . "%";
+    $types .= 's';
+}
 if (!empty($filter_bagian)) {
     $where_clauses[] = "bagian = ?";
     $params[] = $filter_bagian;
@@ -28,7 +37,7 @@ if (!empty($where_clauses)) {
 }
 $query .= " ORDER BY nama_pelanggaran ASC";
 
-// --- EKSEKUSI QUERY (SUDAH BENAR, TIDAK DIUBAH) ---
+// --- EKSEKUSI QUERY ---
 $stmt = mysqli_prepare($conn, $query);
 if (!empty($params)) {
     mysqli_stmt_bind_param($stmt, $types, ...$params);
@@ -67,7 +76,7 @@ $result = mysqli_stmt_get_result($stmt);
     .badge.bg-danger { background-color: #dc3545 !important; }
     .badge.bg-dark { background-color: #212529 !important; }
 
-    /* ✅ PERBAIKAN: CSS untuk tampilan mobile (Responsive) */
+    /* CSS untuk tampilan mobile (Responsive) */
     @media (max-width: 767px) {
         .page-title-card {
             flex-direction: column;
@@ -82,7 +91,7 @@ $result = mysqli_stmt_get_result($stmt);
         .page-title-card h3 {
             font-size: 1.25rem;
         }
-        .filter-card .col-md, .filter-card .col-md-auto {
+        .filter-card .col-md-4, .filter-card .col-md-3, .filter-card .col-md-2 {
             margin-bottom: 0.75rem;
         }
         .filter-card .row > *:last-child {
@@ -129,35 +138,36 @@ $result = mysqli_stmt_get_result($stmt);
     
     <div class="filter-card">
         <form method="GET" action="">
-            <div class="row g-3 align-items-center">
-                <div class="col-md">
-                    <div class="input-group">
-                        <span class="input-group-text"><i class="fas fa-layer-group"></i></span>
-                        <select name="bagian" class="form-select" onchange="this.form.submit()">
-                            <option value="">-- Filter Bagian --</option>
-                            <?php mysqli_data_seek($bagian_list_result, 0); ?>
-                            <?php while ($bagian_row = mysqli_fetch_assoc($bagian_list_result)) : ?>
-                                <option value="<?= htmlspecialchars($bagian_row['bagian']); ?>" <?= ($filter_bagian == $bagian_row['bagian']) ? 'selected' : ''; ?>>
-                                    <?= htmlspecialchars($bagian_row['bagian']); ?>
-                                </option>
-                            <?php endwhile; ?>
-                        </select>
-                    </div>
+            <div class="row g-3 align-items-end">
+                <div class="col-md-4">
+                    <label for="search" class="form-label">Cari Nama Pelanggaran</label>
+                    <input type="text" name="search" id="search" class="form-control" placeholder="Ketik di sini..." value="<?= htmlspecialchars($filter_search); ?>">
                 </div>
-                <div class="col-md">
-                    <div class="input-group">
-                        <span class="input-group-text"><i class="fas fa-tags"></i></span>
-                        <select name="kategori" class="form-select" onchange="this.form.submit()">
-                            <option value="">-- Filter Kategori --</option>
-                            <option value="Ringan" <?= ($filter_kategori == 'Ringan') ? 'selected' : '' ?>>Ringan</option>
-                            <option value="Sedang" <?= ($filter_kategori == 'Sedang') ? 'selected' : '' ?>>Sedang</option>
-                            <option value="Berat" <?= ($filter_kategori == 'Berat') ? 'selected' : '' ?>>Berat</option>
-                            <option value="Sangat Berat" <?= ($filter_kategori == 'Sangat Berat') ? 'selected' : '' ?>>Sangat Berat</option>
-                        </select>
-                    </div>
+                <div class="col-md-3">
+                    <label for="bagian" class="form-label">Filter Bagian</label>
+                    <select name="bagian" id="bagian" class="form-select">
+                        <option value="">-- Semua Bagian --</option>
+                        <?php mysqli_data_seek($bagian_list_result, 0); ?>
+                        <?php while ($bagian_row = mysqli_fetch_assoc($bagian_list_result)) : ?>
+                            <option value="<?= htmlspecialchars($bagian_row['bagian']); ?>" <?= ($filter_bagian == $bagian_row['bagian']) ? 'selected' : ''; ?>>
+                                <?= htmlspecialchars($bagian_row['bagian']); ?>
+                            </option>
+                        <?php endwhile; ?>
+                    </select>
                 </div>
-                <div class="col-md-auto">
-                    <a href="index.php" class="btn btn-outline-secondary w-100"><i class="fas fa-sync-alt me-1"></i> Reset</a>
+                <div class="col-md-3">
+                    <label for="kategori" class="form-label">Filter Kategori</label>
+                    <select name="kategori" id="kategori" class="form-select">
+                        <option value="">-- Semua Kategori --</option>
+                        <option value="Ringan" <?= ($filter_kategori == 'Ringan') ? 'selected' : '' ?>>Ringan</option>
+                        <option value="Sedang" <?= ($filter_kategori == 'Sedang') ? 'selected' : '' ?>>Sedang</option>
+                        <option value="Berat" <?= ($filter_kategori == 'Berat') ? 'selected' : '' ?>>Berat</option>
+                        <option value="Sangat Berat" <?= ($filter_kategori == 'Sangat Berat') ? 'selected' : '' ?>>Sangat Berat</option>
+                    </select>
+                </div>
+                <div class="col-md-2 d-flex">
+                    <button type="submit" class="btn btn-primary w-100 me-2"><i class="fas fa-search"></i> Cari</button>
+                    <a href="index.php" class="btn btn-outline-secondary" title="Reset Filter"><i class="fas fa-sync-alt"></i></a>
                 </div>
             </div>
         </form>
@@ -169,7 +179,6 @@ $result = mysqli_stmt_get_result($stmt);
                 <table class="table table-striped table-hover mb-0">
                     <thead>
                         <tr>
-                            <!-- ✅ PERBAIKAN: Checkbox ini TIDAK perlu atribut name, karena hanya untuk kontrol JavaScript -->
                             <th width="3%" class="text-center"><input type="checkbox" id="selectAll"></th>
                             <th width="5%" class="text-center">No</th>
                             <th>Nama Pelanggaran</th>
@@ -182,17 +191,13 @@ $result = mysqli_stmt_get_result($stmt);
                     <tbody>
                         <?php
                         if (mysqli_num_rows($result) == 0) {
-                            echo '<tr><td colspan="7" class="text-center py-4"><h5>Data tidak ditemukan.</h5><p class="text-muted">Coba reset filter di atas.</p></td></tr>';
+                            echo '<tr><td colspan="7" class="text-center py-4"><h5>Data tidak ditemukan.</h5><p class="text-muted">Coba reset filter atau ubah kata kunci pencarian.</p></td></tr>';
                         }
                         
                         $no = 1;
                         while ($row = mysqli_fetch_assoc($result)) {
-                            // --- INI LOGIKA BARUNYA ---
-                            // 1. Definisikan ID mana saja yang mau "dikunci"
                             $protected_ids = [1, 2, 3];
-                            // 2. Cek apakah ID baris ini termasuk yang dikunci
                             $is_protected = in_array($row['id'], $protected_ids);
-                            // --- SELESAI LOGIKA BARU ---
 
                             $badge_class = match ($row['kategori']) {
                                 'Ringan' => 'bg-info',
@@ -204,7 +209,7 @@ $result = mysqli_stmt_get_result($stmt);
                         ?>
                         <tr>
                             <td class="text-center align-middle">
-                                <?php if (!$is_protected) : // <-- Tampilkan checkbox HANYA JIKA BUKAN ID yang dikunci ?>
+                                <?php if (!$is_protected) : ?>
                                     <input type="checkbox" name="ids[]" value="<?= $row['id']; ?>" class="row-checkbox">
                                 <?php endif; ?>
                             </td>
@@ -213,7 +218,7 @@ $result = mysqli_stmt_get_result($stmt);
                                 <div class="fw-bold"><?= htmlspecialchars($row['nama_pelanggaran']); ?></div>
                                 <div class="small text-muted">
                                     ID: <?= $row['id']; ?>
-                                    <?php if ($is_protected) : // <-- Tambahin label 'Default' biar jelas ?>
+                                    <?php if ($is_protected) : ?>
                                         <span class="badge bg-secondary ms-1">Default</span>
                                     <?php endif; ?>
                                 </div>
@@ -226,7 +231,7 @@ $result = mysqli_stmt_get_result($stmt);
                             <td class="text-center align-middle">
                                 <div class="btn-group" role="group">
                                     <a href="edit.php?id=<?= $row['id']; ?>" class="btn btn-sm btn-warning" title="Edit"><i class="fas fa-edit"></i></a>
-                                    <?php if (!$is_protected) : // <-- Tampilkan tombol hapus HANYA JIKA BUKAN ID yang dikunci ?>
+                                    <?php if (!$is_protected) : ?>
                                         <a href="#" onclick="showConfirmDelete('delete.php?id=<?= $row['id']; ?>')" class="btn btn-sm btn-danger" title="Hapus"><i class="fas fa-trash"></i></a>
                                     <?php endif; ?>
                                 </div>
@@ -249,22 +254,28 @@ $result = mysqli_stmt_get_result($stmt);
     </form>
 </div>
 
-<!-- Modal dan JS di bawah sini TIDAK ADA PERUBAHAN, sudah benar -->
-<div class="modal fade" id="confirmModal" tabindex="-1" aria-hidden="true">
+<!-- ✅ PERUBAHAN: Modal ini sekarang dipakai untuk SEMUA konfirmasi hapus -->
+<div class="modal fade" id="confirmDeleteModal" tabindex="-1" aria-hidden="true">
     <div class="modal-dialog modal-dialog-centered">
         <div class="modal-content">
-            <div class="modal-header">
-                <h5 class="modal-title">Konfirmasi Tindakan</h5>
-                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            <div class="modal-header bg-danger text-white">
+                <h5 class="modal-title"><i class="fas fa-exclamation-triangle me-2"></i>Konfirmasi Penghapusan</h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
             </div>
-            <div class="modal-body">Apakah Anda yakin ingin menghapus data ini?</div>
+            <div class="modal-body">
+                <p id="confirmMessage">Apakah Anda benar-benar yakin?</p>
+                <p class="fw-bold text-danger">
+                    PERINGATAN: Semua riwayat pelanggaran santri yang terkait juga akan terhapus secara permanen. Tindakan ini tidak dapat dibatalkan.
+                </p>
+            </div>
             <div class="modal-footer">
                 <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Batal</button>
-                <a href="#" id="confirmModalButton" class="btn btn-danger">Yakin, Hapus</a>
+                <a href="#" id="confirmDeleteButton" class="btn btn-danger">Yakin, Hapus Permanen</a>
             </div>
         </div>
     </div>
 </div>
+
 
 <?php 
 mysqli_stmt_close($stmt);
@@ -273,12 +284,20 @@ require_once __DIR__ . '/../footer.php';
 
 <script>
 document.addEventListener('DOMContentLoaded', function() {
-    // JS Untuk modal hapus satu per satu
-    const confirmModal = new bootstrap.Modal(document.getElementById('confirmModal'));
-    const confirmBtn = document.getElementById('confirmModalButton');
+    // ✅ PERUBAHAN: Setup Modal yang lebih canggih
+    const confirmModalElement = document.getElementById('confirmDeleteModal');
+    const confirmModal = new bootstrap.Modal(confirmModalElement);
+    const confirmMessage = document.getElementById('confirmMessage');
+    const confirmBtn = document.getElementById('confirmDeleteButton');
 
+    // ✅ PERUBAHAN: Fungsi untuk hapus SATUAN
     window.showConfirmDelete = function(deleteUrl) {
-        confirmBtn.href = deleteUrl;
+        confirmMessage.textContent = 'Apakah Anda benar-benar yakin ingin menghapus data ini?';
+        confirmBtn.onclick = function() {
+            window.location.href = deleteUrl;
+        };
+        // Hapus atribut href biar tidak membingungkan
+        confirmBtn.removeAttribute('href');
         confirmModal.show();
     }
 
@@ -309,7 +328,7 @@ document.addEventListener('DOMContentLoaded', function() {
             }
             const totalCheckboxes = rowCheckboxes.length;
             const checkedCount = document.querySelectorAll('.row-checkbox:checked').length;
-            if (totalCheckboxes === checkedCount) {
+            if (totalCheckboxes > 0 && totalCheckboxes === checkedCount) {
                 selectAllCheckbox.checked = true;
             }
             toggleDeleteButton();
@@ -317,15 +336,23 @@ document.addEventListener('DOMContentLoaded', function() {
     });
 
     if (bulkDeleteForm) {
+        // ✅ PERUBAHAN: Fungsi untuk hapus MASSAL (BULK)
         bulkDeleteForm.addEventListener('submit', function(e) {
             e.preventDefault();
             const checkedCount = document.querySelectorAll('.row-checkbox:checked').length;
             if (checkedCount > 0) {
-                if (confirm(`Apakah Anda yakin ingin menghapus ${checkedCount} data terpilih?`)) {
-                    this.submit();
-                }
+                confirmMessage.textContent = `Apakah Anda yakin ingin menghapus ${checkedCount} data terpilih?`;
+                confirmBtn.onclick = function() {
+                    bulkDeleteForm.submit();
+                };
+                 // Hapus atribut href biar tidak membingungkan
+                confirmBtn.removeAttribute('href');
+                confirmModal.show();
             }
         });
     }
+
+    // Panggil sekali di awal untuk set state tombol
+    toggleDeleteButton();
 });
 </script>
