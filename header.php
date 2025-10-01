@@ -3,16 +3,14 @@
 // MARKAS KOMANDO APLIKASI
 // =================================================================
 
-// Protokol 1: Nyalain HT (Mulai Session)
 if (session_status() === PHP_SESSION_NONE) {
     ini_set('session.cookie_lifetime', 0);
     session_start();
 }
 
-// Protokol 2: Ambil Peta Denah Dufan (Koneksi Database)
+// Protokol 2: Panggil file dari folder yang sama
 require_once __DIR__ . '/db.php';
-
-// Protokol 3: Panggil Kepala Satpam (File Otorisasi)
+// Protokol 3: Panggil file dari folder yang sama
 require_once __DIR__ . '/auth.php';
 
 // Protokol 4: Siapin data-data umum
@@ -21,7 +19,6 @@ $success_message = $_SESSION['success_message'] ?? null;
 $error_message = $_SESSION['error_message'] ?? null;
 unset($_SESSION['success_message'], $_SESSION['error_message']);
 
-// MARKAS KOMANDO SELESEI
 ?>
 <!DOCTYPE html>
 <html lang="id">
@@ -29,22 +26,16 @@ unset($_SESSION['success_message'], $_SESSION['error_message']);
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Sistem Pelanggaran Santri</title>
+    <!-- Path sederhana ke aset -->
     <link rel="icon" type="image/png" sizes="64x64" href="/assets/logo.png">
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600&display=swap" rel="stylesheet">
-    <!-- Google Fonts (Poppins) -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css">
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700&display=swap" rel="stylesheet">
-    <!-- Font Awesome (Ikon) -->
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css" xintegrity="sha512-SnH5WK+bZxgPHs44uWIX+LLJAJ9/2PkPKZ5QiAj6Ta86w+fsb2TkcmfRyVX3pBnMFcV7oQPJkl9QevSCWr3W6A==" crossorigin="anonymous" referrerpolicy="no-referrer" />
+
 <style>
-    /* =================================================================
-        KODE DASAR (TIDAK DIUBAH)
-    ================================================================= */
+    /* ... (Semua CSS lu yang udah ada, gw masukin lagi tanpa perubahan) ... */
     :root {
         --sidebar-width: 260px;
         --header-height: 70px;
@@ -67,8 +58,8 @@ unset($_SESSION['success_message'], $_SESSION['error_message']);
         border-right: 1px solid var(--border-color);
         padding: 1rem;
         z-index: 1021;
-        display: flex; /* Tambahan untuk layouting footer */
-        flex-direction: column; /* Tambahan */
+        display: flex; 
+        flex-direction: column; 
     }
     .main-content {
         flex-grow: 1;
@@ -99,7 +90,7 @@ unset($_SESSION['success_message'], $_SESSION['error_message']);
         padding: 0.75rem 1rem;
         border-radius: 8px;
         margin-bottom: 0.25rem;
-        transition: none; /* MATIKAN SEMUA TRANSISI */
+        transition: none; 
     }
     .sidebar .nav-link i, .offcanvas .nav-link i {
         font-size: 1.1rem;
@@ -118,9 +109,6 @@ unset($_SESSION['success_message'], $_SESSION['error_message']);
         }
     }
 
-    /* =================================================================
-        STYLING SIDEBAR (TIDAK DIUBAH)
-    ================================================================= */
     :root {
         --blue: #0d6efd; --green: #198754; --orange: #fd7e14;
         --purple: #6f42c1; --teal: #20c997; --indigo: #6610f2;
@@ -150,9 +138,6 @@ unset($_SESSION['success_message'], $_SESSION['error_message']);
     .apply-color-hover-active.color-cyan { color: var(--cyan) !important; }
     .apply-color-hover-active.color-cyan i { color: var(--cyan) !important; }
 
-    /* =================================================================
-        ✅ CSS BARU: INFO USER DI HEADER & SIDEBAR MOBILE ✅
-    ================================================================= */
     .user-info .user-details { line-height: 1.3; }
     .user-info .user-name {
         font-weight: 600;
@@ -174,26 +159,19 @@ unset($_SESSION['success_message'], $_SESSION['error_message']);
         text-transform: uppercase;
     }
     
-    /* =================================================================
-        ✅ LOGIKA DAHSYAT DIMULAI DARI SINI ✅
-    ================================================================= */
     .btn-logout {
         border: none !important;
-        background-color: #fee2e2 !important; /* Latar Merah Muda (WAJIB) */
-        color: #dc2626 !important; /* Teks Merah Tua (WAJIB) */
+        background-color: #fee2e2 !important; 
+        color: #dc2626 !important; 
     }
     .btn-logout:hover {
-        background-color: #dc2626 !important; /* Latar Merah Tua (WAJIB) */
-        color: #fff !important; /* Teks Putih (WAJIB) */
+        background-color: #dc2626 !important;
+        color: #fff !important; 
     }
-    /* =================================================================
-        ✅ LOGIKA DAHSYAT SELESAI ✅
-    ================================================================= */
 
-    /* Style untuk info user di dalam offcanvas (sidebar mobile) */
     .offcanvas-user-info {
         padding-top: 1rem;
-        margin-top: auto; /* Ini kunci buat nempelin ke bawah */
+        margin-top: auto; 
         border-top: 1px solid var(--border-color);
     }
     .offcanvas-user-info .user-details {
@@ -208,7 +186,6 @@ unset($_SESSION['success_message'], $_SESSION['error_message']);
 <body>
     <!-- Sidebar untuk Desktop -->
     <nav class="sidebar d-none d-lg-block shadow-sm">
-        <!-- Taruh menu utama di sini -->
         <?php include __DIR__ . '/sidebar.php'; ?>
     </nav>
 
@@ -219,10 +196,8 @@ unset($_SESSION['success_message'], $_SESSION['error_message']);
             <button type="button" class="btn-close" data-bs-dismiss="offcanvas"></button>
         </div>
         <div class="offcanvas-body">
-            <!-- Menu utama, sama seperti desktop -->
             <?php include __DIR__ . '/sidebar.php'; ?>
             
-            <!-- ✅ BAGIAN INFO USER KHUSUS MOBILE ✅ -->
             <div class="offcanvas-user-info">
                 <div class="d-flex align-items-center mb-3">
                     <div class="user-avatar me-3">
@@ -233,6 +208,7 @@ unset($_SESSION['success_message'], $_SESSION['error_message']);
                         <span class="user-role text-muted"><?= htmlspecialchars(ucfirst($_SESSION['role'] ?? 'Role')) ?></span>
                     </div>
                 </div>
+                <!-- Path Logout sederhana -->
                 <a class="btn btn-sm d-flex align-items-center justify-content-center rounded-pill px-3 py-2 btn-logout w-100" href="/logout.php">
                     <i class="fas fa-sign-out-alt me-2"></i>Keluar
                 </a>
@@ -252,37 +228,14 @@ unset($_SESSION['success_message'], $_SESSION['error_message']);
                             <i class="fas fa-bars"></i>
                         </button>
                         <div class="d-flex align-items-center">
+                             <!-- Path Aset sederhana -->
                             <img src="/assets/logo.png?v=2" alt="Logo" class="header-logo me-2">
                             <span class="fw-bold app-name" style="color: #25396f;">Pendataan Mukholif</span>
                         </div>
                     </div>
                     
-                    <!-- ✅ BAGIAN KANAN HEADER (HANYA UNTUK DESKTOP) ✅ -->
+                    <!-- Kanan Header (Desktop) - TANPA Notifikasi -->
                     <div class="d-none d-lg-flex align-items-center">
-                        
-                        <!-- ============================================= -->
-                        <!--      🚀 LONCENG NOTIFIKASI BARU 🚀      -->
-                        <!-- ============================================= -->
-                        <div class="dropdown">
-                            <a class="nav-link text-secondary me-3" href="#" role="button" id="notification-icon" data-bs-toggle="dropdown" aria-expanded="false">
-                                <i class="fas fa-bell fs-5"></i>
-                                <span class="badge rounded-pill bg-danger" id="notification-count" style="position: absolute; top: -5px; right: -5px; display: none; font-size: 0.6em; padding: 0.3em 0.5em;"></span>
-                            </a>
-                            <ul class="dropdown-menu dropdown-menu-end shadow border-0 mt-2" id="notification-dropdown" style="width: 350px;">
-                                <li><h6 class="dropdown-header">Notifikasi Baru</h6></li>
-                                <li><hr class="dropdown-divider"></li>
-                                <div id="notification-list" style="max-height: 400px; overflow-y: auto;">
-                                    <!-- Daftar notifikasi akan dimuat di sini oleh JavaScript -->
-                                    <li class="px-3 py-2 text-center text-muted">Memuat...</li>
-                                </div>
-                                <li><hr class="dropdown-divider"></li>
-                                <li><a class="dropdown-item text-center text-primary" href="#">Lihat Semua Notifikasi</a></li>
-                            </ul>
-                        </div>
-                        <!-- ============================================= -->
-                        <!--         ✨ AKHIR LONCENG NOTIFIKASI ✨         -->
-                        <!-- ============================================= -->
-
                         <!-- Info User -->
                         <div class="user-info d-flex align-items-center">
                             <div class="user-details text-end me-3">
