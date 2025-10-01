@@ -259,6 +259,30 @@ unset($_SESSION['success_message'], $_SESSION['error_message']);
                     
                     <!-- ✅ BAGIAN KANAN HEADER (HANYA UNTUK DESKTOP) ✅ -->
                     <div class="d-none d-lg-flex align-items-center">
+                        
+                        <!-- ============================================= -->
+                        <!--      🚀 LONCENG NOTIFIKASI BARU 🚀      -->
+                        <!-- ============================================= -->
+                        <div class="dropdown">
+                            <a class="nav-link text-secondary me-3" href="#" role="button" id="notification-icon" data-bs-toggle="dropdown" aria-expanded="false">
+                                <i class="fas fa-bell fs-5"></i>
+                                <span class="badge rounded-pill bg-danger" id="notification-count" style="position: absolute; top: -5px; right: -5px; display: none; font-size: 0.6em; padding: 0.3em 0.5em;"></span>
+                            </a>
+                            <ul class="dropdown-menu dropdown-menu-end shadow border-0 mt-2" id="notification-dropdown" style="width: 350px;">
+                                <li><h6 class="dropdown-header">Notifikasi Baru</h6></li>
+                                <li><hr class="dropdown-divider"></li>
+                                <div id="notification-list" style="max-height: 400px; overflow-y: auto;">
+                                    <!-- Daftar notifikasi akan dimuat di sini oleh JavaScript -->
+                                    <li class="px-3 py-2 text-center text-muted">Memuat...</li>
+                                </div>
+                                <li><hr class="dropdown-divider"></li>
+                                <li><a class="dropdown-item text-center text-primary" href="#">Lihat Semua Notifikasi</a></li>
+                            </ul>
+                        </div>
+                        <!-- ============================================= -->
+                        <!--         ✨ AKHIR LONCENG NOTIFIKASI ✨         -->
+                        <!-- ============================================= -->
+
                         <!-- Info User -->
                         <div class="user-info d-flex align-items-center">
                             <div class="user-details text-end me-3">

@@ -80,6 +80,8 @@
 │    └── bulk-create.php
 │    └── bulk-edit.php
 │
+├─get_notifications.php
+├─mark_notifications_read.php
 ├─auth.php
 ├─db.php                    
 ├─footer.php
