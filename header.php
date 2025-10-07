@@ -35,7 +35,6 @@ unset($_SESSION['success_message'], $_SESSION['error_message']);
     <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700&display=swap" rel="stylesheet">
 
 <style>
-    /* ... (Semua CSS lu yang udah ada, gw masukin lagi tanpa perubahan) ... */
     :root {
         --sidebar-width: 260px;
         --header-height: 70px;
@@ -97,7 +96,6 @@ unset($_SESSION['success_message'], $_SESSION['error_message']);
         width: 20px;
         text-align: center;
     }
-    .toast-container { z-index: 1100 !important; }
     .header-logo { height: 45px; }
     .app-name { font-size: 1.25rem; }
 
@@ -181,6 +179,8 @@ unset($_SESSION['success_message'], $_SESSION['error_message']);
         display: flex;
         flex-direction: column;
     }
+
+    /* Hapus semua styling notifikasi yang tidak diperlukan */
 </style>
 </head>
 <body>
@@ -228,7 +228,7 @@ unset($_SESSION['success_message'], $_SESSION['error_message']);
                             <i class="fas fa-bars"></i>
                         </button>
                         <div class="d-flex align-items-center">
-                             <!-- Path Aset sederhana -->
+                            <!-- Path Aset sederhana -->
                             <img src="/assets/logo.png?v=2" alt="Logo" class="header-logo me-2">
                             <span class="fw-bold app-name" style="color: #25396f;">Pendataan Mukholif</span>
                         </div>
