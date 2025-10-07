@@ -60,6 +60,9 @@
 │    ├──users
 │    │    ├──create.php
 │    │    └──procees-create.php
+│    ├──history
+│    │    ├──index.php
+│    │    └──procees.php
 ├──rekap/
 │    ├──index.php
 │    ├──per-kamar.php
@@ -80,8 +83,6 @@
 │    └── bulk-create.php
 │    └── bulk-edit.php
 │
-├─get_notifications.php
-├─mark_notifications_read.php
 ├─auth.php
 ├─db.php                    
 ├─footer.php

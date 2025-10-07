@@ -6,54 +6,6 @@ require_once __DIR__ . '/../../db.php';
 require_once __DIR__ . '/../../auth.php';
 guard('pelanggaran_pengabdian_input');
 
-// =======================================================
-// === 🚀 FUNGSI BANTU UNTUK KIRIM NOTIFIKASI 🚀 ===
-// =======================================================
-/**
- * Mengirim notifikasi ke semua user yang memiliki izin DAN ke semua admin.
- * @param mysqli $conn Koneksi database
- * @param string $pesan Isi pesan notifikasi
- * @param string $link URL tujuan jika notifikasi diklik
- */
-function kirim_notifikasi_pelanggaran($conn, $pesan, $link) {
-    // ✅ PERUBAHAN DI SINI: Query di-upgrade untuk otomatis mencakup semua admin
-    $query_penerima = "
-        -- Ambil user yang punya izin spesifik
-        SELECT up.user_id 
-        FROM user_permissions up
-        JOIN permissions p ON up.permission_id = p.id
-        WHERE p.nama_izin = 'terima_notif_pelanggaran'
-        
-        UNION -- Gabungkan (tanpa duplikat) dengan...
-        
-        -- Ambil SEMUA user yang rolenya 'admin'
-        SELECT id 
-        FROM users 
-        WHERE role = 'admin'
-    ";
-    $result_penerima = mysqli_query($conn, $query_penerima);
-    
-    if ($result_penerima && mysqli_num_rows($result_penerima) > 0) {
-        $penerima_ids = [];
-        while ($row = mysqli_fetch_assoc($result_penerima)) {
-            $penerima_ids[] = $row['user_id'];
-        }
-
-        // 2. Masukkan notifikasi untuk setiap penerima
-        if (!empty($penerima_ids)) {
-            $query_insert_notif = "INSERT INTO notifikasi (user_id, pesan, link) VALUES (?, ?, ?)";
-            $stmt_insert_notif = mysqli_prepare($conn, $query_insert_notif);
-            
-            foreach ($penerima_ids as $penerima_id) {
-                mysqli_stmt_bind_param($stmt_insert_notif, "iss", $penerima_id, $pesan, $link);
-                mysqli_stmt_execute($stmt_insert_notif);
-            }
-            mysqli_stmt_close($stmt_insert_notif);
-        }
-    }
-}
-
-
 // Pastikan form disubmit dengan benar
 if (isset($_POST['submit_pelanggaran'])) {
 
@@ -140,31 +92,6 @@ if (isset($_POST['submit_pelanggaran'])) {
         } else {
             mysqli_commit($conn);
             $_SESSION['message'] = ['type' => 'success', 'text' => "Berhasil mencatat $success_count pelanggaran individu."];
-
-            // ✨ PANGGIL FUNGSI NOTIFIKASI DENGAN LOGIKA BARU ✨
-            $pesan_notif = "";
-            $link_notif = ""; // Kosongkan dulu
-            
-            // ✅ LOGIKA BARU UNTUK LINK ✅
-            if (count($santri_ids) == 1 && $last_insert_id) {
-                // KASUS 1: HANYA 1 SANTRI, LINK SPESIFIK
-                $query_santri = "SELECT nama FROM santri WHERE id = ?";
-                $stmt_santri = mysqli_prepare($conn, $query_santri);
-                mysqli_stmt_bind_param($stmt_santri, "i", $santri_ids[0]);
-                mysqli_stmt_execute($stmt_santri);
-                $santri_data = mysqli_fetch_assoc(mysqli_stmt_get_result($stmt_santri));
-                $nama_santri = $santri_data['nama'] ?? 'Santri';
-                mysqli_stmt_close($stmt_santri);
-                
-                $pesan_notif = "Pelanggaran '$nama_pelanggaran' oleh $nama_santri.";
-                $link_notif = "/rekap/detail-pelanggaran.php?id=" . $last_insert_id;
-            } else {
-                // KASUS 2: BANYAK SANTRI, LINK UMUM
-                $pesan_notif = count($santri_ids) . " santri melakukan pelanggaran '$nama_pelanggaran'.";
-                $link_notif = "/rekap/umum.php"; // Arahkan ke halaman rekap umum
-            }
-            
-            kirim_notifikasi_pelanggaran($conn, $pesan_notif, $link_notif);
         }
 
         header("Location: create.php");
@@ -200,12 +127,6 @@ if (isset($_POST['submit_pelanggaran'])) {
 
         if ($success_count > 0) {
             $_SESSION['message'] = ['type' => 'success', 'text' => "Berhasil mencatat $success_count pelanggaran kebersihan kamar."];
-
-            // ✨ PANGGIL FUNGSI NOTIFIKASI DI SINI ✨
-            $kamar_str = implode(', ', $kamar_list);
-            $pesan_notif = "Pelanggaran kebersihan baru untuk kamar: " . $kamar_str . ".";
-            $link_notif = "/eksekusi/index.php"; // Arahkan ke halaman eksekusi
-            kirim_notifikasi_pelanggaran($conn, $pesan_notif, $link_notif);
         }
 
         header("Location: create.php");

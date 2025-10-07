@@ -30,7 +30,8 @@ guard();
             --color-user: #198754;     /* Hijau */
             --color-periode: #6f42c1;  /* Ungu */
             --color-keamanan: #dc3545;  /* Merah */
-            --color-reset: #0d6efd;     /* ✅ Biru untuk Reset Poin */
+            --color-reset: #0d6efd;     /* Biru untuk Reset Poin */
+            --color-history: #20c997;   /* ✅ Teal untuk Riwayat */
         }
         
         /* Kontainer utama halaman pengaturan */
@@ -167,7 +168,7 @@ guard();
             border-color: var(--color-keamanan);
         }
         
-        /* ✅ KARTU BARU: Kartu Reset Poin (Biru) */
+        /* Kartu Reset Poin (Biru) */
         .settings-card.color-reset .card-icon,
         .settings-card.color-reset .settings-link {
             color: var(--color-reset);
@@ -176,6 +177,17 @@ guard();
             transform: translateY(-4px);
             box-shadow: 0 4px 20px rgba(30, 41, 59, 0.05);
             border-color: var(--color-reset);
+        }
+        
+        /* ✅ KARTU BARU: Riwayat Pelanggaran (Teal) */
+        .settings-card.color-history .card-icon,
+        .settings-card.color-history .settings-link {
+            color: var(--color-history);
+        }
+        .settings-card.color-history:hover {
+            transform: translateY(-4px);
+            box-shadow: 0 4px 20px rgba(30, 41, 59, 0.05);
+            border-color: var(--color-history);
         }
         
         @media (max-width: 768px) {
@@ -257,6 +269,22 @@ guard();
                 <div class="card-action">
                     <a href="reset-poin/index.php" class="settings-link">
                         Reset Poin <i class="fas fa-arrow-right"></i>
+                    </a>
+                </div>
+            </div>
+            <?php endif; ?>
+
+            <!-- ✅ KARTU BARU: Riwayat Pelanggaran - Muncul jika punya izin 'history_manage' -->
+            <?php if (has_permission('history_manage')): ?>
+            <div class="settings-card color-history">
+                <div class="card-content">
+                    <div class="card-icon"><i class="fas fa-history"></i></div>
+                    <h3 class="card-title">Riwayat Pelanggaran</h3>
+                    <p class="card-description">Lihat dan kelola riwayat pelanggaran santri. Batalkan pelanggaran jika diperlukan.</p>
+                </div>
+                <div class="card-action">
+                    <a href="history/index.php" class="settings-link">
+                        Lihat Riwayat <i class="fas fa-arrow-right"></i>
                     </a>
                 </div>
             </div>
