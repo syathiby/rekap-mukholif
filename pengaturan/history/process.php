@@ -1,9 +1,4 @@
 <?php
-// Debugging - aktifkan sementara
-ini_set('display_errors', 1);
-ini_set('display_startup_errors', 1);
-error_reporting(E_ALL);
-
 if (session_status() === PHP_SESSION_NONE) { 
     session_start(); 
 }
@@ -11,19 +6,8 @@ if (session_status() === PHP_SESSION_NONE) {
 require_once __DIR__ . '/../../db.php';
 require_once __DIR__ . '/../../auth.php';
 
-// Guard dengan permission yang benar
 guard('history_manage');
 
-// ✅ FIX: Debug lebih detail
-echo "<pre>";
-echo "DEBUG DETAIL:\n";
-echo "REQUEST_METHOD: " . $_SERVER['REQUEST_METHOD'] . "\n";
-echo "POST data: ";
-print_r($_POST);
-echo "Apakah 'batalkan' ada di POST? " . (isset($_POST['batalkan']) ? 'YA' : 'TIDAK') . "\n";
-echo "</pre>";
-
-// ✅ FIX: Ganti pengecekan menjadi cek apakah ada id (lebih reliable)
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['id'])) {
     $id = intval($_POST['id']);
     $tanggal = $_POST['tanggal'] ?? date('Y-m-d');
@@ -40,7 +24,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['id'])) {
     mysqli_begin_transaction($conn);
 
     try {
-        // Ambil poin & santri
         $stmt = $conn->prepare("
             SELECT p.santri_id, jp.poin
             FROM pelanggaran p
@@ -48,32 +31,20 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['id'])) {
             WHERE p.id = ?
         ");
         
-        if (!$stmt) {
-            throw new Exception("Prepare statement gagal: " . $conn->error);
-        }
-        
         $stmt->bind_param("i", $id);
         $stmt->execute();
         $result = $stmt->get_result();
         $data = $result->fetch_assoc();
 
         if (!$data) {
-            throw new Exception("Data pelanggaran dengan ID $id tidak ditemukan!");
+            throw new Exception("Data pelanggaran tidak ditemukan!");
         }
 
-        // Kurangi poin santri
         $stmt = $conn->prepare("UPDATE santri SET poin_aktif = poin_aktif - ? WHERE id = ?");
-        if (!$stmt) {
-            throw new Exception("Prepare statement update santri gagal: " . $conn->error);
-        }
         $stmt->bind_param("ii", $data['poin'], $data['santri_id']);
         $stmt->execute();
 
-        // Hapus data pelanggaran
         $stmt = $conn->prepare("DELETE FROM pelanggaran WHERE id = ?");
-        if (!$stmt) {
-            throw new Exception("Prepare statement delete pelanggaran gagal: " . $conn->error);
-        }
         $stmt->bind_param("i", $id);
         $stmt->execute();
 
