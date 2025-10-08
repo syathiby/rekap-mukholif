@@ -5,7 +5,7 @@
 
 // 1. Lapor ke "Markas Komando". 
 //    Semua persiapan (session, db, auth) otomatis beres di sini.
-require_once __DIR__ . '/header.php'; 
+require_once __DIR__ . '/header.php';
 
 // 2. Langsung kasih perintah ke satpam yang udah standby.
 guard(); // Perintah: Siapapun yang udah login, boleh masuk lobi ini.
@@ -91,7 +91,7 @@ $recent_violations = mysqli_query($conn, "
         WHERE pk.tanggal >= '$periode_aktif'
     )
     ORDER BY tanggal DESC
-    LIMIT 10
+    LIMIT 5
 ");
 
 // ... (Sisa kode PHP setelah ini tidak ada yang diubah)
@@ -140,19 +140,17 @@ $best_students = mysqli_query($conn, "
     <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
     <style>
         :root {
-            --primary: #5d77ecff;
-            --primary-light: #eef0ff;
-            --secondary: #3a0ca3;
-            --accent: #4cc9f0;
-            --accent-dark: #4895ef;
-            --light: #f8f9fa;
-            --dark: #212529;
-            --dark-light: #6c757d;
+            --primary: #4F46E5;
+            --secondary: #7C3AED;
+            --accent: #10B981;
+            --light: #F9FAFB;
+            --dark: #1F2937;
+            --dark-light: #6B7280;
             --success: #2ecc71;
             --warning: #f39c12;
             --danger: #e74c3c;
             --info: #3498db;
-            --gradient: linear-gradient(135deg, var(--primary) 0%, var(--secondary) 100%);
+            --gradient-main: linear-gradient(135deg, var(--primary) 0%, var(--secondary) 100%);
             --gradient-success: linear-gradient(135deg, var(--success) 0%, #27ae60 100%);
             --gradient-warning: linear-gradient(135deg, var(--warning) 0%, #e67e22 100%);
             --gradient-danger: linear-gradient(135deg, var(--danger) 0%, #c0392b 100%);
@@ -166,7 +164,7 @@ $best_students = mysqli_query($conn, "
         
         body {
             font-family: 'Poppins', sans-serif;
-            background-color: #f8fafc;
+            background-color: var(--light);
             color: var(--dark);
             line-height: 1.6;
             min-height: 100vh;
@@ -180,28 +178,53 @@ $best_students = mysqli_query($conn, "
         
         /* Header Styles */
         .dashboard-header {
-            margin-bottom: 3rem;
+            margin-bottom: 2rem;
             text-align: center;
             position: relative;
             overflow: hidden;
             padding: 3rem 2rem;
-            border-radius: 16px;
-            background: var(--gradient);
+            border-radius: 24px;
+            background: var(--gradient-main);
             color: white;
-            box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
+            box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 8px 10px -6px rgba(0, 0, 0, 0.1);
+        }
+
+        .dashboard-header::before {
+            content: '';
+            position: absolute;
+            top: -100px;
+            left: -100px;
+            width: 300px;
+            height: 300px;
+            background: rgba(255,255,255,0.05);
+            border-radius: 50%;
+            filter: blur(50px);
+        }
+
+        .dashboard-header::after {
+            content: '';
+            position: absolute;
+            bottom: -120px;
+            right: -80px;
+            width: 350px;
+            height: 350px;
+            background: rgba(255,255,255,0.07);
+            border-radius: 45%;
+            transform: rotate(30deg);
+             filter: blur(60px);
         }
         
         .dashboard-header h1 {
-            font-size: 2.75rem;
+            font-size: 2.8rem;
             margin-bottom: 0.75rem;
             font-weight: 700;
             position: relative;
             z-index: 1;
-            text-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            text-shadow: 0 2px 5px rgba(0,0,0,0.2);
         }
         
         .dashboard-header .subtitle {
-            color: rgba(255,255,255,0.85);
+            color: rgba(255,255,255,0.9);
             font-size: 1.15rem;
             position: relative;
             z-index: 1;
@@ -215,40 +238,27 @@ $best_students = mysqli_query($conn, "
             display: grid;
             grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
             gap: 1.5rem;
-            margin: 2rem 0 3rem;
+            margin: 2rem 0;
         }
         
         .stat-card {
             background: white;
             border-radius: 16px;
             padding: 2rem;
-            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.05);
-            transition: all 0.3s ease;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05), 0 2px 4px -2px rgba(0, 0, 0, 0.05);
+            transition: all 0.3s ease-in-out;
             position: relative;
             overflow: hidden;
-            border: none;
+            border: 1px solid #e5e7eb;
             text-decoration: none;
             color: inherit;
+            display: block; /* Agar tag <a> memenuhi seluruh area */
         }
         
         .stat-card:hover {
-            transform: translateY(-5px);
-            box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
+            transform: translateY(-8px) scale(1.02);
+            box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -4px rgba(0, 0, 0, 0.1);
         }
-        
-        .stat-card::before {
-            content: '';
-            position: absolute;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 4px;
-        }
-        
-        .stat-card.santri::before { background: var(--success); }
-        .stat-card.pelanggaran::before { background: var(--warning); }
-        .stat-card.violations::before { background: var(--danger); }
-        .stat-card.clean::before { background: var(--accent-dark); }
         
         .stat-icon {
             font-size: 2.5rem;
@@ -257,30 +267,15 @@ $best_students = mysqli_query($conn, "
             display: inline-flex;
             align-items: center;
             justify-content: center;
-            width: 60px;
-            height: 60px;
+            width: 64px;
+            height: 64px;
             border-radius: 50%;
         }
         
-        .stat-card.santri .stat-icon {
-            color: var(--success);
-            background: rgba(46, 204, 113, 0.1);
-        }
-        
-        .stat-card.pelanggaran .stat-icon {
-            color: var(--warning);
-            background: rgba(243, 156, 18, 0.1);
-        }
-        
-        .stat-card.violations .stat-icon {
-            color: var(--danger);
-            background: rgba(231, 76, 60, 0.1);
-        }
-        
-        .stat-card.clean .stat-icon {
-            color: var(--accent-dark);
-            background: rgba(72, 149, 239, 0.1);
-        }
+        .stat-card.santri .stat-icon { color: var(--success); background: rgba(46, 204, 113, 0.1); }
+        .stat-card.pelanggaran .stat-icon { color: var(--warning); background: rgba(243, 156, 18, 0.1); }
+        .stat-card.violations .stat-icon { color: var(--danger); background: rgba(231, 76, 60, 0.1); }
+        .stat-card.clean .stat-icon { color: var(--info); background: rgba(52, 152, 219, 0.1); }
         
         .stat-card h3 {
             font-size: 1.25rem;
@@ -290,7 +285,7 @@ $best_students = mysqli_query($conn, "
         }
         
         .stat-value {
-            font-size: 2.5rem;
+            font-size: 2.8rem;
             font-weight: 700;
             color: var(--dark);
             margin-bottom: 0.25rem;
@@ -298,41 +293,38 @@ $best_students = mysqli_query($conn, "
             line-height: 1;
         }
         
-        .stat-description {
-            color: var(--dark-light);
-            font-size: 0.95rem;
-        }
+        .stat-description { color: var(--dark-light); font-size: 0.95rem; }
         
         .stat-card .additional-info {
             font-size: 0.85rem;
             margin-top: 0.75rem;
             color: var(--dark-light);
             font-style: italic;
-            padding-top: 0.5rem;
+            padding-top: 0.75rem;
             border-top: 1px dashed #e2e8f0;
         }
         
         /* Content Sections */
-        .content-section {
-            margin-top: 3rem;
-        }
+        .content-section { margin-top: 3rem; }
         
         .section-header {
             display: flex;
             justify-content: space-between;
             align-items: center;
             margin-bottom: 1.5rem;
+            border-bottom: 1px solid #e5e7eb;
+            padding-bottom: 1rem;
         }
         
         .section-title {
-            font-size: 1.5rem;
+            font-size: 1.8rem;
             color: var(--dark);
-            font-weight: 600;
+            font-weight: 700;
             display: flex;
             align-items: center;
             gap: 0.75rem;
         }
-        
+
         .section-title i {
             color: var(--primary);
         }
@@ -348,21 +340,14 @@ $best_students = mysqli_query($conn, "
             background: white;
             border-radius: 16px;
             padding: 1.5rem;
-            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.05);
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05), 0 2px 4px -2px rgba(0, 0, 0, 0.05);
             transition: all 0.3s ease;
+            border: 1px solid #e5e7eb;
         }
         
         .student-list-card:hover {
             transform: translateY(-5px);
-            box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
-        }
-        
-        .student-list-card.top-violators {
-            border-top: 4px solid var(--danger);
-        }
-        
-        .student-list-card.best-students {
-            border-top: 4px solid var(--success);
+            box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.08), 0 4px 6px -4px rgba(0, 0, 0, 0.08);
         }
         
         .list-header {
@@ -383,9 +368,7 @@ $best_students = mysqli_query($conn, "
             gap: 0.5rem;
         }
         
-        .list-title i {
-            font-size: 1.1rem;
-        }
+        .list-title i { font-size: 1.1rem; }
         
         .student-item {
             display: flex;
@@ -395,19 +378,14 @@ $best_students = mysqli_query($conn, "
             transition: all 0.3s ease;
         }
         
-        .student-item:hover {
-            transform: translateX(5px);
-        }
-        
-        .student-item:last-child {
-            border-bottom: none;
-        }
+        .student-item:hover { background-color: #f9fafb; transform: translateX(5px); }
+        .student-item:last-child { border-bottom: none; }
         
         .student-avatar {
             width: 40px;
             height: 40px;
             border-radius: 50%;
-            background-color: var(--primary-light);
+            background-color: rgba(79, 70, 229, 0.1);
             display: flex;
             align-items: center;
             justify-content: center;
@@ -415,55 +393,19 @@ $best_students = mysqli_query($conn, "
             font-weight: 600;
             margin-right: 1rem;
             flex-shrink: 0;
-            transition: all 0.3s ease;
         }
         
-        .student-list-card.top-violators .student-avatar {
-            background-color: rgba(231, 76, 60, 0.1);
-            color: var(--danger);
-        }
+        .student-list-card.top-violators .student-avatar { background-color: rgba(231, 76, 60, 0.1); color: var(--danger); }
+        .student-list-card.best-students .student-avatar { background-color: rgba(46, 204, 113, 0.1); color: var(--success); }
         
-        .student-list-card.best-students .student-avatar {
-            background-color: rgba(46, 204, 113, 0.1);
-            color: var(--success);
-        }
+        .student-info { flex-grow: 1; }
+        .student-name { font-weight: 500; margin-bottom: 0.15rem; }
+        .student-details { display: flex; font-size: 0.8rem; color: var(--dark-light); }
+        .student-details span { margin-right: 0.75rem; display: flex; align-items: center; }
+        .student-details i { margin-right: 0.25rem; font-size: 0.7rem; }
         
-        .student-info {
-            flex-grow: 1;
-        }
-        
-        .student-name {
-            font-weight: 500;
-            margin-bottom: 0.15rem;
-        }
-        
-        .student-details {
-            display: flex;
-            font-size: 0.8rem;
-            color: var(--dark-light);
-        }
-        
-        .student-details span {
-            margin-right: 0.75rem;
-            display: flex;
-            align-items: center;
-        }
-        
-        .student-details i {
-            margin-right: 0.25rem;
-            font-size: 0.7rem;
-        }
-        
-        .violation-count {
-            font-weight: 600;
-            min-width: 30px;
-            text-align: center;
-            transition: all 0.3s ease;
-        }
-        
-        .violation-count.zero {
-            color: var(--success);
-        }
+        .violation-count { font-weight: 600; min-width: 30px; text-align: center; }
+        .violation-count.zero { color: var(--success); }
         
         .view-all-link {
             display: inline-flex;
@@ -475,113 +417,62 @@ $best_students = mysqli_query($conn, "
             transition: all 0.3s ease;
         }
         
-        .view-all-link:hover {
-            color: var(--secondary);
-        }
-        
-        .view-all-link i {
-            margin-left: 0.3rem;
-            transition: transform 0.3s ease;
-        }
-        
-        .view-all-link:hover i {
-            transform: translateX(3px);
-        }
+        .view-all-link:hover { color: var(--secondary); }
+        .view-all-link i { margin-left: 0.3rem; transition: transform 0.3s ease; }
+        .view-all-link:hover i { transform: translateX(3px); }
         
         /* Recent Violations Table */
         .recent-violations {
             background: white;
             border-radius: 16px;
-            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.05);
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05), 0 2px 4px -2px rgba(0, 0, 0, 0.05);
             overflow: hidden;
             transition: all 0.3s ease;
             margin-top: 1.5rem;
+            border: 1px solid #e5e7eb;
         }
         
-        .recent-violations:hover {
-            box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
-        }
-        
-        .violation-table {
-            width: 100%;
-            border-collapse: collapse;
-        }
+        .recent-violations:hover { box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.08), 0 4px 6px -4px rgba(0, 0, 0, 0.08); }
+        .violation-table { width: 100%; border-collapse: collapse; table-layout: fixed; }
         
         .violation-table thead {
-            background-color: var(--primary);
-            color: white;
+            background-color: #257bebff; /* Biru elegan */
+            color: #F9FAFB;
+        }
+
+        .violation-table tbody tr:nth-child(even) {
+            background-color: #f9fafb;
         }
         
         .violation-table th {
             padding: 1rem 1.5rem;
             text-align: left;
-            font-weight: 500;
-            font-size: 0.85rem;
+            font-weight: 600;
+            font-size: 0.9rem;
             letter-spacing: 0.5px;
+            text-transform: uppercase;
         }
         
         .violation-table td {
             padding: 1rem 1.5rem;
-            border-bottom: 1px solid #f1f5f9;
+            border-bottom: 1px solid #e5e7eb; /* Garis pemisah lebih soft */
             transition: all 0.2s ease;
+            white-space: normal;
+            overflow-wrap: break-word; /* Mengganti word-break agar tidak memotong kata */
+            vertical-align: middle; /* Biar teks di tengah */
         }
         
-        .violation-table tr:last-child td {
-            border-bottom: none;
+        .violation-table tr:last-child td { border-bottom: none; }
+        
+        .violation-table tbody tr:hover td {
+            background-color: #eef2ff; /* warna pas hover */
         }
         
-        .violation-table tr:hover td {
-            background-color: var(--primary-light);
-        }
+        .violation-time { white-space: nowrap; }
+        .time-ago { display: block; color: var(--dark-light); font-size: 0.8rem; margin-top: 0.25rem; }
         
-        .violation-time {
-            white-space: nowrap;
-        }
-        
-        .time-ago {
-            display: block;
-            color: var(--dark-light);
-            font-size: 0.8rem;
-            margin-top: 0.25rem;
-        }
-        
-        .badge {
-            display: inline-block;
-            padding: 0.35rem 0.75rem;
-            border-radius: 50px;
-            font-size: 0.75rem;
-            font-weight: 500;
-            letter-spacing: 0.5px;
-            transition: all 0.3s ease;
-        }
-        
-        .badge-warning {
-            background-color: rgba(243, 156, 18, 0.1);
-            color: var(--warning);
-        }
-        
-        .badge-danger {
-            background-color: rgba(231, 76, 60, 0.1);
-            color: var(--danger);
-        }
-        
-        .badge-success {
-            background-color: rgba(46, 204, 113, 0.1);
-            color: var(--success);
-        }
-        
-        .empty-state {
-            text-align: center;
-            padding: 2rem;
-            color: var(--dark-light);
-        }
-        
-        .empty-state i {
-            font-size: 2rem;
-            margin-bottom: 1rem;
-            color: var(--dark-light);
-            opacity: 0.5;
-        }
+        .empty-state { text-align: center; padding: 2.5rem; color: var(--dark-light); }
+        .empty-state i { font-size: 2.5rem; margin-bottom: 1rem; color: #d1d5db; }
         
         /* Filter Form */
         .filter-form {
@@ -591,14 +482,12 @@ $best_students = mysqli_query($conn, "
             flex-wrap: wrap;
             background: white;
             padding: 1.5rem;
-            border-radius: 12px;
-            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.05);
+            border-radius: 16px;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05), 0 2px 4px -2px rgba(0, 0, 0, 0.05);
+            border: 1px solid #e5e7eb;
         }
         
-        .filter-form div {
-            flex: 1;
-            min-width: 200px;
-        }
+        .filter-form div { flex: 1; min-width: 200px; }
         
         .filter-form label {
             display: block;
@@ -610,7 +499,7 @@ $best_students = mysqli_query($conn, "
         .filter-form input {
             width: 100%;
             padding: 0.75rem;
-            border: 1px solid #e2e8f0;
+            border: 1px solid #d1d5db;
             border-radius: 8px;
             font-family: 'Poppins', sans-serif;
             transition: all 0.3s ease;
@@ -619,25 +508,26 @@ $best_students = mysqli_query($conn, "
         .filter-form input:focus {
             outline: none;
             border-color: var(--primary);
-            box-shadow: 0 0 0 3px rgba(67, 97, 238, 0.1);
+            box-shadow: 0 0 0 3px rgba(79, 70, 229, 0.2);
         }
         
         .filter-form button {
             align-self: flex-end;
             padding: 0.75rem 1.5rem;
-            background-color: var(--primary);
+            background: var(--gradient-main);
             color: white;
             border: none;
             border-radius: 8px;
             cursor: pointer;
             font-family: 'Poppins', sans-serif;
-            font-weight: 500;
+            font-weight: 600;
             transition: all 0.3s ease;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -2px rgba(0, 0, 0, 0.1);
         }
         
         .filter-form button:hover {
-            background-color: var(--secondary);
             transform: translateY(-2px);
+            box-shadow: 0 10px 15px -3px rgba(79, 70, 229, 0.2), 0 4px 6px -4px rgba(79, 70, 229, 0.2);
         }
         
         /* Footer */
@@ -652,63 +542,99 @@ $best_students = mysqli_query($conn, "
         
         /* Responsive */
         @media (max-width: 768px) {
-            .container {
-                padding: 1.5rem;
-            }
-            
-            .dashboard-header h1 {
-                font-size: 2rem;
-            }
-            
-            .stats-grid {
-                grid-template-columns: 1fr;
-            }
-            
-            .student-list {
-                grid-template-columns: 1fr;
-            }
-            
-            .violation-table {
-                display: block;
-                overflow-x: auto;
-            }
+            .container { padding: 1rem; }
+            .dashboard-header h1 { font-size: 2rem; }
+            .stats-grid, .student-list { grid-template-columns: 1fr; }
+            .violation-table { display: block; overflow-x: auto; /* Masih bisa scroll horizontal di mobile */ }
         }
     </style>
 </head>
 <body>
     <div class="container">
         <header class="dashboard-header">
-            <div style="position: absolute; top: 20px; right: 20px; opacity: 0.1; font-size: 8rem;">
+             <div style="position: absolute; top: 20px; right: 20px; opacity: 0.3; font-size: 8rem; z-index: 0">
                 <i class="fas fa-shield-alt"></i>
             </div>
             <h1><i class="fas fa-chart-pie"></i> Aplikasi Pendataan Mukholif</h1>
             <p class="subtitle">Pantau dan kelola data pelanggaran santri dengan mudah</p>
         </header>
         
+        <!-- Recent Violations - NOW AT THE TOP -->
+        <div class="content-section">
+            <div class="section-header">
+                <h2 class="section-title">
+                    <i class="fas fa-history"></i>
+                    Pelanggaran Terkini
+                </h2>
+                <a href="rekap/umum.php" class="view-all-link">
+                    Lihat semua <i class="fas fa-chevron-right"></i>
+                </a>
+            </div>
+            
+            <div class="recent-violations">
+                <table class="violation-table">
+                    <thead>
+                        <tr>
+                            <th style="width: 5%;">No</th>
+                            <th style="width: 20%;">Nama Santri</th>
+                            <th style="width: 10%;">Kamar</th>
+                            <th style="width: 35%;">Pelanggaran</th>
+                            <th style="width: 15%;">Waktu</th>
+                            <th style="width: 15%;">Pencatat</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <?php if(mysqli_num_rows($recent_violations) > 0): ?>
+                            <?php 
+                            $no = 1;
+                            while($violation = mysqli_fetch_assoc($recent_violations)): 
+                                $time_ago = time_elapsed_string($violation['tanggal']);
+                            ?>
+                                <tr>
+                                    <td><?= $no++ ?></td>
+                                    <td><?= htmlspecialchars($violation['nama']) ?></td>
+                                    <td><?= htmlspecialchars($violation['kamar']) ?></td>
+                                    <td><?= htmlspecialchars($violation['nama_pelanggaran']) ?></td>
+                                    <td class="violation-time">
+                                        <?= date('d M Y H:i', strtotime($violation['tanggal'])) ?>
+                                        <span class="time-ago"><?= $time_ago ?></span>
+                                    </td>
+                                    <td>
+                                        <?= htmlspecialchars($violation['pencatat'] ?? 'N/A') ?>
+                                    </td>
+                                </tr>
+                            <?php endwhile; ?>
+                        <?php else: ?>
+                            <tr>
+                                <td colspan="6" class="empty-state">
+                                    <i class="fas fa-check-circle"></i>
+                                    <p>Alhamdulillah, tidak ada pelanggaran baru-baru ini.</p>
+                                </td>
+                            </tr>
+                        <?php endif; ?>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+        
         <!-- Stats Overview -->
         <div class="stats-grid">
-            <a class="stat-card santri">
-                <div class="stat-icon">
-                    <i class="fas fa-user-graduate"></i>
-                </div>
+            <a href="santri/index.php" class="stat-card santri">
+                <div class="stat-icon"><i class="fas fa-user-graduate"></i></div>
                 <h3>Total Santri</h3>
                 <div class="stat-value"><?= number_format($stats['santri'] ?? 0) ?></div>
                 <p class="stat-description">Santri terdaftar</p>
             </a>
             
-            <a class="stat-card pelanggaran">
-                <div class="stat-icon">
-                    <i class="fas fa-clipboard-check"></i>
-                </div>
+            <a href="jenis-pelanggaran/index.php" class="stat-card pelanggaran">
+                <div class="stat-icon"><i class="fas fa-clipboard-check"></i></div>
                 <h3>Jenis Pelanggaran</h3>
                 <div class="stat-value"><?= number_format($stats['jenis_pelanggaran'] ?? 0) ?></div>
                 <p class="stat-description">Kategori pelanggaran</p>
             </a>
             
             <a href="rekap/chart.php" class="stat-card violations">
-                <div class="stat-icon">
-                    <i class="fas fa-exclamation-circle"></i>
-                </div>
+                <div class="stat-icon"><i class="fas fa-exclamation-circle"></i></div>
                 <h3>Total Pelanggaran</h3>
                 <div class="stat-value"><?= number_format($stats['total_pelanggaran'] ?? 0) ?></div>
                 <p class="stat-description">Pelanggaran tercatat</p>
@@ -719,14 +645,12 @@ $best_students = mysqli_query($conn, "
                 <?php endif; ?>
             </a>
             
-            <div class="stat-card clean">
-                <div class="stat-icon">
-                    <i class="fas fa-award"></i>
-                </div>
+            <a href="rekap/santri-teladan.php" class="stat-card clean">
+                <div class="stat-icon"><i class="fas fa-award"></i></div>
                 <h3>Santri Teladan</h3>
                 <div class="stat-value"><?= number_format($stats['santri_tanpa_pelanggaran'] ?? 0) ?></div>
                 <p class="stat-description">Tanpa pelanggaran</p>
-            </div>
+            </a>
         </div>
         
         <!-- Filter Form -->
@@ -757,10 +681,10 @@ $best_students = mysqli_query($conn, "
             
             <div class="student-list">
                 <!-- Top Violators -->
-                <div class="student-list-card top-violators">
+                <div class="student-list-card">
                     <div class="list-header">
                         <h3 class="list-title">
-                            <i class="fas fa-exclamation-triangle"></i>
+                            <i class="fas fa-exclamation-triangle" style="color: var(--danger)"></i>
                             Top Pelanggar Hirosah
                         </h3>
                         <a href="rekap/santri-pelanggar.php" class="view-all-link">
@@ -771,9 +695,7 @@ $best_students = mysqli_query($conn, "
                     <?php if(mysqli_num_rows($top_violators) > 0): ?>
                         <?php while($violator = mysqli_fetch_assoc($top_violators)): ?>
                             <div class="student-item">
-                                <div class="student-avatar">
-                                    <?= htmlspecialchars(substr($violator['nama'], 0, 1)) ?>
-                                </div>
+                                <div class="student-avatar top-violators"><?= htmlspecialchars(substr($violator['nama'], 0, 1)) ?></div>
                                 <div class="student-info">
                                     <div class="student-name"><?= htmlspecialchars($violator['nama']) ?></div>
                                     <div class="student-details">
@@ -792,10 +714,10 @@ $best_students = mysqli_query($conn, "
                 </div>
                 
                 <!-- Best Students -->
-                <div class="student-list-card best-students">
+                <div class="student-list-card">
                     <div class="list-header">
                         <h3 class="list-title">
-                            <i class="fas fa-medal"></i>
+                            <i class="fas fa-medal" style="color: var(--success)"></i>
                             Santri Teladan
                         </h3>
                         <a href="rekap/santri-teladan.php" class="view-all-link">
@@ -806,9 +728,7 @@ $best_students = mysqli_query($conn, "
                     <?php if(mysqli_num_rows($best_students) > 0): ?>
                         <?php while($student = mysqli_fetch_assoc($best_students)): ?>
                             <div class="student-item">
-                                <div class="student-avatar">
-                                    <?= htmlspecialchars(substr($student['nama'], 0, 1)) ?>
-                                </div>
+                                <div class="student-avatar best-students"><?= htmlspecialchars(substr($student['nama'], 0, 1)) ?></div>
                                 <div class="student-info">
                                     <div class="student-name"><?= htmlspecialchars($student['nama']) ?></div>
                                     <div class="student-details">
@@ -816,9 +736,7 @@ $best_students = mysqli_query($conn, "
                                         <span><i class="fas fa-graduation-cap"></i> <?= htmlspecialchars($student['kelas']) ?></span>
                                     </div>
                                 </div>
-                                <div class="violation-count zero">
-                                    <i class="fas fa-check"></i>
-                                </div>
+                                <div class="violation-count zero"><i class="fas fa-check"></i></div>
                             </div>
                         <?php endwhile; ?>
                     <?php else: ?>
@@ -828,61 +746,6 @@ $best_students = mysqli_query($conn, "
                         </div>
                     <?php endif; ?>
                 </div>
-            </div>
-        </div>
-        
-        <!-- Recent Violations -->
-        <div class="content-section">
-            <div class="section-header">
-                <h2 class="section-title">
-                    <i class="fas fa-history"></i>
-                    Pelanggaran Terkini
-                </h2>
-            </div>
-            
-            <div class="recent-violations">
-                <table class="violation-table">
-                    <thead>
-                        <tr>
-                            <th>No</th>
-                            <th>Nama Santri</th>
-                            <th>Kamar</th>
-                            <th>Pelanggaran</th>
-                            <th>Waktu</th>
-                            <th>Pencatat</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        <?php if(mysqli_num_rows($recent_violations) > 0): ?>
-                            <?php 
-                            $no = 1;
-                            while($violation = mysqli_fetch_assoc($recent_violations)): 
-                                $time_ago = time_elapsed_string($violation['tanggal']);
-                            ?>
-                                <tr>
-                                    <td><?= $no++ ?></td>
-                                    <td><?= htmlspecialchars($violation['nama']) ?></td>
-                                    <td><?= htmlspecialchars($violation['kamar']) ?></td>
-                                    <td><?= htmlspecialchars($violation['nama_pelanggaran']) ?></td>
-                                    <td class="violation-time">
-                                        <?= date('d M Y H:i', strtotime($violation['tanggal'])) ?>
-                                        <span class="time-ago"><?= $time_ago ?></span>
-                                    </td>
-                                    <td>
-                                        <?= htmlspecialchars($violation['pencatat'] ?? 'N/A') ?>
-                                    </td>
-                                </tr>
-                            <?php endwhile; ?>
-                        <?php else: ?>
-                            <tr>
-                                <td colspan="6" class="empty-state">
-                                    <i class="fas fa-info-circle"></i>
-                                    <p>Tidak ada data pelanggaran terkini</p>
-                                </td>
-                            </tr>
-                        <?php endif; ?>
-                    </tbody>
-                </table>
             </div>
         </div>
     </div>
