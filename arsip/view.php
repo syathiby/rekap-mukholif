@@ -5,6 +5,7 @@ guard('arsip_view');
 $arsip_id = (int)($_GET['id'] ?? 0);
 if ($arsip_id < 1) die('Arsip tidak ditemukan');
 
+// ... (Kode PHP dari sini sampai sebelum bagian #3 tetap sama) ...
 // Ambil meta arsip
 $stmt_meta = $conn->prepare("SELECT * FROM arsip WHERE id = ?");
 $stmt_meta->bind_param('i', $arsip_id);
@@ -12,21 +13,16 @@ $stmt_meta->execute();
 $meta = $stmt_meta->get_result()->fetch_assoc();
 if (!$meta) die('Arsip tidak ditemukan');
 
-// ===============================================
-// === BAGIAN INI YANG DIPERBAIKI ===
-// ===============================================
-
 // 1. Total Pelanggaran (Umum & Kebersihan)
-$stmt_total_umum = $conn->prepare("SELECT COUNT(*) as total FROM arsip_data_pelanggaran WHERE arsip_id = ? AND tipe = 'Umum'");
+$stmt_total_umum = $conn->prepare("SELECT COUNT(*) as total FROM arsip_data_pelanggaran WHERE arsip_id = ?");
 $stmt_total_umum->bind_param("i", $arsip_id);
 $stmt_total_umum->execute();
 $total_umum = $stmt_total_umum->get_result()->fetch_assoc()['total'];
 
-// REVISI: Query ini sekarang nunjuk ke tabel yang benar
 $stmt_total_kebersihan = $conn->prepare("SELECT COUNT(*) as total FROM arsip_data_pelanggaran_kebersihan WHERE arsip_id = ?");
 $stmt_total_kebersihan->bind_param("i", $arsip_id);
 $stmt_total_kebersihan->execute();
-$total_kebersihan = $stmt_total_kebersihan->get_result()->fetch_assoc()['total'];
+$total_kebersihan = $stmt_total_kebersihan->get_result()->fetch_assoc()['total'] ?? 0;
 $total_pelanggaran = $total_umum + $total_kebersihan;
 
 // 2. Top 10 Santri (tidak berubah)
@@ -35,29 +31,57 @@ $stmt_santri->bind_param("i", $arsip_id);
 $stmt_santri->execute();
 $q_santri = $stmt_santri->get_result();
 
-// 3. Komposisi Jenis Pelanggaran (tidak berubah)
+
+// ==========================================================
+// === BAGIAN INI DI-UPGRADE UNTUK MENGGABUNGKAN DATA ===
+// ==========================================================
+
+// 3. Komposisi Jenis Pelanggaran (digabung dengan data kebersihan)
+// Step 1: Ambil data jenis pelanggaran dari tabel umum
 $stmt_jenis = $conn->prepare("SELECT jenis_pelanggaran_nama, COUNT(*) as total FROM arsip_data_pelanggaran WHERE arsip_id = ? GROUP BY jenis_pelanggaran_nama ORDER BY total DESC");
 $stmt_jenis->bind_param("i", $arsip_id);
 $stmt_jenis->execute();
 $data_jenis_pelanggaran = $stmt_jenis->get_result()->fetch_all(MYSQLI_ASSOC);
+
+// Step 2: "Suntik" data total kebersihan ke dalam array
+if ($total_kebersihan > 0) {
+    $data_jenis_pelanggaran[] = [
+        'jenis_pelanggaran_nama' => 'Pelanggaran Kebersihan Kamar', 
+        'total' => $total_kebersihan
+    ];
+}
+
+// Step 3: Urutkan ulang array berdasarkan 'total' secara descending (dari besar ke kecil)
+// Ini penting biar urutannya tetep bener setelah data baru ditambahin
+usort($data_jenis_pelanggaran, function($a, $b) {
+    return $b['total'] <=> $a['total'];
+});
+
+// Step 4: Hitung ulang total keseluruhan untuk persentase yang akurat
 $total_semua_jenis = array_sum(array_column($data_jenis_pelanggaran, 'total'));
 
-// 4. Sebaran per Bagian (tidak berubah)
-$stmt_bagian = $conn->prepare("SELECT bagian, COUNT(*) AS total FROM arsip_data_pelanggaran WHERE arsip_id = ? AND tipe = 'Umum' GROUP BY bagian ORDER BY total DESC");
+
+// ... (Sisa kode PHP setelah ini tetap sama persis) ...
+// 4. Sebaran per Bagian (digabung dengan data Kebersihan)
+$stmt_bagian = $conn->prepare("SELECT bagian, COUNT(*) AS total FROM arsip_data_pelanggaran WHERE arsip_id = ? GROUP BY bagian ORDER BY total DESC");
 $stmt_bagian->bind_param("i", $arsip_id);
 $stmt_bagian->execute();
 $data_per_bagian = $stmt_bagian->get_result()->fetch_all(MYSQLI_ASSOC);
+
+if ($total_kebersihan > 0) {
+    $data_per_bagian[] = ['bagian' => 'Kebersihan', 'total' => $total_kebersihan];
+}
+
 $json_per_bagian = json_encode(['labels' => array_column($data_per_bagian, 'bagian'), 'data' => array_column($data_per_bagian, 'total')]);
 
 // 5. Sebaran per Kelas (tidak berubah)
-$stmt_kelas = $conn->prepare("SELECT santri_kelas, COUNT(*) AS total FROM arsip_data_pelanggaran WHERE arsip_id = ? AND tipe = 'Umum' AND santri_kelas IS NOT NULL AND santri_kelas != 'N/A' GROUP BY santri_kelas ORDER BY total DESC");
+$stmt_kelas = $conn->prepare("SELECT santri_kelas, COUNT(*) AS total FROM arsip_data_pelanggaran WHERE arsip_id = ? AND santri_kelas IS NOT NULL AND santri_kelas != 'N/A' GROUP BY santri_kelas ORDER BY total DESC");
 $stmt_kelas->bind_param("i", $arsip_id);
 $stmt_kelas->execute();
 $data_per_kelas = $stmt_kelas->get_result()->fetch_all(MYSQLI_ASSOC);
 $json_per_kelas = json_encode(['labels' => array_column($data_per_kelas, 'santri_kelas'), 'data' => array_column($data_per_kelas, 'total')]);
 
-// REVISI: Query ini sekarang nunjuk ke tabel yang benar
-// 6. Sebaran per Kamar (hanya tipe 'Kebersihan')
+// 6. Sebaran per Kamar (tidak berubah, sudah benar)
 $stmt_kamar_kebersihan = $conn->prepare("SELECT kamar, COUNT(*) AS total FROM arsip_data_pelanggaran_kebersihan WHERE arsip_id = ? AND kamar IS NOT NULL AND kamar != '' GROUP BY kamar ORDER BY total DESC");
 $stmt_kamar_kebersihan->bind_param("i", $arsip_id);
 $stmt_kamar_kebersihan->execute();
@@ -65,9 +89,26 @@ $data_per_kamar_kebersihan = $stmt_kamar_kebersihan->get_result()->fetch_all(MYS
 $labels_kamar = array_map(fn($item) => 'Kamar ' . $item['kamar'], $data_per_kamar_kebersihan);
 $json_per_kamar_kebersihan = json_encode(['labels' => $labels_kamar, 'data' => array_column($data_per_kamar_kebersihan, 'total')]);
 
-// 7. Tren Harian (tidak berubah)
-$stmt_tren = $conn->prepare("SELECT DATE(tanggal) as tanggal_harian, COUNT(*) as total FROM arsip_data_pelanggaran WHERE arsip_id = ? GROUP BY DATE(tanggal) ORDER BY tanggal_harian ASC");
-$stmt_tren->bind_param("i", $arsip_id);
+// 7. Tren Harian
+$stmt_tren = $conn->prepare("
+    SELECT tanggal_harian, SUM(total) as total
+    FROM (
+        SELECT DATE(tanggal) as tanggal_harian, COUNT(*) as total 
+        FROM arsip_data_pelanggaran 
+        WHERE arsip_id = ? 
+        GROUP BY DATE(tanggal)
+        
+        UNION ALL
+        
+        SELECT DATE(tanggal) as tanggal_harian, COUNT(*) as total 
+        FROM arsip_data_pelanggaran_kebersihan 
+        WHERE arsip_id = ? 
+        GROUP BY DATE(tanggal)
+    ) as subquery
+    GROUP BY tanggal_harian
+    ORDER BY tanggal_harian ASC
+");
+$stmt_tren->bind_param("ii", $arsip_id, $arsip_id);
 $stmt_tren->execute();
 $data_tren = $stmt_tren->get_result()->fetch_all(MYSQLI_ASSOC);
 $json_tren_harian = json_encode([
@@ -104,6 +145,21 @@ $json_tren_harian = json_encode([
     .chart-container.chart-container-tall { min-height: 400px; }
     .chart-scroll-container { position: relative; overflow-x: auto; -webkit-overflow-scrolling: touch; padding-bottom: 10px; width: 100%; }
     .chart-scroll-container canvas { min-width: 500px; }
+
+    /* === CSS TAMBAHAN UNTUK TOMBOL RESPONSIVE === */
+    @media (max-width: 576px) {
+        .btn-group {
+            gap: 0.5rem; /* Kurangi jarak antar tombol */
+            justify-content: stretch; /* Bikin tombol menuhin lebar card */
+        }
+        .btn-detail {
+            padding: 0.6rem 1rem; /* Kecilin padding tombol */
+            font-size: 0.875rem;    /* Kecilin font di dalem tombol */
+            flex-grow: 1;         /* Biar kedua tombol lebarnya sama */
+        }
+    }
+    /* =========================================== */
+
 </style>
 
 <div class="container-fluid mt-4 mb-5">
