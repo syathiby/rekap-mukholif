@@ -214,6 +214,16 @@ $best_students = mysqli_query($conn, "
              filter: blur(60px);
         }
         
+        .header-shield-bg {
+            position: absolute;
+            top: 20px;
+            right: 20px;
+            font-size: 8rem;
+            color: rgba(255, 255, 255, 0.15);
+            z-index: 0;
+            transition: all 0.3s ease;
+        }
+        
         .dashboard-header h1 {
             font-size: 2.8rem;
             margin-bottom: 0.75rem;
@@ -317,7 +327,7 @@ $best_students = mysqli_query($conn, "
         }
         
         .section-title {
-            font-size: 1.8rem;
+            font-size: 1.7rem; /* Ukuran font dikecilkan sedikit */
             color: var(--dark);
             font-weight: 700;
             display: flex;
@@ -360,7 +370,7 @@ $best_students = mysqli_query($conn, "
         }
         
         .list-title {
-            font-size: 1.25rem;
+            font-size: 1.2rem; /* Ukuran font dikecilkan sedikit */
             font-weight: 600;
             color: var(--dark);
             display: flex;
@@ -395,8 +405,8 @@ $best_students = mysqli_query($conn, "
             flex-shrink: 0;
         }
         
-        .student-list-card.top-violators .student-avatar { background-color: rgba(231, 76, 60, 0.1); color: var(--danger); }
-        .student-list-card.best-students .student-avatar { background-color: rgba(46, 204, 113, 0.1); color: var(--success); }
+        .student-avatar.top-violators { background-color: rgba(231, 76, 60, 0.1); color: var(--danger); }
+        .student-avatar.best-students { background-color: rgba(46, 204, 113, 0.1); color: var(--success); }
         
         .student-info { flex-grow: 1; }
         .student-name { font-weight: 500; margin-bottom: 0.15rem; }
@@ -436,7 +446,7 @@ $best_students = mysqli_query($conn, "
         .violation-table { width: 100%; border-collapse: collapse; table-layout: fixed; }
         
         .violation-table thead {
-            background-color: #257bebff; /* Biru elegan */
+            background-color: #2563eb; /* Biru elegan */
             color: #F9FAFB;
         }
 
@@ -543,16 +553,38 @@ $best_students = mysqli_query($conn, "
         /* Responsive */
         @media (max-width: 768px) {
             .container { padding: 1rem; }
-            .dashboard-header h1 { font-size: 2rem; }
+            .dashboard-header {
+                padding: 2rem 1.5rem; /* Padding lebih kecil di HP */
+            }
+            .dashboard-header h1 { 
+                font-size: 2rem; 
+            }
+            .dashboard-header .subtitle {
+                font-size: 1rem;
+            }
+            .header-shield-bg {
+                font-size: 6rem; /* Perisai lebih kecil */
+                top: 10px;
+                right: 5px;
+                opacity: 0.1; /* Lebih transparan */
+            }
+
             .stats-grid, .student-list { grid-template-columns: 1fr; }
-            .violation-table { display: block; overflow-x: auto; /* Masih bisa scroll horizontal di mobile */ }
+            .violation-table { display: block; overflow-x: auto; }
+            
+            .section-title {
+                font-size: 1.4rem; /* Font lebih kecil di HP */
+            }
+            .list-title {
+                font-size: 1.05rem; /* Font lebih kecil di HP */
+            }
         }
     </style>
 </head>
 <body>
     <div class="container">
         <header class="dashboard-header">
-             <div style="position: absolute; top: 20px; right: 20px; opacity: 0.3; font-size: 8rem; z-index: 0">
+             <div class="header-shield-bg">
                 <i class="fas fa-shield-alt"></i>
             </div>
             <h1><i class="fas fa-chart-pie"></i> Aplikasi Pendataan Mukholif</h1>
