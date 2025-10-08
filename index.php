@@ -59,7 +59,9 @@ $stats = [
     "))['total'] ?? 0),
 ];
 
-// Get recent violations (last 10)
+// =============================================================
+// === QUERY DI-UPDATE UNTUK MENGAMBIL NAMA PENCATAT ===
+// =============================================================
 $recent_violations = mysqli_query($conn, "
     (
         SELECT 
@@ -67,10 +69,12 @@ $recent_violations = mysqli_query($conn, "
             s.nama, 
             s.kamar, 
             jp.nama_pelanggaran, 
-            p.tanggal
+            p.tanggal,
+            u.nama_lengkap AS pencatat  -- Ambil nama pencatat
         FROM pelanggaran p
         JOIN santri s ON p.santri_id = s.id
         JOIN jenis_pelanggaran jp ON p.jenis_pelanggaran_id = jp.id
+        LEFT JOIN users u ON p.dicatat_oleh = u.id -- Gabung ke tabel users
         WHERE p.tanggal >= '$periode_aktif'
     )
     UNION ALL
@@ -80,14 +84,17 @@ $recent_violations = mysqli_query($conn, "
             'Penghuni Kamar' AS nama,
             pk.kamar,
             'Kebersihan Kamar' AS nama_pelanggaran,
-            pk.tanggal
+            pk.tanggal,
+            u.nama_lengkap AS pencatat -- Ambil nama pencatat
         FROM pelanggaran_kebersihan pk
+        LEFT JOIN users u ON pk.dicatat_oleh = u.id -- Gabung ke tabel users
         WHERE pk.tanggal >= '$periode_aktif'
     )
     ORDER BY tanggal DESC
     LIMIT 10
 ");
 
+// ... (Sisa kode PHP setelah ini tidak ada yang diubah)
 // Get most frequent violation type
 $frequent_violation = mysqli_fetch_assoc(mysqli_query($conn, "
     SELECT jp.nama_pelanggaran, COUNT(*) as total 
@@ -842,7 +849,7 @@ $best_students = mysqli_query($conn, "
                             <th>Kamar</th>
                             <th>Pelanggaran</th>
                             <th>Waktu</th>
-                            <th>Status</th>
+                            <th>Pencatat</th>
                         </tr>
                     </thead>
                     <tbody>
@@ -862,7 +869,7 @@ $best_students = mysqli_query($conn, "
                                         <span class="time-ago"><?= $time_ago ?></span>
                                     </td>
                                     <td>
-                                        <span class="badge badge-warning"><i class="fas fa-clock"></i> Baru</span>
+                                        <?= htmlspecialchars($violation['pencatat'] ?? 'N/A') ?>
                                     </td>
                                 </tr>
                             <?php endwhile; ?>
