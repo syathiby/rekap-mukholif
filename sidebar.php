@@ -55,7 +55,7 @@ $current_uri = htmlspecialchars($_SERVER['REQUEST_URI']);
     <?php endif; ?>
 
     <!-- Menu Arsip -->
-    <?php if (has_permission('arsip_manage')): ?>
+    <?php if (has_permission(['arsip_view', 'arsip_create', 'arsip_delete'])): ?>
     <li class="nav-item">
         <a class="nav-link apply-color-hover-active color-purple <?= strpos($current_uri, 'arsip') !== false ? 'active' : '' ?>" href="/arsip">
             <i class="fas fa-archive me-2"></i>Arsip

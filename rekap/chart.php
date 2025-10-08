@@ -2,17 +2,16 @@
 require_once __DIR__ . '/../header.php';
 guard('rekap_view_statistik');
 
-// Ambil periode aktif dari pengaturan (ini tetap kita pakai sebagai default)
+// Ambil periode aktif dari pengaturan
 $q = mysqli_query($conn, "SELECT nilai FROM pengaturan WHERE nama = 'periode_aktif' LIMIT 1");
 $row = mysqli_fetch_assoc($q);
 $default_periode_aktif = $row['nilai'] ?? date('Y-m-d', strtotime('-1 year'));
 
-// Menangkap nilai filter tanggal dari URL, jika ada
-// Jika nggak ada, kita pakai periode aktif sebagai default
+// Menangkap nilai filter tanggal dari URL
 $tgl_mulai = $_GET['tgl_mulai'] ?? $default_periode_aktif;
 $tgl_selesai = $_GET['tgl_selesai'] ?? date('Y-m-d');
 
-// 1. Total Pelanggaran (query disesuaikan dengan filter tanggal)
+// 1. Total Pelanggaran
 $stmt_total1 = $conn->prepare("SELECT COUNT(*) as total FROM pelanggaran WHERE tanggal >= ? AND tanggal <= ?");
 $stmt_total1->bind_param("ss", $tgl_mulai, $tgl_selesai);
 $stmt_total1->execute();
@@ -23,12 +22,12 @@ $stmt_total2->execute();
 $total2 = $stmt_total2->get_result()->fetch_assoc()['total'];
 $total_pelanggaran = $total1 + $total2;
 
-// 2. Top 10 Santri berdasarkan poin_aktif
+// 2. Top 10 Santri
 $stmt_santri = $conn->prepare("SELECT nama, poin_aktif FROM santri WHERE poin_aktif > 0 ORDER BY poin_aktif DESC LIMIT 10");
 $stmt_santri->execute();
 $q_santri = $stmt_santri->get_result();
 
-// 3. Data Jenis Pelanggaran (query disesuaikan)
+// 3. Data Jenis Pelanggaran
 $stmt_jenis1 = $conn->prepare("SELECT j.nama_pelanggaran, COUNT(*) as total FROM pelanggaran p JOIN jenis_pelanggaran j ON p.jenis_pelanggaran_id = j.id WHERE p.tanggal >= ? AND p.tanggal <= ? GROUP BY j.id");
 $stmt_jenis1->bind_param("ss", $tgl_mulai, $tgl_selesai);
 $stmt_jenis1->execute();
@@ -37,14 +36,14 @@ if ($total2 > 0) { $data_jenis_pelanggaran[] = ['nama_pelanggaran' => 'KEBERSIHA
 usort($data_jenis_pelanggaran, fn($a, $b) => $b['total'] <=> $a['total']);
 $total_semua_jenis = array_sum(array_column($data_jenis_pelanggaran, 'total'));
 
-// 4. Data Per Kelas (query disesuaikan)
+// 4. Data Per Kelas
 $stmt_kelas = $conn->prepare("SELECT s.kelas, COUNT(*) AS total FROM pelanggaran p JOIN santri s ON s.id = p.santri_id WHERE p.tanggal >= ? AND p.tanggal <= ? GROUP BY s.kelas ORDER BY total DESC");
 $stmt_kelas->bind_param("ss", $tgl_mulai, $tgl_selesai);
 $stmt_kelas->execute();
 $data_per_kelas = $stmt_kelas->get_result()->fetch_all(MYSQLI_ASSOC);
 $json_per_kelas = json_encode(['labels' => array_column($data_per_kelas, 'kelas'), 'data' => array_column($data_per_kelas, 'total')]);
 
-// 5. Data Per Kamar (query disesuaikan)
+// 5. Data Per Kamar
 $stmt_kamar = $conn->prepare("SELECT kamar, COUNT(*) AS total FROM pelanggaran_kebersihan WHERE tanggal >= ? AND tanggal <= ? GROUP BY kamar ORDER BY total DESC");
 $stmt_kamar->bind_param("ss", $tgl_mulai, $tgl_selesai);
 $stmt_kamar->execute();
@@ -52,7 +51,10 @@ $data_per_kamar = $stmt_kamar->get_result()->fetch_all(MYSQLI_ASSOC);
 $labels_kamar = array_map(fn($item) => "Kamar " . $item['kamar'], $data_per_kamar);
 $json_per_kamar = json_encode(['labels' => $labels_kamar, 'data' => array_column($data_per_kamar, 'total')]);
 
-// 6. DATA BARU: SEBARAN PER BAGIAN (DITAMBAHKAN)
+// 6. DATA SEBARAN PER BAGIAN 
+// =================================================================
+// INI BAGIAN YANG HILANG & DITAMBAHKAN KEMBALI
+// =================================================================
 $stmt_bagian = $conn->prepare("
     SELECT jp.bagian, COUNT(p.id) AS total 
     FROM pelanggaran p 
@@ -61,220 +63,79 @@ $stmt_bagian = $conn->prepare("
     GROUP BY jp.bagian 
     ORDER BY total DESC
 ");
+// =================================================================
+
+// Baris ke-7 (sekarang) yang error tadi, sekarang jadi valid
 $stmt_bagian->bind_param("ss", $tgl_mulai, $tgl_selesai);
 $stmt_bagian->execute();
 $data_per_bagian = $stmt_bagian->get_result()->fetch_all(MYSQLI_ASSOC);
 $json_per_bagian = json_encode(['labels' => array_column($data_per_bagian, 'bagian'), 'data' => array_column($data_per_bagian, 'total')]);
-
 ?>
 
 <style>
-    /* === FONDASI & PALET WARNA BARU === */
-    :root {
-        --primary: #4f46e5;
-        --primary-light: #e0e7ff;
-        --secondary: #10b981;
-        --accent: #ef4444;
-        --text-dark: #111827;
-        --text-light: #6b7280;
-        --bg-light: #f9fafb;
-        --border-color: #e5e7eb;
-        --card-bg: #ffffff;
-        --card-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05), 0 2px 4px -2px rgba(0, 0, 0, 0.05);
-        --hover-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.07), 0 4px 6px -4px rgba(0, 0, 0, 0.07);
-    }
-
-    body {
-        background-color: var(--bg-light);
-        color: var(--text-dark);
-        font-family: 'Poppins', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
-    }
-
-    /* === HEADER DASHBOARD === */
-    .dashboard-header {
-        background-color: var(--card-bg);
-        color: var(--text-dark);
-        padding: 25px;
-        border-radius: 16px;
-        margin-bottom: 25px;
-        border: 1px solid var(--border-color);
-    }
-    h2.dashboard-title {
-        font-size: 26px;
-        font-weight: 600;
-        margin: 0 0 5px 0;
-        display: flex;
-        align-items: center;
-        gap: 10px;
-    }
-    .dashboard-header p {
-        color: var(--text-light);
-        font-size: 15px;
-    }
-
-    /* === DESAIN KARTU (CARD) BARU === */
-    .card.dashboard-card {
-        background: var(--card-bg);
-        border-radius: 16px; /* Sudut lebih tumpul, lebih modern */
-        border: 1px solid var(--border-color);
-        box-shadow: none; /* Bayangan awal kita hilangkan, biar clean */
-        padding: 25px;
-        display: flex;
-        flex-direction: column;
-        transition: border-color 0.3s ease, box-shadow 0.3s ease;
-    }
-    .card.dashboard-card:hover {
-        border-color: var(--primary); /* Efek hover lebih subtle */
-        box-shadow: var(--hover-shadow);
-    }
-
-    /* === JUDUL DALAM KARTU === */
-    h3.card-title {
-        font-size: 18px;
-        margin: 0 0 20px 0;
-        color: var(--text-dark);
-        font-weight: 600;
-        padding-bottom: 0;
-        border-bottom: none; /* Hapus garis bawah, kita pakai spasi */
-        display: flex;
-        align-items: center;
-        gap: 8px;
-    }
-
-    /* === KARTU STATISTIK ANGKA === */
-    .stat-card {
-        text-align: center;
-    }
-    .stat-card .icon {
-        font-size: 24px;
-        color: var(--primary);
-        background-color: var(--primary-light);
-        width: 50px;
-        height: 50px;
-        border-radius: 50%;
-        display: inline-flex;
-        align-items: center;
-        justify-content: center;
-        margin-bottom: 15px;
-    }
-    .stat-card .number {
-        font-size: 32px;
-        font-weight: 700;
-        color: var(--text-dark);
-        margin-bottom: 5px;
-    }
-    .stat-card h4 {
-        font-size: 15px;
-        color: var(--text-light);
-        margin: 0;
-        font-weight: 500;
-    }
-
-    /* === AREA GRAFIK (CHART) === */
-    .chart-container {
-        position: relative;
-        height: 350px;
-        flex-grow: 1;
-    }
-
-    /* === TABEL LEBIH CLEAN === */
+    /* ... (SEMUA CSS LU DARI ATAS SAMPAI BAWAH TETAP SAMA, TIDAK ADA PERUBAHAN) ... */
+    :root { --primary: #4f46e5; --primary-light: #e0e7ff; --secondary: #10b981; --accent: #ef4444; --text-dark: #111827; --text-light: #6b7280; --bg-light: #f9fafb; --border-color: #e5e7eb; --card-bg: #ffffff; --card-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05), 0 2px 4px -2px rgba(0, 0, 0, 0.05); --hover-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.07), 0 4px 6px -4px rgba(0, 0, 0, 0.07); }
+    body { background-color: var(--bg-light); color: var(--text-dark); font-family: 'Poppins', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif; }
+    .dashboard-header { background-color: var(--card-bg); color: var(--text-dark); padding: 25px; border-radius: 16px; margin-bottom: 25px; border: 1px solid var(--border-color); }
+    h2.dashboard-title { font-size: 26px; font-weight: 600; margin: 0 0 5px 0; display: flex; align-items: center; gap: 10px; }
+    .dashboard-header p { color: var(--text-light); font-size: 15px; }
+    .card.dashboard-card { background: var(--card-bg); border-radius: 16px; border: 1px solid var(--border-color); box-shadow: none; padding: 25px; display: flex; flex-direction: column; transition: border-color 0.3s ease, box-shadow 0.3s ease; }
+    .card.dashboard-card:hover { border-color: var(--primary); box-shadow: var(--hover-shadow); }
+    h3.card-title { font-size: 18px; margin: 0 0 20px 0; color: var(--text-dark); font-weight: 600; padding-bottom: 0; border-bottom: none; display: flex; align-items: center; gap: 8px; }
+    .stat-card { text-align: center; }
+    .stat-card .icon { font-size: 24px; color: var(--primary); background-color: var(--primary-light); width: 50px; height: 50px; border-radius: 50%; display: inline-flex; align-items: center; justify-content: center; margin-bottom: 15px; }
+    .stat-card .number { font-size: 32px; font-weight: 700; color: var(--text-dark); margin-bottom: 5px; }
+    .stat-card h4 { font-size: 15px; color: var(--text-light); margin: 0; font-weight: 500; }
     .table-container { overflow-x: auto; flex-grow: 1; }
     table { width: 100%; border-collapse: collapse; }
-    th, td {
-        padding: 14px 10px;
-        text-align: left;
-        border-bottom: 1px solid var(--border-color);
-        white-space: nowrap;
-        color: var(--text-dark);
-    }
-    th {
-        background-color: transparent; /* Header transparan */
-        font-weight: 600;
-        color: var(--text-light);
-        font-size: 13px;
-        text-transform: uppercase;
-        letter-spacing: 0.5px;
-    }
-    tr:last-child td { border-bottom: none; } /* Baris terakhir tanpa border */
-    .badge {
-        padding: 4px 12px;
-        border-radius: 20px;
-        font-size: 12px;
-        font-weight: 600;
-        color: var(--accent);
-        background-color: #fee2e2; /* Warna lebih soft */
-    }
-
-    /* === FILTER TANGGAL & TOMBOL === */
-    .date-filter-form {
-        display: flex;
-        gap: 15px;
-        align-items: flex-end;
-        flex-wrap: wrap;
-    }
-    .date-input-group label {
-        font-size: 13px;
-        color: var(--text-light);
-        font-weight: 500;
-        margin-bottom: 5px;
-        display: block;
-    }
-    .form-control, .btn {
-        padding: 10px 15px;
-        border-radius: 10px;
-        font-size: 14px;
-        transition: all 0.3s ease;
-    }
-    .form-control {
-        border: 1px solid var(--border-color);
-    }
-    .form-control:focus {
-        border-color: var(--primary);
-        box-shadow: 0 0 0 3px var(--primary-light);
-        outline: none;
-    }
-    .btn-primary {
-        background-color: var(--primary);
-        color: white;
-        border: none;
-        cursor: pointer;
-        font-weight: 600;
-    }
-    .btn-primary:hover {
-        background-color: #4338ca; /* Sedikit lebih gelap saat hover */
-    }
+    th, td { padding: 14px 10px; text-align: left; border-bottom: 1px solid var(--border-color); white-space: nowrap; color: var(--text-dark); }
+    th { background-color: transparent; font-weight: 600; color: var(--text-light); font-size: 13px; text-transform: uppercase; letter-spacing: 0.5px; }
+    tr:last-child td { border-bottom: none; }
+    .badge { padding: 4px 12px; border-radius: 20px; font-size: 12px; font-weight: 600; color: var(--accent); background-color: #fee2e2; }
+    .date-filter-form { display: flex; gap: 15px; align-items: flex-end; flex-wrap: wrap; }
+    .date-input-group label { font-size: 13px; color: var(--text-light); font-weight: 500; margin-bottom: 5px; display: block; }
+    .form-control, .btn { padding: 10px 15px; border-radius: 10px; font-size: 14px; transition: all 0.3s ease; }
+    .form-control { border: 1px solid var(--border-color); }
+    .form-control:focus { border-color: var(--primary); box-shadow: 0 0 0 3px var(--primary-light); outline: none; }
+    .btn-primary { background-color: var(--primary); color: white; border: none; cursor: pointer; font-weight: 600; }
+    .btn-primary:hover { background-color: #4338ca; }
     .chart-filters { display: flex; gap: 10px; margin-bottom: 20px; flex-wrap: wrap; }
-    .chart-filters button {
-        background-color: var(--card-bg);
-        color: var(--text-light);
-        border: 1px solid var(--border-color);
-        padding: 8px 16px;
-        border-radius: 20px;
-        font-weight: 500;
-        cursor: pointer;
-        transition: all 0.3s ease;
-    }
-    .chart-filters button.active {
-        background-color: var(--primary-light);
-        color: var(--primary);
-        border-color: var(--primary);
-        font-weight: 600;
-    }
-
-    /* === PROGRESS BAR === */
+    .chart-filters button { background-color: var(--card-bg); color: var(--text-light); border: 1px solid var(--border-color); padding: 8px 16px; border-radius: 20px; font-weight: 500; cursor: pointer; transition: all 0.3s ease; }
+    .chart-filters button.active { background-color: var(--primary-light); color: var(--primary); border-color: var(--primary); font-weight: 600; }
     .progress-bar-container { background-color: #e5e7eb; border-radius: 10px; height: 8px; width: 100px; overflow: hidden; }
     .progress-bar { background-color: var(--secondary); height: 100%; border-radius: 10px; }
+    
+    /* CSS PERBAIKAN GRAFIK DARI SEBELUMNYA */
+    .chart-container {
+        position: relative;
+        min-height: 380px; 
+        width: 100%;
+        flex-grow: 1;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+    }
+    /* Kelas khusus buat card chart garis biar lebih tinggi & lega */
+    .chart-container.chart-container-tall {
+        min-height: 450px; /* Nilainya kita naikin biar lebih lega */
+    }
+    
+    .chart-scroll-container {
+        position: relative;
+        overflow-x: auto;
+        -webkit-overflow-scrolling: touch;
+        padding-bottom: 10px;
+        width: 100%;
+    }
+    .chart-scroll-container canvas {
+        min-width: 500px;
+    }
 
-    /* === RESPONSIVE UNTUK HP === */
     @media (max-width: 768px) {
         .dashboard-card { padding: 20px; }
         h2.dashboard-title { font-size: 22px; }
         .stat-card .number { font-size: 28px; }
-        .date-filter-form {
-            flex-direction: column;
-            align-items: stretch;
-            gap: 15px;
-        }
+        .date-filter-form { flex-direction: column; align-items: stretch; gap: 15px; }
     }
 </style>
 
@@ -331,7 +192,11 @@ $json_per_bagian = json_encode(['labels' => array_column($data_per_bagian, 'bagi
             <button id="filter-7d" class="active">7 Hari</button> <button id="filter-1m">1 Bulan</button>
             <button id="filter-3m">3 Bulan</button> <button id="filter-1y">1 Tahun</button>
         </div>
-        <div class="chart-container" style="height: 300px;"><canvas id="chartTrenPelanggaran"></canvas></div>
+        <div class="chart-container chart-container-tall">
+            <div class="chart-scroll-container">
+                <canvas id="chartTrenPelanggaran"></canvas>
+            </div>
+        </div>
     </div>
 
     <div class="row g-4">
@@ -412,7 +277,8 @@ $json_per_bagian = json_encode(['labels' => array_column($data_per_bagian, 'bagi
 
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 <script>
-document.addEventListener('DOMContentLoaded', function () {
+    /* ... (SEMUA JS LU DARI ATAS SAMPAI BAWAH TETAP SAMA, TIDAK ADA PERUBAHAN) ... */
+    document.addEventListener('DOMContentLoaded', function () {
     const dataKelas = <?= $json_per_kelas ?>;
     const dataKamar = <?= $json_per_kamar ?>;
     const dataBagian = <?= $json_per_bagian ?>;
@@ -439,40 +305,16 @@ document.addEventListener('DOMContentLoaded', function () {
     }
 
     if(dataBagian.labels.length > 0) {
-        const colorsBagian = generateDistinctColors(dataBagian.labels.length);
-        new Chart(document.getElementById('chartPerBagian'), {
-            type: 'doughnut',
-            data: {
-                labels: dataBagian.labels,
-                datasets: [{ data: dataBagian.data, backgroundColor: colorsBagian }]
-            },
-            options: doughnutChartOptions
-        });
-    }
+        new Chart(document.getElementById('chartPerBagian'), { type: 'doughnut', data: { labels: dataBagian.labels, datasets: [{ data: dataBagian.data, backgroundColor: generateDistinctColors(dataBagian.labels.length) }] }, options: doughnutChartOptions });
+    } else { document.getElementById('chartPerBagian').parentElement.innerHTML = '<p class="text-center text-muted m-auto">Tidak ada data.</p>'; }
 
     if(dataKelas.labels.length > 0) {
-        const colorsKelas = generateDistinctColors(dataKelas.labels.length);
-        new Chart(document.getElementById('chartPerKelas'), {
-            type: 'doughnut',
-            data: {
-                labels: dataKelas.labels,
-                datasets: [{ data: dataKelas.data, backgroundColor: colorsKelas }]
-            },
-            options: doughnutChartOptions
-        });
-    }
+        new Chart(document.getElementById('chartPerKelas'), { type: 'doughnut', data: { labels: dataKelas.labels, datasets: [{ data: dataKelas.data, backgroundColor: generateDistinctColors(dataKelas.labels.length) }] }, options: doughnutChartOptions });
+    } else { document.getElementById('chartPerKelas').parentElement.innerHTML = '<p class="text-center text-muted m-auto">Tidak ada data.</p>'; }
 
     if(dataKamar.labels.length > 0) {
-        const colorsKamar = generateDistinctColors(dataKamar.labels.length);
-        new Chart(document.getElementById('chartPerKamar'), {
-            type: 'doughnut',
-            data: {
-                labels: dataKamar.labels,
-                datasets: [{ data: dataKamar.data, backgroundColor: colorsKamar }]
-            },
-            options: doughnutChartOptions
-        });
-    }
+        new Chart(document.getElementById('chartPerKamar'), { type: 'doughnut', data: { labels: dataKamar.labels, datasets: [{ data: dataKamar.data, backgroundColor: generateDistinctColors(dataKamar.labels.length) }] }, options: doughnutChartOptions });
+    } else { document.getElementById('chartPerKamar').parentElement.innerHTML = '<p class="text-center text-muted m-auto">Tidak ada data.</p>'; }
 
     const ctxTren = document.getElementById('chartTrenPelanggaran').getContext('2d');
     const lineChart = new Chart(ctxTren, {
