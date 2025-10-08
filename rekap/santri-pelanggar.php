@@ -11,15 +11,20 @@ if (!$periode_aktif) {
     die("⚠️ Periode aktif belum diset. Silakan atur dulu di halaman pengaturan.");
 }
 
-// 🔹 Ambil semua kamar unik
+// 🔹 Ambil data unik untuk filter
 $kamars = mysqli_query($conn, "SELECT DISTINCT kamar FROM santri WHERE kamar IS NOT NULL AND kamar != '' ORDER BY CAST(REGEXP_REPLACE(kamar, '[^0-9]', '') AS UNSIGNED) ASC, REGEXP_REPLACE(kamar, '[0-9]', '') ASC");
+$kelas_list = mysqli_query($conn, "SELECT DISTINCT CAST(kelas AS UNSIGNED) AS kelas FROM santri WHERE kelas IS NOT NULL AND kelas != '' ORDER BY kelas ASC");
 
 // 🔹 Ambil filter dari URL
 $filter_kamar = $_GET['kamar'] ?? null;
+$filter_kelas = $_GET['kelas'] ?? null;
 $start_date = $_GET['start_date'] ?? $periode_aktif;
 $end_date   = $_GET['end_date'] ?? date("Y-m-d");
 
-// === 1. QUERY UNTUK TABEL DETAIL ===
+
+// ✅ PERBAIKAN 1: Logika parameter untuk query tabel dan chart dipisah biar tidak bentrok
+
+// === 1. PERSIAPAN & EKSEKUSI QUERY TABEL ===
 $sql_table = "
     SELECT s.id, s.nama, s.kelas, s.kamar,
            COALESCE(p.total_pelanggaran, 0) AS total_pelanggaran,
@@ -36,24 +41,31 @@ $sql_table = "
           AND jenis_pelanggaran_id IN (1, 2)
         GROUP BY santri_id
     ) p ON s.id = p.santri_id
+    WHERE 1=1
 ";
-$params = [$start_date, $end_date];
-$types = 'ss';
+// Parameter khusus untuk query tabel
+$table_params = [$start_date, $end_date];
+$table_types = 'ss';
 if ($filter_kamar) {
-    $sql_table .= " WHERE s.kamar = ?";
-    $params[] = $filter_kamar;
-    $types .= 's';
+    $sql_table .= " AND s.kamar = ?";
+    $table_params[] = $filter_kamar;
+    $table_types .= 's';
+}
+if ($filter_kelas) {
+    $sql_table .= " AND s.kelas = ?";
+    $table_params[] = $filter_kelas;
+    $table_types .= 's';
 }
 $sql_table .= " HAVING total_pelanggaran > 0 ORDER BY total_pelanggaran DESC, s.nama ASC";
 
 $stmt_table = $conn->prepare($sql_table);
 if ($stmt_table === false) die("❌ Query tabel error: " . $conn->error);
-$stmt_table->bind_param($types, ...$params);
+$stmt_table->bind_param($table_types, ...$table_params);
 $stmt_table->execute();
 $query_table = $stmt_table->get_result();
 
 
-// === 2. QUERY BARU UNTUK DATA CHART ===
+// === 2. PERSIAPAN & EKSEKUSI QUERY CHART ===
 $sql_chart = "
     SELECT
         CASE
@@ -68,34 +80,42 @@ $sql_chart = "
         COUNT(*) AS jumlah
     FROM pelanggaran p
 ";
-// Join ke tabel santri jika ada filter kamar
-if ($filter_kamar) {
+if ($filter_kamar || $filter_kelas) {
     $sql_chart .= " JOIN santri s ON p.santri_id = s.id";
 }
 $sql_chart .= " WHERE p.jenis_pelanggaran_id IN (1, 2) AND DATE(p.tanggal) BETWEEN ? AND ?";
+
+// Parameter khusus untuk query chart
+$chart_params = [$start_date, $end_date];
+$chart_types = 'ss';
 if ($filter_kamar) {
     $sql_chart .= " AND s.kamar = ?";
+    $chart_params[] = $filter_kamar;
+    $chart_types .= 's';
+}
+if ($filter_kelas) {
+    $sql_chart .= " AND s.kelas = ?";
+    $chart_params[] = $filter_kelas;
+    $chart_types .= 's';
 }
 $sql_chart .= " GROUP BY kategori HAVING jumlah > 0 ORDER BY kategori";
 
 $stmt_chart = $conn->prepare($sql_chart);
 if ($stmt_chart === false) die("❌ Query chart error: " . $conn->error);
-$stmt_chart->bind_param($types, ...$params); // Menggunakan parameter dan tipe yang sama persis
+$stmt_chart->bind_param($chart_types, ...$chart_params);
 $stmt_chart->execute();
 $query_chart = $stmt_chart->get_result();
 
-// Siapkan data untuk di-passing ke JavaScript
+
+// Siapkan data untuk di-passing ke JavaScript (tidak ada perubahan di sini)
 $chart_labels = [];
 $chart_data = [];
 $chart_colors = [];
 $color_map = [
-    'Telat Sholat Subuh'  => '#f59e0b', // Amber
-    'Telat Sholat Dzuhur' => '#0ea5e9', // Sky
-    'Telat Sholat Ashar'  => '#f97316', // Orange
-    'Telat Sholat Maghrib'=> '#8b5cf6', // Violet
-    'Telat Sholat Isya'   => '#6366f1', // Indigo
-    'Telat KBM'           => '#10b981', // Emerald
-    'Lainnya'             => '#6b7280', // Gray
+    'Telat Sholat Subuh'  => '#f59e0b', 'Telat Sholat Dzuhur' => '#0ea5e9',
+    'Telat Sholat Ashar'  => '#f97316', 'Telat Sholat Maghrib'=> '#8b5cf6',
+    'Telat Sholat Isya'   => '#6366f1', 'Telat KBM'           => '#10b981',
+    'Lainnya'             => '#6b7280',
 ];
 
 while($row = $query_chart->fetch_assoc()){
@@ -105,10 +125,10 @@ while($row = $query_chart->fetch_assoc()){
 }
 ?>
 
-<!-- Panggil library Chart.js dari CDN -->
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 
 <style>
+    /* ... CSS tidak berubah ... */
     :root {
         --danger: #B91C1C; --danger-light: #FEE2E2; --danger-dark: #991B1B;
         --danger-text: #7F1D1D; --success: #15803D; --success-light: #DCFCE7;
@@ -116,70 +136,25 @@ while($row = $query_chart->fetch_assoc()){
         --light-bg: #F9FAFB; --card-bg: #FFFFFF; --border-color: #E5E7EB;
         --gold: #FFD700; --silver: #C0C0C0; --bronze: #CD7F32;
     }
-    .page-title {
-        color: var(--danger); margin-bottom: 1.5rem; font-size: 2rem;
-        font-weight: 700; display: flex; align-items: center; gap: 0.75rem;
-    }
-    .card {
-        background-color: var(--card-bg); border-radius: 12px; padding: 1.5rem;
-        margin-bottom: 1.5rem; box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.05);
-        border: 1px solid var(--border-color);
-    }
-    .card-title {
-        font-size: 1.125rem; font-weight: 600; margin-bottom: 1rem;
-        color: var(--text-primary); display: flex; align-items: center; gap: 0.5rem;
-    }
-    .filter-form { display: flex; flex-wrap: wrap; gap: 1.5rem; align-items: flex-end; margin-bottom: 1.5rem; }
+    .page-title { color: var(--danger); margin-bottom: 1.5rem; font-size: 2rem; font-weight: 700; display: flex; align-items: center; gap: 0.75rem; }
+    .card { background-color: var(--card-bg); border-radius: 12px; padding: 1.5rem; margin-bottom: 1.5rem; box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.05); border: 1px solid var(--border-color); }
+    .card-title { font-size: 1.125rem; font-weight: 600; margin-bottom: 1rem; color: var(--text-primary); display: flex; align-items: center; gap: 0.5rem; }
+    .filter-form { display: flex; flex-wrap: wrap; gap: 1rem; align-items: flex-end; }
     .form-group label { display: block; margin-bottom: 0.5rem; font-size: 0.875rem; color: var(--text-secondary); font-weight: 500; }
-    .filter-form input[type="date"] {
-        padding: 0.5rem 0.75rem; border: 1px solid var(--border-color); border-radius: 6px;
-    }
-    .btn {
-        background-color: var(--danger); color: white; border: none; padding: 0.5rem 1.25rem;
-        border-radius: 6px; cursor: pointer; font-weight: 600; transition: background-color 0.3s;
-    }
-    .btn:hover { background-color: var(--danger-dark); }
-    .kamar-nav { display: flex; flex-wrap: wrap; gap: 0.5rem; margin-top: 1rem; }
-    .kamar-nav a {
-        padding: 0.375rem 1rem; background: var(--light-bg); border: 1px solid var(--border-color);
-        border-radius: 20px; text-decoration: none; color: var(--text-secondary);
-        font-size: 0.875rem; font-weight: 500; transition: all 0.2s;
-    }
-    .kamar-nav .active { background: var(--danger); color: white; border-color: var(--danger); }
-    
+    .filter-form input[type="date"], .filter-form select { padding: 0.5rem 0.75rem; border: 1px solid var(--border-color); border-radius: 6px; background-color: white; }
+    .table-responsive { display: block; width: 100%; overflow-x: auto; }
     table { width: 100%; border-collapse: collapse; } 
     table th, table td { padding: 0.75rem 1rem; text-align: left; vertical-align: middle; }
     table th { background-color: var(--light-bg); color: var(--danger-text); font-weight: 600; }
-    
-    /* ✅ REVISI KUNCI 1: Wrapper tabelnya dibikin bisa scroll horizontal */
-    .table-responsive {
-        display: block;
-        width: 100%;
-        overflow-x: auto;
-    }
-    
     .rank-1 { border-left: 4px solid var(--gold); }
     .rank-2 { border-left: 4px solid var(--silver); }
     .rank-3 { border-left: 4px solid var(--bronze); }
-
     .badge-danger { background-color: var(--danger-light); color: var(--danger-text); padding: 0.25rem 0.6rem; border-radius: 20px; font-weight: 600; }
-    .btn-detail {
-        display: inline-flex; align-items: center; justify-content: center; gap: 0.5rem;
-        background-color: var(--success-light); color: var(--success); padding: 0.375rem 0.875rem;
-        text-decoration: none; border-radius: 6px; font-weight: 600;
-    }
+    .btn-detail { display: inline-flex; align-items: center; justify-content: center; gap: 0.5rem; background-color: var(--success-light); color: var(--success); padding: 0.375rem 0.875rem; text-decoration: none; border-radius: 6px; font-weight: 600; }
     .no-data { text-align: center; padding: 4rem; color: var(--text-secondary); }
-
-    /* ✅ REVISI KUNCI 2: CSS Mobile dibikin lebih simpel */
     @media (max-width: 768px) {
-        /* Biar tulisan di dalem tabel gak kepotong aneh */
-        table th, table td {
-            white-space: nowrap;
-            padding: 0.6rem 0.8rem; /* Padding dikecilin dikit */
-        }
-        .page-title {
-            font-size: 1.5rem;
-        }
+        table th, table td { white-space: nowrap; padding: 0.6rem 0.8rem; }
+        .page-title { font-size: 1.5rem; }
     }
 </style>
 
@@ -188,7 +163,7 @@ while($row = $query_chart->fetch_assoc()){
     
     <div class="card">
         <h2 class="card-title"><i class="fas fa-filter"></i>Filter Data</h2>
-        <form method="get" class="filter-form">
+        <form method="get" class="filter-form" id="filterForm">
             <div class="form-group">
                 <label for="start_date">Dari Tanggal</label>
                 <input type="date" name="start_date" id="start_date" value="<?= htmlspecialchars($start_date) ?>">
@@ -197,30 +172,38 @@ while($row = $query_chart->fetch_assoc()){
                 <label for="end_date">Sampai Tanggal</label>
                 <input type="date" name="end_date" id="end_date" value="<?= htmlspecialchars($end_date) ?>">
             </div>
-            <?php if ($filter_kamar): ?>
-                <input type="hidden" name="kamar" value="<?= htmlspecialchars($filter_kamar) ?>">
-            <?php endif; ?>
-            <button type="submit" class="btn"><i class="fas fa-search"></i> Terapkan</button>
+            <div class="form-group">
+                <label for="kamar">Kamar</label>
+                <select name="kamar" id="kamar">
+                    <option value="">Semua Kamar</option>
+                    <?php 
+                    mysqli_data_seek($kamars, 0);
+                    while ($k = mysqli_fetch_assoc($kamars)): ?>
+                        <option value="<?= htmlspecialchars($k['kamar']) ?>" <?= ($filter_kamar == $k['kamar']) ? 'selected' : '' ?>>
+                            <?= htmlspecialchars($k['kamar']) ?>
+                        </option>
+                    <?php endwhile; ?>
+                </select>
+            </div>
+            <div class="form-group">
+                <label for="kelas">Kelas</label>
+                <select name="kelas" id="kelas">
+                    <option value="">Semua Kelas</option>
+                    <?php 
+                    mysqli_data_seek($kelas_list, 0);
+                    while ($k = mysqli_fetch_assoc($kelas_list)): ?>
+                        <option value="<?= htmlspecialchars($k['kelas']) ?>" <?= ($filter_kelas == $k['kelas']) ? 'selected' : '' ?>>
+                            <?= htmlspecialchars($k['kelas']) ?>
+                        </option>
+                    <?php endwhile; ?>
+                </select>
+            </div>
         </form>
-        <hr style="margin: 1.5rem 0;">
-        <div class="kamar-nav">
-            <a href="?start_date=<?= $start_date ?>&end_date=<?= $end_date ?>" class="<?= !$filter_kamar ? 'active' : '' ?>">Semua Kamar</a>
-            <?php 
-            mysqli_data_seek($kamars, 0);
-            while ($k = mysqli_fetch_assoc($kamars)): ?>
-                <a href="?kamar=<?= urlencode($k['kamar']) ?>&start_date=<?= $start_date ?>&end_date=<?= $end_date ?>"
-                   class="<?= ($filter_kamar == $k['kamar']) ? 'active' : '' ?>">
-                    <?= htmlspecialchars($k['kamar']) ?>
-                </a>
-            <?php endwhile; ?>
-        </div>
     </div>
     
     <div class="row">
-        <!-- Kolom untuk Tabel -->
         <div class="col-lg-8">
             <div class="card">
-                <!-- ✅ REVISI KUNCI 3: Pastikan class table-responsive ngebungkus tabelnya -->
                 <div class="table-responsive">
                     <table class="table">
                         <thead>
@@ -244,8 +227,13 @@ while($row = $query_chart->fetch_assoc()){
                                     if ($no == 1) $peringkat_display = '<i class="fas fa-trophy" style="color: var(--gold);"></i> 1';
                                     elseif ($no == 2) $peringkat_display = '<i class="fas fa-trophy" style="color: var(--silver);"></i> 2';
                                     elseif ($no == 3) $peringkat_display = '<i class="fas fa-trophy" style="color: var(--bronze);"></i> 3';
+                                    
+                                    $detail_link = "detail-pelanggaran.php?id={$row['id']}"
+                                                 . "&start_date=" . htmlspecialchars($start_date)
+                                                 . "&end_date=" . htmlspecialchars($end_date)
+                                                 . "&kamar=" . urlencode($filter_kamar ?? '')
+                                                 . "&kelas=" . urlencode($filter_kelas ?? '');
 
-                                    // ✅ REVISI KUNCI 4: HTML di dalem TR disederhanain, hapus data-label
                                     echo "<tr class='{$rank_class}'>
                                             <td>{$peringkat_display}</td>
                                             <td>
@@ -255,7 +243,7 @@ while($row = $query_chart->fetch_assoc()){
                                                 </div>
                                             </td>
                                             <td class='text-center'>
-                                                <span class='badge badge-danger'>{$row['total_pelanggaran']}</span>
+                                                <span class='badge-danger'>{$row['total_pelanggaran']}</span>
                                             </td>
                                             <td class='small'>
                                                 <div class='d-flex flex-column'>
@@ -268,13 +256,13 @@ while($row = $query_chart->fetch_assoc()){
                                                 </div>
                                             </td>
                                             <td>
-                                                <a href='detail-pelanggaran.php?id={$row['id']}&start_date=" . htmlspecialchars($start_date) . "&end_date=" . htmlspecialchars($end_date) . "' class='btn-detail'>
+                                                <a href='{$detail_link}' class='btn-detail'>
                                                     <i class='fas fa-info-circle'></i> Detail
                                                 </a>
                                             </td>
                                         </tr>";
                                     $no++;
-                                }
+                                 }
                             }
                             ?>
                         </tbody>
@@ -283,7 +271,6 @@ while($row = $query_chart->fetch_assoc()){
             </div>
         </div>
 
-        <!-- Kolom untuk Chart -->
         <div class="col-lg-4">
             <div class="card">
                 <h2 class="card-title"><i class="fas fa-chart-pie"></i>Ringkasan Grafik</h2>
@@ -302,6 +289,7 @@ while($row = $query_chart->fetch_assoc()){
 </div>
 
 <script>
+// Script untuk Chart.js (tidak berubah)
 document.addEventListener('DOMContentLoaded', function() {
     const chartLabels = <?= json_encode($chart_labels) ?>;
     const chartData = <?= json_encode($chart_data) ?>;
@@ -345,6 +333,18 @@ document.addEventListener('DOMContentLoaded', function() {
             }
         });
     }
+});
+
+// Script Javascript untuk auto-submit filter (tidak berubah)
+document.addEventListener('DOMContentLoaded', function() {
+    const filterForm = document.getElementById('filterForm');
+    const filterInputs = filterForm.querySelectorAll('select, input[type="date"]');
+
+    filterInputs.forEach(function(input) {
+        input.addEventListener('change', function() {
+            filterForm.submit();
+        });
+    });
 });
 </script>
 

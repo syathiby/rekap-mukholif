@@ -1,6 +1,5 @@
 <?php
 require_once __DIR__ . '/../header.php';
-// Ganti guardnya, karena ini halaman view, bukan manage
 guard('arsip_view');
 
 $arsip_id = (int)($_GET['id'] ?? 0);
@@ -12,10 +11,6 @@ $stmt_meta->bind_param('i', $arsip_id);
 $stmt_meta->execute();
 $meta = $stmt_meta->get_result()->fetch_assoc();
 if (!$meta) die('Arsip tidak ditemukan');
-
-// ===============================================
-// === SEMUA QUERY MENGAMBIL DATA DARI ARSIP ===
-// ===============================================
 
 // 1. Total Pelanggaran (Umum & Kebersihan)
 $stmt_total_umum = $conn->prepare("SELECT COUNT(*) as total FROM arsip_data_pelanggaran WHERE arsip_id = ? AND tipe = 'Umum'");
@@ -43,7 +38,7 @@ $data_jenis_pelanggaran = $stmt_jenis->get_result()->fetch_all(MYSQLI_ASSOC);
 $total_semua_jenis = array_sum(array_column($data_jenis_pelanggaran, 'total'));
 
 // 4. Sebaran per Bagian dari arsip
-$stmt_bagian = $conn->prepare("SELECT bagian, COUNT(*) AS total FROM arsip_data_pelanggaran WHERE arsip_id = ? GROUP BY bagian ORDER BY total DESC");
+$stmt_bagian = $conn->prepare("SELECT bagian, COUNT(*) AS total FROM arsip_data_pelanggaran WHERE arsip_id = ? AND tipe = 'Umum' GROUP BY bagian ORDER BY total DESC");
 $stmt_bagian->bind_param("i", $arsip_id);
 $stmt_bagian->execute();
 $data_per_bagian = $stmt_bagian->get_result()->fetch_all(MYSQLI_ASSOC);
@@ -56,7 +51,15 @@ $stmt_kelas->execute();
 $data_per_kelas = $stmt_kelas->get_result()->fetch_all(MYSQLI_ASSOC);
 $json_per_kelas = json_encode(['labels' => array_column($data_per_kelas, 'santri_kelas'), 'data' => array_column($data_per_kelas, 'total')]);
 
-// 6. Tren Harian SELAMA PERIODE ARSIP
+// 6. Sebaran per Kamar dari arsip (hanya tipe 'Kebersihan')
+$stmt_kamar_kebersihan = $conn->prepare("SELECT santri_kamar AS kamar, COUNT(*) AS total FROM arsip_data_pelanggaran WHERE arsip_id = ? AND tipe = 'Kebersihan' AND santri_kamar IS NOT NULL AND santri_kamar != '' GROUP BY santri_kamar ORDER BY total DESC");
+$stmt_kamar_kebersihan->bind_param("i", $arsip_id);
+$stmt_kamar_kebersihan->execute();
+$data_per_kamar_kebersihan = $stmt_kamar_kebersihan->get_result()->fetch_all(MYSQLI_ASSOC);
+$labels_kamar = array_map(fn($item) => 'Kamar ' . $item['kamar'], $data_per_kamar_kebersihan);
+$json_per_kamar_kebersihan = json_encode(['labels' => $labels_kamar, 'data' => array_column($data_per_kamar_kebersihan, 'total')]);
+
+// 7. Tren Harian SELAMA PERIODE ARSIP
 $stmt_tren = $conn->prepare("SELECT DATE(tanggal) as tanggal_harian, COUNT(*) as total FROM arsip_data_pelanggaran WHERE arsip_id = ? GROUP BY DATE(tanggal) ORDER BY tanggal_harian ASC");
 $stmt_tren->bind_param("i", $arsip_id);
 $stmt_tren->execute();
@@ -68,6 +71,7 @@ $json_tren_harian = json_encode([
 ?>
 
 <style>
+    /* CSS lu udah oke banget, nggak perlu diubah */
     :root { --primary: #4f46e5; --primary-light: #e0e7ff; --secondary: #10b981; --accent: #ef4444; --text-dark: #111827; --text-light: #6b7280; --bg-light: #f9fafb; --border-color: #e5e7eb; --card-bg: #ffffff; --card-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05), 0 2px 4px -2px rgba(0, 0, 0, 0.05); --hover-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.07), 0 4px 6px -4px rgba(0, 0, 0, 0.07); } 
     body { background-color: var(--bg-light); color: var(--text-dark); font-family: 'Poppins', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif; } 
     .dashboard-header { background-color: var(--card-bg); color: var(--text-dark); padding: 25px; border-radius: 16px; margin-bottom: 25px; border: 1px solid var(--border-color); } 
@@ -91,35 +95,10 @@ $json_tren_harian = json_encode([
     .btn-detail:hover { background-color: #4338ca; box-shadow: var(--hover-shadow); } 
     .btn-detail.secondary { background-color: #10b981; } 
     .btn-detail.secondary:hover { background-color: #059669; }
-
-    /* === PERBAIKAN CSS GRAFIK (v3) === */
-    .chart-container { 
-        position: relative; 
-        width: 100%;
-        flex-grow: 1;
-        /* DIUBAH: Kasih tinggi minimal biar chart donat & legendanya rapi */
-        min-height: 380px; 
-        display: flex;
-        align-items: center;
-        justify-content: center;
-    }
-
-    /* BARU: Kelas khusus buat card chart garis biar lebih tinggi & lega */
-    .chart-container.chart-container-tall {
-        min-height: 400px;
-    }
-
-    /* (HANYA UNTUK CHART GARIS) Wrapper untuk scroll horizontal */
-    .chart-scroll-container {
-        position: relative;
-        overflow-x: auto;
-        -webkit-overflow-scrolling: touch;
-        padding-bottom: 10px;
-        width: 100%;
-    }
-    .chart-scroll-container canvas {
-        min-width: 500px;
-    }
+    .chart-container { position: relative; width: 100%; flex-grow: 1; min-height: 380px; display: flex; align-items: center; justify-content: center; }
+    .chart-container.chart-container-tall { min-height: 400px; }
+    .chart-scroll-container { position: relative; overflow-x: auto; -webkit-overflow-scrolling: touch; padding-bottom: 10px; width: 100%; }
+    .chart-scroll-container canvas { min-width: 500px; }
 </style>
 
 <div class="container-fluid mt-4 mb-5">
@@ -200,7 +179,10 @@ $json_tren_harian = json_encode([
                 </div>
             </div>
         </div>
-        <div class="col-xl-6 mt-4">
+    </div>
+
+    <div class="row g-4 mt-4">
+        <div class="col-xl-4">
             <div class="card dashboard-card h-100">
                 <h3 class="card-title"><i class="fa-solid fa-tags"></i> Sebaran per Bagian</h3>
                 <div class="chart-container">
@@ -208,7 +190,7 @@ $json_tren_harian = json_encode([
                 </div>
             </div>
         </div>
-        <div class="col-xl-6 mt-4">
+        <div class="col-xl-4">
             <div class="card dashboard-card h-100">
                 <h3 class="card-title"><i class="fa-solid fa-chalkboard-user"></i> Sebaran per Kelas</h3>
                 <div class="chart-container">
@@ -216,20 +198,27 @@ $json_tren_harian = json_encode([
                 </div>
             </div>
         </div>
+        <div class="col-xl-4">
+            <div class="card dashboard-card h-100">
+                <h3 class="card-title"><i class="fa-solid fa-broom-ball"></i> Sebaran per Kamar (Kebersihan)</h3>
+                <div class="chart-container">
+                    <canvas id="chartPerKamarKebersihan"></canvas>
+                </div>
+            </div>
+        </div>
     </div>
-</div>
 
-<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+</div> <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 <script>
 document.addEventListener('DOMContentLoaded', function () {
     const dataBagian = <?= $json_per_bagian ?>;
     const dataKelas = <?= $json_per_kelas ?>;
+    const dataKamarKebersihan = <?= $json_per_kamar_kebersihan ?>;
     const dataTren = <?= $json_tren_harian ?>;
     
-    // Opsi dasar untuk doughnut charts
     const doughnutChartOptions = { 
         responsive: true, 
-        maintainAspectRatio: false, // Penting untuk custom container height
+        maintainAspectRatio: false,
         plugins: { 
             legend: { 
                 position: 'bottom', 
@@ -259,13 +248,19 @@ document.addEventListener('DOMContentLoaded', function () {
     if(dataBagian.labels.length > 0) {
         new Chart(document.getElementById('chartPerBagian'), { type: 'doughnut', data: { labels: dataBagian.labels, datasets: [{ data: dataBagian.data, backgroundColor: generateDistinctColors(dataBagian.labels.length) }] }, options: doughnutChartOptions });
     } else {
-        document.getElementById('chartPerBagian').parentElement.innerHTML = '<p class="text-center text-muted">Tidak ada data untuk ditampilkan.</p>';
+        document.getElementById('chartPerBagian').parentElement.innerHTML = '<p class="text-center text-muted m-auto">Tidak ada data.</p>';
     }
 
     if(dataKelas.labels.length > 0) {
         new Chart(document.getElementById('chartPerKelas'), { type: 'doughnut', data: { labels: dataKelas.labels, datasets: [{ data: dataKelas.data, backgroundColor: generateDistinctColors(dataKelas.labels.length) }] }, options: doughnutChartOptions });
     } else {
-        document.getElementById('chartPerKelas').parentElement.innerHTML = '<p class="text-center text-muted">Tidak ada data untuk ditampilkan.</p>';
+        document.getElementById('chartPerKelas').parentElement.innerHTML = '<p class="text-center text-muted m-auto">Tidak ada data.</p>';
+    }
+
+    if(dataKamarKebersihan.labels.length > 0) {
+        new Chart(document.getElementById('chartPerKamarKebersihan'), { type: 'doughnut', data: { labels: dataKamarKebersihan.labels, datasets: [{ data: dataKamarKebersihan.data, backgroundColor: generateDistinctColors(dataKamarKebersihan.labels.length) }] }, options: doughnutChartOptions });
+    } else {
+        document.getElementById('chartPerKamarKebersihan').parentElement.innerHTML = '<p class="text-center text-muted m-auto">Tidak ada data.</p>';
     }
     
     if(dataTren.labels.length > 0) {
@@ -287,7 +282,7 @@ document.addEventListener('DOMContentLoaded', function () {
             },
             options: { 
                 responsive: true,
-                maintainAspectRatio: false, // Penting untuk custom container height
+                maintainAspectRatio: false,
                 scales: { 
                     y: { beginAtZero: true, ticks: { precision: 0 } } 
                 }, 
@@ -297,7 +292,7 @@ document.addEventListener('DOMContentLoaded', function () {
             }
         });
     } else {
-        document.getElementById('chartTrenPelanggaran').parentElement.parentElement.innerHTML = '<p class="text-center text-muted">Tidak ada data tren untuk ditampilkan.</p>';
+        document.getElementById('chartTrenPelanggaran').parentElement.parentElement.innerHTML = '<p class="text-center text-muted m-auto">Tidak ada data tren.</p>';
     }
 });
 </script>
