@@ -12,54 +12,60 @@ $stmt_meta->execute();
 $meta = $stmt_meta->get_result()->fetch_assoc();
 if (!$meta) die('Arsip tidak ditemukan');
 
+// ===============================================
+// === BAGIAN INI YANG DIPERBAIKI ===
+// ===============================================
+
 // 1. Total Pelanggaran (Umum & Kebersihan)
 $stmt_total_umum = $conn->prepare("SELECT COUNT(*) as total FROM arsip_data_pelanggaran WHERE arsip_id = ? AND tipe = 'Umum'");
 $stmt_total_umum->bind_param("i", $arsip_id);
 $stmt_total_umum->execute();
 $total_umum = $stmt_total_umum->get_result()->fetch_assoc()['total'];
 
-$stmt_total_kebersihan = $conn->prepare("SELECT COUNT(*) as total FROM arsip_data_pelanggaran WHERE arsip_id = ? AND tipe = 'Kebersihan'");
+// REVISI: Query ini sekarang nunjuk ke tabel yang benar
+$stmt_total_kebersihan = $conn->prepare("SELECT COUNT(*) as total FROM arsip_data_pelanggaran_kebersihan WHERE arsip_id = ?");
 $stmt_total_kebersihan->bind_param("i", $arsip_id);
 $stmt_total_kebersihan->execute();
 $total_kebersihan = $stmt_total_kebersihan->get_result()->fetch_assoc()['total'];
 $total_pelanggaran = $total_umum + $total_kebersihan;
 
-// 2. Top 10 Santri berdasarkan POIN YANG DIARSIPKAN
+// 2. Top 10 Santri (tidak berubah)
 $stmt_santri = $conn->prepare("SELECT santri_nama, total_poin_saat_arsip FROM arsip_data_santri WHERE arsip_id = ? AND total_poin_saat_arsip > 0 ORDER BY total_poin_saat_arsip DESC LIMIT 10");
 $stmt_santri->bind_param("i", $arsip_id);
 $stmt_santri->execute();
 $q_santri = $stmt_santri->get_result();
 
-// 3. Komposisi Jenis Pelanggaran dari arsip
+// 3. Komposisi Jenis Pelanggaran (tidak berubah)
 $stmt_jenis = $conn->prepare("SELECT jenis_pelanggaran_nama, COUNT(*) as total FROM arsip_data_pelanggaran WHERE arsip_id = ? GROUP BY jenis_pelanggaran_nama ORDER BY total DESC");
 $stmt_jenis->bind_param("i", $arsip_id);
 $stmt_jenis->execute();
 $data_jenis_pelanggaran = $stmt_jenis->get_result()->fetch_all(MYSQLI_ASSOC);
 $total_semua_jenis = array_sum(array_column($data_jenis_pelanggaran, 'total'));
 
-// 4. Sebaran per Bagian dari arsip
+// 4. Sebaran per Bagian (tidak berubah)
 $stmt_bagian = $conn->prepare("SELECT bagian, COUNT(*) AS total FROM arsip_data_pelanggaran WHERE arsip_id = ? AND tipe = 'Umum' GROUP BY bagian ORDER BY total DESC");
 $stmt_bagian->bind_param("i", $arsip_id);
 $stmt_bagian->execute();
 $data_per_bagian = $stmt_bagian->get_result()->fetch_all(MYSQLI_ASSOC);
 $json_per_bagian = json_encode(['labels' => array_column($data_per_bagian, 'bagian'), 'data' => array_column($data_per_bagian, 'total')]);
 
-// 5. Sebaran per Kelas dari arsip (hanya tipe 'Umum')
+// 5. Sebaran per Kelas (tidak berubah)
 $stmt_kelas = $conn->prepare("SELECT santri_kelas, COUNT(*) AS total FROM arsip_data_pelanggaran WHERE arsip_id = ? AND tipe = 'Umum' AND santri_kelas IS NOT NULL AND santri_kelas != 'N/A' GROUP BY santri_kelas ORDER BY total DESC");
 $stmt_kelas->bind_param("i", $arsip_id);
 $stmt_kelas->execute();
 $data_per_kelas = $stmt_kelas->get_result()->fetch_all(MYSQLI_ASSOC);
 $json_per_kelas = json_encode(['labels' => array_column($data_per_kelas, 'santri_kelas'), 'data' => array_column($data_per_kelas, 'total')]);
 
-// 6. Sebaran per Kamar dari arsip (hanya tipe 'Kebersihan')
-$stmt_kamar_kebersihan = $conn->prepare("SELECT santri_kamar AS kamar, COUNT(*) AS total FROM arsip_data_pelanggaran WHERE arsip_id = ? AND tipe = 'Kebersihan' AND santri_kamar IS NOT NULL AND santri_kamar != '' GROUP BY santri_kamar ORDER BY total DESC");
+// REVISI: Query ini sekarang nunjuk ke tabel yang benar
+// 6. Sebaran per Kamar (hanya tipe 'Kebersihan')
+$stmt_kamar_kebersihan = $conn->prepare("SELECT kamar, COUNT(*) AS total FROM arsip_data_pelanggaran_kebersihan WHERE arsip_id = ? AND kamar IS NOT NULL AND kamar != '' GROUP BY kamar ORDER BY total DESC");
 $stmt_kamar_kebersihan->bind_param("i", $arsip_id);
 $stmt_kamar_kebersihan->execute();
 $data_per_kamar_kebersihan = $stmt_kamar_kebersihan->get_result()->fetch_all(MYSQLI_ASSOC);
 $labels_kamar = array_map(fn($item) => 'Kamar ' . $item['kamar'], $data_per_kamar_kebersihan);
 $json_per_kamar_kebersihan = json_encode(['labels' => $labels_kamar, 'data' => array_column($data_per_kamar_kebersihan, 'total')]);
 
-// 7. Tren Harian SELAMA PERIODE ARSIP
+// 7. Tren Harian (tidak berubah)
 $stmt_tren = $conn->prepare("SELECT DATE(tanggal) as tanggal_harian, COUNT(*) as total FROM arsip_data_pelanggaran WHERE arsip_id = ? GROUP BY DATE(tanggal) ORDER BY tanggal_harian ASC");
 $stmt_tren->bind_param("i", $arsip_id);
 $stmt_tren->execute();
@@ -71,7 +77,6 @@ $json_tren_harian = json_encode([
 ?>
 
 <style>
-    /* CSS lu udah oke banget, nggak perlu diubah */
     :root { --primary: #4f46e5; --primary-light: #e0e7ff; --secondary: #10b981; --accent: #ef4444; --text-dark: #111827; --text-light: #6b7280; --bg-light: #f9fafb; --border-color: #e5e7eb; --card-bg: #ffffff; --card-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05), 0 2px 4px -2px rgba(0, 0, 0, 0.05); --hover-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.07), 0 4px 6px -4px rgba(0, 0, 0, 0.07); } 
     body { background-color: var(--bg-light); color: var(--text-dark); font-family: 'Poppins', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif; } 
     .dashboard-header { background-color: var(--card-bg); color: var(--text-dark); padding: 25px; border-radius: 16px; margin-bottom: 25px; border: 1px solid var(--border-color); } 
@@ -208,7 +213,9 @@ $json_tren_harian = json_encode([
         </div>
     </div>
 
-</div> <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+</div> 
+
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 <script>
 document.addEventListener('DOMContentLoaded', function () {
     const dataBagian = <?= $json_per_bagian ?>;
