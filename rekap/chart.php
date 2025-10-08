@@ -16,6 +16,7 @@ $stmt_total1 = $conn->prepare("SELECT COUNT(*) as total FROM pelanggaran WHERE t
 $stmt_total1->bind_param("ss", $tgl_mulai, $tgl_selesai);
 $stmt_total1->execute();
 $total1 = $stmt_total1->get_result()->fetch_assoc()['total'];
+
 $stmt_total2 = $conn->prepare("SELECT COUNT(*) as total FROM pelanggaran_kebersihan WHERE tanggal >= ? AND tanggal <= ?");
 $stmt_total2->bind_param("ss", $tgl_mulai, $tgl_selesai);
 $stmt_total2->execute();
@@ -51,10 +52,13 @@ $data_per_kamar = $stmt_kamar->get_result()->fetch_all(MYSQLI_ASSOC);
 $labels_kamar = array_map(fn($item) => "Kamar " . $item['kamar'], $data_per_kamar);
 $json_per_kamar = json_encode(['labels' => $labels_kamar, 'data' => array_column($data_per_kamar, 'total')]);
 
-// 6. DATA SEBARAN PER BAGIAN 
-// =================================================================
-// INI BAGIAN YANG HILANG & DITAMBAHKAN KEMBALI
-// =================================================================
+
+// ==========================================================
+// === BAGIAN INI DI-UPGRADE UNTUK MENAMBAHKAN DATA KEBERSIHAN ===
+// ==========================================================
+
+// 6. DATA SEBARAN PER BAGIAN
+// Step 1: Ambil data bagian dari pelanggaran umum
 $stmt_bagian = $conn->prepare("
     SELECT jp.bagian, COUNT(p.id) AS total 
     FROM pelanggaran p 
@@ -63,13 +67,21 @@ $stmt_bagian = $conn->prepare("
     GROUP BY jp.bagian 
     ORDER BY total DESC
 ");
-// =================================================================
-
-// Baris ke-7 (sekarang) yang error tadi, sekarang jadi valid
 $stmt_bagian->bind_param("ss", $tgl_mulai, $tgl_selesai);
 $stmt_bagian->execute();
 $data_per_bagian = $stmt_bagian->get_result()->fetch_all(MYSQLI_ASSOC);
+
+// Step 2: "Suntik" data total kebersihan dari variabel $total2
+if ($total2 > 0) {
+    $data_per_bagian[] = ['bagian' => 'Kebersihan', 'total' => $total2];
+}
+
+// Step 3: (Opsional tapi bagus) Urutkan ulang datanya biar yang paling banyak tetap di atas
+usort($data_per_bagian, fn($a, $b) => $b['total'] <=> $a['total']);
+
+// Step 4: Baru buat JSON dari data yang sudah digabung dan diurutkan
 $json_per_bagian = json_encode(['labels' => array_column($data_per_bagian, 'bagian'), 'data' => array_column($data_per_bagian, 'total')]);
+
 ?>
 
 <style>
