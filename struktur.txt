@@ -4,6 +4,12 @@
 │    ├──index.php
 │    ├──procees.php
 │    ├──view.php
+│    ├──arsip_kebersihan.php
+│    ├──arsip_pelanggaran.php
+│    ├──arsip_santri.php
+│    ├──detail-pelanggaran.php
+│    ├──detail-kamar.php
+│    ├──create.php
 ├──assets
 │    └──logo.png
 ├──eksekusi/

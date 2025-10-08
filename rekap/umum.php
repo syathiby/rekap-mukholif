@@ -10,13 +10,14 @@ $periode_aktif = mysqli_fetch_assoc($q_periode)['nilai'] ?? date('Y-m-d', strtot
 
 // Ambil filter dari URL
 $filter_kamar = $_GET['kamar'] ?? null;
+$filter_kelas = $_GET['kelas'] ?? null;
 $filter_bagian = $_GET['bagian'] ?? null;
 $filter_kategori = $_GET['kategori'] ?? null;
-$filter_jp = $_GET['jenis_pelanggaran'] ?? null; // ✅ PERUBAHAN: Ganti filter nama jadi jenis pelanggaran
+$filter_jp = $_GET['jenis_pelanggaran'] ?? null;
 $start_date = $_GET['start_date'] ?? $periode_aktif;
 $end_date = $_GET['end_date'] ?? date("Y-m-d");
 
-// ✅ PERUBAHAN: Query untuk filter dropdown sekarang jadi dinamis berdasarkan rentang tanggal
+// Query untuk filter dropdown dinamis berdasarkan rentang tanggal
 $params_for_filters = [$start_date, $end_date];
 $types_for_filters = "ss";
 
@@ -34,15 +35,18 @@ $kategori_stmt->bind_param($types_for_filters, ...$params_for_filters);
 $kategori_stmt->execute();
 $kategori_result = $kategori_stmt->get_result();
 
-// ✅ TAMBAHAN: Ambil daftar Jenis Pelanggaran yang ADA di periode ini
+// Ambil daftar Jenis Pelanggaran yang ADA di periode ini
 $jp_sql = "SELECT DISTINCT jp.id, jp.nama_pelanggaran FROM pelanggaran p JOIN jenis_pelanggaran jp ON p.jenis_pelanggaran_id = jp.id WHERE DATE(p.tanggal) BETWEEN ? AND ? ORDER BY jp.nama_pelanggaran ASC";
 $jp_stmt = $conn->prepare($jp_sql);
 $jp_stmt->bind_param($types_for_filters, ...$params_for_filters);
 $jp_stmt->execute();
 $jp_result = $jp_stmt->get_result();
 
-// Ambil daftar Kamar (ini tetap statis karena semua kamar harus muncul)
+// Ambil daftar Kamar (statis)
 $kamars_result = mysqli_query($conn, "SELECT DISTINCT kamar FROM santri WHERE kamar IS NOT NULL AND kamar != '' ORDER BY CAST(REGEXP_REPLACE(kamar, '[^0-9]', '') AS UNSIGNED) ASC, REGEXP_REPLACE(kamar, '[0-9]', '') ASC");
+
+// Ambil daftar Kelas (statis)
+$kelas_result = mysqli_query($conn, "SELECT DISTINCT CAST(kelas AS UNSIGNED) AS kelas FROM santri WHERE kelas IS NOT NULL AND kelas != '' ORDER BY kelas ASC");
 
 
 // --- QUERY UTAMA ---
@@ -70,7 +74,7 @@ LEFT JOIN (
 $params = [$start_date, $end_date];
 $types = "ss";
 
-// ✅ PERUBAHAN: Terapkan filter jenis pelanggaran di dalam subquery
+// Terapkan filter di dalam subquery
 if ($filter_jp) {
     $sql .= " AND p.jenis_pelanggaran_id = ?";
     $params[] = $filter_jp;
@@ -93,15 +97,19 @@ $sql .= "
 WHERE 1=1
 ";
 
-// Terapkan filter kamar di query utama
+// Terapkan filter kamar & kelas di query utama
 if ($filter_kamar) {
     $sql .= " AND s.kamar = ?";
     $params[] = $filter_kamar;
     $types .= "s";
 }
+if ($filter_kelas) {
+    $sql .= " AND s.kelas = ?";
+    $params[] = $filter_kelas;
+    $types .= "s";
+}
 
 // Logika filter baru yang lebih tegas
-// ✅ PERUBAHAN: Logika diperbarui untuk menyertakan filter jenis pelanggaran
 if (!empty($filter_bagian) || !empty($filter_kategori) || !empty($filter_jp)) {
     $sql .= " AND sub.pelanggaran_periode > 0";
 } else {
@@ -122,6 +130,7 @@ $query = $stmt->get_result();
 ?>
 
 <style>
+    /* CSS kamu tetap sama, tidak ada perubahan */
     :root {
         --primary: #4f46e5; --primary-light: #e0e7ff; --primary-dark: #4338ca;
         --secondary: #64748b; --light-bg: #f8fafc; --card-bg: #ffffff;
@@ -131,9 +140,6 @@ $query = $stmt->get_result();
     body { background-color: var(--light-bg); font-family: 'Poppins', sans-serif; }
     .card { background-color: var(--card-bg); border: 1px solid var(--border-color); border-radius: 0.75rem; box-shadow: 0 1px 3px 0 rgb(0 0 0 / 0.05); }
     .page-title { color: var(--text-dark); font-weight: 700; }
-    .kamar-nav a { padding: 0.5rem 1rem; border-radius: 9999px; text-decoration: none; color: var(--secondary); font-weight: 500; transition: all 0.2s; }
-    .kamar-nav a:hover { background-color: var(--primary-light); color: var(--primary-dark); }
-    .kamar-nav .active { background-color: var(--primary); color: white; }
     .table th { background-color: var(--light-bg); color: var(--text-light); text-transform: uppercase; font-size: 0.75rem; letter-spacing: 0.05em; }
     .table tbody td { vertical-align: middle; padding-top: 1rem; padding-bottom: 1rem; }
     .rank-icon { font-size: 1.5rem; }
@@ -149,11 +155,10 @@ $query = $stmt->get_result();
 <div class="container py-4">
     <h1 class="page-title mb-4"><i class="fas fa-list-alt me-3"></i>Rekapitulasi Pelanggaran Umum</h1>
 
-    <!-- ✅ PERUBAHAN: Card Filter dengan layout dan input baru -->
     <div class="card mb-4">
         <div class="card-body">
             <h5 class="card-title fw-bold mb-3"><i class="fas fa-filter me-2"></i>Filter Data</h5>
-            <form method="get">
+            <form method="get" id="filterForm">
                 <div class="row g-3">
                     <div class="col-lg-3 col-md-6">
                         <label for="start_date" class="form-label">Dari Tanggal</label>
@@ -164,65 +169,69 @@ $query = $stmt->get_result();
                         <input type="date" class="form-control" name="end_date" id="end_date" value="<?= htmlspecialchars($end_date) ?>">
                     </div>
                     <div class="col-lg-3 col-md-6">
+                        <label for="kelas" class="form-label">Kelas</label>
+                        <select name="kelas" id="kelas" class="form-select">
+                            <option value="">Semua Kelas</option>
+                            <?php mysqli_data_seek($kelas_result, 0); while ($k = mysqli_fetch_assoc($kelas_result)): ?>
+                            <option value="<?= htmlspecialchars($k['kelas']) ?>" <?= ($filter_kelas == $k['kelas']) ? 'selected' : '' ?>>
+                                <?= htmlspecialchars($k['kelas']) ?>
+                            </option>
+                            <?php endwhile; ?>
+                        </select>
+                    </div>
+                    
+                    <div class="col-lg-3 col-md-6">
+                        <label for="kamar" class="form-label">Kamar</label>
+                        <select name="kamar" id="kamar" class="form-select">
+                            <option value="">Semua Kamar</option>
+                            <?php mysqli_data_seek($kamars_result, 0); while ($k = mysqli_fetch_assoc($kamars_result)): ?>
+                            <option value="<?= htmlspecialchars($k['kamar']) ?>" <?= ($filter_kamar == $k['kamar']) ? 'selected' : '' ?>>
+                                <?= htmlspecialchars($k['kamar']) ?>
+                            </option>
+                            <?php endwhile; ?>
+                        </select>
+                    </div>
+
+                    <div class="col-lg-4 col-md-6">
                         <label for="bagian" class="form-label">Bagian</label>
                         <select name="bagian" id="bagian" class="form-select">
-                            <option value="">Semua</option>
-                            <?php while ($b = mysqli_fetch_assoc($bagian_result)): ?>
+                            <option value="">Semua Bagian</option>
+                            <?php mysqli_data_seek($bagian_result, 0); while ($b = mysqli_fetch_assoc($bagian_result)): ?>
                             <option value="<?= htmlspecialchars($b['bagian']) ?>" <?= ($filter_bagian == $b['bagian']) ? 'selected' : '' ?>>
                                 <?= htmlspecialchars($b['bagian']) ?>
                             </option>
                             <?php endwhile; ?>
                         </select>
                     </div>
-                    <div class="col-lg-3 col-md-6">
+                    <div class="col-lg-4 col-md-6">
                         <label for="kategori" class="form-label">Kategori</label>
                         <select name="kategori" id="kategori" class="form-select">
-                            <option value="">Semua</option>
-                            <?php while ($k = mysqli_fetch_assoc($kategori_result)): ?>
+                            <option value="">Semua Kategori</option>
+                            <?php mysqli_data_seek($kategori_result, 0); while ($k = mysqli_fetch_assoc($kategori_result)): ?>
                             <option value="<?= htmlspecialchars($k['kategori']) ?>" <?= ($filter_kategori == $k['kategori']) ? 'selected' : '' ?>>
                                 <?= htmlspecialchars($k['kategori']) ?>
                             </option>
                             <?php endwhile; ?>
                         </select>
                     </div>
-                    <div class="col-lg-8">
-                        <label for="jenis_pelanggaran" class="form-label">Cari Jenis Pelanggaran Spesifik</label>
+                    <div class="col-lg-4 col-md-12">
+                        <label for="jenis_pelanggaran" class="form-label">Jenis Pelanggaran</label>
                         <select name="jenis_pelanggaran" id="jenis_pelanggaran" class="form-select">
-                            <option value="">-- Semua Pelanggaran di Periode Ini --</option>
-                            <?php while ($jp = mysqli_fetch_assoc($jp_result)): ?>
+                            <option value="">Semua Pelanggaran</option>
+                            <?php mysqli_data_seek($jp_result, 0); while ($jp = mysqli_fetch_assoc($jp_result)): ?>
                             <option value="<?= $jp['id'] ?>" <?= ($filter_jp == $jp['id']) ? 'selected' : '' ?>>
                                 <?= htmlspecialchars($jp['nama_pelanggaran']) ?>
                             </option>
                             <?php endwhile; ?>
                         </select>
                     </div>
-                    <div class="col-lg-4 d-flex align-items-end gap-2">
-                        <button type="submit" class="btn btn-primary w-100"><i class="fas fa-search me-1"></i>Cari</button>
-                        <a href="umum.php" class="btn btn-secondary" title="Reset Filter"><i class="fas fa-sync-alt"></i></a>
+
                     </div>
-                </div>
-                <?php if ($filter_kamar): ?><input type="hidden" name="kamar" value="<?= htmlspecialchars($filter_kamar) ?>"><?php endif; ?>
             </form>
             
-            <hr class="my-4">
-
-            <div class="kamar-nav d-flex flex-wrap gap-2">
-                <?php
-                    // ✅ PERUBAHAN: Link filter kamar sekarang membawa parameter jenis pelanggaran
-                    $base_link_params = "start_date=$start_date&end_date=$end_date"
-                                        . "&jenis_pelanggaran=" . urlencode($filter_jp ?? '')
-                                        . "&bagian=" . urlencode($filter_bagian ?? '') 
-                                        . "&kategori=" . urlencode($filter_kategori ?? '');
-                ?>
-                <a href="?<?= $base_link_params ?>" class="<?= !$filter_kamar ? 'active' : '' ?>">Semua Kamar</a>
-                <?php mysqli_data_seek($kamars_result, 0); while ($k = mysqli_fetch_assoc($kamars_result)): ?>
-                    <a href="?kamar=<?= urlencode($k['kamar']) ?>&<?= $base_link_params ?>" class="<?= ($filter_kamar == $k['kamar']) ? 'active' : '' ?>"><?= htmlspecialchars($k['kamar']) ?></a>
-                <?php endwhile; ?>
             </div>
-        </div>
     </div>
 
-    <!-- Tabel Hasil -->
     <div class="card">
         <div class="card-body table-responsive">
             <table class="table table-hover">
@@ -260,9 +269,9 @@ $query = $stmt->get_result();
                             </td>
                             <td class="text-center">
                                 <?php
-                                    // ✅ PERUBAHAN: Link detail sekarang membawa parameter jenis pelanggaran
                                     $detail_link = "detail.php?id={$row['id']}&start_date=$start_date&end_date=$end_date"
                                                    . "&kamar=" . urlencode($filter_kamar ?? '')
+                                                   . "&kelas=" . urlencode($filter_kelas ?? '')
                                                    . "&jenis_pelanggaran=" . urlencode($filter_jp ?? '')
                                                    . "&bagian=" . urlencode($filter_bagian ?? '')
                                                    . "&kategori=" . urlencode($filter_kategori ?? '');
@@ -277,5 +286,23 @@ $query = $stmt->get_result();
         </div>
     </div>
 </div>
+
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        // Ambil form filternya
+        const filterForm = document.getElementById('filterForm');
+        
+        // Ambil semua elemen input dan select di dalam form
+        const filterInputs = filterForm.querySelectorAll('select, input[type="date"]');
+
+        // Tambahkan 'event listener' ke setiap elemen
+        filterInputs.forEach(function(input) {
+            input.addEventListener('change', function() {
+                // Saat ada perubahan (misal: pilih kelas baru), langsung submit formnya
+                filterForm.submit();
+            });
+        });
+    });
+</script>
 
 <?php require_once __DIR__ . '/../footer.php'; ?>
