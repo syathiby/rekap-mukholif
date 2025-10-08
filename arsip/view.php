@@ -1,9 +1,7 @@
-<?php 
-require_once __DIR__ . '/../header.php';
-guard('arsip_manage'); 
-?>
-
 <?php
+require_once __DIR__ . '/../header.php';
+// Ganti guardnya, karena ini halaman view, bukan manage
+guard('arsip_view');
 
 $arsip_id = (int)($_GET['id'] ?? 0);
 if ($arsip_id < 1) die('Arsip tidak ditemukan');
@@ -15,239 +13,293 @@ $stmt_meta->execute();
 $meta = $stmt_meta->get_result()->fetch_assoc();
 if (!$meta) die('Arsip tidak ditemukan');
 
-// Ambil filter dari URL
-$filter_bagian = $_GET['bagian'] ?? 'semua';
-$filter_kamar = $_GET['kamar'] ?? 'semua';
+// ===============================================
+// === SEMUA QUERY MENGAMBIL DATA DARI ARSIP ===
+// ===============================================
 
-// Ambil SEMUA bagian/kategori unik yang ada di arsip ini untuk filter
-$stmt_bagian = $conn->prepare("SELECT DISTINCT bagian FROM arsip_data_pelanggaran WHERE arsip_id = ? ORDER BY bagian ASC");
-$stmt_bagian->bind_param('i', $arsip_id);
+// 1. Total Pelanggaran (Umum & Kebersihan)
+$stmt_total_umum = $conn->prepare("SELECT COUNT(*) as total FROM arsip_data_pelanggaran WHERE arsip_id = ? AND tipe = 'Umum'");
+$stmt_total_umum->bind_param("i", $arsip_id);
+$stmt_total_umum->execute();
+$total_umum = $stmt_total_umum->get_result()->fetch_assoc()['total'];
+
+$stmt_total_kebersihan = $conn->prepare("SELECT COUNT(*) as total FROM arsip_data_pelanggaran WHERE arsip_id = ? AND tipe = 'Kebersihan'");
+$stmt_total_kebersihan->bind_param("i", $arsip_id);
+$stmt_total_kebersihan->execute();
+$total_kebersihan = $stmt_total_kebersihan->get_result()->fetch_assoc()['total'];
+$total_pelanggaran = $total_umum + $total_kebersihan;
+
+// 2. Top 10 Santri berdasarkan POIN YANG DIARSIPKAN
+$stmt_santri = $conn->prepare("SELECT santri_nama, total_poin_saat_arsip FROM arsip_data_santri WHERE arsip_id = ? AND total_poin_saat_arsip > 0 ORDER BY total_poin_saat_arsip DESC LIMIT 10");
+$stmt_santri->bind_param("i", $arsip_id);
+$stmt_santri->execute();
+$q_santri = $stmt_santri->get_result();
+
+// 3. Komposisi Jenis Pelanggaran dari arsip
+$stmt_jenis = $conn->prepare("SELECT jenis_pelanggaran_nama, COUNT(*) as total FROM arsip_data_pelanggaran WHERE arsip_id = ? GROUP BY jenis_pelanggaran_nama ORDER BY total DESC");
+$stmt_jenis->bind_param("i", $arsip_id);
+$stmt_jenis->execute();
+$data_jenis_pelanggaran = $stmt_jenis->get_result()->fetch_all(MYSQLI_ASSOC);
+$total_semua_jenis = array_sum(array_column($data_jenis_pelanggaran, 'total'));
+
+// 4. Sebaran per Bagian dari arsip
+$stmt_bagian = $conn->prepare("SELECT bagian, COUNT(*) AS total FROM arsip_data_pelanggaran WHERE arsip_id = ? GROUP BY bagian ORDER BY total DESC");
+$stmt_bagian->bind_param("i", $arsip_id);
 $stmt_bagian->execute();
-$bagian_result = $stmt_bagian->get_result();
+$data_per_bagian = $stmt_bagian->get_result()->fetch_all(MYSQLI_ASSOC);
+$json_per_bagian = json_encode(['labels' => array_column($data_per_bagian, 'bagian'), 'data' => array_column($data_per_bagian, 'total')]);
 
-// Ambil SEMUA kamar unik (hanya untuk tipe umum)
-$stmt_kamar = $conn->prepare("SELECT DISTINCT santri_kamar FROM arsip_data_pelanggaran WHERE arsip_id = ? AND tipe = 'Umum' AND santri_kamar IS NOT NULL AND santri_kamar != '' ORDER BY CAST(santri_kamar AS UNSIGNED) ASC");
-$stmt_kamar->bind_param('i', $arsip_id);
-$stmt_kamar->execute();
-$kamar_result = $stmt_kamar->get_result();
+// 5. Sebaran per Kelas dari arsip (hanya tipe 'Umum')
+$stmt_kelas = $conn->prepare("SELECT santri_kelas, COUNT(*) AS total FROM arsip_data_pelanggaran WHERE arsip_id = ? AND tipe = 'Umum' AND santri_kelas IS NOT NULL AND santri_kelas != 'N/A' GROUP BY santri_kelas ORDER BY total DESC");
+$stmt_kelas->bind_param("i", $arsip_id);
+$stmt_kelas->execute();
+$data_per_kelas = $stmt_kelas->get_result()->fetch_all(MYSQLI_ASSOC);
+$json_per_kelas = json_encode(['labels' => array_column($data_per_kelas, 'santri_kelas'), 'data' => array_column($data_per_kelas, 'total')]);
 
-
-// =======================================================
-// === QUERY DINAMIS BERDASARKAN FILTER ===
-// =======================================================
-
-// --- Query untuk Kartu Ringkasan (Top Santri & Jenis) ---
-$params_summary = [$arsip_id];
-$types_summary = "i";
-$where_summary_clause = ($filter_bagian !== 'semua') ? " AND bagian = ?" : "";
-if ($filter_bagian !== 'semua') {
-    $params_summary[] = $filter_bagian;
-    $types_summary .= "s";
-}
-
-// Tambahkan "AND santri_nama != 'N/A'" untuk memfilter data invalid
-$sql_top_santri = "SELECT santri_nama, COUNT(*) as total FROM arsip_data_pelanggaran WHERE arsip_id = ? AND tipe = 'Umum' AND santri_nama != 'N/A' $where_summary_clause GROUP BY santri_nama ORDER BY total DESC LIMIT 3";
-$stmt_summary_santri = $conn->prepare($sql_top_santri);
-$stmt_summary_santri->bind_param($types_summary, ...$params_summary);
-$stmt_summary_santri->execute();
-$top_santri = $stmt_summary_santri->get_result();
-
-$sql_top_jenis = "SELECT jenis_pelanggaran_nama, COUNT(*) as total FROM arsip_data_pelanggaran WHERE arsip_id = ? $where_summary_clause GROUP BY jenis_pelanggaran_nama ORDER BY total DESC LIMIT 3";
-$stmt_summary_jenis = $conn->prepare($sql_top_jenis);
-$stmt_summary_jenis->bind_param($types_summary, ...$params_summary);
-$stmt_summary_jenis->execute();
-$top_jenis = $stmt_summary_jenis->get_result();
-
-
-// --- Query untuk Tabel Utama ---
-$total_data_query = $conn->prepare("SELECT COUNT(*) as total FROM arsip_data_pelanggaran WHERE arsip_id = ?");
-$total_data_query->bind_param('i', $arsip_id);
-$total_data_query->execute();
-$total_data_terekam = $total_data_query->get_result()->fetch_assoc()['total'];
-
-if ($filter_bagian === 'Kebersihan') {
-    // Tampilan khusus rekap kebersihan per kamar
-    $sql_data = "SELECT santri_kamar, COUNT(*) as total FROM arsip_data_pelanggaran WHERE arsip_id = ? AND bagian = 'Kebersihan' GROUP BY santri_kamar ORDER BY total DESC";
-    $stmt_data = $conn->prepare($sql_data);
-    $stmt_data->bind_param('i', $arsip_id);
-} else {
-    // Tampilan detail untuk semua bagian lainnya
-    $sql_data = "SELECT * FROM arsip_data_pelanggaran WHERE arsip_id = ?";
-    $params_data = [$arsip_id];
-    $types_data = "i";
-
-    if ($filter_bagian !== 'semua') {
-        $sql_data .= " AND bagian = ?";
-        $params_data[] = $filter_bagian;
-        $types_data .= "s";
-    }
-    if ($filter_kamar !== 'semua') {
-        $sql_data .= " AND santri_kamar = ?";
-        $params_data[] = $filter_kamar;
-        $types_data .= "s";
-    }
-    $sql_data .= " ORDER BY tanggal DESC";
-    $stmt_data = $conn->prepare($sql_data);
-    $stmt_data->bind_param($types_data, ...$params_data);
-}
-
-$stmt_data->execute();
-$data_pelanggaran = $stmt_data->get_result();
-
+// 6. Tren Harian SELAMA PERIODE ARSIP
+$stmt_tren = $conn->prepare("SELECT DATE(tanggal) as tanggal_harian, COUNT(*) as total FROM arsip_data_pelanggaran WHERE arsip_id = ? GROUP BY DATE(tanggal) ORDER BY tanggal_harian ASC");
+$stmt_tren->bind_param("i", $arsip_id);
+$stmt_tren->execute();
+$data_tren = $stmt_tren->get_result()->fetch_all(MYSQLI_ASSOC);
+$json_tren_harian = json_encode([
+    'labels' => array_map(fn($item) => date('d M', strtotime($item['tanggal_harian'])), $data_tren),
+    'data' => array_column($data_tren, 'total')
+]);
 ?>
-<!DOCTYPE html>
-<html lang="id">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Detail Arsip: <?= htmlspecialchars($meta['judul']) ?></title>
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700&display=swap" rel="stylesheet">
-    <style>
-        :root {
-            --primary: #4f46e5; --primary-light: #e0e7ff; --primary-dark: #4338ca;
-            --danger: #ef4444; --warning: #f59e0b; --success: #10b981;
-            --secondary: #64748b; --light-bg: #f8fafc; --card-bg: #ffffff;
-            --border-color: #e2e8f0; --text-dark: #1e293b; --text-light: #64748b;
-        }
-        body { background-color: var(--light-bg); font-family: 'Poppins', sans-serif; color: var(--text-dark); }
-        .container { max-width: 1400px; margin: 0 auto; padding: 2rem 1rem; }
-        .card { background-color: var(--card-bg); border: 1px solid var(--border-color); border-radius: 0.75rem; box-shadow: 0 1px 3px 0 rgb(0 0 0 / 0.05); }
-        .page-header a { text-decoration: none; color: var(--secondary); font-weight: 500; }
-        .page-header a:hover { color: var(--primary); }
-        .page-title { font-size: 1.75rem; font-weight: 700; color: var(--text-dark); }
-        .summary-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 1.5rem; }
-        .summary-card h5 {
-            color: var(--text-light);
-            font-size: 0.9rem;
-            text-transform: uppercase;
-            margin-bottom: 0.75rem;
-            letter-spacing: 0.05em;
-        }
-        .summary-card .stat {
-            font-size: 4rem;
-            font-weight: 700;
-        }
-        .summary-card ul { list-style: none; padding: 0; margin: 0; }
-        .summary-card li { display: flex; justify-content: space-between; align-items: center; padding: 0.5rem 0; border-bottom: 1px dashed var(--border-color); }
-        .summary-card li:last-child { border-bottom: none; }
-        
-        .summary-card-highlight { background: linear-gradient(135deg, var(--primary), var(--primary-dark)); color: white; position: relative; overflow: hidden; }
-        .summary-card-highlight h5 { color: rgba(255,255,255,0.8); }
-        .summary-card-highlight .icon { font-size: 5rem; position: absolute; right: -20px; bottom: -20px; opacity: 0.15; transition: font-size 0.3s, right 0.3s; }
-        
-        .filter-nav { border-bottom: 1px solid var(--border-color); padding-bottom: 1rem; margin-bottom: 1.5rem; }
-        .filter-nav a { padding: 0.5rem 1rem; border: 1px solid var(--border-color); border-radius: 9999px; text-decoration: none; font-weight: 500; transition: all 0.2s; }
-        .filter-nav a { color: var(--secondary); }
-        .filter-nav a:hover { background-color: var(--primary-light); color: var(--primary-dark); border-color: var(--primary-light); }
-        .filter-nav .active { background-color: var(--primary); color: white; border-color: var(--primary); }
-        
-        .filter-nav-secondary { border-bottom: none; padding-bottom: 0; margin-bottom: 0; }
-        .filter-nav-secondary a { background-color: #f1f5f9; border-color: transparent; color: var(--secondary); }
-        .filter-nav-secondary a:hover { background-color: #e2e8f0; color: var(--text-dark); }
-        .filter-nav-secondary .active { background-color: var(--secondary); color: white; border-color: var(--secondary); }
 
-        table { width: 100%; border-collapse: collapse; }
-        th, td { padding: 1rem 1.25rem; text-align: left; border-bottom: 1px solid var(--border-color); vertical-align: middle; }
-        th { background-color: var(--light-bg); color: var(--text-light); text-transform: uppercase; font-size: 0.75rem; }
+<style>
+    :root { --primary: #4f46e5; --primary-light: #e0e7ff; --secondary: #10b981; --accent: #ef4444; --text-dark: #111827; --text-light: #6b7280; --bg-light: #f9fafb; --border-color: #e5e7eb; --card-bg: #ffffff; --card-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05), 0 2px 4px -2px rgba(0, 0, 0, 0.05); --hover-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.07), 0 4px 6px -4px rgba(0, 0, 0, 0.07); } 
+    body { background-color: var(--bg-light); color: var(--text-dark); font-family: 'Poppins', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif; } 
+    .dashboard-header { background-color: var(--card-bg); color: var(--text-dark); padding: 25px; border-radius: 16px; margin-bottom: 25px; border: 1px solid var(--border-color); } 
+    h2.dashboard-title { font-size: 24px; font-weight: 600; margin: 0 0 5px 0; display: flex; align-items: center; gap: 10px; } 
+    .dashboard-header p { color: var(--text-light); font-size: 15px; } 
+    .card.dashboard-card { background: var(--card-bg); border-radius: 16px; border: 1px solid var(--border-color); box-shadow: none; padding: 25px; display: flex; flex-direction: column; transition: border-color 0.3s ease, box-shadow 0.3s ease; } 
+    .card.dashboard-card:hover { border-color: var(--primary); box-shadow: var(--hover-shadow); } 
+    h3.card-title { font-size: 18px; margin: 0 0 20px 0; color: var(--text-dark); font-weight: 600; padding-bottom: 0; border-bottom: none; display: flex; align-items: center; gap: 8px; } 
+    .stat-card { text-align: center; } 
+    .stat-card .icon { font-size: 24px; color: var(--primary); background-color: var(--primary-light); width: 50px; height: 50px; border-radius: 50%; display: inline-flex; align-items: center; justify-content: center; margin-bottom: 15px; } 
+    .stat-card .number { font-size: 32px; font-weight: 700; color: var(--text-dark); margin-bottom: 5px; } 
+    .stat-card h4 { font-size: 15px; color: var(--text-light); margin: 0; font-weight: 500; } 
+    .table-container { overflow-x: auto; flex-grow: 1; } 
+    table { width: 100%; border-collapse: collapse; } 
+    th, td { padding: 14px 10px; text-align: left; border-bottom: 1px solid var(--border-color); white-space: nowrap; color: var(--text-dark); } 
+    th { background-color: transparent; font-weight: 600; color: var(--text-light); font-size: 13px; text-transform: uppercase; letter-spacing: 0.5px; } 
+    tr:last-child td { border-bottom: none; } 
+    .badge { padding: 4px 12px; border-radius: 20px; font-size: 12px; font-weight: 600; color: var(--accent); background-color: #fee2e2; } 
+    .btn-group { display: flex; flex-wrap: wrap; gap: 1rem; margin-top: 1.5rem; } 
+    .btn-detail { background-color: var(--primary); color: white; padding: 0.75rem 1.5rem; text-decoration: none; border-radius: 10px; font-weight: 600; transition: all 0.2s; display: inline-flex; align-items: center; justify-content: center; gap: 0.5rem; text-align: center; } 
+    .btn-detail:hover { background-color: #4338ca; box-shadow: var(--hover-shadow); } 
+    .btn-detail.secondary { background-color: #10b981; } 
+    .btn-detail.secondary:hover { background-color: #059669; }
 
-        @media (max-width: 768px) {
-            .container { padding: 1.5rem 0.75rem; }
-            .page-title { font-size: 1.5rem; }
-            .summary-grid { gap: 1rem; }
-            .summary-card .stat {
-                font-size: 3rem;
-            }
-            .summary-card-highlight .icon { font-size: 4rem; right: -15px; bottom: -15px; }
-            th, td { padding: 0.75rem; }
-        }
-    </style>
-</head>
-<body>
-<div class="container">
-    <div class="page-header mb-4"><a href="index.php"><i class="fas fa-arrow-left me-2"></i> Kembali ke Daftar Arsip</a></div>
-    <h1 class="page-title mb-1"><?= htmlspecialchars($meta['judul']); ?></h1>
-    <p class="text-muted">Periode: <?= date('d M Y', strtotime($meta['tanggal_mulai'])); ?> - <?= date('d M Y', strtotime($meta['tanggal_selesai'])); ?></p>
-    
-    <div class="summary-grid my-4">
-        <div class="card summary-card-highlight"><div class="card-body"><i class="fas fa-database icon"></i><h5>Total Data Terekam</h5><p class="stat"><?= $total_data_terekam ?></p></div></div>
-        <div class="card summary-card"><div class="card-body"><h5>Top Santri Pelanggar</h5><ul>
-            <?php while($s = $top_santri->fetch_assoc()): ?>
-                <li><span><?= htmlspecialchars($s['santri_nama']) ?></span> <span class="badge bg-danger rounded-pill"><?= $s['total'] ?></span></li>
-            <?php endwhile; if($top_santri->num_rows == 0) echo "<li>Tidak ada data</li>"; ?>
-        </ul></div></div>
-        <div class="card summary-card"><div class="card-body"><h5>Top Kategori Pelanggaran</h5><ul>
-            <?php while($j = $top_jenis->fetch_assoc()): ?>
-                <li><span><?= htmlspecialchars($j['jenis_pelanggaran_nama']) ?></span> <span class="badge bg-warning text-dark rounded-pill"><?= $j['total'] ?></span></li>
-            <?php endwhile; if($top_jenis->num_rows == 0) echo "<li>Tidak ada data</li>"; ?>
-        </ul></div></div>
+    /* === PERBAIKAN CSS GRAFIK (v3) === */
+    .chart-container { 
+        position: relative; 
+        width: 100%;
+        flex-grow: 1;
+        /* DIUBAH: Kasih tinggi minimal biar chart donat & legendanya rapi */
+        min-height: 380px; 
+        display: flex;
+        align-items: center;
+        justify-content: center;
+    }
+
+    /* BARU: Kelas khusus buat card chart garis biar lebih tinggi & lega */
+    .chart-container.chart-container-tall {
+        min-height: 400px;
+    }
+
+    /* (HANYA UNTUK CHART GARIS) Wrapper untuk scroll horizontal */
+    .chart-scroll-container {
+        position: relative;
+        overflow-x: auto;
+        -webkit-overflow-scrolling: touch;
+        padding-bottom: 10px;
+        width: 100%;
+    }
+    .chart-scroll-container canvas {
+        min-width: 500px;
+    }
+</style>
+
+<div class="container-fluid mt-4 mb-5">
+    <div class="dashboard-header">
+        <div class="d-flex flex-wrap justify-content-between align-items-center gap-3">
+            <div>
+                <h2 class="dashboard-title"><i class="fa-solid fa-archive"></i> Statistik Arsip: <?= htmlspecialchars($meta['judul']) ?></h2>
+                <p style="margin: 0;">Ringkasan data untuk periode: <strong><?= date('d M Y', strtotime($meta['tanggal_mulai'])) ?></strong> sampai <strong><?= date('d M Y', strtotime($meta['tanggal_selesai'])) ?></strong></p>
+            </div>
+            <a href="index.php" class="btn btn-light flex-shrink-0"> &larr; Kembali</a>
+        </div>
+        <div class="btn-group">
+            <a href="arsip_pelanggaran.php?id=<?= $arsip_id ?>" class="btn-detail"><i class="fas fa-list"></i> Lihat Detail Pelanggaran</a>
+            <a href="arsip_santri.php?id=<?= $arsip_id ?>" class="btn-detail secondary"><i class="fas fa-users"></i> Lihat Rekap Poin Santri</a>
+        </div>
     </div>
 
-    <div class="card">
-        <div class="card-body">
-            <h5 class="fw-bold mb-3"><i class="fas fa-filter me-2"></i>Filter Data Arsip</h5>
-            <div class="filter-nav d-flex flex-wrap gap-2">
-                <a href="?id=<?= $arsip_id ?>&bagian=semua" class="<?= $filter_bagian == 'semua' ? 'active' : '' ?>">Semua Bagian</a>
-                <?php mysqli_data_seek($bagian_result, 0); while($b = $bagian_result->fetch_assoc()): ?>
-                    <a href="?id=<?= $arsip_id ?>&bagian=<?= urlencode($b['bagian']) ?>" class="<?= $filter_bagian == $b['bagian'] ? 'active' : '' ?>"><?= htmlspecialchars($b['bagian']) ?></a>
-                <?php endwhile; ?>
-            </div>
+    <div class="row g-4 mb-4">
+        <div class="col-lg-4 col-md-6">
+            <div class="card dashboard-card stat-card"><div class="icon"><i class="fa-solid fa-triangle-exclamation"></i></div><div class="number"><?= $total_pelanggaran ?></div><h4>Total Pelanggaran</h4></div>
+        </div>
+        <div class="col-lg-4 col-md-6">
+            <div class="card dashboard-card stat-card"><div class="icon"><i class="fa-solid fa-book"></i></div><div class="number"><?= $total_umum ?></div><h4>Pelanggaran Umum</h4></div>
+        </div>
+        <div class="col-lg-4 col-md-12">
+            <div class="card dashboard-card stat-card"><div class="icon"><i class="fa-solid fa-broom"></i></div><div class="number"><?= $total_kebersihan ?></div><h4>Pelanggaran Kebersihan</h4></div>
+        </div>
+    </div>
 
-            <?php if ($filter_bagian !== 'Kebersihan'): ?>
-            <div class="filter-nav filter-nav-secondary d-flex flex-wrap gap-2 mt-3">
-                <a href="?id=<?= $arsip_id ?>&bagian=<?= urlencode($filter_bagian) ?>&kamar=semua" class="<?= $filter_kamar == 'semua' ? 'active' : '' ?>">Semua Kamar</a>
-                <?php mysqli_data_seek($kamar_result, 0); while($k = $kamar_result->fetch_assoc()): ?>
-                    <a href="?id=<?= $arsip_id ?>&bagian=<?= urlencode($filter_bagian) ?>&kamar=<?= urlencode($k['santri_kamar']) ?>" class="<?= $filter_kamar == $k['santri_kamar'] ? 'active' : '' ?>">Kamar <?= htmlspecialchars($k['santri_kamar']) ?></a>
-                <?php endwhile; ?>
+    <div class="card dashboard-card mb-4">
+        <h3 class="card-title"><i class="fa-solid fa-chart-line"></i> Tren Pelanggaran Harian (Periode Arsip)</h3>
+        <div class="chart-container chart-container-tall">
+            <div class="chart-scroll-container">
+                <canvas id="chartTrenPelanggaran"></canvas>
             </div>
-            <?php endif; ?>
+        </div>
+    </div>
 
-            <div class="table-responsive mt-4">
-                <table>
-                    <?php if ($filter_bagian === 'Kebersihan'): ?>
-                        <thead><tr><th>#</th><th>Kamar</th><th class="text-center">Jumlah Pelanggaran</th></tr></thead>
-                    <?php else: ?>
-                        <thead><tr><th>Tanggal</th><th>Santri</th><th>Kelas/Kamar</th><th>Jenis Pelanggaran</th><th class="text-center">Bagian</th><th class="text-center">Poin</th></tr></thead>
-                    <?php endif; ?>
-                    
-                    <tbody>
-                        <?php if($data_pelanggaran->num_rows > 0): ?>
-                            <?php if ($filter_bagian === 'Kebersihan'): $no=1; ?>
-                                <?php while($row = $data_pelanggaran->fetch_assoc()): ?>
+    <div class="row g-4">
+        <div class="col-xl-6">
+            <div class="card dashboard-card h-100">
+                <h3 class="card-title"><i class="fa-solid fa-list-check"></i> Komposisi Jenis Pelanggaran</h3>
+                <div class="table-container">
+                    <table>
+                        <thead><tr><th>Jenis Pelanggaran</th><th class="text-center">Jumlah</th><th class="text-center">%</th></tr></thead>
+                        <tbody>
+                            <?php if (!empty($data_jenis_pelanggaran)): foreach ($data_jenis_pelanggaran as $row): ?>
                                 <tr>
-                                    <td><?= $no++; ?></td>
-                                    <td><strong>Kamar <?= htmlspecialchars($row['santri_kamar']) ?></strong></td>
-                                    <td class="text-center"><span class="badge bg-warning text-dark rounded-pill fs-6"><?= $row['total'] ?></span></td>
-                                </tr>
-                                <?php endwhile; ?>
-                            <?php else: ?>
-                                <?php while($row = $data_pelanggaran->fetch_assoc()): ?>
-                                <tr>
-                                    <td><?= date('d M Y, H:i', strtotime($row['tanggal'])); ?></td>
-                                    <?php if ($row['tipe'] === 'Kebersihan'): ?>
-                                        <td>-</td>
-                                        <td>Kamar <?= htmlspecialchars($row['santri_kamar']) ?></td>
-                                    <?php else: ?>
-                                        <td><?= htmlspecialchars($row['santri_nama']) ?></td>
-                                        <td><span class="d-block"><?= htmlspecialchars($row['santri_kelas']) ?></span><small class="text-muted">Kamar <?= htmlspecialchars($row['santri_kamar']) ?></small></td>
-                                    <?php endif; ?>
                                     <td><?= htmlspecialchars($row['jenis_pelanggaran_nama']) ?></td>
-                                    <td class="text-center"><span class="badge bg-secondary bg-opacity-10 text-secondary-emphasis rounded-pill"><?= htmlspecialchars($row['bagian']) ?></span></td>
-                                    <td class="text-center"><span class="fw-bold <?= $row['poin'] > 0 ? 'text-danger' : '' ?>"><?= $row['poin'] ?></span></td>
+                                    <td class="text-center"><?= $row['total'] ?></td>
+                                    <td class="text-center"><?= round(($total_semua_jenis > 0) ? ($row['total'] / $total_semua_jenis) * 100 : 0) ?>%</td>
                                 </tr>
-                                <?php endwhile; ?>
+                            <?php endforeach; else: ?>
+                                <tr><td colspan="3" class="text-center text-muted">Belum ada data.</td></tr>
                             <?php endif; ?>
-                        <?php else: ?>
-                            <?php $colspan = ($filter_bagian === 'Kebersihan') ? 3 : 6; ?>
-                            <tr><td colspan="<?= $colspan ?>" class="text-center p-5 text-muted">Tidak ada data untuk filter ini.</td></tr>
-                        <?php endif; ?>
-                    </tbody>
-                </table>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+        <div class="col-xl-6">
+             <div class="card dashboard-card h-100">
+                <h3 class="card-title"><i class="fa-solid fa-user-slash"></i> Top 10 Santri (Berdasarkan Poin Arsip)</h3>
+                <div class="table-container">
+                    <table>
+                        <thead><tr><th>Nama Santri</th><th class="text-center">Total Poin</th></tr></thead>
+                        <tbody>
+                            <?php if ($q_santri->num_rows > 0): while($row = $q_santri->fetch_assoc()): ?>
+                            <tr>
+                                <td><?= htmlspecialchars($row['santri_nama']) ?></td>
+                                <td class="text-center"><span class="badge"><?= $row['total_poin_saat_arsip'] ?></span></td>
+                            </tr>
+                            <?php endwhile; else: ?>
+                            <tr><td colspan="2" class="text-center text-muted">Tidak ada santri dengan poin.</td></tr>
+                            <?php endif; ?>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+        <div class="col-xl-6 mt-4">
+            <div class="card dashboard-card h-100">
+                <h3 class="card-title"><i class="fa-solid fa-tags"></i> Sebaran per Bagian</h3>
+                <div class="chart-container">
+                    <canvas id="chartPerBagian"></canvas>
+                </div>
+            </div>
+        </div>
+        <div class="col-xl-6 mt-4">
+            <div class="card dashboard-card h-100">
+                <h3 class="card-title"><i class="fa-solid fa-chalkboard-user"></i> Sebaran per Kelas</h3>
+                <div class="chart-container">
+                    <canvas id="chartPerKelas"></canvas>
+                </div>
             </div>
         </div>
     </div>
 </div>
 
-<?php include '../footer.php'; ?>
-</body>
-</html>
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script>
+document.addEventListener('DOMContentLoaded', function () {
+    const dataBagian = <?= $json_per_bagian ?>;
+    const dataKelas = <?= $json_per_kelas ?>;
+    const dataTren = <?= $json_tren_harian ?>;
+    
+    // Opsi dasar untuk doughnut charts
+    const doughnutChartOptions = { 
+        responsive: true, 
+        maintainAspectRatio: false, // Penting untuk custom container height
+        plugins: { 
+            legend: { 
+                position: 'bottom', 
+                labels: { padding: 15, font: { family: "'Poppins', sans-serif" }, usePointStyle: true, pointStyle: 'circle' } 
+            }, 
+            tooltip: { 
+                backgroundColor: 'rgba(17, 24, 39, 0.9)', 
+                titleFont: { family: "'Poppins', sans-serif" }, 
+                bodyFont: { family: "'Poppins', sans-serif" }, 
+                padding: 12, 
+                cornerRadius: 8 
+            } 
+        }, 
+        cutout: '60%' 
+    };
+
+    function generateDistinctColors(count) { 
+        const colors = []; const saturation = 70; const lightness = 55; 
+        if (count === 0) return colors; 
+        for (let i = 0; i < count; i++) { 
+            const hue = Math.floor((i * (360 / count))); 
+            colors.push(`hsl(${hue}, ${saturation}%, ${lightness}%)`); 
+        } 
+        return colors; 
+    }
+
+    if(dataBagian.labels.length > 0) {
+        new Chart(document.getElementById('chartPerBagian'), { type: 'doughnut', data: { labels: dataBagian.labels, datasets: [{ data: dataBagian.data, backgroundColor: generateDistinctColors(dataBagian.labels.length) }] }, options: doughnutChartOptions });
+    } else {
+        document.getElementById('chartPerBagian').parentElement.innerHTML = '<p class="text-center text-muted">Tidak ada data untuk ditampilkan.</p>';
+    }
+
+    if(dataKelas.labels.length > 0) {
+        new Chart(document.getElementById('chartPerKelas'), { type: 'doughnut', data: { labels: dataKelas.labels, datasets: [{ data: dataKelas.data, backgroundColor: generateDistinctColors(dataKelas.labels.length) }] }, options: doughnutChartOptions });
+    } else {
+        document.getElementById('chartPerKelas').parentElement.innerHTML = '<p class="text-center text-muted">Tidak ada data untuk ditampilkan.</p>';
+    }
+    
+    if(dataTren.labels.length > 0) {
+        new Chart(document.getElementById('chartTrenPelanggaran'), {
+            type: 'line',
+            data: { 
+                labels: dataTren.labels, 
+                datasets: [{ 
+                    label: 'Jumlah Pelanggaran', 
+                    data: dataTren.data, 
+                    backgroundColor: 'rgba(79, 70, 229, 0.1)', 
+                    borderColor: 'rgba(79, 70, 229, 1)', 
+                    borderWidth: 2, 
+                    pointBackgroundColor: 'rgba(79, 70, 229, 1)', 
+                    pointRadius: 4, 
+                    tension: 0.3, 
+                    fill: true 
+                }] 
+            },
+            options: { 
+                responsive: true,
+                maintainAspectRatio: false, // Penting untuk custom container height
+                scales: { 
+                    y: { beginAtZero: true, ticks: { precision: 0 } } 
+                }, 
+                plugins: { 
+                    legend: { display: false } 
+                } 
+            }
+        });
+    } else {
+        document.getElementById('chartTrenPelanggaran').parentElement.parentElement.innerHTML = '<p class="text-center text-muted">Tidak ada data tren untuk ditampilkan.</p>';
+    }
+});
+</script>
+
+<?php require_once __DIR__ . '/../footer.php'; ?>

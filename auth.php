@@ -138,4 +138,27 @@ function guard($permission = null) {
 
     // Kalau lolos semua, berarti aman. Lanjutkan!
 }
+
+// ... (kode-kode lain yang sudah ada di auth.php lu)
+
+// LETAKKAN KODE FUNGSI INI DI PALING BAWAH
+function display_flash_message() {
+    // Cek apakah ada pesan sukses di session
+    if (isset($_SESSION['success_message'])) {
+        // Tampilkan pesannya dengan style bootstrap alert-success
+        echo '<div class="alert alert-success mb-4" role="alert">' . htmlspecialchars($_SESSION['success_message']) . '</div>';
+        
+        // Hapus pesannya dari session biar nggak muncul lagi pas refresh
+        unset($_SESSION['success_message']);
+    }
+
+    // Cek apakah ada pesan error di session
+    if (isset($_SESSION['error_message'])) {
+        // Tampilkan pesannya dengan style bootstrap alert-danger
+        echo '<div class="alert alert-danger mb-4" role="alert">' . htmlspecialchars($_SESSION['error_message']) . '</div>';
+        
+        // Hapus pesannya dari session
+        unset($_SESSION['error_message']);
+    }
+}
 ?>
