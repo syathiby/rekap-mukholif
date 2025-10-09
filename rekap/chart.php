@@ -7,18 +7,22 @@ $q = mysqli_query($conn, "SELECT nilai FROM pengaturan WHERE nama = 'periode_akt
 $row = mysqli_fetch_assoc($q);
 $default_periode_aktif = $row['nilai'] ?? date('Y-m-d', strtotime('-1 year'));
 
-// Menangkap nilai filter tanggal dari URL
+// Ambil tanggal mulai dan selesai dari URL atau set default
 $tgl_mulai = $_GET['tgl_mulai'] ?? $default_periode_aktif;
 $tgl_selesai = $_GET['tgl_selesai'] ?? date('Y-m-d');
 
+// Siapin variabel baru untuk di dalam query SQL, biar aman
+$tgl_mulai_sql = $tgl_mulai . ' 00:00:00';
+$tgl_selesai_sql = $tgl_selesai . ' 23:59:59';
+
 // 1. Total Pelanggaran
 $stmt_total1 = $conn->prepare("SELECT COUNT(*) as total FROM pelanggaran WHERE tanggal >= ? AND tanggal <= ?");
-$stmt_total1->bind_param("ss", $tgl_mulai, $tgl_selesai);
+$stmt_total1->bind_param("ss", $tgl_mulai_sql, $tgl_selesai_sql);
 $stmt_total1->execute();
 $total1 = $stmt_total1->get_result()->fetch_assoc()['total'];
 
 $stmt_total2 = $conn->prepare("SELECT COUNT(*) as total FROM pelanggaran_kebersihan WHERE tanggal >= ? AND tanggal <= ?");
-$stmt_total2->bind_param("ss", $tgl_mulai, $tgl_selesai);
+$stmt_total2->bind_param("ss", $tgl_mulai_sql, $tgl_selesai_sql);
 $stmt_total2->execute();
 $total2 = $stmt_total2->get_result()->fetch_assoc()['total'];
 $total_pelanggaran = $total1 + $total2;
@@ -30,7 +34,7 @@ $q_santri = $stmt_santri->get_result();
 
 // 3. Data Jenis Pelanggaran
 $stmt_jenis1 = $conn->prepare("SELECT j.nama_pelanggaran, COUNT(*) as total FROM pelanggaran p JOIN jenis_pelanggaran j ON p.jenis_pelanggaran_id = j.id WHERE p.tanggal >= ? AND p.tanggal <= ? GROUP BY j.id");
-$stmt_jenis1->bind_param("ss", $tgl_mulai, $tgl_selesai);
+$stmt_jenis1->bind_param("ss", $tgl_mulai_sql, $tgl_selesai_sql);
 $stmt_jenis1->execute();
 $data_jenis_pelanggaran = $stmt_jenis1->get_result()->fetch_all(MYSQLI_ASSOC);
 if ($total2 > 0) { $data_jenis_pelanggaran[] = ['nama_pelanggaran' => 'KEBERSIHAN KAMAR', 'total' => $total2]; }
@@ -39,14 +43,14 @@ $total_semua_jenis = array_sum(array_column($data_jenis_pelanggaran, 'total'));
 
 // 4. Data Per Kelas
 $stmt_kelas = $conn->prepare("SELECT s.kelas, COUNT(*) AS total FROM pelanggaran p JOIN santri s ON s.id = p.santri_id WHERE p.tanggal >= ? AND p.tanggal <= ? GROUP BY s.kelas ORDER BY total DESC");
-$stmt_kelas->bind_param("ss", $tgl_mulai, $tgl_selesai);
+$stmt_kelas->bind_param("ss", $tgl_mulai_sql, $tgl_selesai_sql);
 $stmt_kelas->execute();
 $data_per_kelas = $stmt_kelas->get_result()->fetch_all(MYSQLI_ASSOC);
 $json_per_kelas = json_encode(['labels' => array_column($data_per_kelas, 'kelas'), 'data' => array_column($data_per_kelas, 'total')]);
 
 // 5. Data Per Kamar
 $stmt_kamar = $conn->prepare("SELECT kamar, COUNT(*) AS total FROM pelanggaran_kebersihan WHERE tanggal >= ? AND tanggal <= ? GROUP BY kamar ORDER BY total DESC");
-$stmt_kamar->bind_param("ss", $tgl_mulai, $tgl_selesai);
+$stmt_kamar->bind_param("ss", $tgl_mulai_sql, $tgl_selesai_sql);
 $stmt_kamar->execute();
 $data_per_kamar = $stmt_kamar->get_result()->fetch_all(MYSQLI_ASSOC);
 $labels_kamar = array_map(fn($item) => "Kamar " . $item['kamar'], $data_per_kamar);
@@ -67,7 +71,7 @@ $stmt_bagian = $conn->prepare("
     GROUP BY jp.bagian 
     ORDER BY total DESC
 ");
-$stmt_bagian->bind_param("ss", $tgl_mulai, $tgl_selesai);
+$stmt_bagian->bind_param("ss", $tgl_mulai_sql, $tgl_selesai_sql);
 $stmt_bagian->execute();
 $data_per_bagian = $stmt_bagian->get_result()->fetch_all(MYSQLI_ASSOC);
 
