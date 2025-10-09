@@ -12,12 +12,11 @@ if (session_status() === PHP_SESSION_NONE) {
 require_once __DIR__ . '/db.php';
 // Protokol 3: Panggil file dari folder yang sama
 require_once __DIR__ . '/auth.php';
+// ✅ Protokol 4: Panggil kotak perkakas helper kita!
+require_once __DIR__ . '/helpers.php';
 
-// Protokol 4: Siapin data-data umum
+// Protokol 5: Siapin data-data umum
 date_default_timezone_set('Asia/Jakarta');
-$success_message = $_SESSION['success_message'] ?? null;
-$error_message = $_SESSION['error_message'] ?? null;
-unset($_SESSION['success_message'], $_SESSION['error_message']);
 
 ?>
 <!DOCTYPE html>
@@ -26,7 +25,8 @@ unset($_SESSION['success_message'], $_SESSION['error_message']);
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Sistem Pelanggaran Santri</title>
-    <!-- Path sederhana ke aset -->
+    
+    <!-- Aset & Font -->
     <link rel="icon" type="image/png" sizes="64x64" href="/assets/logo.png">
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css">
@@ -35,11 +35,17 @@ unset($_SESSION['success_message'], $_SESSION['error_message']);
     <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700&display=swap" rel="stylesheet">
 
 <style>
+    /* =================================================================
+    STYLESHEET UTAMA APLIKASI
+    ================================================================= */
     :root {
         --sidebar-width: 260px;
         --header-height: 70px;
         --main-bg-color: #f4f7fa;
         --border-color: #e9ecef;
+        --blue: #0d6efd; --green: #198754; --orange: #fd7e14;
+        --purple: #6f42c1; --teal: #20c997; --indigo: #6610f2;
+        --red: #dc3545; --gray: #6c757d; --cyan: #0dcaf0;
     }
     body {
         background-color: var(--main-bg-color);
@@ -47,6 +53,8 @@ unset($_SESSION['success_message'], $_SESSION['error_message']);
         display: flex;
         min-height: 100vh;
     }
+    
+    /* Layout Utama */
     .sidebar {
         width: var(--sidebar-width);
         position: fixed;
@@ -72,6 +80,8 @@ unset($_SESSION['success_message'], $_SESSION['error_message']);
         border: 1px solid var(--border-color);
         z-index: 1020;
     }
+    
+    /* Tampilan Mobile & Tablet */
     @media (max-width: 991.98px) {
         .main-content {
             margin-left: 0;
@@ -79,6 +89,15 @@ unset($_SESSION['success_message'], $_SESSION['error_message']);
             padding: 1rem;
         }
     }
+    @media (max-width: 576px) {
+        .app-name { font-size: 1rem; }
+        .offcanvas.offcanvas-start {
+            width: 85%;
+            max-width: 340px;
+        }
+    }
+
+    /* Styling Navigasi Sidebar & Offcanvas */
     .sidebar .nav-link, .offcanvas .nav-link {
         color: #5a6a85 !important;
         font-weight: 500;
@@ -96,27 +115,13 @@ unset($_SESSION['success_message'], $_SESSION['error_message']);
         width: 20px;
         text-align: center;
     }
-    .header-logo { height: 45px; }
-    .app-name { font-size: 1.25rem; }
-
-    @media (max-width: 576px) {
-        .app-name { font-size: 1rem; }
-        .offcanvas.offcanvas-start {
-            width: 85%;
-            max-width: 340px;
-        }
-    }
-
-    :root {
-        --blue: #0d6efd; --green: #198754; --orange: #fd7e14;
-        --purple: #6f42c1; --teal: #20c997; --indigo: #6610f2;
-        --red: #dc3545; --gray: #6c757d; --cyan: #0dcaf0;
-    }
     .sidebar .nav-link.active {
         background-color: transparent !important;
         font-weight: 600;
     }
     .sidebar .nav-link:hover { background-color: transparent; }
+
+    /* ✅ FIX DI SINI: Efek Warna Hover & Aktif Lengkap */
     .apply-color-hover-active.color-blue { color: var(--blue) !important; }
     .apply-color-hover-active.color-blue i { color: var(--blue) !important; }
     .apply-color-hover-active.color-green { color: var(--green) !important; }
@@ -135,7 +140,10 @@ unset($_SESSION['success_message'], $_SESSION['error_message']);
     .apply-color-hover-active.color-gray i { color: var(--gray) !important; }
     .apply-color-hover-active.color-cyan { color: var(--cyan) !important; }
     .apply-color-hover-active.color-cyan i { color: var(--cyan) !important; }
-
+    
+    /* Info User & Tombol Logout */
+    .header-logo { height: 45px; }
+    .app-name { font-size: 1.25rem; }
     .user-info .user-details { line-height: 1.3; }
     .user-info .user-name {
         font-weight: 600;
@@ -156,7 +164,6 @@ unset($_SESSION['success_message'], $_SESSION['error_message']);
         font-size: 1rem;
         text-transform: uppercase;
     }
-    
     .btn-logout {
         border: none !important;
         background-color: #fee2e2 !important; 
@@ -166,21 +173,15 @@ unset($_SESSION['success_message'], $_SESSION['error_message']);
         background-color: #dc2626 !important;
         color: #fff !important; 
     }
-
     .offcanvas-user-info {
         padding-top: 1rem;
         margin-top: auto; 
         border-top: 1px solid var(--border-color);
     }
-    .offcanvas-user-info .user-details {
-        line-height: 1.4;
-    }
     .offcanvas-body {
         display: flex;
         flex-direction: column;
     }
-
-    /* Hapus semua styling notifikasi yang tidak diperlukan */
 </style>
 </head>
 <body>
@@ -196,19 +197,20 @@ unset($_SESSION['success_message'], $_SESSION['error_message']);
             <button type="button" class="btn-close" data-bs-dismiss="offcanvas"></button>
         </div>
         <div class="offcanvas-body">
+            <!-- Panggil menu sidebar -->
             <?php include __DIR__ . '/sidebar.php'; ?>
             
+            <!-- Info User & Logout di Offcanvas -->
             <div class="offcanvas-user-info">
                 <div class="d-flex align-items-center mb-3">
                     <div class="user-avatar me-3">
                         <span><?= htmlspecialchars(substr($_SESSION['nama_lengkap'] ?? 'P', 0, 1)) ?></span>
                     </div>
                     <div class="user-details">
-                        <span class="user-name"><?= htmlspecialchars($_SESSION['nama_lengkap'] ?? 'Pengguna') ?></span>
+                        <span class="user-name d-block"><?= htmlspecialchars($_SESSION['nama_lengkap'] ?? 'Pengguna') ?></span>
                         <span class="user-role text-muted"><?= htmlspecialchars(ucfirst($_SESSION['role'] ?? 'Role')) ?></span>
                     </div>
                 </div>
-                <!-- Path Logout sederhana -->
                 <a class="btn btn-sm d-flex align-items-center justify-content-center rounded-pill px-3 py-2 btn-logout w-100" href="/logout.php">
                     <i class="fas fa-sign-out-alt me-2"></i>Keluar
                 </a>
@@ -228,34 +230,57 @@ unset($_SESSION['success_message'], $_SESSION['error_message']);
                             <i class="fas fa-bars"></i>
                         </button>
                         <div class="d-flex align-items-center">
-                            <!-- Path Aset sederhana -->
-                            <img src="/assets/logo.png?v=2" alt="Logo" class="header-logo me-2">
+                            <img src="/assets/logo.png" alt="Logo" class="header-logo me-2">
                             <span class="fw-bold app-name" style="color: #25396f;">Pendataan Mukholif</span>
                         </div>
                     </div>
                     
-                    <!-- Kanan Header (Desktop) - TANPA Notifikasi -->
+                    <!-- Kanan Header (Desktop) -->
                     <div class="d-none d-lg-flex align-items-center">
-                        <!-- Info User -->
                         <div class="user-info d-flex align-items-center">
                             <div class="user-details text-end me-3">
-                                <span class="user-name"><?= htmlspecialchars($_SESSION['nama_lengkap'] ?? 'Pengguna') ?></span>
+                                <span class="user-name d-block"><?= htmlspecialchars($_SESSION['nama_lengkap'] ?? 'Pengguna') ?></span>
                                 <span class="user-role text-muted"><?= htmlspecialchars(ucfirst($_SESSION['role'] ?? 'Role')) ?></span>
                             </div>
                             <div class="user-avatar">
                                 <span><?= htmlspecialchars(substr($_SESSION['nama_lengkap'] ?? 'P', 0, 1)) ?></span>
                             </div>
                         </div>
-                        <!-- Pemisah -->
                         <div class="vr mx-3"></div>
-                        <!-- Tombol Logout -->
                         <a class="btn btn-sm d-flex align-items-center rounded-pill px-3 py-2 btn-logout" href="/logout.php" title="Logout">
                             <i class="fas fa-sign-out-alt"></i>
-                            <span class="ms-2">Keluar</span>
+                            <span class="ms-2 d-none d-xl-inline">Keluar</span>
                         </a>
                     </div>
                 </div>
             </nav>
         </header>
 
+        <!-- ✅ LOGIKA NOTIFIKASI GANDA -->
+        <?php
+        // Prioritaskan sistem notifikasi BARU dari helpers.php
+        display_flash_message();
+
+        // Sistem notifikasi LAMA (untuk kompatibilitas mundur)
+        if (isset($_SESSION['success_message'])) {
+            $message = $_SESSION['success_message'];
+            unset($_SESSION['success_message']);
+            echo "
+            <div class='alert alert-success alert-dismissible fade show' role='alert'>
+                <i class='fas fa-check-circle me-2'></i> {$message}
+                <button type='button' class='btn-close' data-bs-dismiss='alert' aria-label='Close'></button>
+            </div>
+            ";
+        }
+        if (isset($_SESSION['error_message'])) {
+            $message = $_SESSION['error_message'];
+            unset($_SESSION['error_message']);
+            echo "
+            <div class='alert alert-danger alert-dismissible fade show' role='alert'>
+                <i class='fas fa-times-circle me-2'></i> {$message}
+                <button type='button' class='btn-close' data-bs-dismiss='alert' aria-label='Close'></button>
+            </div>
+            ";
+        }
+        ?>
         <!-- KONTEN HALAMAN DIMULAI DI SINI -->
