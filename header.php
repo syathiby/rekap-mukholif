@@ -231,7 +231,7 @@ date_default_timezone_set('Asia/Jakarta');
                         </button>
                         <div class="d-flex align-items-center">
                             <img src="/assets/logo.png" alt="Logo" class="header-logo me-2">
-                            <span class="fw-bold app-name" style="color: #25396f;">Pendataan Mukholif</span>
+                            <span class="fw-bold app-name align-middle" style="color: #25396f;">Pendataan Mukholif</span>
                         </div>
                     </div>
                     
