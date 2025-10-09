@@ -90,10 +90,13 @@ date_default_timezone_set('Asia/Jakarta');
         }
     }
     @media (max-width: 576px) {
-        .app-name { font-size: 1rem; }
-        .offcanvas.offcanvas-start {
-            width: 85%;
-            max-width: 340px;
+        /* Styling baru buat judul aplikasi di header */
+        .app-name {
+            font-size: 1.05rem !important; /* lebih kecil dari sebelumnya */
+            font-weight: 600;
+            letter-spacing: 0.5px; /* kasih jarak antar huruf biar elegan */
+            color: #25396f;
+            margin-top: 2px; /* biar sejajar sama logo */
         }
     }
 
