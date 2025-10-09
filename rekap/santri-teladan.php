@@ -11,11 +11,13 @@ if (!$periode_aktif) {
     die("<div class='container' style='padding-top:20px;'><div class='alert alert-danger'>⚠ Periode aktif belum diset. Silakan atur dulu di halaman pengaturan.</div></div>");
 }
 
-// 🔹 Ambil semua kamar unik untuk navigasi filter
+// 🔹 Ambil data unik untuk filter dropdown
 $kamars_query = mysqli_query($conn, "SELECT DISTINCT kamar FROM santri ORDER BY CAST(kamar AS UNSIGNED) ASC");
+$kelas_query = mysqli_query($conn, "SELECT DISTINCT kelas FROM santri ORDER BY kelas ASC");
 
-// 🔹 Ambil filter kamar dari URL (jika ada)
-$filter_kamar = $_GET['kamar'] ?? null;
+// 🔹 Ambil filter dari URL (jika ada)
+$filter_kamar = $_GET['kamar'] ?? ''; 
+$filter_kelas = $_GET['kelas'] ?? ''; 
 
 // 🔹 Query utama untuk mencari santri teladan
 $sql = "
@@ -30,9 +32,15 @@ $sql = "
 $params = [$periode_aktif];
 $types = "s";
 
-if ($filter_kamar) {
+if (!empty($filter_kamar)) {
     $sql .= " AND s.kamar = ?";
     $params[] = $filter_kamar;
+    $types .= "s";
+}
+
+if (!empty($filter_kelas)) {
+    $sql .= " AND s.kelas = ?";
+    $params[] = $filter_kelas;
     $types .= "s";
 }
 
@@ -52,7 +60,7 @@ $result = mysqli_stmt_get_result($stmt);
 
 /* --- Reset & Body Styling --- */
 body {
-    background-color: #f8f9fa; /* Warna latar belakang yang soft */
+    background-color: #f8f9fa;
     font-family: 'Poppins', sans-serif;
     color: #333;
 }
@@ -104,39 +112,52 @@ body {
     color: #2980b9;
 }
 
-/* --- Navigasi Filter Kamar --- */
-.kamar-nav {
+/* === BAGIAN FILTER BARU DENGAN DROPDOWN === */
+.filter-form {
     margin: 25px 0;
+    padding: 20px;
+    background-color: #fff;
+    border-radius: 12px;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.06);
     display: flex;
     flex-wrap: wrap;
-    gap: 10px;
+    align-items: center;
+    gap: 15px;
 }
 
-.kamar-nav a {
-    padding: 8px 16px;
-    background: #ffffff;
+.filter-controls {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 15px;
+    flex-grow: 1; 
+}
+
+.filter-form select {
+    padding: 10px 15px;
     border: 1px solid #dee2e6;
-    border-radius: 20px;
-    text-decoration: none;
-    color: #495057;
+    border-radius: 8px;
+    font-family: 'Poppins', sans-serif;
     font-size: 14px;
-    font-weight: 500;
-    transition: all 0.3s ease;
-    box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+    background-color: #f8f9fa;
+    min-width: 180px;
+    transition: border-color 0.3s ease;
+    cursor: pointer; /* ✨ Tambahan kecil biar keliatan bisa diklik */
 }
 
-.kamar-nav a:hover {
-    transform: translateY(-2px);
-    box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+.filter-form select:focus {
+    outline: none;
     border-color: #2980b9;
-    color: #2980b9;
 }
 
-.kamar-nav a.active {
-    background: #2980b9;
-    color: white;
-    border-color: #2980b9;
-    font-weight: 600;
+.filter-form .reset-link {
+    font-size: 13px;
+    color: #7f8c8d;
+    text-decoration: none;
+    margin-left: auto; /* ✨ Pindahin link reset ke kanan */
+    padding: 10px;
+}
+.filter-form .reset-link:hover {
+    text-decoration: underline;
 }
 
 /* --- Grid Kartu Santri --- */
@@ -154,8 +175,8 @@ body {
     position: relative;
     overflow: hidden;
     transition: transform 0.3s ease, box-shadow 0.3s ease;
-    border-left: 5px solid #27ae60; /* Aksen hijau teladan */
-    opacity: 0; /* Mulai dari transparan untuk animasi */
+    border-left: 5px solid #27ae60;
+    opacity: 0;
     transform: translateY(20px);
     animation: cardFadeIn 0.5s ease-out forwards;
 }
@@ -165,15 +186,14 @@ body {
     box-shadow: 0 8px 20px rgba(0, 0, 0, 0.12);
 }
 
-/* === PERBAIKAN DI SINI === */
 .card-rank {
     position: absolute;
     top: -10px;
     left: -10px;
-    height: 45px; /* Tetapkan tinggi */
-    min-width: 45px; /* Ganti width menjadi min-width */
-    padding: 0 8px; /* Tambahkan padding horizontal */
-    box-sizing: border-box; /* Pastikan padding tidak merusak ukuran */
+    height: 45px;
+    min-width: 45px;
+    padding: 0 8px;
+    box-sizing: border-box;
     background: #27ae60;
     color: white;
     display: flex;
@@ -181,19 +201,17 @@ body {
     justify-content: center;
     font-weight: 700;
     font-size: 18px;
-    border-radius: 25px; /* Radius besar agar tetap membulat */
+    border-radius: 25px;
     box-shadow: 0 0 10px rgba(39, 174, 96, 0.5);
     border: 3px solid white;
 }
-/* === AKHIR PERBAIKAN === */
-
 
 .card-content h3 {
     margin: 10px 0 5px 0;
     font-size: 18px;
     font-weight: 600;
     color: #2c3e50;
-    padding-left: 20px; /* Beri sedikit ruang dari rank number */
+    padding-left: 20px;
 }
 
 .card-info {
@@ -202,7 +220,7 @@ body {
     gap: 8px;
     color: #7f8c8d;
     font-size: 14px;
-    padding-left: 20px; /* Beri sedikit ruang dari rank number */
+    padding-left: 20px;
 }
 
 .info-item {
@@ -217,7 +235,7 @@ body {
 
 /* --- Pesan Kosong --- */
 .no-data {
-    grid-column: 1 / -1; /* Span full width di grid */
+    grid-column: 1 / -1;
     text-align: center;
     padding: 40px;
     background: #fff;
@@ -258,18 +276,31 @@ body {
         </div>
     </div>
 
-    <!-- Navigasi per kamar -->
-    <div class="kamar-nav">
-        <a href="?" class="<?= !$filter_kamar ? 'active' : '' ?>">Semua Kamar</a>
-        <?php while ($k = mysqli_fetch_assoc($kamars_query)): ?>
-            <a href="?kamar=<?= urlencode($k['kamar']) ?>" 
-               class="<?= ($filter_kamar == $k['kamar']) ? 'active' : '' ?>">
-                Kamar <?= htmlspecialchars($k['kamar']) ?>
-            </a>
-        <?php endwhile; ?>
-    </div>
+    <form action="" method="GET" class="filter-form">
+        <div class="filter-controls">
+            <select name="kamar" onchange="this.form.submit()">
+                <option value="">Semua Kamar</option>
+                <?php while ($k = mysqli_fetch_assoc($kamars_query)): ?>
+                    <option value="<?= htmlspecialchars($k['kamar']) ?>" <?= ($filter_kamar == $k['kamar']) ? 'selected' : '' ?>>
+                        Kamar <?= htmlspecialchars($k['kamar']) ?>
+                    </option>
+                <?php endwhile; ?>
+            </select>
 
-    <!-- Grid Kartu Santri Teladan -->
+            <select name="kelas" onchange="this.form.submit()">
+                <option value="">Semua Kelas</option>
+                <?php while ($kl = mysqli_fetch_assoc($kelas_query)): ?>
+                    <option value="<?= htmlspecialchars($kl['kelas']) ?>" <?= ($filter_kelas == $kl['kelas']) ? 'selected' : '' ?>>
+                        Kelas <?= htmlspecialchars($kl['kelas']) ?>
+                    </option>
+                <?php endwhile; ?>
+            </select>
+        </div>
+        
+        <a href="?" class="reset-link">Reset Filter</a>
+    </form>
+
+
     <div class="card-grid">
         <?php
         if (mysqli_num_rows($result) === 0) {
@@ -281,7 +312,6 @@ body {
         } else {
             $no = 1;
             while ($row = mysqli_fetch_assoc($result)) {
-                // Menghitung delay animasi agar muncul satu per satu
                 $animation_delay = $no * 0.07; 
         ?>
                 <div class="santri-card" style="animation-delay: <?= $animation_delay ?>s;">
@@ -290,12 +320,10 @@ body {
                         <h3><?= htmlspecialchars($row['nama']) ?></h3>
                         <div class="card-info">
                             <div class="info-item">
-                                <span class="icon">🏫</span> <!-- Emoji sekolah -->
-                                <span>Kelas: <?= htmlspecialchars($row['kelas']) ?></span>
+                                <span class="icon">🏫</span> <span>Kelas: <?= htmlspecialchars($row['kelas']) ?></span>
                             </div>
                             <div class="info-item">
-                                <span class="icon">🚪</span> <!-- Emoji pintu -->
-                                <span>Kamar: <?= htmlspecialchars($row['kamar']) ?></span>
+                                <span class="icon">🚪</span> <span>Kamar: <?= htmlspecialchars($row['kamar']) ?></span>
                             </div>
                         </div>
                     </div>
