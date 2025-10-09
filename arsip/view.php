@@ -46,7 +46,7 @@ $data_jenis_pelanggaran = $stmt_jenis->get_result()->fetch_all(MYSQLI_ASSOC);
 // Step 2: "Suntik" data total kebersihan ke dalam array
 if ($total_kebersihan > 0) {
     $data_jenis_pelanggaran[] = [
-        'jenis_pelanggaran_nama' => 'Pelanggaran Kebersihan Kamar', 
+        'jenis_pelanggaran_nama' => 'KEBERSIHAN KAMAR', 
         'total' => $total_kebersihan
     ];
 }

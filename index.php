@@ -24,20 +24,26 @@ $q = mysqli_query($conn, "SELECT nilai FROM pengaturan WHERE nama = 'periode_akt
 $row = mysqli_fetch_assoc($q);
 $periode_aktif = $row ? $row['nilai'] : '2000-01-01'; // default biar gak error kalau kosong
 
-// 🔧 Build filter tanggal fleksibel untuk LEFT JOIN (aman saat kosong)
+// 🔧 Build filter tanggal fleksibel untuk SEMUA TABEL (aman saat kosong)
 $between_filter = '';
 
 if (!empty($start_date) && !empty($end_date)) {
     // amankan input
     $start = mysqli_real_escape_string($conn, $start_date . ' 00:00:00');
-    $end   = mysqli_real_escape_string($conn, $end_date   . ' 23:59:59');
-    $between_filter = "AND p.tanggal BETWEEN '$start' AND '$end'";
+    // FIX: Tambahkan titik (.) untuk menyambung string
+    $end   = mysqli_real_escape_string($conn, $end_date . ' 23:59:59');
+    
+    // Hapus 'p.' biar filter ini bisa dipakai di tabel lain juga
+    $between_filter = "AND tanggal BETWEEN '$start' AND '$end'";
+
 } elseif (!empty($start_date)) {
     $start = mysqli_real_escape_string($conn, $start_date . ' 00:00:00');
-    $between_filter = "AND p.tanggal >= '$start'";
+    $between_filter = "AND tanggal >= '$start'";
+
 } elseif (!empty($end_date)) {
+    // FIX: Tambahkan titik (.) juga di sini
     $end = mysqli_real_escape_string($conn, $end_date . ' 23:59:59');
-    $between_filter = "AND p.tanggal <= '$end'";
+    $between_filter = "AND tanggal <= '$end'";
 }
 
 // Get statistics
@@ -45,9 +51,10 @@ $stats = [
     'santri' => (int) (mysqli_fetch_assoc(mysqli_query($conn, "SELECT COUNT(*) AS total FROM santri"))['total'] ?? 0),
     'jenis_pelanggaran' => (int) (mysqli_fetch_assoc(mysqli_query($conn, "SELECT COUNT(*) AS total FROM jenis_pelanggaran"))['total'] ?? 0),
     'total_pelanggaran' => (int) (mysqli_fetch_assoc(mysqli_query($conn, "
-        SELECT COUNT(*) AS total 
-        FROM pelanggaran p
-        WHERE p.tanggal >= '$periode_aktif' $between_filter
+    SELECT
+        (SELECT COUNT(*) FROM pelanggaran WHERE tanggal >= '$periode_aktif' $between_filter) +
+        (SELECT COUNT(*) FROM pelanggaran_kebersihan WHERE tanggal >= '$periode_aktif' $between_filter)
+    AS total
     "))['total'] ?? 0),
     'santri_tanpa_pelanggaran' => (int) (mysqli_fetch_assoc(mysqli_query($conn, "
         SELECT COUNT(*) as total 
