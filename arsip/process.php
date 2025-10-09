@@ -39,7 +39,7 @@ if ($action === 'create') {
         $stmt_santri_snapshot->execute();
         $stmt_santri_snapshot->close();
 
-        // ✅ REVISI: STEP 3 sekarang HANYA snapshot data pelanggaran umum. Bagian UNION ALL dihapus.
+        // STEP 3: Snapshot data pelanggaran umum
         $sql_pelanggaran_snapshot = "
             INSERT INTO arsip_data_pelanggaran 
                 (arsip_id, santri_id, santri_nama, santri_kelas, santri_kamar, jenis_pelanggaran_id, jenis_pelanggaran_nama, bagian, poin, tanggal, tipe) 
@@ -52,7 +52,6 @@ if ($action === 'create') {
             WHERE DATE(p.tanggal) BETWEEN ? AND ?";
         
         $stmt_pelanggaran_snapshot = $conn->prepare($sql_pelanggaran_snapshot);
-        // Parameternya sekarang jadi 3 (i, s, s) karena UNION ALL dihapus
         $stmt_pelanggaran_snapshot->bind_param('iss', $arsip_id, $tgl_mulai, $tgl_selesai);
         $stmt_pelanggaran_snapshot->execute();
         $stmt_pelanggaran_snapshot->close();
@@ -84,10 +83,37 @@ if ($action === 'create') {
     }
 }
 
-// Proses Hapus (tidak ada perubahan, sudah benar)
+// === PROSES PENGHAPUSAN ARSIP (DARI INDEX.PHP) ===
 if ($action === 'delete') {
-    // ... kode hapus arsip ...
+    guard('arsip_delete');
+
+    if (!isset($_POST['id']) || !filter_var($_POST['id'], FILTER_VALIDATE_INT)) {
+        $_SESSION['error_message'] = 'ID Arsip tidak valid.';
+        header('Location: index.php');
+        exit;
+    }
+    $arsip_id = (int)$_POST['id'];
+
+    // Cuma butuh ini doang!
+    try {
+        // Hapus data induknya aja, anak-anaknya bakal ikut kehapus otomatis
+        // berkat ON DELETE CASCADE di database lu.
+        $stmt = $conn->prepare("DELETE FROM arsip WHERE id = ?");
+        $stmt->bind_param('i', $arsip_id);
+        $stmt->execute();
+        $stmt->close();
+
+        $_SESSION['success_message'] = 'Arsip berhasil dihapus permanen!';
+
+    } catch (mysqli_sql_exception $exception) {
+        // Nggak perlu transaksi karena cuma 1 query
+        $_SESSION['error_message'] = 'Gagal menghapus arsip: ' . $exception->getMessage();
+    }
+    
+    header('Location: index.php');
+    exit;
 }
 
+// Jika action tidak dikenali, tendang balik
 header('Location: index.php');
 exit;

@@ -90,6 +90,8 @@
 │    └── bulk-edit.php
 │
 ├─auth.php
+├─access_denied_template.php
+├─helpers.php
 ├─db.php                    
 ├─footer.php
 ├─header.php
