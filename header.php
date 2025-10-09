@@ -207,8 +207,8 @@ date_default_timezone_set('Asia/Jakarta');
                         <span><?= htmlspecialchars(substr($_SESSION['nama_lengkap'] ?? 'P', 0, 1)) ?></span>
                     </div>
                     <div class="user-details">
-                        <span class="user-name d-block"><?= htmlspecialchars($_SESSION['nama_lengkap'] ?? 'Pengguna') ?></span>
-                        <span class="user-role text-muted"><?= htmlspecialchars(ucfirst($_SESSION['role'] ?? 'Role')) ?></span>
+                        <span class="user-name"><?= htmlspecialchars($_SESSION['nama_lengkap'] ?? 'Pengguna') ?></span>
+                        <span class="user-role text-muted ms-1"> <?= htmlspecialchars(ucfirst($_SESSION['role'] ?? 'Role')) ?> </span>
                     </div>
                 </div>
                 <a class="btn btn-sm d-flex align-items-center justify-content-center rounded-pill px-3 py-2 btn-logout w-100" href="/logout.php">
@@ -239,8 +239,8 @@ date_default_timezone_set('Asia/Jakarta');
                     <div class="d-none d-lg-flex align-items-center">
                         <div class="user-info d-flex align-items-center">
                             <div class="user-details text-end me-3">
-                                <span class="user-name d-block"><?= htmlspecialchars($_SESSION['nama_lengkap'] ?? 'Pengguna') ?></span>
-                                <span class="user-role text-muted"><?= htmlspecialchars(ucfirst($_SESSION['role'] ?? 'Role')) ?></span>
+                                <span class="user-name"><?= htmlspecialchars($_SESSION['nama_lengkap'] ?? 'Pengguna') ?></span>
+                                <span class="user-role text-muted ms-1"> <?= htmlspecialchars(ucfirst($_SESSION['role'] ?? 'Role')) ?> </span>
                             </div>
                             <div class="user-avatar">
                                 <span><?= htmlspecialchars(substr($_SESSION['nama_lengkap'] ?? 'P', 0, 1)) ?></span>
