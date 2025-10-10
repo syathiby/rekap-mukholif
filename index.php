@@ -53,6 +53,7 @@ $stats['santri_tanpa_pelanggaran'] = (int) (mysqli_fetch_assoc(mysqli_query($con
 // =============================================================
 // QUERY UNTUK TABEL DAN LIST LAINNYA
 // =============================================================
+// Query ini diubah agar tidak terpengaruh filter tanggal
 $recent_violations = mysqli_query($conn, "
     (
         SELECT p.id, s.nama, s.kamar, jp.nama_pelanggaran, p.tanggal, u.nama_lengkap AS pencatat
@@ -60,14 +61,12 @@ $recent_violations = mysqli_query($conn, "
         JOIN santri s ON p.santri_id = s.id
         JOIN jenis_pelanggaran jp ON p.jenis_pelanggaran_id = jp.id
         LEFT JOIN users u ON p.dicatat_oleh = u.id
-        WHERE p.tanggal BETWEEN '$start_date_sql' AND '$end_date_sql'
     )
     UNION ALL
     (
         SELECT pk.id, 'Penghuni Kamar' AS nama, pk.kamar, 'Kebersihan Kamar' AS nama_pelanggaran, pk.tanggal, u.nama_lengkap AS pencatat
         FROM pelanggaran_kebersihan pk
         LEFT JOIN users u ON pk.dicatat_oleh = u.id
-        WHERE pk.tanggal BETWEEN '$start_date_sql' AND '$end_date_sql'
     )
     ORDER BY tanggal DESC
     LIMIT 5
