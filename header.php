@@ -88,6 +88,12 @@ date_default_timezone_set('Asia/Jakarta');
             width: 100%;
             padding: 1rem;
         }
+
+        /* ✅ FIX DI SINI: BIKIN SIDEBAR OFFACANVAS LEBIH MODERN */
+        #sidebarOffcanvas {
+            /* Atur lebar sidebar di mobile, jangan full screen! */
+            width: 300px !important; 
+        }
     }
     @media (max-width: 576px) {
         /* Styling baru buat judul aplikasi di header */
@@ -177,13 +183,34 @@ date_default_timezone_set('Asia/Jakarta');
         color: #fff !important; 
     }
     .offcanvas-user-info {
-        padding-top: 1rem;
-        margin-top: auto; 
+        /* ✅ FIX: Modifikasi agar nempel di bawah & tidak menyusut */
+        padding: 1rem;
+        padding-top: 0.75rem;
+        margin-top: 0; 
         border-top: 1px solid var(--border-color);
+        flex-shrink: 0;
     }
     .offcanvas-body {
         display: flex;
         flex-direction: column;
+        padding: 0; /* Hapus padding agar bisa kontrol scroll */
+    }
+
+    /* ✅ KELAS BARU: Wrapper untuk menu agar bisa di-scroll */
+    .sidebar-menu-wrapper {
+        flex-grow: 1;
+        overflow-y: auto;
+        padding: 1rem; /* Kembalikan padding di sini */
+    }
+
+    /* ✅ KELAS BARU: Perkecil elemen profil di offcanvas */
+    .offcanvas .user-avatar {
+        width: 36px; height: 36px; font-size: 0.9rem;
+    }
+    .offcanvas .user-name { font-size: 0.85rem; }
+    .offcanvas .user-role { font-size: 0.7rem; }
+    .offcanvas .mb-3 {
+        margin-bottom: 0.75rem !important;
     }
 </style>
 </head>
@@ -200,8 +227,10 @@ date_default_timezone_set('Asia/Jakarta');
             <button type="button" class="btn-close" data-bs-dismiss="offcanvas"></button>
         </div>
         <div class="offcanvas-body">
-            <!-- Panggil menu sidebar -->
-            <?php include __DIR__ . '/sidebar.php'; ?>
+            <!-- ✅ FIX: Wrapper untuk menu yang bisa di-scroll -->
+            <div class="sidebar-menu-wrapper">
+                <?php include __DIR__ . '/sidebar.php'; ?>
+            </div>
             
             <!-- Info User & Logout di Offcanvas -->
             <div class="offcanvas-user-info">
