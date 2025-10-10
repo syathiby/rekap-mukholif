@@ -2,11 +2,16 @@
 require_once __DIR__ . '/../header.php';
 guard('jenis_pelanggaran_view');
 
+// === PENGECEKAN IZIN DI AWAL ===
+$can_create = has_permission('jenis_pelanggaran_create');
+$can_edit = has_permission('jenis_pelanggaran_edit');
+$can_delete = has_permission('jenis_pelanggaran_delete');
+
 // --- AMBIL DATA UNTUK FILTER ---
 $bagian_list_query = "SELECT DISTINCT bagian FROM jenis_pelanggaran ORDER BY bagian ASC";
 $bagian_list_result = mysqli_query($conn, $bagian_list_query);
 
-// --- LOGIKA FILTER (DITAMBAH LOGIKA PENCARIAN) ---
+// --- LOGIKA FILTER ---
 $filter_bagian = $_GET['bagian'] ?? '';
 $filter_kategori = $_GET['kategori'] ?? '';
 $filter_search = $_GET['search'] ?? ''; 
@@ -16,7 +21,6 @@ $where_clauses = [];
 $params = [];
 $types = '';
 
-// Logika untuk filter pencarian
 if (!empty($filter_search)) {
     $where_clauses[] = "nama_pelanggaran LIKE ?";
     $params[] = "%" . $filter_search . "%";
@@ -44,9 +48,15 @@ if (!empty($params)) {
 }
 mysqli_stmt_execute($stmt);
 $result = mysqli_stmt_get_result($stmt);
+
+// Hitung colspan dinamis untuk tabel
+$colspan = 5; // Kolom dasar: No, Nama, Bagian, Poin, Kategori
+if ($can_delete) $colspan++; // Tambah 1 untuk checkbox
+if ($can_edit || $can_delete) $colspan++; // Tambah 1 untuk Aksi
 ?>
 
 <style>
+    /* CSS tidak ada perubahan */
     :root {
         --primary-color: #3498db;
         --secondary-color: #2c3e50;
@@ -75,8 +85,6 @@ $result = mysqli_stmt_get_result($stmt);
     .badge.bg-warning { background-color: #ffc107 !important; }
     .badge.bg-danger { background-color: #dc3545 !important; }
     .badge.bg-dark { background-color: #212529 !important; }
-
-    /* CSS untuk tampilan mobile (Responsive) */
     @media (max-width: 767px) {
         .page-title-card {
             flex-direction: column;
@@ -115,9 +123,11 @@ $result = mysqli_stmt_get_result($stmt);
 <div class="container mt-4 mb-5">
     <div class="page-title-card d-flex justify-content-between align-items-center">
         <h3 class="mb-0"><i class="fas fa-exclamation-triangle me-2"></i>Data Jenis Pelanggaran</h3>
-        <div class="btn-group">
-            <a href="create.php" class="btn btn-success"><i class="fas fa-plus-circle me-1"></i> Tambah Baru</a>
-        </div>
+        <?php if ($can_create): ?>
+            <div class="btn-group">
+                <a href="create.php" class="btn btn-success"><i class="fas fa-plus-circle me-1"></i> Tambah Baru</a>
+            </div>
+        <?php endif; ?>
     </div>
 
     <?php if (isset($_SESSION['success_message'])) : ?>
@@ -179,19 +189,23 @@ $result = mysqli_stmt_get_result($stmt);
                 <table class="table table-striped table-hover mb-0">
                     <thead>
                         <tr>
-                            <th width="3%" class="text-center"><input type="checkbox" id="selectAll"></th>
+                            <?php if ($can_delete): ?>
+                                <th width="3%" class="text-center"><input type="checkbox" id="selectAll"></th>
+                            <?php endif; ?>
                             <th width="5%" class="text-center">No</th>
                             <th>Nama Pelanggaran</th>
                             <th width="20%">Bagian</th>
                             <th width="10%" class="text-center">Poin</th>
                             <th width="15%" class="text-center">Kategori</th>
-                            <th width="15%" class="text-center">Aksi</th>
+                            <?php if ($can_edit || $can_delete): ?>
+                                <th width="15%" class="text-center">Aksi</th>
+                            <?php endif; ?>
                         </tr>
                     </thead>
                     <tbody>
                         <?php
                         if (mysqli_num_rows($result) == 0) {
-                            echo '<tr><td colspan="7" class="text-center py-4"><h5>Data tidak ditemukan.</h5><p class="text-muted">Coba reset filter atau ubah kata kunci pencarian.</p></td></tr>';
+                            echo '<tr><td colspan="' . $colspan . '" class="text-center py-4"><h5>Data tidak ditemukan.</h5><p class="text-muted">Coba reset filter atau ubah kata kunci pencarian.</p></td></tr>';
                         }
                         
                         $no = 1;
@@ -208,11 +222,13 @@ $result = mysqli_stmt_get_result($stmt);
                             };
                         ?>
                         <tr>
-                            <td class="text-center align-middle">
-                                <?php if (!$is_protected) : ?>
-                                    <input type="checkbox" name="ids[]" value="<?= $row['id']; ?>" class="row-checkbox">
-                                <?php endif; ?>
-                            </td>
+                            <?php if ($can_delete): ?>
+                                <td class="text-center align-middle">
+                                    <?php if (!$is_protected) : ?>
+                                        <input type="checkbox" name="ids[]" value="<?= $row['id']; ?>" class="row-checkbox">
+                                    <?php endif; ?>
+                                </td>
+                            <?php endif; ?>
                             <td class="text-center align-middle"><?= $no++; ?></td>
                             <td class="align-middle">
                                 <div class="fw-bold"><?= htmlspecialchars($row['nama_pelanggaran']); ?></div>
@@ -228,14 +244,18 @@ $result = mysqli_stmt_get_result($stmt);
                             <td class="text-center align-middle">
                                 <span class="badge <?= $badge_class; ?>"><?= htmlspecialchars($row['kategori']); ?></span>
                             </td>
-                            <td class="text-center align-middle">
-                                <div class="btn-group" role="group">
-                                    <a href="edit.php?id=<?= $row['id']; ?>" class="btn btn-sm btn-warning" title="Edit"><i class="fas fa-edit"></i></a>
-                                    <?php if (!$is_protected) : ?>
-                                        <a href="#" onclick="showConfirmDelete('delete.php?id=<?= $row['id']; ?>')" class="btn btn-sm btn-danger" title="Hapus"><i class="fas fa-trash"></i></a>
-                                    <?php endif; ?>
-                                </div>
-                            </td>
+                            <?php if ($can_edit || $can_delete): ?>
+                                <td class="text-center align-middle">
+                                    <div class="btn-group" role="group">
+                                        <?php if ($can_edit): ?>
+                                            <a href="edit.php?id=<?= $row['id']; ?>" class="btn btn-sm btn-warning" title="Edit"><i class="fas fa-edit"></i></a>
+                                        <?php endif; ?>
+                                        <?php if ($can_delete && !$is_protected) : ?>
+                                            <a href="#" onclick="showConfirmDelete('delete.php?id=<?= $row['id']; ?>')" class="btn btn-sm btn-danger" title="Hapus"><i class="fas fa-trash"></i></a>
+                                        <?php endif; ?>
+                                    </div>
+                                </td>
+                            <?php endif; ?>
                         </tr>
                         <?php } ?>
                     </tbody>
@@ -243,9 +263,12 @@ $result = mysqli_stmt_get_result($stmt);
             </div>
             
             <div class="card-footer d-flex justify-content-between align-items-center">
-                <button type="submit" class="btn btn-danger" id="bulkDeleteBtn" disabled>
-                    <i class="fas fa-trash-alt me-1"></i> Hapus Terpilih
-                </button>
+                <?php if ($can_delete): ?>
+                    <button type="submit" class="btn btn-danger" id="bulkDeleteBtn" disabled>
+                        <i class="fas fa-trash-alt me-1"></i> Hapus Terpilih
+                    </button>
+                <?php else: ?>
+                    <div></div> <?php endif; ?>
                 <div class="text-muted">
                     Total Data: <strong><?= mysqli_num_rows($result); ?></strong>
                 </div>
@@ -254,7 +277,6 @@ $result = mysqli_stmt_get_result($stmt);
     </form>
 </div>
 
-<!-- ✅ PERUBAHAN: Modal ini sekarang dipakai untuk SEMUA konfirmasi hapus -->
 <div class="modal fade" id="confirmDeleteModal" tabindex="-1" aria-hidden="true">
     <div class="modal-dialog modal-dialog-centered">
         <div class="modal-content">
@@ -276,7 +298,6 @@ $result = mysqli_stmt_get_result($stmt);
     </div>
 </div>
 
-
 <?php 
 mysqli_stmt_close($stmt);
 require_once __DIR__ . '/../footer.php'; 
@@ -284,30 +305,28 @@ require_once __DIR__ . '/../footer.php';
 
 <script>
 document.addEventListener('DOMContentLoaded', function() {
-    // ✅ PERUBAHAN: Setup Modal yang lebih canggih
     const confirmModalElement = document.getElementById('confirmDeleteModal');
     const confirmModal = new bootstrap.Modal(confirmModalElement);
     const confirmMessage = document.getElementById('confirmMessage');
     const confirmBtn = document.getElementById('confirmDeleteButton');
 
-    // ✅ PERUBAHAN: Fungsi untuk hapus SATUAN
     window.showConfirmDelete = function(deleteUrl) {
         confirmMessage.textContent = 'Apakah Anda benar-benar yakin ingin menghapus data ini?';
         confirmBtn.onclick = function() {
             window.location.href = deleteUrl;
         };
-        // Hapus atribut href biar tidak membingungkan
         confirmBtn.removeAttribute('href');
         confirmModal.show();
     }
 
-    // JS untuk Bulk Delete
+    // === JS untuk Bulk Delete (dibuat lebih aman) ===
     const selectAllCheckbox = document.getElementById('selectAll');
     const rowCheckboxes = document.querySelectorAll('.row-checkbox');
     const bulkDeleteBtn = document.getElementById('bulkDeleteBtn');
     const bulkDeleteForm = document.getElementById('bulkDeleteForm');
 
     function toggleDeleteButton() {
+        if (!bulkDeleteBtn) return; // Jika tombol tidak ada, jangan lakukan apa-apa
         const checkedCount = document.querySelectorAll('.row-checkbox:checked').length;
         bulkDeleteBtn.disabled = checkedCount === 0;
     }
@@ -323,20 +342,21 @@ document.addEventListener('DOMContentLoaded', function() {
 
     rowCheckboxes.forEach(checkbox => {
         checkbox.addEventListener('change', function() {
-            if (!this.checked) {
-                selectAllCheckbox.checked = false;
-            }
-            const totalCheckboxes = rowCheckboxes.length;
-            const checkedCount = document.querySelectorAll('.row-checkbox:checked').length;
-            if (totalCheckboxes > 0 && totalCheckboxes === checkedCount) {
-                selectAllCheckbox.checked = true;
+            if (selectAllCheckbox) {
+                if (!this.checked) {
+                    selectAllCheckbox.checked = false;
+                }
+                const totalCheckboxes = rowCheckboxes.length;
+                const checkedCount = document.querySelectorAll('.row-checkbox:checked').length;
+                if (totalCheckboxes > 0 && totalCheckboxes === checkedCount) {
+                    selectAllCheckbox.checked = true;
+                }
             }
             toggleDeleteButton();
         });
     });
 
     if (bulkDeleteForm) {
-        // ✅ PERUBAHAN: Fungsi untuk hapus MASSAL (BULK)
         bulkDeleteForm.addEventListener('submit', function(e) {
             e.preventDefault();
             const checkedCount = document.querySelectorAll('.row-checkbox:checked').length;
@@ -345,14 +365,12 @@ document.addEventListener('DOMContentLoaded', function() {
                 confirmBtn.onclick = function() {
                     bulkDeleteForm.submit();
                 };
-                 // Hapus atribut href biar tidak membingungkan
                 confirmBtn.removeAttribute('href');
                 confirmModal.show();
             }
         });
     }
-
-    // Panggil sekali di awal untuk set state tombol
-    toggleDeleteButton();
+    
+    toggleDeleteButton(); // Panggil di awal untuk set state tombol
 });
 </script>
