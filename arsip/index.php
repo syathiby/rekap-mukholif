@@ -16,11 +16,7 @@ $res = $stmt->get_result();
 ?>
 
 <style>
-    /* === CSS FINAL DENGAN SCOPING ===
-      Semua style di bawah ini gw kasih prefix '#arsip-index-page'
-      Artinya, style ini HANYA akan berlaku di dalam div <div id="arsip-index-page">
-      dan TIDAK AKAN BISA merusak header utama lu lagi.
-    */
+    /* === CSS FINAL DENGAN SCOPING === */
     #arsip-index-page .page-header {
         display: flex;
         justify-content: space-between;
@@ -28,6 +24,13 @@ $res = $stmt->get_result();
         margin-bottom: 2rem;
         flex-wrap: wrap;
         gap: 1rem;
+    }
+
+    /* Penampung untuk tombol-tombol di header */
+    #arsip-index-page .header-actions {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 0.75rem;
     }
 
     #arsip-index-page .page-title {
@@ -103,6 +106,7 @@ $res = $stmt->get_result();
     }
     
     #arsip-index-page .btn-primary { background-color: #4f46e5; color: white; }
+    #arsip-index-page .btn-export { background-color: #d1fae5; color: #065f46; }
     #arsip-index-page .btn-lihat { background-color: #eef2ff; color: #4338ca; }
     #arsip-index-page .btn-hapus { background-color: #fee2e2; color: #b91c1c; }
 
@@ -115,7 +119,20 @@ $res = $stmt->get_result();
         #arsip-index-page .mobile-cards { display: block; }
         #arsip-index-page .card-table-wrapper { background: none; border: none; box-shadow: none; padding: 0; }
         
-        #arsip-index-page .page-header { justify-content: flex-start; }
+        /* === BAGIAN YANG DIUBAH UNTUK TAMPILAN HP === */
+        #arsip-index-page .page-header { 
+            justify-content: flex-start; /* Semua item (judul & tombol) rata kiri */
+        }
+        
+        #arsip-index-page .header-actions {
+            width: 100%; /* Lebar container tombol jadi 100% */
+            flex-direction: column; /* Tombol jadi atas-bawah */
+        }
+
+        #arsip-index-page .header-actions .btn {
+            width: 100%; /* Lebar setiap tombol jadi 100% */
+        }
+        /* === AKHIR BAGIAN YANG DIUBAH === */
 
         #arsip-index-page .arsip-card-mobile {
             background-color: #ffffff;
@@ -160,9 +177,15 @@ $res = $stmt->get_result();
 <div id="arsip-index-page" class="container-fluid mt-4">
     <div class="page-header">
         <h1 class="page-title"><i class="fas fa-archive"></i>Manajemen Arsip</h1>
-        <?php if (has_permission('arsip_create')): ?>
-            <a href="create.php" class="btn btn-primary"><i class="fas fa-plus"></i> Buat Arsip Baru</a>
-        <?php endif; ?>
+        <div class="header-actions">
+            <?php if (has_permission('arsip_export')): ?>
+                <a href="export_arsip.php" class="btn btn-export"><i class="fas fa-file-excel"></i> Export Arsip</a>
+            <?php endif; ?>
+
+            <?php if (has_permission('arsip_create')): ?>
+                <a href="create.php" class="btn btn-primary"><i class="fas fa-plus"></i> Buat Arsip Baru</a>
+            <?php endif; ?>
+        </div>
     </div>
     
     <?php
