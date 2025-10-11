@@ -8,6 +8,9 @@ if (session_status() === PHP_SESSION_NONE) {
     session_start();
 }
 
+// Protokol 1: Panggil file config sakti kita, ini yang paling pertama!
+require_once __DIR__ . '/config.php'; 
+
 // Protokol 2: Panggil file dari folder yang sama
 require_once __DIR__ . '/db.php';
 // Protokol 3: Panggil file dari folder yang sama
@@ -27,7 +30,8 @@ date_default_timezone_set('Asia/Jakarta');
     <title>Sistem Pelanggaran Santri</title>
     
     <!-- Aset & Font -->
-    <link rel="icon" type="image/png" sizes="64x64" href="/assets/logo.png">
+    <!-- REVISI: Path favicon jadi dinamis pake BASE_URL -->
+    <link rel="icon" type="image/png" sizes="64x64" href="<?= BASE_URL ?>/assets/logo.png">
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css">
     <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -88,21 +92,17 @@ date_default_timezone_set('Asia/Jakarta');
             width: 100%;
             padding: 1rem;
         }
-
-        /* ✅ FIX DI SINI: BIKIN SIDEBAR OFFACANVAS LEBIH MODERN */
         #sidebarOffcanvas {
-            /* Atur lebar sidebar di mobile, jangan full screen! */
             width: 300px !important; 
         }
     }
     @media (max-width: 576px) {
-        /* Styling baru buat judul aplikasi di header */
         .app-name {
-            font-size: 1.05rem !important; /* lebih kecil dari sebelumnya */
+            font-size: 1.05rem !important;
             font-weight: 600;
-            letter-spacing: 0.5px; /* kasih jarak antar huruf biar elegan */
+            letter-spacing: 0.5px;
             color: #25396f;
-            margin-top: 2px; /* biar sejajar sama logo */
+            margin-top: 2px;
         }
     }
 
@@ -130,7 +130,7 @@ date_default_timezone_set('Asia/Jakarta');
     }
     .sidebar .nav-link:hover { background-color: transparent; }
 
-    /* ✅ FIX DI SINI: Efek Warna Hover & Aktif Lengkap */
+    /* Efek Warna Hover & Aktif Lengkap */
     .apply-color-hover-active.color-blue { color: var(--blue) !important; }
     .apply-color-hover-active.color-blue i { color: var(--blue) !important; }
     .apply-color-hover-active.color-green { color: var(--green) !important; }
@@ -183,7 +183,6 @@ date_default_timezone_set('Asia/Jakarta');
         color: #fff !important; 
     }
     .offcanvas-user-info {
-        /* ✅ FIX: Modifikasi agar nempel di bawah & tidak menyusut */
         padding: 1rem;
         padding-top: 0.75rem;
         margin-top: 0; 
@@ -193,17 +192,13 @@ date_default_timezone_set('Asia/Jakarta');
     .offcanvas-body {
         display: flex;
         flex-direction: column;
-        padding: 0; /* Hapus padding agar bisa kontrol scroll */
+        padding: 0;
     }
-
-    /* ✅ KELAS BARU: Wrapper untuk menu agar bisa di-scroll */
     .sidebar-menu-wrapper {
         flex-grow: 1;
         overflow-y: auto;
-        padding: 1rem; /* Kembalikan padding di sini */
+        padding: 1rem;
     }
-
-    /* ✅ KELAS BARU: Perkecil elemen profil di offcanvas */
     .offcanvas .user-avatar {
         width: 36px; height: 36px; font-size: 0.9rem;
     }
@@ -227,7 +222,7 @@ date_default_timezone_set('Asia/Jakarta');
             <button type="button" class="btn-close" data-bs-dismiss="offcanvas"></button>
         </div>
         <div class="offcanvas-body">
-            <!-- ✅ FIX: Wrapper untuk menu yang bisa di-scroll -->
+            <!-- Wrapper untuk menu yang bisa di-scroll -->
             <div class="sidebar-menu-wrapper">
                 <?php include __DIR__ . '/sidebar.php'; ?>
             </div>
@@ -243,7 +238,8 @@ date_default_timezone_set('Asia/Jakarta');
                         <span class="user-role text-muted ms-1"> <?= htmlspecialchars(ucfirst($_SESSION['role'] ?? 'Role')) ?> </span>
                     </div>
                 </div>
-                <a class="btn btn-sm d-flex align-items-center justify-content-center rounded-pill px-3 py-2 btn-logout w-100" href="/logout.php">
+                <!-- REVISI: Path logout jadi dinamis pake BASE_URL -->
+                <a class="btn btn-sm d-flex align-items-center justify-content-center rounded-pill px-3 py-2 btn-logout w-100" href="<?= BASE_URL ?>/logout.php">
                     <i class="fas fa-sign-out-alt me-2"></i>Keluar
                 </a>
             </div>
@@ -262,7 +258,8 @@ date_default_timezone_set('Asia/Jakarta');
                             <i class="fas fa-bars"></i>
                         </button>
                         <div class="d-flex align-items-center">
-                            <img src="/assets/logo.png" alt="Logo" class="header-logo me-2">
+                            <!-- REVISI: Path logo jadi dinamis pake BASE_URL -->
+                            <img src="<?= BASE_URL ?>/assets/logo.png" alt="Logo" class="header-logo me-2">
                             <span class="fw-bold app-name align-middle" style="color: #25396f;">Pendataan Mukholif</span>
                         </div>
                     </div>
@@ -279,7 +276,8 @@ date_default_timezone_set('Asia/Jakarta');
                             </div>
                         </div>
                         <div class="vr mx-3"></div>
-                        <a class="btn btn-sm d-flex align-items-center rounded-pill px-3 py-2 btn-logout" href="/logout.php" title="Logout">
+                        <!-- REVISI: Path logout jadi dinamis pake BASE_URL -->
+                        <a class="btn btn-sm d-flex align-items-center rounded-pill px-3 py-2 btn-logout" href="<?= BASE_URL ?>/logout.php" title="Logout">
                             <i class="fas fa-sign-out-alt"></i>
                             <span class="ms-2 d-none d-xl-inline">Keluar</span>
                         </a>

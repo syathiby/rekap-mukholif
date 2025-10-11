@@ -42,7 +42,7 @@ if (!function_exists('has_permission')) {
 
 /**
  * =================================================================
- * PROTOKOL PENJAGAAN v3: guard()
+ * PROTOKOL PENJAGAAN v4: guard()
  * =================================================================
  * Fungsi ini menjaga halaman atau proses.
  * Jika user tidak lolos, akan ditendang atau dihentikan.
@@ -54,7 +54,8 @@ if (!function_exists('guard')) {
     function guard($permission = null) {
         // Peraturan #1: Belum login? Tendang ke halaman login.
         if (!isset($_SESSION['user_id'])) {
-            header("Location: /login.php");
+            // REVISI: Gunakan BASE_URL untuk path dinamis
+            header("Location: " . BASE_URL . "/login.php");
             exit; // Wajib: Hentikan eksekusi skrip setelah redirect.
         }
 
@@ -74,5 +75,32 @@ if (!function_exists('guard')) {
             }
         }
         // Kalau lolos semua peraturan, berarti aman. Lanjutkan!
+    }
+}
+
+
+/**
+ * =================================================================
+ * FUNGSI PENGHANCUR SESI v2: logout()
+ * =================================================================
+ * Menghancurkan session dan mengarahkan ke halaman login.
+ */
+if (!function_exists('logout')) {
+    function logout() {
+        // Mulai session jika belum aktif, untuk mengaksesnya
+        if (session_status() === PHP_SESSION_NONE) {
+            session_start();
+        }
+
+        // Hapus semua variabel session
+        $_SESSION = array();
+
+        // Hancurkan session
+        session_destroy();
+
+        // Arahkan pengguna kembali ke halaman login
+        // REVISI: Gunakan BASE_URL untuk path dinamis
+        header("Location: " . BASE_URL . "/login.php");
+        exit();
     }
 }
