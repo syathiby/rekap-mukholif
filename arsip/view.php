@@ -25,8 +25,23 @@ $stmt_total_kebersihan->execute();
 $total_kebersihan = $stmt_total_kebersihan->get_result()->fetch_assoc()['total'] ?? 0;
 $total_pelanggaran = $total_umum + $total_kebersihan;
 
-// 2. Top 10 Santri (tidak berubah)
-$stmt_santri = $conn->prepare("SELECT santri_nama, total_poin_saat_arsip FROM arsip_data_santri WHERE arsip_id = ? AND total_poin_saat_arsip > 0 ORDER BY total_poin_saat_arsip DESC LIMIT 10");
+// 2. Top 10 Santri (diubah untuk menghitung total poin dari arsip_data_pelanggaran)
+$stmt_santri = $conn->prepare("
+    SELECT 
+        santri_nama, 
+        SUM(poin) AS total_poin_pelanggaran 
+    FROM 
+        arsip_data_pelanggaran 
+    WHERE 
+        arsip_id = ? 
+    GROUP BY 
+        santri_nama 
+    HAVING 
+        SUM(poin) > 0
+    ORDER BY 
+        total_poin_pelanggaran DESC 
+    LIMIT 10
+");
 $stmt_santri->bind_param("i", $arsip_id);
 $stmt_santri->execute();
 $q_santri = $stmt_santri->get_result();
@@ -230,7 +245,7 @@ $json_tren_harian = json_encode([
                             <?php if ($q_santri->num_rows > 0): while($row = $q_santri->fetch_assoc()): ?>
                             <tr>
                                 <td><?= htmlspecialchars($row['santri_nama']) ?></td>
-                                <td class="text-center"><span class="badge"><?= $row['total_poin_saat_arsip'] ?></span></td>
+                                <td class="text-center"><span class="badge"><?= $row['total_poin_pelanggaran'] ?></span></td>
                             </tr>
                             <?php endwhile; else: ?>
                             <tr><td colspan="2" class="text-center text-muted">Tidak ada santri dengan poin.</td></tr>
