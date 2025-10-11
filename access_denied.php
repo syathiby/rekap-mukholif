@@ -1,5 +1,5 @@
 <?php
-// Kita butuh BASE_URL buat ngarahin ke logout.php dan aset dengan benar
+// Kita butuh BASE_URL buat ngarahin ke halaman utama dengan benar
 require_once __DIR__ . '/config.php';
 ?>
 <!DOCTYPE html>
@@ -7,93 +7,118 @@ require_once __DIR__ . '/config.php';
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Akses Ditolak</title>
-    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@700&display=swap" rel="stylesheet">
+    <title>404 Halaman Tidak Ditemukan</title>
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;700&display=swap" rel="stylesheet">
     <style>
         body {
             margin: 0;
             padding: 20px;
             box-sizing: border-box;
-            background-color: #1e272e; /* Warna background dari video */
+            background-color: #1e272e;
             font-family: 'Poppins', sans-serif;
             height: 100vh;
-            overflow: hidden;
             display: flex;
             align-items: center;
             justify-content: center;
             color: #ffffff;
+            text-align: center;
         }
 
         .container {
+            width: 100%;
+            max-width: 480px;
+            padding: 0 20px;
+        }
+        
+        .card {
+            background-color: #2c3a47;
+            border-radius: 16px;
+            padding: 1rem 2rem 2.5rem 2rem; 
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
+            /* Garis tepi dikasih warna aksen! */
+            border: 1px solid rgba(79, 195, 247, 0.25);
             display: flex;
             flex-direction: column;
             align-items: center;
-            justify-content: center;
-            text-align: center;
-            max-width: 100%;
+            transition: box-shadow 0.3s ease; /* Transisi halus untuk hover */
+        }
+        
+        .card:hover {
+            box-shadow: 0 0 25px rgba(79, 195, 247, 0.2); /* Efek glow saat disentuh mouse */
         }
 
-        /* Ini kontainer buat nampung animasinya */
         #lottie-container {
-            width: 90%;
-            max-width: 450px; /* Atur ukuran maksimal animasi di layar besar */
+            width: 100%;
+            max-width: 300px;
+            height: auto;
+            margin-bottom: 1rem;
         }
         
         .main-text {
             animation: fadeIn 1s 0.5s ease-out forwards;
             opacity: 0;
-            margin-top: -2rem; /* Tarik teks sedikit ke atas biar lebih pas */
         }
 
         .main-text h1 {
-            font-size: clamp(2rem, 6vw, 3rem); /* Ukuran font responsif */
-            margin: 0;
+            font-size: clamp(2.2rem, 8vw, 3rem);
+            margin: 0 0 0.75rem 0;
             text-transform: uppercase;
             letter-spacing: 2px;
+            font-weight: 700;
+            line-height: 1.2;
+            /* Ini dia warnanya! */
+            color: #4fc3f7; 
+            /* Dikasih bayangan biar sedikit 'glow' */
+            text-shadow: 0 0 10px rgba(79, 195, 247, 0.3);
         }
 
         .main-text p {
-            font-size: clamp(0.9rem, 3vw, 1.2rem); /* Ukuran font responsif */
-            margin-top: 0.5rem;
+            font-size: clamp(0.9rem, 4vw, 1rem);
+            margin: 0;
             opacity: 0.8;
+            line-height: 1.6;
+            font-weight: 400;
         }
 
         @keyframes fadeIn {
             to { opacity: 1; }
         }
+
+        @media (max-width: 480px) {
+            .card {
+                padding: 1rem 1.5rem 2rem 1.5rem;
+            }
+        }
     </style>
 </head>
 <body>
     <div class="container">
-        <!-- Kontainer buat animasi Lottie -->
-        <div id="lottie-container"></div>
-        
-        <div class="main-text">
-            <h1>Oops! Akses Ditolak</h1>
-            <p>Sesi Anda akan diakhiri secara otomatis...</p>
+        <div class="card">
+            <div id="lottie-container"></div>
+            
+            <div class="main-text">
+                <h1>404 Not Found</h1>
+                <p>Maaf, halaman yang Anda cari tidak dapat ditemukan. Anda akan dialihkan kembali secara otomatis.</p>
+            </div>
         </div>
     </div>
 
-    <!-- Panggil library Lottie dari CDN -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/lottie-web/5.12.2/lottie.min.js"></script>
-
     <script>
-        // Inisialisasi Lottie
         const animationContainer = document.getElementById('lottie-container');
 
         const anim = lottie.loadAnimation({
-            container: animationContainer, // wadah animasinya
-            renderer: 'svg', // pake SVG biar tajem
-            loop: true, // ulang terus animasinya
-            autoplay: true, // langsung mainin
-            path: '<?= BASE_URL ?>/assets/animations/error-animation.json' // Path ke file JSON lu
+            container: animationContainer,
+            renderer: 'svg',
+            loop: true,
+            autoplay: true,
+            path: '<?= BASE_URL ?>/assets/animations/error-animation.json' // Pastikan path ini benar
         });
 
-        // Setelah 10 detik, tendang user keluar!
+        // Diubah jadi 5 detik sesuai permintaan lu
         setTimeout(() => {
-            window.location.href = '<?= BASE_URL ?>/logout.php';
-        }, 10000); // 10000 milidetik = 10 detik
+            window.location.href = '<?= BASE_URL ?>'; 
+        }, 5000);
     </script>
-
 </body>
 </html>
