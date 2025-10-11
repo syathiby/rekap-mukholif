@@ -1,91 +1,98 @@
+<?php
+// Kita butuh BASE_URL buat ngarahin ke logout.php dan aset dengan benar
+require_once __DIR__ . '/config.php';
+?>
 <!DOCTYPE html>
 <html lang="id">
 <head>
     <meta charset="UTF-8">
-    <!-- Meta viewport disuntik oleh JS di bawah jika belum ada -->
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Akses Ditolak</title>
-    
-    <!-- CSS Links -->
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
-    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600&display=swap" rel="stylesheet">
-
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@700&display=swap" rel="stylesheet">
     <style>
-        /* Styling ini nargetin div yang disisipin ke konten utama */
         body {
             margin: 0;
-            background-color: #f8f9fa; /* Warna latar belakang biar nggak putih polos */
-        }
-        .access-denied-container {
-            width: 100%;
-            min-height: 100vh; 
+            padding: 20px;
+            box-sizing: border-box;
+            background-color: #1e272e; /* Warna background dari video */
+            font-family: 'Poppins', sans-serif;
+            height: 100vh;
+            overflow: hidden;
             display: flex;
             align-items: center;
             justify-content: center;
-            font-family: 'Poppins', sans-serif;
-            padding: 1rem;
-            box-sizing: border-box;
+            color: #ffffff;
         }
-        .access-denied-card {
-            background-color: #ffffff;
-            padding: 2.5rem 3rem;
-            border-radius: 1rem;
-            box-shadow: 0 8px 25px rgba(0,0,0,0.1);
-            border: none;
+
+        .container {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
             text-align: center;
-            max-width: 500px;
-            width: 100%;
-            animation: fadeInZoom 0.6s ease-out forwards;
+            max-width: 100%;
+        }
+
+        /* Ini kontainer buat nampung animasinya */
+        #lottie-container {
+            width: 90%;
+            max-width: 450px; /* Atur ukuran maksimal animasi di layar besar */
         }
         
-        @keyframes fadeInZoom {
-            from { opacity: 0; transform: scale(0.95); }
-            to { opacity: 1; transform: scale(1); }
+        .main-text {
+            animation: fadeIn 1s 0.5s ease-out forwards;
+            opacity: 0;
+            margin-top: -2rem; /* Tarik teks sedikit ke atas biar lebih pas */
         }
 
-        .access-denied-card .icon {
-            font-size: 4rem; color: #dc3545; margin-bottom: 1.5rem;
-        }
-        .access-denied-card h1 {
-            font-size: 2rem; font-weight: 600; color: #343a40; margin-bottom: 0.75rem;
-        }
-        .access-denied-card p {
-            font-size: 1.1rem; color: #6c757d; margin-bottom: 2rem;
-        }
-        .access-denied-card .btn {
-            padding: 0.75rem 1.5rem; font-size: 1rem;
+        .main-text h1 {
+            font-size: clamp(2rem, 6vw, 3rem); /* Ukuran font responsif */
+            margin: 0;
+            text-transform: uppercase;
+            letter-spacing: 2px;
         }
 
-        /* Jurus responsive untuk tampilan HP */
-        @media (max-width: 576px) {
-            .access-denied-card { padding: 2rem 1.5rem; }
-            .access-denied-card .icon { font-size: 3.5rem; margin-bottom: 1rem; }
-            .access-denied-card h1 { font-size: 1.75rem; }
-            .access-denied-card p { font-size: 1rem; margin-bottom: 1.5rem; }
+        .main-text p {
+            font-size: clamp(0.9rem, 3vw, 1.2rem); /* Ukuran font responsif */
+            margin-top: 0.5rem;
+            opacity: 0.8;
+        }
+
+        @keyframes fadeIn {
+            to { opacity: 1; }
         }
     </style>
 </head>
 <body>
-
-    <div class='access-denied-container'>
-        <div class='access-denied-card'>
-            <div class='icon'><i class='fas fa-ban'></i></div>
-            <h1>Akses Ditolak</h1>
-            <p>Maaf, Anda tidak memiliki izin untuk mengakses halaman ini.</p>
-            <a href='/index.php' class='btn btn-primary'><i class='fas fa-home me-2'></i>Kembali ke Dashboard</a>
+    <div class="container">
+        <!-- Kontainer buat animasi Lottie -->
+        <div id="lottie-container"></div>
+        
+        <div class="main-text">
+            <h1>Oops! Akses Ditolak</h1>
+            <p>Sesi Anda akan diakhiri secara otomatis...</p>
         </div>
     </div>
-    
-    <!-- JURUS SAKTI: Cek & Suntik meta viewport jika belum ada -->
+
+    <!-- Panggil library Lottie dari CDN -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/lottie-web/5.12.2/lottie.min.js"></script>
+
     <script>
-        (function() {
-            if (!document.querySelector('meta[name="viewport"]')) {
-                var meta = document.createElement('meta');
-                meta.name = 'viewport';
-                meta.content = 'width=device-width, initial-scale=1.0';
-                document.getElementsByTagName('head')[0].appendChild(meta);
-            }
-        })();
+        // Inisialisasi Lottie
+        const animationContainer = document.getElementById('lottie-container');
+
+        const anim = lottie.loadAnimation({
+            container: animationContainer, // wadah animasinya
+            renderer: 'svg', // pake SVG biar tajem
+            loop: true, // ulang terus animasinya
+            autoplay: true, // langsung mainin
+            path: '<?= BASE_URL ?>/assets/animations/error-animation.json' // Path ke file JSON lu
+        });
+
+        // Setelah 10 detik, tendang user keluar!
+        setTimeout(() => {
+            window.location.href = '<?= BASE_URL ?>/logout.php';
+        }, 10000); // 10000 milidetik = 10 detik
     </script>
 
 </body>

@@ -94,6 +94,7 @@
 ├─auth.php
 ├─access_denied.php
 ├─helpers.php
+├─config.php
 ├─db.php                    
 ├─footer.php
 ├─header.php

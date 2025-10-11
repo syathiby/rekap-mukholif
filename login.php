@@ -5,6 +5,8 @@ if (session_status() === PHP_SESSION_NONE) {
     session_start();
 }
 
+// Panggil file config sakti kita buat dapetin BASE_URL
+require_once __DIR__ . '/config.php';
 include 'db.php';
 
 $error = '';
@@ -40,7 +42,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             // Buat "kantong tiket" buat user
             $_SESSION['permissions'] = $user['permissions'] ? explode(',', $user['permissions']) : [];
 
-            header("Location: index.php");
+            // REVISI: Arahkan ke halaman index pake BASE_URL
+            header("Location: " . BASE_URL . "/index.php");
             exit;
         } else {
             $error = "❌ Password salah!";
@@ -57,14 +60,15 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Login Sistem</title>
-    <link rel="icon" type="image/png" sizes="64x64" href="/assets/logo.png">
+    <!-- REVISI: Path favicon jadi dinamis pake BASE_URL -->
+    <link rel="icon" type="image/png" sizes="64x64" href="<?= BASE_URL ?>/assets/logo.png">
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600&display=swap" rel="stylesheet">
     <style>
         body {
-            background-color: #f4f7fa; /* Warna background dari tema utama */
+            background-color: #f4f7fa;
             display: flex;
             justify-content: center;
             align-items: center;
@@ -75,9 +79,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         }
         .login-card {
             background: #fff;
-            border-radius: 12px; /* Lebih rounded */
-            box-shadow: 0 8px 24px rgba(0,0,0,0.08); /* Shadow lebih soft */
-            padding: 2.5rem; /* Padding lebih luas */
+            border-radius: 12px;
+            box-shadow: 0 8px 24px rgba(0,0,0,0.08);
+            padding: 2.5rem;
             width: 100%;
             max-width: 400px;
         }
@@ -86,17 +90,17 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             margin-bottom: 2rem;
         }
         .login-logo {
-            max-width: 60px; /* Ukuran logo */
+            max-width: 60px;
             margin-bottom: 1rem;
         }
         .login-header h4 {
             font-weight: 600;
-            color: #1e293b; /* Warna teks gelap dari tema utama */
+            color: #1e293b;
         }
         .form-control {
             border-radius: 8px;
             padding: 0.75rem 1rem;
-            border: 1px solid #e2e8f0; /* Border lebih soft */
+            border: 1px solid #e2e8f0;
         }
         .form-control:focus {
             border-color: #0d6efd;
@@ -112,25 +116,23 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         .btn-login:hover {
             background-color: #0b5ed7;
         }
-        /* ✅ FIX: CSS UNTUK IKON PASSWORD */
         .password-wrapper {
             position: relative;
             display: flex;
             align-items: center;
         }
         .password-wrapper .form-control {
-            padding-right: 40px; /* Beri ruang untuk ikon di dalam input */
+            padding-right: 40px;
         }
         .password-toggle {
             position: absolute;
             right: 12px;
-            /* Hapus top & transform, karena flex udah nanganin vertical centering */
             cursor: pointer;
             background: none;
             border: none;
             color: #6c757d;
             padding: 0;
-            line-height: 1; /* Biar ikonnya gak punya tinggi aneh */
+            line-height: 1;
         }
         .alert {
             border-radius: 8px;
@@ -140,8 +142,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 <body>
     <div class="login-card">
         <div class="login-header">
-            <!-- ✅ FIX: Tambahin logo aplikasi di sini -->
-            <img src="../assets/logo.png" alt="Logo Aplikasi" class="login-logo">
+            <!-- REVISI: Path logo jadi dinamis pake BASE_URL -->
+            <img src="<?= BASE_URL ?>/assets/logo.png" alt="Logo Aplikasi" class="login-logo">
             <h4>Login Sistem</h4>
             <p class="text-muted">Masukkan kredensial Anda untuk melanjutkan</p>
         </div>
@@ -158,7 +160,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
             <div class="mb-3">
                 <label for="password" class="form-label">Password</label>
-                <!-- ✅ FIX: Bikin wadah baru buat input & ikonnya -->
                 <div class="password-wrapper">
                     <input type="password" class="form-control" id="password" name="password" required placeholder="••••••••">
                     <button type="button" class="password-toggle" onclick="togglePassword()">
