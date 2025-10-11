@@ -1,5 +1,6 @@
 <?php
 if (session_status() === PHP_SESSION_NONE) { session_start(); }
+require_once __DIR__ . '/../../config.php';
 require_once __DIR__ . '/../../db.php';
 require_once __DIR__ . '/../../auth.php';
 
@@ -18,7 +19,7 @@ if (isset($_GET['id']) && is_numeric($_GET['id'])) {
     }
 
     // ====================================================================
-    // ===== BAGIAN BARU: CEK ROLE SEBELUM HAPUS =====
+    // ===== BAGIAN CEK ROLE SEBELUM HAPUS (FIXED) =====
     // ====================================================================
     // Ambil dulu data role dari user yang mau dihapus
     $stmt_check = $conn->prepare("SELECT role FROM users WHERE id = ?");
@@ -26,14 +27,17 @@ if (isset($_GET['id']) && is_numeric($_GET['id'])) {
     $stmt_check->execute();
     $result_check = $stmt_check->get_result();
 
+    // **PERBAIKAN:** Cek dulu apakah user-nya ada & ambil datanya
     if ($result_check->num_rows > 0) {
-        $user_data = $result_check->fetch_assoc();
-        // Kalau rolenya 'admin', batalkan proses dan kasih notif
-        if (strtolower($user_data['role']) === 'admin') {
-            $_SESSION['error_message'] = "❌ Wih, jago! Tapi sayangnya, Role Admin tidak dapat dihapus.";
+        // **PERBAIKAN:** Ambil data hasil query ke variabel baru
+        $user_to_delete_data = $result_check->fetch_assoc(); 
+
+        // **PERBAIKAN:** Gunakan variabel yang benar untuk pengecekan
+        if (strtolower($user_to_delete_data['role']) === 'admin') {
+            // Kalau rolenya 'admin', langsung tendang ke halaman akses ditolak
             $stmt_check->close();
             $conn->close();
-            header("Location: index.php");
+            header("Location: " . BASE_URL . "/access_denied.php");
             exit;
         }
     }

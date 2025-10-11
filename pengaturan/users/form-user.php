@@ -38,8 +38,8 @@ if (isset($_GET['id']) && is_numeric($_GET['id'])) {
             strtolower($user_data['role']) === 'admin' &&
             (!isset($_SESSION['role']) || strtolower($_SESSION['role']) !== 'admin')
         ) {
-            $_SESSION['error_message'] = "❌ Wih, jago! Tapi sayangnya, user Admin tidak dapat di edit.";
-            header("Location: index.php");
+            // Hapus pesan session, langsung tendang ke halaman akses ditolak
+            header("Location: " . BASE_URL . "/access_denied.php");
             exit;
         }
 
