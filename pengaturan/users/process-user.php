@@ -1,5 +1,6 @@
 <?php
 if (session_status() === PHP_SESSION_NONE) { session_start(); }
+require_once __DIR__ . '/../../config.php';
 require_once __DIR__ . '/../../db.php';
 require_once __DIR__ . '/../../auth.php';
 
@@ -31,8 +32,14 @@ if (!$is_edit_mode && empty($password)) {
 
 // --- LOGIKA BARU: VALIDASI ROLE ADMIN DI SISI SERVER ---
 if ($role === 'admin') {
+    // Cek apakah BASE_URL sudah didefinisikan untuk keamanan
+    if (!defined('BASE_URL')) {
+        // Fallback jika BASE_URL tidak ada, meskipun seharusnya ada dari config
+        die("Konfigurasi BASE_URL tidak ditemukan.");
+    }
+
     if ($is_edit_mode) {
-        // Mode edit: Cek role asli user di database. Boleh save kalau role aslinya emang udah admin.
+        // Mode edit: Cek role asli user di database.
         $user_id_check = (int)$_POST['user_id'];
         $stmt_role_check = $conn->prepare("SELECT role FROM users WHERE id = ?");
         $stmt_role_check->bind_param("i", $user_id_check);
@@ -41,18 +48,19 @@ if ($role === 'admin') {
         
         if ($result_role->num_rows === 1) {
             $user_asli = $result_role->fetch_assoc();
-            // Jika role aslinya BUKAN admin, maka tolak perubahan jadi admin
+            // Jika role aslinya BUKAN admin, langsung tendang!
             if (strtolower($user_asli['role']) !== 'admin') {
-                $_SESSION['error_message'] = "❌ Wih, jago! Tapi sayangnya, Anda tidak bisa mengubah role user lain menjadi 'Admin'.";
-                header("Location: $redirect_url");
+                $stmt_role_check->close();
+                $conn->close();
+                header("Location: " . BASE_URL . "/access_denied.php");
                 exit;
             }
         }
         $stmt_role_check->close();
     } else {
-        // Mode tambah: Langsung tolak jika mencoba membuat user admin baru
-        $_SESSION['error_message'] = "❌ Wih, jago! Tapi sayangnya, Anda tidak bisa menambahkan user baru dengan role 'Admin'.";
-        header("Location: $redirect_url");
+        // Mode tambah: Langsung tendang jika mencoba membuat admin baru!
+        $conn->close();
+        header("Location: " . BASE_URL . "/access_denied.php");
         exit;
     }
 }
