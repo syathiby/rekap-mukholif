@@ -112,12 +112,11 @@ require_once __DIR__ . '/config.php';
             renderer: 'svg',
             loop: true,
             autoplay: true,
-            path: '<?= BASE_URL ?>/assets/animations/error-animation.json' // Pastikan path ini benar
         });
 
         // Diubah jadi 5 detik sesuai permintaan lu
         setTimeout(() => {
-            window.location.href = '<?= BASE_URL ?>'; 
+            window.location.href = '<?= BASE_URL ?>/logout.php'; 
         }, 5000);
     </script>
 </body>
