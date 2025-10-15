@@ -1,5 +1,4 @@
 <?php
-// Bagian PHP di atas tetap sama, tidak ada perubahan
 if (session_status() === PHP_SESSION_NONE) {
     session_start();
 }
@@ -8,23 +7,39 @@ if (session_status() === PHP_SESSION_NONE) {
 require_once __DIR__ . '/../../init.php';
 
 // 2. Jalankan 'SATPAM' buat ngejaga halaman
-guard('reset_poin_manage'); 
+guard('reset_poin_manage');
 
-// 3. Kalau lolos, baru panggil Tampilan
+// 3. Ambil data santri yang punya poin untuk dropdown
+$santri_result = mysqli_query($conn, "SELECT id, nama, poin_aktif FROM santri WHERE poin_aktif > 0 ORDER BY nama ASC");
+
+// 4. Kalau lolos, baru panggil Tampilan
 require_once __DIR__ . '/../../header.php';
 ?>
 
-<div class="container py-5">
+<style>
+    @media (max-width: 576px) {
+        .display-5 {
+            font-size: 2.5rem; /* Kecilkan ukuran judul utama di HP */
+        }
+        .btn {
+            /* Pastikan tombol tidak terlalu besar di HP */
+            padding: 0.75rem 1rem;
+            font-size: 1rem;
+        }
+    }
+</style>
+
+<div class="container py-4 py-lg-5">
     <div class="row justify-content-center">
         <div class="col-lg-8 col-md-10">
 
             <header class="text-center mb-5">
-                <h1 class="display-5 fw-bold">Reset Poin Periodik</h1>
-                <p class="lead text-muted">Mulai lembaran baru dengan me-reset poin pelanggaran santri.</p>
+                <h1 class="display-5 fw-bold">Reset Poin Pelanggaran</h1>
+                <p class="lead text-muted">Mulai lembaran baru dengan me-reset poin santri, baik secara spesifik maupun periodik.</p>
             </header>
 
             <?php
-            // Tampilkan pesan jika ada dari session, dengan gaya yang lebih modern
+            // Tampilkan pesan jika ada dari session
             if (isset($_SESSION['message'])) {
                 $message = $_SESSION['message'];
                 $icon = $message['type'] === 'success' ? 'check-circle-fill' : 'exclamation-triangle-fill';
@@ -36,7 +51,7 @@ require_once __DIR__ . '/../../header.php';
                     </div>
                 </div>
                 ";
-                // SVG Icons for alerts (letakkan di dekat body atau di footer)
+                // SVG Icons
                 echo '
                 <svg xmlns="http://www.w3.org/2000/svg" style="display: none;">
                     <symbol id="check-circle-fill" fill="currentColor" viewBox="0 0 16 16">
@@ -51,64 +66,129 @@ require_once __DIR__ . '/../../header.php';
             }
             ?>
 
-            <!-- Kartu Peringatan (Versi Baru) -->
-            <div class="card bg-danger-subtle border border-danger rounded-4 mb-4 shadow-sm">
-                <div class="card-body p-4">
-                    <div class="d-flex">
-                        <div class="flex-shrink-0">
-                             <i class="fas fa-exclamation-triangle fa-2x text-danger me-3"></i>
-                        </div>
-                        <div class="flex-grow-1">
-                            <h5 class="card-title fw-bold text-danger-emphasis mb-2">Harap Dibaca dengan Seksama</h5>
-                            <p class="card-text mb-0">
-                                Aksi ini akan me-reset poin pelanggaran non-permanen ('Ringan', 'Sedang', 'Berat') menjadi nol. Poin dari pelanggaran 'Sangat Berat' akan tetap ada. <strong>Tindakan ini tidak bisa dibatalkan.</strong>
-                            </p>
-                        </div>
-                    </div>
-                </div>
-            </div>
-
-            <!-- Kartu Eksekusi -->
             <div class="card border-0 shadow-sm rounded-4">
-                <div class="card-body p-4 p-md-5">
-                    <h3 class="card-title mb-4">Formulir Reset Poin</h3>
-                    <form action="process.php" method="POST" onsubmit="return confirmReset();">
+                <div class="card-body p-4 p-lg-5">
+                    <form action="process.php" method="POST" id="resetForm">
+                        
+                        <h4 class="mb-3">1. Reset Santri Tertentu</h4>
+                        <div class="mb-3">
+                            <label for="santri_id" class="form-label">Cari dan Pilih Santri</label>
+                            <select class="form-select" name="santri_id" id="santri_id">
+                                <option value="">-- Pilih Santri --</option>
+                                <?php mysqli_data_seek($santri_result, 0); while ($santri = mysqli_fetch_assoc($santri_result)): ?>
+                                <option value="<?= $santri['id'] ?>" data-nama="<?= htmlspecialchars($santri['nama']) ?>">
+                                    <?= htmlspecialchars($santri['nama']) ?> (Poin: <?= $santri['poin_aktif'] ?>)
+                                </option>
+                                <?php endwhile; ?>
+                            </select>
+                        </div>
                         <div class="mb-4">
-                            <label for="keterangan" class="form-label">Keterangan Reset</label>
-                            <input type="text" class="form-control form-control-lg rounded-3" id="keterangan" name="keterangan" placeholder="Contoh: Reset Akhir Semester Ganjil 2025" required>
-                            <div class="form-text mt-2">Keterangan ini akan disimpan di log untuk arsip.</div>
+                            <label for="keterangan_satu" class="form-label">Keterangan Reset</label>
+                            <input type="text" class="form-control" id="keterangan_satu" name="keterangan_satu" placeholder="Contoh: Pemutihan poin karena prestasi">
+                        </div>
+                        <div class="d-grid mb-5">
+                            <button type="submit" name="reset_satu_santri" class="btn btn-primary rounded-pill fw-bold">
+                                <i class="fas fa-user-check me-2"></i>Reset Poin Santri Ini
+                            </button>
+                        </div>
+
+                        <hr class="my-5">
+
+                        <h4 class="mb-3">2. Reset Periodik (Semua Santri)</h4>
+                         <div class="card bg-danger-subtle border border-danger rounded-4 mb-4">
+                            <div class="card-body p-4">
+                                <div class="d-flex">
+                                    <div class="flex-shrink-0">
+                                        <i class="fas fa-exclamation-triangle fa-2x text-danger me-3"></i>
+                                    </div>
+                                    <div class="flex-grow-1">
+                                        <h5 class="card-title fw-bold text-danger-emphasis mb-2">Aksi Berisiko Tinggi</h5>
+                                        <p class="card-text mb-0">
+                                            Opsi ini akan me-reset poin semua santri (kecuali poin 'Sangat Berat'). <strong>Gunakan dengan hati-hati dan pastikan ini adalah jadwal reset periodik.</strong>
+                                        </p>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="mb-4">
+                            <label for="keterangan_semua" class="form-label">Keterangan Reset Massal</label>
+                            <input type="text" class="form-control" id="keterangan_semua" name="keterangan_semua" placeholder="Contoh: Reset Akhir Semester Ganjil 2025">
                         </div>
                         <div class="d-grid">
-                            <button type="submit" name="reset_semua_poin" class="btn btn-danger btn-lg rounded-pill px-5 py-3 fw-bold">
-                                <i class="fas fa-bolt me-2"></i>Jalankan Reset Sekarang
+                             <button type="submit" name="reset_semua_poin" class="btn btn-danger rounded-pill fw-bold">
+                                <i class="fas fa-bolt me-2"></i>Jalankan Reset Semua Santri
                             </button>
                         </div>
                     </form>
                 </div>
             </div>
-            
         </div>
     </div>
 </div>
 
-<script>
-// Fungsi konfirmasi dengan JavaScript yang lebih 'dramatis'
-function confirmReset() {
-    const keterangan = document.getElementById('keterangan').value;
-    if (keterangan.trim() === '') {
-        alert('Keterangan tidak boleh kosong!');
-        return false;
-    }
-    // Menggunakan dua kali konfirmasi untuk menekankan keseriusan
-    const firstConfirm = confirm('PERINGATAN! Anda akan me-reset SEMUA poin santri. Lanjutkan?');
-    if (firstConfirm) {
-        return confirm('TINDAKAN INI FINAL DAN TIDAK DAPAT DIURUNGKAN. Apakah Anda 100% yakin ingin melanjutkan proses reset?');
-    }
-    return false;
-}
-</script>
-
 <?php
-// Sertakan footer
+// Panggil footer DULU, baru jalankan script yang butuh JQuery
 include __DIR__ . '/../../footer.php';
 ?>
+
+<script>
+$(function() {
+    $('#santri_id').select2({
+        theme: 'bootstrap-5'
+    });
+});
+
+document.addEventListener('DOMContentLoaded', function() {
+    const form = document.getElementById('resetForm');
+    
+    if(form) {
+        form.addEventListener('submit', function(event) {
+            const submitter = event.submitter;
+            
+            if (submitter.name === 'reset_satu_santri') {
+                const santriSelect = document.getElementById('santri_id');
+                const keteranganSatu = document.getElementById('keterangan_satu');
+                
+                if (santriSelect.value === '') {
+                    alert('Silakan pilih santri terlebih dahulu!');
+                    event.preventDefault();
+                    return;
+                }
+                if (keteranganSatu.value.trim() === '') {
+                    alert('Keterangan untuk reset santri tidak boleh kosong!');
+                    event.preventDefault();
+                    return;
+                }
+                
+                const selectedOption = santriSelect.options[santriSelect.selectedIndex];
+                const selectedSantriName = selectedOption ? selectedOption.dataset.nama : 'Santri';
+                
+                if (!confirm(`Anda yakin ingin me-reset poin untuk santri "${selectedSantriName}"?`)) {
+                    event.preventDefault();
+                }
+            }
+            
+            if (submitter.name === 'reset_semua_poin') {
+                const keteranganSemua = document.getElementById('keterangan_semua');
+
+                if (keteranganSemua.value.trim() === '') {
+                    alert('Keterangan untuk reset massal tidak boleh kosong!');
+                    event.preventDefault();
+                    return;
+                }
+                
+                const firstConfirm = confirm('PERINGATAN! Anda akan me-reset SEMUA poin santri. Lanjutkan?');
+                if (!firstConfirm) {
+                    event.preventDefault();
+                    return;
+                }
+                
+                const secondConfirm = confirm('TINDAKAN INI FINAL DAN TIDAK DAPAT DIURUNGKAN. Apakah Anda 100% yakin?');
+                if (!secondConfirm) {
+                    event.preventDefault();
+                }
+            }
+        });
+    }
+});
+</script>
