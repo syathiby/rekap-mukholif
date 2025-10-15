@@ -6,7 +6,7 @@ require_once __DIR__ . '/../init.php';
 guard('rekap_view_statistik');
 
 // 3. Kalau lolos, baru panggil Tampilan
-require_once __DIR__ . '/../header.php'; 
+require_once __DIR__ . '/../header.php';
 
 // Ambil periode aktif dari pengaturan
 $q = mysqli_query($conn, "SELECT nilai FROM pengaturan WHERE nama = 'periode_aktif' LIMIT 1");
@@ -33,8 +33,29 @@ $stmt_total2->execute();
 $total2 = $stmt_total2->get_result()->fetch_assoc()['total'];
 $total_pelanggaran = $total1 + $total2;
 
-// 2. Top 10 Santri
-$stmt_santri = $conn->prepare("SELECT nama, poin_aktif FROM santri WHERE poin_aktif > 0 ORDER BY poin_aktif DESC LIMIT 10");
+// 2. Top 10 Santri (VERSI BARU - SESUAI FILTER TANGGAL)
+$stmt_santri = $conn->prepare("
+    SELECT
+        s.nama,
+        SUM(jp.poin) AS total_poin_periode
+    FROM
+        pelanggaran AS p
+    JOIN santri AS s
+    ON
+        p.santri_id = s.id
+    JOIN jenis_pelanggaran AS jp
+    ON
+        p.jenis_pelanggaran_id = jp.id
+    WHERE
+        p.tanggal >= ? AND p.tanggal <= ?
+    GROUP BY
+        s.id,
+        s.nama
+    ORDER BY
+        total_poin_periode DESC
+    LIMIT 10
+");
+$stmt_santri->bind_param("ss", $tgl_mulai_sql, $tgl_selesai_sql);
 $stmt_santri->execute();
 $q_santri = $stmt_santri->get_result();
 
@@ -43,8 +64,10 @@ $stmt_jenis1 = $conn->prepare("SELECT j.nama_pelanggaran, COUNT(*) as total FROM
 $stmt_jenis1->bind_param("ss", $tgl_mulai_sql, $tgl_selesai_sql);
 $stmt_jenis1->execute();
 $data_jenis_pelanggaran = $stmt_jenis1->get_result()->fetch_all(MYSQLI_ASSOC);
-if ($total2 > 0) { $data_jenis_pelanggaran[] = ['nama_pelanggaran' => 'KEBERSIHAN KAMAR', 'total' => $total2]; }
-usort($data_jenis_pelanggaran, fn($a, $b) => $b['total'] <=> $a['total']);
+if ($total2 > 0) {
+    $data_jenis_pelanggaran[] = ['nama_pelanggaran' => 'KEBERSIHAN KAMAR', 'total' => $total2];
+}
+usort($data_jenis_pelanggaran, fn ($a, $b) => $b['total'] <=> $a['total']);
 $total_semua_jenis = array_sum(array_column($data_jenis_pelanggaran, 'total'));
 
 // 4. Data Per Kelas
@@ -59,16 +82,10 @@ $stmt_kamar = $conn->prepare("SELECT kamar, COUNT(*) AS total FROM pelanggaran_k
 $stmt_kamar->bind_param("ss", $tgl_mulai_sql, $tgl_selesai_sql);
 $stmt_kamar->execute();
 $data_per_kamar = $stmt_kamar->get_result()->fetch_all(MYSQLI_ASSOC);
-$labels_kamar = array_map(fn($item) => "Kamar " . $item['kamar'], $data_per_kamar);
+$labels_kamar = array_map(fn ($item) => "Kamar " . $item['kamar'], $data_per_kamar);
 $json_per_kamar = json_encode(['labels' => $labels_kamar, 'data' => array_column($data_per_kamar, 'total')]);
 
-
-// ==========================================================
-// === BAGIAN INI DI-UPGRADE UNTUK MENAMBAHKAN DATA KEBERSIHAN ===
-// ==========================================================
-
 // 6. DATA SEBARAN PER BAGIAN
-// Step 1: Ambil data bagian dari pelanggaran umum
 $stmt_bagian = $conn->prepare("
     SELECT jp.bagian, COUNT(p.id) AS total 
     FROM pelanggaran p 
@@ -80,22 +97,15 @@ $stmt_bagian = $conn->prepare("
 $stmt_bagian->bind_param("ss", $tgl_mulai_sql, $tgl_selesai_sql);
 $stmt_bagian->execute();
 $data_per_bagian = $stmt_bagian->get_result()->fetch_all(MYSQLI_ASSOC);
-
-// Step 2: "Suntik" data total kebersihan dari variabel $total2
 if ($total2 > 0) {
     $data_per_bagian[] = ['bagian' => 'Kebersihan', 'total' => $total2];
 }
-
-// Step 3: (Opsional tapi bagus) Urutkan ulang datanya biar yang paling banyak tetap di atas
-usort($data_per_bagian, fn($a, $b) => $b['total'] <=> $a['total']);
-
-// Step 4: Baru buat JSON dari data yang sudah digabung dan diurutkan
+usort($data_per_bagian, fn ($a, $b) => $b['total'] <=> $a['total']);
 $json_per_bagian = json_encode(['labels' => array_column($data_per_bagian, 'bagian'), 'data' => array_column($data_per_bagian, 'total')]);
-
 ?>
 
 <style>
-    /* ... (SEMUA CSS LU DARI ATAS SAMPAI BAWAH TETAP SAMA, TIDAK ADA PERUBAHAN) ... */
+    /* ... (CSS TETAP SAMA, TIDAK ADA PERUBAHAN) ... */
     :root { --primary: #4f46e5; --primary-light: #e0e7ff; --secondary: #10b981; --accent: #ef4444; --text-dark: #111827; --text-light: #6b7280; --bg-light: #f9fafb; --border-color: #e5e7eb; --card-bg: #ffffff; --card-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05), 0 2px 4px -2px rgba(0, 0, 0, 0.05); --hover-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.07), 0 4px 6px -4px rgba(0, 0, 0, 0.07); }
     body { background-color: var(--bg-light); color: var(--text-dark); font-family: 'Poppins', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif; }
     .dashboard-header { background-color: var(--card-bg); color: var(--text-dark); padding: 25px; border-radius: 16px; margin-bottom: 25px; border: 1px solid var(--border-color); }
@@ -126,33 +136,10 @@ $json_per_bagian = json_encode(['labels' => array_column($data_per_bagian, 'bagi
     .chart-filters button.active { background-color: var(--primary-light); color: var(--primary); border-color: var(--primary); font-weight: 600; }
     .progress-bar-container { background-color: #e5e7eb; border-radius: 10px; height: 8px; width: 100px; overflow: hidden; }
     .progress-bar { background-color: var(--secondary); height: 100%; border-radius: 10px; }
-    
-    /* CSS PERBAIKAN GRAFIK DARI SEBELUMNYA */
-    .chart-container {
-        position: relative;
-        min-height: 380px; 
-        width: 100%;
-        flex-grow: 1;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-    }
-    /* Kelas khusus buat card chart garis biar lebih tinggi & lega */
-    .chart-container.chart-container-tall {
-        min-height: 450px; /* Nilainya kita naikin biar lebih lega */
-    }
-    
-    .chart-scroll-container {
-        position: relative;
-        overflow-x: auto;
-        -webkit-overflow-scrolling: touch;
-        padding-bottom: 10px;
-        width: 100%;
-    }
-    .chart-scroll-container canvas {
-        min-width: 500px;
-    }
-
+    .chart-container { position: relative; min-height: 380px; width: 100%; flex-grow: 1; display: flex; align-items: center; justify-content: center; }
+    .chart-container.chart-container-tall { min-height: 450px; }
+    .chart-scroll-container { position: relative; overflow-x: auto; -webkit-overflow-scrolling: touch; padding-bottom: 10px; width: 100%; }
+    .chart-scroll-container canvas { min-width: 500px; }
     @media (max-width: 768px) {
         .dashboard-card { padding: 20px; }
         h2.dashboard-title { font-size: 22px; }
@@ -211,8 +198,10 @@ $json_per_bagian = json_encode(['labels' => array_column($data_per_bagian, 'bagi
     <div class="card dashboard-card mb-4">
         <h3 class="card-title"><i class="fa-solid fa-chart-line"></i> Tren Pelanggaran Harian</h3>
         <div class="chart-filters">
-            <button id="filter-7d" class="active">7 Hari</button> <button id="filter-1m">1 Bulan</button>
-            <button id="filter-3m">3 Bulan</button> <button id="filter-1y">1 Tahun</button>
+            <button id="filter-7d" class="active">7 Hari</button>
+            <button id="filter-1m">1 Bulan</button>
+            <button id="filter-3m">3 Bulan</button>
+            <button id="filter-1y">1 Tahun</button>
         </div>
         <div class="chart-container chart-container-tall">
             <div class="chart-scroll-container">
@@ -236,16 +225,24 @@ $json_per_bagian = json_encode(['labels' => array_column($data_per_bagian, 'bagi
                             </tr>
                         </thead>
                         <tbody>
-                            <?php if (!empty($data_jenis_pelanggaran)): foreach ($data_jenis_pelanggaran as $row): ?>
-                                <?php $persentase = ($total_semua_jenis > 0) ? ($row['total'] / $total_semua_jenis) * 100 : 0; ?>
+                            <?php if (!empty($data_jenis_pelanggaran)) : ?>
+                                <?php foreach ($data_jenis_pelanggaran as $row) : ?>
+                                    <?php $persentase = ($total_semua_jenis > 0) ? ($row['total'] / $total_semua_jenis) * 100 : 0; ?>
+                                    <tr>
+                                        <td><?= htmlspecialchars($row['nama_pelanggaran']) ?></td>
+                                        <td class="text-center"><?= $row['total'] ?></td>
+                                        <td class="text-center"><?= round($persentase) ?>%</td>
+                                        <td>
+                                            <div class="progress-bar-container">
+                                                <div class="progress-bar" style="width: <?= $persentase ?>%;"></div>
+                                            </div>
+                                        </td>
+                                    </tr>
+                                <?php endforeach; ?>
+                            <?php else : ?>
                                 <tr>
-                                    <td><?= htmlspecialchars($row['nama_pelanggaran']) ?></td>
-                                    <td class="text-center"><?= $row['total'] ?></td>
-                                    <td class="text-center"><?= round($persentase) ?>%</td>
-                                    <td><div class="progress-bar-container"><div class="progress-bar" style="width: <?= $persentase ?>%;"></div></div></td>
+                                    <td colspan="4" class="text-center text-muted">Belum ada data.</td>
                                 </tr>
-                            <?php endforeach; else: ?>
-                                <tr><td colspan="4" class="text-center text-muted">Belum ada data.</td></tr>
                             <?php endif; ?>
                         </tbody>
                     </table>
@@ -254,19 +251,30 @@ $json_per_bagian = json_encode(['labels' => array_column($data_per_bagian, 'bagi
         </div>
 
         <div class="col-xl-6">
-             <div class="card dashboard-card h-100">
+            <div class="card dashboard-card h-100">
                 <h3 class="card-title"><i class="fa-solid fa-users"></i> Top 10 Santri Pelanggar</h3>
                 <div class="table-container">
                     <table>
-                        <thead><tr><th>Nama Santri</th><th class="text-center">Poin</th></tr></thead>
-                        <tbody>
-                            <?php if (mysqli_num_rows($q_santri) > 0): while($row = mysqli_fetch_assoc($q_santri)): ?>
+                        <thead>
                             <tr>
-                                <td><?= htmlspecialchars($row['nama']) ?></td>
-                                <td class="text-center"><span class="badge"><?= $row['poin_aktif'] ?></span></td>
+                                <th>Nama Santri</th>
+                                <th class="text-center">Poin</th>
                             </tr>
-                            <?php endwhile; else: ?>
-                            <tr><td colspan="2" class="text-center text-muted">Belum ada data.</td></tr>
+                        </thead>
+                        <tbody>
+                            <?php if (mysqli_num_rows($q_santri) > 0) : ?>
+                                <?php while ($row = mysqli_fetch_assoc($q_santri)) : ?>
+                                    <tr>
+                                        <td><?= htmlspecialchars($row['nama']) ?></td>
+                                        <td class="text-center">
+                                            <span class="badge"><?= $row['total_poin_periode'] ?></span>
+                                        </td>
+                                    </tr>
+                                <?php endwhile; ?>
+                            <?php else : ?>
+                                <tr>
+                                    <td colspan="2" class="text-center text-muted">Belum ada data pelanggaran di periode ini.</td>
+                                </tr>
                             <?php endif; ?>
                         </tbody>
                     </table>
@@ -277,21 +285,27 @@ $json_per_bagian = json_encode(['labels' => array_column($data_per_bagian, 'bagi
         <div class="col-xl-4 mt-4">
             <div class="card dashboard-card h-100">
                 <h3 class="card-title"><i class="fa-solid fa-tags"></i> Sebaran per Bagian</h3>
-                <div class="chart-container"><canvas id="chartPerBagian"></canvas></div>
+                <div class="chart-container">
+                    <canvas id="chartPerBagian"></canvas>
+                </div>
             </div>
         </div>
 
         <div class="col-xl-4 mt-4">
             <div class="card dashboard-card h-100">
                 <h3 class="card-title"><i class="fa-solid fa-chalkboard-user"></i> Sebaran per Kelas</h3>
-                <div class="chart-container"><canvas id="chartPerKelas"></canvas></div>
+                <div class="chart-container">
+                    <canvas id="chartPerKelas"></canvas>
+                </div>
             </div>
         </div>
-        
+
         <div class="col-xl-4 mt-4">
             <div class="card dashboard-card h-100">
                 <h3 class="card-title"><i class="fa-solid fa-door-open"></i> Sebaran per Kamar (Kebersihan)</h3>
-                <div class="chart-container"><canvas id="chartPerKamar"></canvas></div>
+                <div class="chart-container">
+                    <canvas id="chartPerKamar"></canvas>
+                </div>
             </div>
         </div>
     </div>
@@ -299,75 +313,167 @@ $json_per_bagian = json_encode(['labels' => array_column($data_per_bagian, 'bagi
 
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 <script>
-    /* ... (SEMUA JS LU DARI ATAS SAMPAI BAWAH TETAP SAMA, TIDAK ADA PERUBAHAN) ... */
-    document.addEventListener('DOMContentLoaded', function () {
-    const dataKelas = <?= $json_per_kelas ?>;
-    const dataKamar = <?= $json_per_kamar ?>;
-    const dataBagian = <?= $json_per_bagian ?>;
-    
-    const doughnutChartOptions = {
-        responsive: true, maintainAspectRatio: false,
-        plugins: {
-            legend: { position: 'bottom', labels: { padding: 15, font: { family: "'Poppins', sans-serif" }, usePointStyle: true, pointStyle: 'circle' } },
-            tooltip: { backgroundColor: 'rgba(17, 24, 39, 0.9)', titleFont: { family: "'Poppins', sans-serif" }, bodyFont: { family: "'Poppins', sans-serif" }, padding: 12, cornerRadius: 8 }
-        },
-        cutout: '60%'
-    };
+    /* ... (JAVASCRIPT TETAP SAMA, TIDAK ADA PERUBAHAN) ... */
+    document.addEventListener('DOMContentLoaded', function() {
+        const dataKelas = <?= $json_per_kelas ?>;
+        const dataKamar = <?= $json_per_kamar ?>;
+        const dataBagian = <?= $json_per_bagian ?>;
 
-    function generateDistinctColors(count) {
-        const colors = [];
-        const saturation = 70;
-        const lightness = 55;
-        if (count === 0) return colors;
-        for (let i = 0; i < count; i++) {
-            const hue = Math.floor((i * (360 / count)));
-            colors.push(`hsl(${hue}, ${saturation}%, ${lightness}%)`);
+        const doughnutChartOptions = {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+                legend: {
+                    position: 'bottom',
+                    labels: {
+                        padding: 15,
+                        font: {
+                            family: "'Poppins', sans-serif"
+                        },
+                        usePointStyle: true,
+                        pointStyle: 'circle'
+                    }
+                },
+                tooltip: {
+                    backgroundColor: 'rgba(17, 24, 39, 0.9)',
+                    titleFont: {
+                        family: "'Poppins', sans-serif"
+                    },
+                    bodyFont: {
+                        family: "'Poppins', sans-serif"
+                    },
+                    padding: 12,
+                    cornerRadius: 8
+                }
+            },
+            cutout: '60%'
+        };
+
+        function generateDistinctColors(count) {
+            const colors = [];
+            const saturation = 70;
+            const lightness = 55;
+            if (count === 0) return colors;
+            for (let i = 0; i < count; i++) {
+                const hue = Math.floor((i * (360 / count)));
+                colors.push(`hsl(${hue}, ${saturation}%, ${lightness}%)`);
+            }
+            return colors;
         }
-        return colors;
-    }
 
-    if(dataBagian.labels.length > 0) {
-        new Chart(document.getElementById('chartPerBagian'), { type: 'doughnut', data: { labels: dataBagian.labels, datasets: [{ data: dataBagian.data, backgroundColor: generateDistinctColors(dataBagian.labels.length) }] }, options: doughnutChartOptions });
-    } else { document.getElementById('chartPerBagian').parentElement.innerHTML = '<p class="text-center text-muted m-auto">Tidak ada data.</p>'; }
+        if (dataBagian.labels.length > 0) {
+            new Chart(document.getElementById('chartPerBagian'), {
+                type: 'doughnut',
+                data: {
+                    labels: dataBagian.labels,
+                    datasets: [{
+                        data: dataBagian.data,
+                        backgroundColor: generateDistinctColors(dataBagian.labels.length)
+                    }]
+                },
+                options: doughnutChartOptions
+            });
+        } else {
+            document.getElementById('chartPerBagian').parentElement.innerHTML = '<p class="text-center text-muted m-auto">Tidak ada data.</p>';
+        }
 
-    if(dataKelas.labels.length > 0) {
-        new Chart(document.getElementById('chartPerKelas'), { type: 'doughnut', data: { labels: dataKelas.labels, datasets: [{ data: dataKelas.data, backgroundColor: generateDistinctColors(dataKelas.labels.length) }] }, options: doughnutChartOptions });
-    } else { document.getElementById('chartPerKelas').parentElement.innerHTML = '<p class="text-center text-muted m-auto">Tidak ada data.</p>'; }
+        if (dataKelas.labels.length > 0) {
+            new Chart(document.getElementById('chartPerKelas'), {
+                type: 'doughnut',
+                data: {
+                    labels: dataKelas.labels,
+                    datasets: [{
+                        data: dataKelas.data,
+                        backgroundColor: generateDistinctColors(dataKelas.labels.length)
+                    }]
+                },
+                options: doughnutChartOptions
+            });
+        } else {
+            document.getElementById('chartPerKelas').parentElement.innerHTML = '<p class="text-center text-muted m-auto">Tidak ada data.</p>';
+        }
 
-    if(dataKamar.labels.length > 0) {
-        new Chart(document.getElementById('chartPerKamar'), { type: 'doughnut', data: { labels: dataKamar.labels, datasets: [{ data: dataKamar.data, backgroundColor: generateDistinctColors(dataKamar.labels.length) }] }, options: doughnutChartOptions });
-    } else { document.getElementById('chartPerKamar').parentElement.innerHTML = '<p class="text-center text-muted m-auto">Tidak ada data.</p>'; }
+        if (dataKamar.labels.length > 0) {
+            new Chart(document.getElementById('chartPerKamar'), {
+                type: 'doughnut',
+                data: {
+                    labels: dataKamar.labels,
+                    datasets: [{
+                        data: dataKamar.data,
+                        backgroundColor: generateDistinctColors(dataKamar.labels.length)
+                    }]
+                },
+                options: doughnutChartOptions
+            });
+        } else {
+            document.getElementById('chartPerKamar').parentElement.innerHTML = '<p class="text-center text-muted m-auto">Tidak ada data.</p>';
+        }
 
-    const ctxTren = document.getElementById('chartTrenPelanggaran').getContext('2d');
-    const lineChart = new Chart(ctxTren, {
-        type: 'line',
-        data: { labels: [], datasets: [{ label: 'Jumlah Pelanggaran', data: [], backgroundColor: 'rgba(79, 70, 229, 0.1)', borderColor: 'rgba(79, 70, 229, 1)', borderWidth: 2, pointBackgroundColor: 'rgba(79, 70, 229, 1)', pointRadius: 4, tension: 0.3, fill: true }] },
-        options: { responsive: true, maintainAspectRatio: false, scales: { y: { beginAtZero: true, ticks: { precision: 0 } } }, plugins: { legend: { display: false } } }
-    });
-    const filterButtons = document.querySelectorAll('.chart-filters button');
-    const rangeToDays = { '7d': 7, '1m': 30, '3m': 90, '1y': 365 };
-    async function fetchAndUpdateLineChart(rangeKey) {
-        const days = rangeToDays[rangeKey];
-        if (!days) return;
-        try {
-            const response = await fetch(`get_harian_data.php?days=${days}`);
-            if (!response.ok) throw new Error('Network error');
-            const chartData = await response.json();
-            lineChart.data.labels = chartData.labels;
-            lineChart.data.datasets[0].data = chartData.data;
-            lineChart.update();
-        } catch (error) { console.error('Gagal fetch data:', error); }
-    }
-    filterButtons.forEach(button => {
-        button.addEventListener('click', () => {
-            filterButtons.forEach(btn => btn.classList.remove('active'));
-            button.classList.add('active');
-            const rangeKey = button.id.split('-')[1];
-            fetchAndUpdateLineChart(rangeKey);
+        const ctxTren = document.getElementById('chartTrenPelanggaran').getContext('2d');
+        const lineChart = new Chart(ctxTren, {
+            type: 'line',
+            data: {
+                labels: [],
+                datasets: [{
+                    label: 'Jumlah Pelanggaran',
+                    data: [],
+                    backgroundColor: 'rgba(79, 70, 229, 0.1)',
+                    borderColor: 'rgba(79, 70, 229, 1)',
+                    borderWidth: 2,
+                    pointBackgroundColor: 'rgba(79, 70, 229, 1)',
+                    pointRadius: 4,
+                    tension: 0.3,
+                    fill: true
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                scales: {
+                    y: {
+                        beginAtZero: true,
+                        ticks: {
+                            precision: 0
+                        }
+                    }
+                },
+                plugins: {
+                    legend: {
+                        display: false
+                    }
+                }
+            }
         });
+
+        const filterButtons = document.querySelectorAll('.chart-filters button');
+        const rangeToDays = { '7d': 7, '1m': 30, '3m': 90, '1y': 365 };
+
+        async function fetchAndUpdateLineChart(rangeKey) {
+            const days = rangeToDays[rangeKey];
+            if (!days) return;
+            try {
+                const response = await fetch(`get_harian_data.php?days=${days}`);
+                if (!response.ok) throw new Error('Network error');
+                const chartData = await response.json();
+                lineChart.data.labels = chartData.labels;
+                lineChart.data.datasets[0].data = chartData.data;
+                lineChart.update();
+            } catch (error) {
+                console.error('Gagal fetch data:', error);
+            }
+        }
+
+        filterButtons.forEach(button => {
+            button.addEventListener('click', () => {
+                filterButtons.forEach(btn => btn.classList.remove('active'));
+                button.classList.add('active');
+                const rangeKey = button.id.split('-')[1];
+                fetchAndUpdateLineChart(rangeKey);
+            });
+        });
+        
+        fetchAndUpdateLineChart('7d');
     });
-    fetchAndUpdateLineChart('7d');
-});
 </script>
 
 <?php require_once __DIR__ . '/../footer.php'; ?>
