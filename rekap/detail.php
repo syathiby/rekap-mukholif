@@ -1,6 +1,12 @@
-<?php 
-require_once __DIR__ . '/../header.php';
+<?php
+// 1. Panggil 'Otak' aplikasi dulu
+require_once __DIR__ . '/../init.php';
+
+// 2. Jalankan 'SATPAM' buat ngejaga halaman
 guard('rekap_view_umum'); 
+
+// 3. Kalau lolos, baru panggil Tampilan
+require_once __DIR__ . '/../header.php';
 
 // --- PHP LOGIC (TIDAK ADA PERUBAHAN) ---
 // Logika untuk mengambil data dari URL dan database tetap sama karena sudah solid.

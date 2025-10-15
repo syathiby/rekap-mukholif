@@ -1,8 +1,14 @@
 <?php
 ob_start(); // Tahan semua output dulu, biar aman pas redirect
 
+// 1. Panggil 'Otak' aplikasi dulu
+require_once __DIR__ . '/../../init.php';
+
+// 2. Jalankan 'SATPAM' buat ngejaga halaman
+guard('user_manage'); 
+
+// 3. Kalau lolos, baru panggil Tampilan
 require_once __DIR__ . '/../../header.php';
-guard('user_manage');
 
 // --- LOGIKA PHP INI SUDAH BENAR DAN TIDAK DIUBAH ---
 $is_edit_mode = false;

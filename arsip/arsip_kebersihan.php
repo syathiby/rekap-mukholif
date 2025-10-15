@@ -1,6 +1,13 @@
-<?php
+<?php 
+// 1. Panggil 'Otak' aplikasi dulu
+require_once __DIR__ . '/../init.php';
+
+// 2. Jalankan 'SATPAM' buat ngejaga halaman
+guard('arsip_view'); 
+
+// 3. Kalau lolos, baru panggil Tampilan
 require_once __DIR__ . '/../header.php';
-guard('arsip_view'); // Izin akses
+
 
 // 1. Ambil ID Arsip dari URL
 $arsip_id = (int)($_GET['id'] ?? 0);

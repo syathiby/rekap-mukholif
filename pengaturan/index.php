@@ -1,6 +1,12 @@
-<?php 
-require_once __DIR__ . '/../header.php';
-guard(); 
+<?php
+// 1. Panggil 'Otak' aplikasi dulu
+require_once __DIR__ . '/../init.php';
+
+// 2. Jalankan 'SATPAM' buat ngejaga halaman
+guard(['user_manage', 'reset_poin_manage', 'periode_aktif_manage', 'izin_manage', 'history_manage']); 
+
+// 3. Kalau lolos, baru panggil Tampilan
+require_once __DIR__ . '/../header.php'; 
 ?>
 
 <!DOCTYPE html>
@@ -295,4 +301,4 @@ guard();
 </body>
 </html>
 
-<?php include '../footer.php'; ?>
+<?php require_once __DIR__ . '/../footer.php'; ?>

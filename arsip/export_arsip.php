@@ -1,6 +1,12 @@
-<?php
+<?php 
+// 1. Panggil 'Otak' aplikasi dulu
+require_once __DIR__ . '/../init.php';
+
+// 2. Jalankan 'SATPAM' buat ngejaga halaman
+guard('arsip_export'); 
+
+// 3. Kalau lolos, baru panggil Tampilan
 require_once __DIR__ . '/../header.php';
-guard('arsip_export');
 
 // Ambil semua data arsip untuk ditampilkan di dropdown (versi MySQLi)
 $arsip_list = [];

@@ -1,6 +1,12 @@
 <?php 
-require_once __DIR__ . '/../header.php';
+// 1. Panggil 'Otak' aplikasi dulu
+require_once __DIR__ . '/../init.php';
+
+// 2. Jalankan 'SATPAM' buat ngejaga halaman
 guard('export_laporan'); 
+
+// 3. Kalau lolos, baru panggil Tampilan
+require_once __DIR__ . '/../header.php'; 
 ?>
 
 <?php

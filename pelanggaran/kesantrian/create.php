@@ -1,6 +1,12 @@
 <?php 
+// 1. Panggil 'Otak' aplikasi dulu
+require_once __DIR__ . '/../../init.php';
+
+// 2. Jalankan 'SATPAM' buat ngejaga halaman
+guard('pelanggaran_kesantrian_input');  
+
+// 3. Kalau lolos, baru panggil Tampilan
 require_once __DIR__ . '/../../header.php';
-guard('pelanggaran_kesantrian_input'); 
 
 $bagian = 'Kesantrian';
 $stmt = $conn->prepare("
