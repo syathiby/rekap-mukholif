@@ -6,7 +6,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Sistem Pelanggaran Santri</title>
+    <title>Aplikasi Pendataan Mukholif</title>
     
     <!-- Aset & Font -->
     <!-- REVISI: Path favicon jadi dinamis pake BASE_URL -->
