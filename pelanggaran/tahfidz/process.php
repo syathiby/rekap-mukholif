@@ -2,9 +2,7 @@
 if (session_status() === PHP_SESSION_NONE) {
     session_start();
 }
-require_once __DIR__ . '/../../db.php';
-require_once __DIR__ . '/../../auth.php';
-// Ganti guard ke izin Tahfidz
+require_once __DIR__ . '/../../init.php';
 guard('pelanggaran_tahfidz_input');
 
 if (isset($_POST['create_bulk_pelanggaran'])) {

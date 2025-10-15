@@ -1,8 +1,7 @@
 <?php
 // BAGIAN 1: LOGIKA RUANG MESIN (SEBELUM ADA TAMPILAN APAPUN)
 if (session_status() === PHP_SESSION_NONE) { session_start(); }
-require_once __DIR__ . '/../db.php';
-require_once __DIR__ . '/../auth.php';
+require_once __DIR__ . '/../init.php';
 guard('santri_create'); 
 
 // Logika proses form HANYA jika ada request POST

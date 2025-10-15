@@ -1,6 +1,12 @@
-<?php 
+<?php
+// 1. Panggil 'Otak' aplikasi dulu
+require_once __DIR__ . '/../init.php';
+
+// 2. Jalankan 'SATPAM' buat ngejaga halaman
+guard('santri_view');  
+
+// 3. Kalau lolos, baru panggil Tampilan
 require_once __DIR__ . '/../header.php';
-guard('santri_view'); 
 
 // Ambil setiap parameter filter secara terpisah
 $nama_search = $_GET['nama'] ?? '';

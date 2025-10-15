@@ -1,6 +1,12 @@
-<?php 
-require_once __DIR__ . '/../header.php';
-guard('rekap_view_santri'); 
+<?php
+// 1. Panggil 'Otak' aplikasi dulu
+require_once __DIR__ . '/../init.php';
+
+// 2. Jalankan 'SATPAM' buat ngejaga halaman
+guard('rekap_view_santri');
+
+// 3. Kalau lolos, baru panggil Tampilan
+require_once __DIR__ . '/../header.php'; 
 
 // 🔹 Ambil periode aktif
 $q_periode = mysqli_query($conn, "SELECT nilai FROM pengaturan WHERE nama = 'periode_aktif' LIMIT 1");

@@ -2,8 +2,7 @@
 if (session_status() === PHP_SESSION_NONE) {
     session_start();
 }
-require_once __DIR__ . '/../../db.php';
-require_once __DIR__ . '/../../auth.php';
+require_once __DIR__ . '/../../init.php';
 guard('pelanggaran_kesantrian_input');
 
 if (isset($_POST['simpan_pelanggaran_kesantrian'])) {

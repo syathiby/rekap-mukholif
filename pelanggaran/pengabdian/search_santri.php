@@ -1,8 +1,7 @@
 <?php 
 // ✅ FIX: Hapus 'header.php', panggil yang penting aja
 if (session_status() === PHP_SESSION_NONE) { session_start(); }
-require_once __DIR__ . '/../../db.php';
-require_once __DIR__ . '/../../auth.php';
+require_once __DIR__ . '/../../init.php';
 guard('pelanggaran_pengabdian_input'); 
 
 // --- Mulai Logika Pencarian ---

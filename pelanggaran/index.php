@@ -1,7 +1,12 @@
 <?php 
-require_once __DIR__ . '/../header.php';
-// guard() akan memastikan user harus login untuk akses halaman ini
-guard(); 
+// 1. Panggil 'Otak' aplikasi dulu
+require_once __DIR__ . '/../init.php';
+
+// 2. Jalankan 'SATPAM' buat ngejaga halaman
+guard(['pelanggaran_bahasa_input', 'pelanggaran_diniyyah_input', 'pelanggaran_tahfidz_input', 'pelanggaran_kesantrian_input', 'pelanggaran_pengabdian_input']);   
+
+// 3. Kalau lolos, baru panggil Tampilan
+require_once __DIR__ . '/../header.php'; 
 ?>
 
 <!DOCTYPE html>

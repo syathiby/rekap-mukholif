@@ -1,7 +1,12 @@
 <?php 
-require_once __DIR__ . '/../../header.php';
-// Ganti guard ke izin Tahfidz
-guard('pelanggaran_tahfidz_input'); 
+// 1. Panggil 'Otak' aplikasi dulu
+require_once __DIR__ . '/../../init.php';
+
+// 2. Jalankan 'SATPAM' buat ngejaga halaman
+guard('pelanggaran_tahfidz_input');   
+
+// 3. Kalau lolos, baru panggil Tampilan
+require_once __DIR__ . '/../../header.php'; 
 
 // Ambil daftar jenis pelanggaran KHUSUS BAGIAN TAHFIDZ
 $jenis_pelanggaran_list_result = mysqli_query($conn, "SELECT id, nama_pelanggaran, poin FROM jenis_pelanggaran WHERE bagian = 'Tahfidz' ORDER BY nama_pelanggaran ASC");

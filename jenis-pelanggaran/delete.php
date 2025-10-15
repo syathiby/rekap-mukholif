@@ -3,8 +3,7 @@
 set_time_limit(300);
 
 if (session_status() === PHP_SESSION_NONE) { session_start(); }
-require_once __DIR__ . '/../db.php';
-require_once __DIR__ . '/../auth.php';
+require_once __DIR__ . '/../init.php';
 guard('jenis_pelanggaran_delete');
 
 // --- PERLINDUNGAN DIMULAI DI SINI ---

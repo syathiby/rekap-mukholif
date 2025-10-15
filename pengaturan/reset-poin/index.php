@@ -4,8 +4,14 @@ if (session_status() === PHP_SESSION_NONE) {
     session_start();
 }
 
-require_once __DIR__ . '/../../header.php'; // Pindahkan ini ke atas
-guard('reset_poin_manage');
+// 1. Panggil 'Otak' aplikasi dulu
+require_once __DIR__ . '/../../init.php';
+
+// 2. Jalankan 'SATPAM' buat ngejaga halaman
+guard('reset_poin_manage'); 
+
+// 3. Kalau lolos, baru panggil Tampilan
+require_once __DIR__ . '/../../header.php';
 ?>
 
 <div class="container py-5">
