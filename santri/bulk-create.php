@@ -11,38 +11,48 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
     $error_count = 0;
     $errors = [];
     
+    // [FIX EFISIENSI] Siapkan statement HANYA SEKALI di luar loop
+    $query = "INSERT INTO santri (nama, kelas, kamar) VALUES (?, ?, ?)";
+    $stmt = mysqli_prepare($conn, $query);
+
     foreach ($santri_list as $index => $line) {
         $line_number = $index + 1;
         
+        // Lewati baris kosong
         if (empty(trim($line))) continue;
 
         $data = array_map('trim', explode(',', $line));
             
         if (count($data) === 3) {
-            list($nama, $kelas, $kamar) = $data;
+            list($nama, $kelas_raw, $kamar_raw) = $data;
             
-            if (empty($nama) || empty($kelas) || empty($kamar)) {
+            if (empty($nama) || empty($kelas_raw) || empty($kamar_raw)) {
                 $errors[] = "Baris $line_number: Data tidak lengkap (Nama, Kelas, Kamar semua harus diisi)";
                 $error_count++;
                 continue;
             }
             
-            $query = "INSERT INTO santri (nama, kelas, kamar) VALUES (?, ?, ?)";
-            $stmt = mysqli_prepare($conn, $query);
-            mysqli_stmt_bind_param($stmt, "sss", $nama, $kelas, $kamar);
+            // [FIX TIPE DATA] Ubah kelas dan kamar menjadi angka (integer)
+            $kelas = intval($kelas_raw);
+            $kamar = intval($kamar_raw);
+
+            // [FIX TIPE DATA] Ganti "sss" menjadi "sii" (string, integer, integer)
+            mysqli_stmt_bind_param($stmt, "sii", $nama, $kelas, $kamar);
             
             if (mysqli_stmt_execute($stmt)) {
                 $success_count++;
             } else {
-                $errors[] = "Baris $line_number: Gagal menyimpan - " . mysqli_error($conn);
+                $errors[] = "Baris $line_number ($nama): Gagal menyimpan - " . mysqli_error($conn);
                 $error_count++;
             }
-            mysqli_stmt_close($stmt);
         } else {
             $errors[] = "Baris $line_number: Format tidak valid (harus Nama,Kelas,Kamar)";
             $error_count++;
         }
     }
+    
+    // [FIX EFISIENSI] Tutup statement SETELAH loop selesai
+    mysqli_stmt_close($stmt);
     
     $_SESSION['bulk_upload_result'] = [
         'success' => $success_count,
@@ -55,7 +65,6 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
 }
 
 // BAGIAN 2: PERSIAPAN TAMPILAN WAHANA
-// Setelah semua logika redirect selesai, baru kita panggil header
 require_once __DIR__ . '/../header.php';
 ?>
 
@@ -67,7 +76,6 @@ require_once __DIR__ . '/../header.php';
     .container-bulk-create {
         max-width: 800px;
     }
-    /* ✅ FIX: Nama class diganti biar ga bentrok */
     .page-title-card {
         background: linear-gradient(135deg, var(--secondary-color), var(--primary-color));
         color: white;
@@ -94,11 +102,10 @@ require_once __DIR__ . '/../header.php';
         border-color: var(--primary-color);
     }
     textarea {
-        min-height: 350px; /* ✅ FIX: Textarea diperbesar */
+        min-height: 350px;
         font-family: monospace;
     }
 
-    /* ✅ FIX: Style khusus mobile */
     @media (max-width: 576px) {
         .page-title-card {
             padding: 1rem;
@@ -113,16 +120,14 @@ require_once __DIR__ . '/../header.php';
         .form-container {
             padding: 1.5rem;
         }
-        /* ✅ FIX: Tombol dikecilin pas di mobile */
         .form-actions .btn {
-            padding: .375rem .75rem; /* Balikin ke ukuran normal */
+            padding: .375rem .75rem;
             font-size: 1rem;
         }
     }
 </style>
 
 <div class="container container-bulk-create mt-4 mb-5">
-    <!-- ✅ FIX: Nama class diganti -->
     <div class="page-title-card text-center">
         <h2><i class="fas fa-users-cog me-2"></i> Bulk Input Santri</h2>
         <p class="mb-0">Tambahkan banyak santri sekaligus menggunakan format CSV sederhana</p>
@@ -136,9 +141,9 @@ require_once __DIR__ . '/../header.php';
                     <p>Gunakan format berikut untuk setiap santri (pisahkan dengan koma):</p>
                     <p class="mb-1"><strong>Nama,Kelas,Kamar</strong></p>
                     <p class="text-muted small mb-2">Contoh:</p>
-                    <pre class="mb-0">Raffa,10,04
-Fauzan,11,02
-Luqman,12,03</pre>
+                    <pre class="mb-0">Raffa,10,4
+Fauzan,11,2
+Luqman,12,3</pre>
                 </div>
             </div>
 
@@ -170,16 +175,7 @@ Luqman,12,03</pre>
         const textarea = document.getElementById('list_santri');
         if (textarea.value.trim() === '') {
             e.preventDefault();
-            // Menggunakan modal dari file utama jika ada, atau alert biasa sebagai fallback
-            if (typeof bootstrap !== 'undefined' && document.getElementById('confirmModal')) {
-                const confirmModal = new bootstrap.Modal(document.getElementById('confirmModal'));
-                document.getElementById('confirmModalLabel').textContent = 'Peringatan';
-                document.getElementById('confirmModalBody').textContent = 'Silakan masukkan data santri terlebih dahulu!';
-                document.getElementById('confirmModalButton').style.display = 'none';
-                confirmModal.show();
-            } else {
-                alert('Silakan masukkan data santri terlebih dahulu!');
-            }
+            alert('Silakan masukkan data santri terlebih dahulu!');
             textarea.focus();
         }
     });
