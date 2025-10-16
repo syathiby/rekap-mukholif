@@ -1,24 +1,10 @@
 <?php
-// BAGIAN 1: LOGIKA RUANG MESIN (SEBELUM ADA TAMPILAN APAPUN)
-// Di sini kita pake Protokol Khusus Ruang Mesin secara manual
+// BAGIAN 1: LOGIKA RUANG MESIN (SEMUA PROSES DI SINI)
 if (session_status() === PHP_SESSION_NONE) { session_start(); }
 require_once __DIR__ . '/../init.php';
 guard('santri_create'); 
 
-// Logika proses form-nya taruh di sini
-if ($_SERVER["REQUEST_METHOD"] == "POST") {
-    // ... (semua logika INSERT data lu) ...
-    header("Location: index.php"); // Redirect di sini aman
-    exit;
-}
-
-// BAGIAN 2: PERSIAPAN TAMPILAN WAHANA
-// Setelah semua logika redirect selesai, baru kita panggil Markas Komando
-require_once __DIR__ . '/../header.php';
-?>
- 
-
-<?php
+// [FIX] Logika POST yang sudah dibersihkan dan disatukan
 if ($_SERVER["REQUEST_METHOD"] == "POST") {
     try {
         // Ambil data mentah dari form
@@ -31,47 +17,37 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
         $kelas_mentah = trim($kelas_input);
         $kamar_mentah = trim($kamar_input);
 
-        // Validasi required fields
         if (empty($nama) || empty($kelas_mentah) || empty($kamar_mentah)) {
             throw new Exception("Semua field harus diisi!");
         }
 
-        // --- INI DIA JAGOANNYA (VERSI UPGRADE) ---
-        // Normalisasi nomor kelas dan kamar menjadi angka murni (integer)
         $kelas_bersih = intval($kelas_mentah);
         $kamar_bersih = intval($kamar_mentah);
 
         // Insert data menggunakan prepared statement
         $stmt = mysqli_prepare($conn, "INSERT INTO santri (nama, kelas, kamar) VALUES (?, ?, ?)");
         
-        // --- PERUBAHAN: ganti "ssi" jadi "sii" ---
-        // s = string, i = integer, i = integer
         mysqli_stmt_bind_param($stmt, "sii", $nama, $kelas_bersih, $kamar_bersih);
         
         if (mysqli_stmt_execute($stmt)) {
-            $_SESSION['operation_result'] = [
-                'success' => true,
-                'message' => "Santri $nama berhasil ditambahkan!",
-                'timestamp' => date('Y-m-d H:i:s')
-            ];
+            $_SESSION['success_message'] = "Santri $nama berhasil ditambahkan!";
         } else {
             throw new Exception("Gagal menambahkan santri: " . mysqli_error($conn));
         }
         
         mysqli_stmt_close($stmt);
-        header("Location: index.php");
-        exit;
         
     } catch (Exception $e) {
-        $_SESSION['operation_result'] = [
-            'success' => false,
-            'message' => $e.getMessage(),
-            'timestamp' => date('Y-m-d H:i:s')
-        ];
-        header("Location: index.php");
-        exit;
+        $_SESSION['error_message'] = $e->getMessage();
     }
+    
+    // Redirect setelah semua logika selesai
+    header("Location: index.php");
+    exit;
 }
+
+// BAGIAN 2: PERSIAPAN TAMPILAN WAHANA
+require_once __DIR__ . '/../header.php';
 ?>
 <!DOCTYPE html>
 <html lang="id">
@@ -109,13 +85,34 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
         .form-label { font-weight: 500; color: var(--secondary-color); }
         .form-control { border-radius: 5px; padding: 10px 15px; border: 1px solid #ddd; transition: all 0.3s; }
         .form-control:focus { border-color: var(--primary-color); box-shadow: 0 0 0 0.25rem rgba(52, 152, 219, 0.25); }
-        .btn-submit { background-color: var(--success-color); border-color: var(--success-color); padding: 10px 25px; font-weight: 500; transition: all 0.3s; }
+        
+        .btn-submit, .btn-cancel {
+            padding: 0.5rem 1.25rem;
+            font-weight: 500; 
+            transition: all 0.3s;
+        }
+        .btn-submit { background-color: var(--success-color); border-color: var(--success-color); }
         .btn-submit:hover { background-color: #219653; transform: translateY(-2px); }
-        .btn-cancel { padding: 10px 25px; transition: all 0.3s; }
         .btn-cancel:hover { transform: translateY(-2px); }
-        .input-icon { position: relative; }
-        .input-icon i { position: absolute; left: 15px; top: 50%; transform: translateY(-50%); color: var(--primary-color); }
-        .input-icon input { padding-left: 40px; }
+
+        /* [FIX UTAMA] Ini adalah CSS yang benar setelah HTML diperbaiki.
+           .input-icon sekarang HANYA membungkus input dan ikonnya.
+        */
+        .input-icon { 
+            position: relative; 
+        }
+        .input-icon i {
+            position: absolute;
+            left: 15px;
+            top: 50%; /* Ini sekarang berfungsi sempurna */
+            transform: translateY(-50%);
+            color: var(--primary-color);
+            pointer-events: none; /* Biar ikonnya ga bisa diklik */
+        }
+        .input-icon input { 
+            padding-left: 40px; 
+        }
+
         /* Sembunyikan panah di input number */
         input[type=number]::-webkit-inner-spin-button, 
         input[type=number]::-webkit-outer-spin-button { 
@@ -134,34 +131,37 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
             
             <div class="form-body">
                 <form method="post" id="santriForm">
-                    <div class="mb-4 input-icon">
+                    <div class="mb-4">
                         <label for="nama" class="form-label">Nama Lengkap</label>
-                        <i class="fas fa-user"></i>
-                        <input type="text" id="nama" name="nama" class="form-control" 
-                               placeholder="Masukkan nama lengkap santri" required
-                               minlength="3" maxlength="100">
+                        <div class="input-icon">
+                            <i class="fas fa-user"></i>
+                            <input type="text" id="nama" name="nama" class="form-control" 
+                                   placeholder="Masukkan nama lengkap santri" required
+                                   minlength="3" maxlength="100">
+                        </div>
                     </div>
                     
-                    <div class="mb-4 input-icon">
+                    <div class="mb-4">
                         <label for="kelas" class="form-label">Kelas</label>
-                        <i class="fas fa-graduation-cap"></i>
-                        <!-- PERUBAHAN DI SINI -->
-                        <input type="number" id="kelas" name="kelas" class="form-control" 
-                               placeholder="Contoh: 7 atau 8" required
-                               min="1">
+                        <div class="input-icon">
+                            <i class="fas fa-graduation-cap"></i>
+                            <input type="number" id="kelas" name="kelas" class="form-control" 
+                                   placeholder="Contoh: 7 atau 8" required min="1">
+                        </div>
                         <div class="form-text">Cukup masukkan angkanya saja (misal: 7, 8, 9).</div>
                     </div>
                     
-                    <div class="mb-4 input-icon">
+                    <div class="mb-4">
                         <label for="kamar" class="form-label">Nomor Kamar</label>
-                        <i class="fas fa-door-open"></i>
-                        <input type="number" id="kamar" name="kamar" class="form-control" 
-                               placeholder="Contoh: 6 atau 12" required
-                               min="1">
+                        <div class="input-icon">
+                            <i class="fas fa-door-open"></i>
+                            <input type="number" id="kamar" name="kamar" class="form-control" 
+                                   placeholder="Contoh: 6 atau 12" required min="1">
+                        </div>
                         <div class="form-text">Boleh diisi 1 digit (6) atau 2 digit (06).</div>
                     </div>
                     
-                    <div class="d-flex justify-content-between pt-3">
+                    <div class="d-flex justify-content-end pt-3" style="gap: 10px;">
                         <a href="index.php" class="btn btn-secondary btn-cancel">
                             <i class="fas fa-times me-2"></i>Batal
                         </a>
@@ -179,4 +179,3 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
 </html>
 
 <?php require_once __DIR__ . '/../footer.php'; ?>
-<?php ob_end_flush(); ?>

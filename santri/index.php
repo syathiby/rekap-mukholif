@@ -8,6 +8,71 @@ guard('santri_view');
 // 3. Kalau lolos, baru panggil Tampilan
 require_once __DIR__ . '/../header.php';
 
+
+// =================================================================
+// BLOK KODE UNTUK MENAMPILKAN SEMUA JENIS NOTIFIKASI
+// =================================================================
+
+// 1. Cek notifikasi hasil dari BULK UPLOAD
+if (isset($_SESSION['bulk_upload_result'])) {
+    $result = $_SESSION['bulk_upload_result'];
+    $success_count = $result['success'];
+    $error_count = $result['error'];
+    $errors = $result['errors'];
+    
+    // Tentukan warna notifikasi berdasarkan hasilnya
+    $alert_class = ($error_count > 0) ? 'alert-warning' : 'alert-success';
+
+    echo "
+    <div class='alert {$alert_class} alert-dismissible fade show' role='alert'>
+        <h5 class='alert-heading'>Proses Selesai!</h5>
+        <p>
+            Berhasil menambahkan <strong>{$success_count} santri</strong>.
+            Gagal: <strong>{$error_count} santri</strong>.
+        </p>";
+
+    // Jika ada error, tampilkan detailnya di dalam dropdown
+    if ($error_count > 0) {
+        echo "<hr>";
+        echo "<details>";
+        echo "  <summary style='cursor: pointer;'><strong>Lihat Detail Error</strong></summary>";
+        echo "  <div class='mt-2' style='max-height: 150px; overflow-y: auto;'>";
+        foreach ($errors as $error_message) {
+            echo "<p class='mb-1 small text-danger'><i class='fas fa-times-circle me-1'></i> " . htmlspecialchars($error_message) . "</p>";
+        }
+        echo "  </div>";
+        echo "</details>";
+    }
+    
+    echo "
+        <button type='button' class='btn-close' data-bs-dismiss='alert' aria-label='Close'></button>
+    </div>
+    ";
+    
+    // Hapus session setelah ditampilkan
+    unset($_SESSION['bulk_upload_result']);
+}
+
+// 2. Jika tidak ada notif bulk, cek notif biasa (dari create, edit, delete)
+else if (isset($_SESSION['success_message'])) {
+    echo "
+    <div class='alert alert-success alert-dismissible fade show' role='alert'>
+        <i class='fas fa-check-circle me-2'></i> " . htmlspecialchars($_SESSION['success_message']) . "
+        <button type='button' class='btn-close' data-bs-dismiss='alert' aria-label='Close'></button>
+    </div>
+    ";
+    unset($_SESSION['success_message']);
+}
+else if (isset($_SESSION['error_message'])) {
+    echo "
+    <div class='alert alert-danger alert-dismissible fade show' role='alert'>
+        <i class='fas fa-exclamation-triangle me-2'></i> " . htmlspecialchars($_SESSION['error_message']) . "
+        <button type='button' class='btn-close' data-bs-dismiss='alert' aria-label='Close'></button>
+    </div>
+    ";
+    unset($_SESSION['error_message']);
+}
+
 // Ambil setiap parameter filter secara terpisah
 $nama_search = $_GET['nama'] ?? '';
 $kelas_search = $_GET['kelas'] ?? '';

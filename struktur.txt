@@ -93,6 +93,7 @@
 │
 ├─auth.php
 ├─access_denied.php
+├─init.php
 ├─helpers.php
 ├─config.php
 ├─db.php                    
