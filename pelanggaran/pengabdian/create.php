@@ -11,8 +11,8 @@ require_once __DIR__ . '/../../header.php';
 
 <?php
 
-// Ambil jenis pelanggaran individu (Telat Sholat & KBM)
-$jp_individu_list = mysqli_query($conn, "SELECT id, nama_pelanggaran, poin FROM jenis_pelanggaran WHERE bagian = 'Pengabdian' AND (nama_pelanggaran LIKE '%Telat Sholat%' OR nama_pelanggaran LIKE '%Telat KBM%') ORDER BY nama_pelanggaran ASC");
+// Ambil semua jenis pelanggaran 'Pengabdian' KECUALI id 3
+$jp_individu_list = mysqli_query($conn, "SELECT id, nama_pelanggaran, poin FROM jenis_pelanggaran WHERE bagian = 'Pengabdian' AND id != 3 ORDER BY nama_pelanggaran ASC");
 
 // Ambil daftar kamar unik untuk checkbox
 $kamarQuery = mysqli_query($conn, "
@@ -200,6 +200,8 @@ $kamarQuery = mysqli_query($conn, "
     </div>
 </div>
 
+<?php require_once __DIR__ . '/../../footer.php'; ?>
+
 <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
 <script src="https://code.jquery.com/ui/1.13.2/jquery-ui.min.js"></script>
 
@@ -306,5 +308,3 @@ $(document).ready(function() {
     });
 });
 </script>
-
-<?php require_once __DIR__ . '/../../footer.php'; ?>
