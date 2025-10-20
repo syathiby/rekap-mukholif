@@ -91,6 +91,12 @@ if ($can_edit || $can_delete) $colspan++; // Tambah 1 untuk Aksi
     .badge.bg-warning { background-color: #ffc107 !important; }
     .badge.bg-danger { background-color: #dc3545 !important; }
     .badge.bg-dark { background-color: #212529 !important; }
+    
+    .card-action-bulk {
+        padding: 1rem;
+        background-color: #fff;
+    }
+
     @media (max-width: 767px) {
         .page-title-card {
             flex-direction: column;
@@ -111,16 +117,20 @@ if ($can_edit || $can_delete) $colspan++; // Tambah 1 untuk Aksi
         .filter-card .row > *:last-child {
             margin-bottom: 0;
         }
-        .card-footer {
+
+        .card-action-bulk .d-flex {
             flex-direction: column;
             gap: 0.75rem;
             align-items: stretch !important;
-            padding: 1rem;
         }
-        .card-footer .btn {
+        .card-action-bulk .btn-group {
             width: 100%;
+            display: flex; 
         }
-        .card-footer .text-muted {
+        .card-action-bulk .btn-group .btn {
+            flex-grow: 1; /* Biar tombolnya sama rata */
+        }
+        .card-action-bulk .text-muted {
             text-align: center;
         }
     }
@@ -139,7 +149,6 @@ if ($can_edit || $can_delete) $colspan++; // Tambah 1 untuk Aksi
     <?php if (isset($_SESSION['message'])): ?>
         <div class="alert alert-<?php echo $_SESSION['message']['type']; ?> alert-dismissible fade show" role="alert">
             <?php 
-                // Cek tipe notif buat nambahin ikon (opsional tapi keren)
                 if ($_SESSION['message']['type'] == 'success') {
                     echo '<i class="fas fa-check-circle me-2"></i>';
                 } elseif ($_SESSION['message']['type'] == 'danger') {
@@ -153,7 +162,7 @@ if ($can_edit || $can_delete) $colspan++; // Tambah 1 untuk Aksi
     <?php endif; ?>
     
     <div class="filter-card">
-        <form method="GET" action="">
+        <form method="GET" action="" id="filterForm"> 
             <div class="row g-3 align-items-end">
                 <div class="col-md-4">
                     <label for="search" class="form-label">Cari Nama Pelanggaran</label>
@@ -182,14 +191,44 @@ if ($can_edit || $can_delete) $colspan++; // Tambah 1 untuk Aksi
                     </select>
                 </div>
                 <div class="col-md-2 d-flex">
-                    <button type="submit" class="btn btn-primary w-100 me-2"><i class="fas fa-search"></i> Cari</button>
-                    <a href="index.php" class="btn btn-outline-secondary" title="Reset Filter"><i class="fas fa-sync-alt"></i></a>
+                    <button type="submit" class="btn btn-primary w-100 me-2 d-none"><i class="fas fa-search"></i> Cari</button> 
+                    <a href="index.php" id="resetFilterBtn" class="btn btn-outline-secondary w-100" title="Reset Filter"><i class="fas fa-sync-alt"></i> Reset</a>
                 </div>
             </div>
         </form>
     </div>
 
-    <form method="POST" action="delete.php" id="bulkDeleteForm">
+    <form method="POST" action="" id="bulkActionForm">
+
+        <div class="card shadow-sm mb-3 card-action-bulk">
+            <div class="d-flex justify-content-between align-items-center">
+                <div class="d-flex align-items-center">
+                    <div class="btn-group" role="group">
+                        <?php if ($can_edit): ?>
+                            <button type="button" class="btn btn-warning" id="bulkEditBtn" disabled title="Edit Terpilih">
+                                <i class="fas fa-edit me-1"></i> 
+                                <span class="d-none d-sm-inline">Edit Terpilih</span>
+                            </button>
+                        <?php endif; ?>
+                        <?php if ($can_delete): ?>
+                            <button type="submit" class="btn btn-danger" id="bulkDeleteBtn" disabled title="Hapus Terpilih">
+                                <i class="fas fa-trash-alt me-1"></i> 
+                                <span class="d-none d-sm-inline">Hapus Terpilih</span>
+                            </button>
+                        <?php endif; ?>
+                    </div>
+                    
+                    <div id="selected-count-info" class="ms-3 d-none">
+                        <!-- Konten diisi oleh JavaScript -->
+                    </div>
+                </div>
+
+                <div class="text-muted">
+                    Total Data: <strong><?= mysqli_num_rows($result); ?></strong>
+                </div>
+            </div>
+        </div>
+        
         <div class="table-container">
             <div class="table-responsive">
                 <table class="table table-striped table-hover mb-0">
@@ -238,8 +277,7 @@ if ($can_edit || $can_delete) $colspan++; // Tambah 1 untuk Aksi
                             <td class="text-center align-middle"><?= $no++; ?></td>
                             <td class="align-middle">
                                 <div class="fw-bold"><?= htmlspecialchars($row['nama_pelanggaran']); ?></div>
-                                <div class="small text-muted">
-                                    ID: <?= $row['id']; ?>
+                                <div class="small text-muted">ID: <?= $row['id']; ?>
                                     <?php if ($is_protected) : ?>
                                         <span class="badge bg-secondary ms-1">Default</span>
                                     <?php endif; ?>
@@ -266,18 +304,6 @@ if ($can_edit || $can_delete) $colspan++; // Tambah 1 untuk Aksi
                         <?php } ?>
                     </tbody>
                 </table>
-            </div>
-            
-            <div class="card-footer d-flex justify-content-between align-items-center">
-                <?php if ($can_delete): ?>
-                    <button type="submit" class="btn btn-danger" id="bulkDeleteBtn" disabled>
-                        <i class="fas fa-trash-alt me-1"></i> Hapus Terpilih
-                    </button>
-                <?php else: ?>
-                    <div></div> <?php endif; ?>
-                <div class="text-muted">
-                    Total Data: <strong><?= mysqli_num_rows($result); ?></strong>
-                </div>
             </div>
         </div>
     </form>
@@ -325,16 +351,73 @@ document.addEventListener('DOMContentLoaded', function() {
         confirmModal.show();
     }
 
-    // === JS untuk Bulk Delete (dibuat lebih aman) ===
     const selectAllCheckbox = document.getElementById('selectAll');
     const rowCheckboxes = document.querySelectorAll('.row-checkbox');
+    const bulkActionForm = document.getElementById('bulkActionForm');
+    const bulkEditBtn = document.getElementById('bulkEditBtn');
     const bulkDeleteBtn = document.getElementById('bulkDeleteBtn');
-    const bulkDeleteForm = document.getElementById('bulkDeleteForm');
+    const selectedCountInfo = document.getElementById('selected-count-info');
+    const resetFilterBtn = document.getElementById('resetFilterBtn'); 
 
-    function toggleDeleteButton() {
-        if (!bulkDeleteBtn) return; // Jika tombol tidak ada, jangan lakukan apa-apa
-        const checkedCount = document.querySelectorAll('.row-checkbox:checked').length;
-        bulkDeleteBtn.disabled = checkedCount === 0;
+    const STORAGE_KEY = 'selectedPelanggaranIds'; 
+
+    function getStoredIds() {
+        const storedIdsJson = sessionStorage.getItem(STORAGE_KEY);
+        return storedIdsJson ? new Set(JSON.parse(storedIdsJson)) : new Set();
+    }
+    
+    function saveStoredIds(idsSet) {
+        sessionStorage.setItem(STORAGE_KEY, JSON.stringify([...idsSet]));
+    }
+
+    function loadSelections() {
+        const selectedIds = getStoredIds();
+        rowCheckboxes.forEach(checkbox => {
+            const checkboxId = parseInt(checkbox.value); 
+            checkbox.checked = selectedIds.has(checkboxId);
+        });
+    }
+
+    // ✅ REVISI KECIL: Ganti nama fungsi biar lebih jelas
+    function handleSelectionChange() {
+        const selectedIds = getStoredIds();
+        // Loop SEMUA checkbox yang KELIATAN di halaman ini
+        rowCheckboxes.forEach(checkbox => {
+            const checkboxId = parseInt(checkbox.value);
+            if (checkbox.checked) {
+                selectedIds.add(checkboxId); // Tambahin ke Set
+            } else {
+                selectedIds.delete(checkboxId); // Hapus dari Set
+            }
+        });
+        saveStoredIds(selectedIds); // Simpan Set yang udah diupdate
+        toggleActionButtons();
+    }
+    
+    function updateSelectAllState() {
+        if (selectAllCheckbox) {
+             const totalVisibleCheckboxes = rowCheckboxes.length;
+             const checkedVisibleCount = document.querySelectorAll('.row-checkbox:checked').length;
+             selectAllCheckbox.checked = totalVisibleCheckboxes > 0 && totalVisibleCheckboxes === checkedVisibleCount;
+        }
+    }
+
+    function toggleActionButtons() {
+        const selectedIds = getStoredIds();
+        const checkedCount = selectedIds.size;
+        
+        if (bulkDeleteBtn) bulkDeleteBtn.disabled = checkedCount === 0;
+        if (bulkEditBtn) bulkEditBtn.disabled = checkedCount === 0;
+
+        if (selectedCountInfo) {
+            if (checkedCount > 0) {
+                selectedCountInfo.innerHTML = `<span class="badge bg-secondary">${checkedCount} data terpilih</span>`;
+                selectedCountInfo.classList.remove('d-none');
+            } else {
+                selectedCountInfo.classList.add('d-none');
+            }
+        }
+        updateSelectAllState(); 
     }
 
     if (selectAllCheckbox) {
@@ -342,34 +425,53 @@ document.addEventListener('DOMContentLoaded', function() {
             rowCheckboxes.forEach(checkbox => {
                 checkbox.checked = this.checked;
             });
-            toggleDeleteButton();
+            handleSelectionChange();
         });
     }
 
     rowCheckboxes.forEach(checkbox => {
-        checkbox.addEventListener('change', function() {
-            if (selectAllCheckbox) {
-                if (!this.checked) {
-                    selectAllCheckbox.checked = false;
-                }
-                const totalCheckboxes = rowCheckboxes.length;
-                const checkedCount = document.querySelectorAll('.row-checkbox:checked').length;
-                if (totalCheckboxes > 0 && totalCheckboxes === checkedCount) {
-                    selectAllCheckbox.checked = true;
-                }
-            }
-            toggleDeleteButton();
-        });
+        checkbox.addEventListener('change', handleSelectionChange);
     });
 
-    if (bulkDeleteForm) {
-        bulkDeleteForm.addEventListener('submit', function(e) {
-            e.preventDefault();
-            const checkedCount = document.querySelectorAll('.row-checkbox:checked').length;
-            if (checkedCount > 0) {
-                confirmMessage.textContent = `Apakah Anda yakin ingin menghapus ${checkedCount} data terpilih?`;
+    if (bulkEditBtn) {
+        bulkEditBtn.addEventListener('click', function() {
+            const selectedIds = getStoredIds();
+            if (selectedIds.size > 0) {
+                 bulkActionForm.innerHTML = ''; 
+                 selectedIds.forEach(id => {
+                    const hiddenInput = document.createElement('input');
+                    hiddenInput.type = 'hidden';
+                    hiddenInput.name = 'ids[]';
+                    hiddenInput.value = id;
+                    bulkActionForm.appendChild(hiddenInput);
+                 });
+                 bulkActionForm.action = 'bulk-edit.php';
+                 bulkActionForm.submit();
+            } else {
+                alert('Pilih minimal satu data untuk diedit.');
+            }
+        });
+    }
+
+    if (bulkActionForm) {
+        bulkActionForm.addEventListener('submit', function(e) {
+            e.preventDefault(); 
+            bulkActionForm.action = 'delete.php'; 
+
+            const selectedIds = getStoredIds();
+            if (selectedIds.size > 0) {
+                 bulkActionForm.innerHTML = '';
+                 selectedIds.forEach(id => {
+                    const hiddenInput = document.createElement('input');
+                    hiddenInput.type = 'hidden';
+                    hiddenInput.name = 'ids[]';
+                    hiddenInput.value = id;
+                    bulkActionForm.appendChild(hiddenInput);
+                 });
+
+                confirmMessage.textContent = `Apakah Anda yakin ingin menghapus ${selectedIds.size} data terpilih?`;
                 confirmBtn.onclick = function() {
-                    bulkDeleteForm.submit();
+                    bulkActionForm.submit();
                 };
                 confirmBtn.removeAttribute('href');
                 confirmModal.show();
@@ -377,6 +479,40 @@ document.addEventListener('DOMContentLoaded', function() {
         });
     }
     
-    toggleDeleteButton(); // Panggil di awal untuk set state tombol
+    if (resetFilterBtn) {
+        resetFilterBtn.addEventListener('click', function(e) {
+            sessionStorage.removeItem(STORAGE_KEY);
+        });
+    }
+
+    // --- Inisialisasi Saat Halaman Load ---
+    loadSelections();
+    toggleActionButtons();
+
+    // --- Logika Auto Load Filter (Tetap Sama) ---
+    const filterForm = document.getElementById('filterForm');
+    const searchInput = document.getElementById('search');
+    const bagianSelect = document.getElementById('bagian');
+    const kategoriSelect = document.getElementById('kategori');
+    let debounceTimer; 
+
+    function submitFilterForm() {
+        filterForm.submit();
+    }
+
+    function debounceSubmit() {
+        clearTimeout(debounceTimer); 
+        debounceTimer = setTimeout(submitFilterForm, 500); 
+    }
+
+    if (bagianSelect) {
+        bagianSelect.addEventListener('change', submitFilterForm);
+    }
+    if (kategoriSelect) {
+        kategoriSelect.addEventListener('change', submitFilterForm);
+    }
+    if (searchInput) {
+        searchInput.addEventListener('input', debounceSubmit);
+    }
 });
 </script>
