@@ -143,6 +143,9 @@ mysqli_data_seek($jenis_pelanggaran_list_result, 0);
     </div>
 </div>
 
+<?php require_once __DIR__ . '/../../footer.php'; ?>
+
+
 <!-- jQuery & jQuery UI untuk autocomplete -->
 <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
 <script src="https://code.jquery.com/ui/1.13.2/jquery-ui.min.js"></script>
@@ -253,5 +256,3 @@ $(document).ready(function() {
     });
 });
 </script>
-
-<?php require_once __DIR__ . '/../../footer.php'; ?>

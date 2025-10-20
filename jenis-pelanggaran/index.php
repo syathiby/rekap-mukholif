@@ -136,20 +136,20 @@ if ($can_edit || $can_delete) $colspan++; // Tambah 1 untuk Aksi
         <?php endif; ?>
     </div>
 
-    <?php if (isset($_SESSION['success_message'])) : ?>
-    <div class="alert alert-success alert-dismissible fade show" role="alert">
-        <i class="fas fa-check-circle me-2"></i> <?= $_SESSION['success_message']; ?>
-        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
-    </div>
-    <?php unset($_SESSION['success_message']); ?>
-    <?php endif; ?>
-
-    <?php if (isset($_SESSION['error_message'])) : ?>
-    <div class="alert alert-danger alert-dismissible fade show" role="alert">
-        <i class="fas fa-times-circle me-2"></i> <?= $_SESSION['error_message']; ?>
-        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
-    </div>
-    <?php unset($_SESSION['error_message']); ?>
+    <?php if (isset($_SESSION['message'])): ?>
+        <div class="alert alert-<?php echo $_SESSION['message']['type']; ?> alert-dismissible fade show" role="alert">
+            <?php 
+                // Cek tipe notif buat nambahin ikon (opsional tapi keren)
+                if ($_SESSION['message']['type'] == 'success') {
+                    echo '<i class="fas fa-check-circle me-2"></i>';
+                } elseif ($_SESSION['message']['type'] == 'danger') {
+                    echo '<i class="fas fa-times-circle me-2"></i>';
+                }
+                echo $_SESSION['message']['text']; 
+            ?>
+            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+        </div>
+        <?php unset($_SESSION['message']); ?>
     <?php endif; ?>
     
     <div class="filter-card">

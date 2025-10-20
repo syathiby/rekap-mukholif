@@ -101,7 +101,7 @@ require_once __DIR__ . '/../header.php';
                     <i class="fas fa-hands-helping"></i>
                 </div>
                 <h5 class="card-title">Pengabdian</h5>
-                <p class="card-text">Catat pelanggaran individu (telat) & kebersihan kamar.</p>
+                <p class="card-text">Catat pelanggaran individu & kebersihan kamar.</p>
                 <a href="pengabdian/create.php" class="btn btn-warning btn-block">
                     <i class="fas fa-sign-in-alt me-2"></i> Masuk
                 </a>

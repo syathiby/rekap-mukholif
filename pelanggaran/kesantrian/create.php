@@ -175,6 +175,8 @@ $jenis_pelanggaran_result->data_seek(0);
     </div>
 </div>
 
+<?php require_once __DIR__ . '/../../footer.php'; ?>
+
 <!-- Panggil jQuery dan jQuery UI -->
 <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
 <script src="https://code.jquery.com/ui/1.12.1/jquery-ui.min.js"></script>
@@ -301,5 +303,3 @@ $(document).ready(function() {
     });
 });
 </script>
-
-<?php require_once __DIR__ . '/../../footer.php'; ?>
