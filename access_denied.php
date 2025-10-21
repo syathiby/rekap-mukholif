@@ -89,18 +89,47 @@ require_once __DIR__ . '/config.php';
             display: block; 
         }
 
-        .error-icon { font-size: 4.5rem; margin-bottom: 1rem; animation: bounce 2s ease-in-out infinite; }
+        .error-icon { 
+            font-size: clamp(4rem, 15vw, 6rem); 
+            margin-bottom: 1rem; 
+            transform: rotate(20deg);
+            animation: bounce 2s ease-in-out infinite; 
+        }
         .error-title { font-size: clamp(2rem, 8vw, 3.5rem); font-weight: 700; margin: 0; line-height: 1.2; }
         .error-message { font-size: clamp(1rem, 4vw, 1.25rem); color: var(--secondary-color); margin: 1rem auto 2rem auto; max-width: 600px; }
         .countdown-text { font-size: 1rem; color: var(--secondary-color); }
         #countdown { font-weight: 700; color: var(--primary-color); }
 
-        /* Animasi */
-        .confetti { position: absolute; width: 10px; height: 10px; background-color: #f1c40f; opacity: 0; }
-        @keyframes confetti-fall { 0% { transform: translateY(-100px) rotate(0deg); opacity: 1; } 100% { transform: translateY(100vh) rotate(360deg); opacity: 0; } }
+        /* === INI YANG DIUBAH === */
+        .confetti { 
+            position: absolute; 
+            width: 10px; 
+            height: 10px; 
+            background-color: #f1c40f; 
+            opacity: 0; 
+            top: 0; /* <-- TAMBAHKAN INI BIAR NEMPEL DI ATAS */
+        }
+        
+        /* Animasinya udah bener (mulai dari -100px), jadi nggak perlu diubah */
+        @keyframes confetti-fall { 
+            0% { transform: translateY(-100px) rotate(0deg); opacity: 1; } 
+            100% { transform: translateY(100vh) rotate(360deg); opacity: 0; } 
+        }
         @keyframes pulse { 0%, 100% { opacity: 0.7; } 50% { opacity: 1; } }
-        @keyframes bounce { 0%, 20%, 50%, 80%, 100% { transform: translateY(0); } 40% { transform: translateY(-20px); } 60% { transform: translateY(-10px); } }
+        
+        @keyframes bounce { 
+            0%, 20%, 50%, 80%, 100% { transform: translateY(0) rotate(20deg); } 
+            40% { transform: translateY(-20px) rotate(20deg); } 
+            60% { transform: translateY(-10px) rotate(20deg); } 
+        }
+        
         @keyframes shake-fast { 0%, 100% { transform: translateX(0) rotate(0); } 20%, 60% { transform: translateX(-10px) rotate(-4deg); } 40%, 80% { transform: translateX(10px) rotate(4deg); } }
+
+        @keyframes shake-straight {
+            0%, 100% { transform: translateX(0) rotate(20deg); }
+            20%, 60% { transform: translateX(-10px) rotate(20deg); }
+            40%, 80% { transform: translateX(10px) rotate(20deg); }
+        }
     </style>
 </head>
 <body>
@@ -117,13 +146,13 @@ require_once __DIR__ . '/config.php';
         </div>
 
         <div class="error-message-container">
-            <div class="error-icon">🚧</div>
+            <div class="error-icon">🤣</div>
             <h1 class="error-title">Widih, jago bangeet...</h1>
             <p class="error-message">
                 Tapi sayangnya anda tidak dapat melakukan aksi ini.
             </p>
             <p class="countdown-text">
-                Otomatis logout dalam <span id="countdown">5</span> detik...
+                Otomatis logout dalam <span id="countdown">10</span> detik...
             </p>
         </div>
     </div>
@@ -143,7 +172,7 @@ require_once __DIR__ . '/config.php';
             createConfetti();
             
             // Logika countdown
-            let countdown = 5;
+            let countdown = 10;
             const countdownInterval = setInterval(() => {
                 countdown--;
                 countdownElement.textContent = countdown;
@@ -155,17 +184,24 @@ require_once __DIR__ . '/config.php';
             }, 1000);
         });
 
+        // Fungsinya udah bener, biarin aja
         function createConfetti() {
             const colors = ['#e55d6b', '#f1c40f', '#3498db', '#2ecc71'];
-            for (let i = 0; i < 100; i++) {
+            
+            for (let i = 0; i < 250; i++) {
                 const confetti = document.createElement('div');
                 confetti.className = 'confetti';
                 confetti.style.left = Math.random() * 100 + 'vw';
                 confetti.style.backgroundColor = colors[Math.floor(Math.random() * colors.length)];
-                const duration = Math.random() * 3 + 2;
-                confetti.style.animation = `confetti-fall ${duration}s linear forwards`;
+                
+                const duration = Math.random() * 3 + 3; // Durasi 3-6 detik
+                const delay = Math.random() * 3; // Delay 0-3 detik
+                
+                confetti.style.animation = `confetti-fall ${duration}s linear ${delay}s forwards`;
+                
                 document.body.appendChild(confetti);
-                setTimeout(() => confetti.remove(), duration * 1000);
+                
+                setTimeout(() => confetti.remove(), (duration + delay) * 1000);
             }
         }
     </script>
