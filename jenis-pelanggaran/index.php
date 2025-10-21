@@ -57,7 +57,9 @@ $result = mysqli_stmt_get_result($stmt);
 
 // Hitung colspan dinamis untuk tabel
 $colspan = 5; // Kolom dasar: No, Nama, Bagian, Poin, Kategori
-if ($can_delete) $colspan++; // Tambah 1 untuk checkbox
+// === REVISI 1 ===
+// Checkbox muncul jika bisa edit ATAU bisa delete
+if ($can_edit || $can_delete) $colspan++; // Tambah 1 untuk checkbox
 if ($can_edit || $can_delete) $colspan++; // Tambah 1 untuk Aksi
 ?>
 
@@ -219,8 +221,7 @@ if ($can_edit || $can_delete) $colspan++; // Tambah 1 untuk Aksi
                     </div>
                     
                     <div id="selected-count-info" class="ms-3 d-none">
-                        <!-- Konten diisi oleh JavaScript -->
-                    </div>
+                        </div>
                 </div>
 
                 <div class="text-muted">
@@ -234,7 +235,7 @@ if ($can_edit || $can_delete) $colspan++; // Tambah 1 untuk Aksi
                 <table class="table table-striped table-hover mb-0">
                     <thead>
                         <tr>
-                            <?php if ($can_delete): ?>
+                            <?php if ($can_edit || $can_delete): ?>
                                 <th width="3%" class="text-center"><input type="checkbox" id="selectAll"></th>
                             <?php endif; ?>
                             <th width="5%" class="text-center">No</th>
@@ -267,7 +268,7 @@ if ($can_edit || $can_delete) $colspan++; // Tambah 1 untuk Aksi
                             };
                         ?>
                         <tr>
-                            <?php if ($can_delete): ?>
+                            <?php if ($can_edit || $can_delete): ?>
                                 <td class="text-center align-middle">
                                     <?php if (!$is_protected) : ?>
                                         <input type="checkbox" name="ids[]" value="<?= $row['id']; ?>" class="row-checkbox">
