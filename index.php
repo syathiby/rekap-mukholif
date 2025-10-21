@@ -268,7 +268,7 @@ $best_students = mysqli_query($conn, "
         <div class="content-section">
             <div class="section-header">
                 <h2 class="section-title"><i class="fas fa-history"></i> Pelanggaran Terkini</h2>
-                <a href="rekap/umum.php" class="view-all-link">Lihat semua <i class="fas fa-chevron-right"></i></a>
+                <a href="rekap/tren-pelanggaran.php" class="view-all-link">Lihat semua <i class="fas fa-chevron-right"></i></a>
             </div>
             <div class="recent-violations">
                 <table class="violation-table">
