@@ -1,7 +1,6 @@
 <?php
 if (session_status() === PHP_SESSION_NONE) { session_start(); }
 require_once __DIR__ . '/../init.php';
-guard('jenis_pelanggaran_create', 'jenis_pelanggaran_edit');
 
 // Definisikan nilai yang diizinkan untuk validasi
 $allowed_kategori = ['Ringan', 'Sedang', 'Berat', 'Sangat Berat'];
@@ -11,6 +10,9 @@ $allowed_bagian = ['Kesantrian', 'Bahasa', 'Diniyyah', 'Pengabdian', 'Tahfidz'];
 // === LOGIKA UNTUK TAMBAH SATU DATA (FORM BIASA)
 // =======================================================
 if (isset($_POST['create_single'])) {
+    // <-- GEMBOK 1: Cek izin create
+    guard('jenis_pelanggaran_create'); 
+
     $nama_pelanggaran = ucfirst(trim($_POST['nama_pelanggaran']));
     $bagian = trim($_POST['bagian']);
     $poin = (int)$_POST['poin'];
@@ -42,6 +44,9 @@ if (isset($_POST['create_single'])) {
 // === LOGIKA UNTUK TAMBAH BANYAK DATA (BULK)
 // =======================================================
 if (isset($_POST['create_bulk'])) {
+    // <-- GEMBOK 2: Cek izin create (lagi)
+    guard('jenis_pelanggaran_create');
+
     $bulk_data = trim($_POST['bulk_data']);
     if (empty($bulk_data)) {
         $_SESSION['message'] = ['type' => 'danger', 'text' => 'Data bulk tidak boleh kosong.'];
@@ -113,6 +118,9 @@ if (isset($_POST['create_bulk'])) {
 // === PROSES UPDATE DATA (DENGAN SINKRONISASI POIN)
 // =======================================================
 if (isset($_POST['update'])) {
+    // <-- GEMBOK 3: Cek izin edit
+    guard('jenis_pelanggaran_edit');
+
     $id = (int)$_POST['id'];
     $nama_pelanggaran = ucfirst(trim($_POST['nama_pelanggaran']));
     $bagian = trim($_POST['bagian']);
@@ -196,6 +204,8 @@ if (isset($_POST['update'])) {
 // === ✅ PROSES BULK UPDATE DATA (INI BLOK BARU)
 // =======================================================
 if (isset($_POST['bulk_update'])) {
+    // <-- GEMBOK 4: Cek izin edit (lagi)
+    guard('jenis_pelanggaran_edit');
     
     // Ambil semua data array dari form
     $ids = $_POST['ids'] ?? [];
@@ -299,6 +309,9 @@ if (isset($_POST['bulk_update'])) {
 // === PROSES DELETE DATA (DARI KODE LAMA LU)
 // =======================================================
 if (isset($_POST['delete'])) {
+    // <-- GEMBOK 5: Cek izin delete (INI YANG PALING PENTING!)
+    guard('jenis_pelanggaran_delete');
+
     $id = (int)$_POST['id'];
     
     $query = "DELETE FROM jenis_pelanggaran WHERE id = ?";

@@ -150,7 +150,7 @@ $json_per_bagian = json_encode(['labels' => array_column($data_per_bagian, 'bagi
 
 <div class="container-fluid mt-4 mb-5">
     <div class="dashboard-header">
-        <h2 class="dashboard-title"><i class="fa-solid fa-chart-pie"></i> Dashboard Pelanggaran</h2>
+        <h2 class="dashboard-title"><i class="fa-solid fa-chart-pie"></i> Rekap Statistik Pelanggaran</h2>
         <p style="margin: 0;">Ringkasan data untuk periode: <strong><?= date('d M Y', strtotime($tgl_mulai)) ?></strong> sampai <strong><?= date('d M Y', strtotime($tgl_selesai)) ?></strong></p>
     </div>
 

@@ -165,7 +165,7 @@ while($row = $query_chart->fetch_assoc()){
 </style>
 
 <div class="container-fluid mt-4 mb-5">
-    <h1 class="page-title"><i class="fas fa-exclamation-triangle"></i>Laporan Pelanggaran Santri</h1>
+    <h1 class="page-title"><i class="fas fa-exclamation-triangle"></i>Rekap Pelanggaran Keterlambatan Santri</h1>
     
     <div class="card">
         <h2 class="card-title"><i class="fas fa-filter"></i>Filter Data</h2>
