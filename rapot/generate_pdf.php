@@ -59,9 +59,6 @@ try {
     $stmt_pelanggaran->close();
 
 } catch (Exception $e) {
-    // ==========================================================
-    //           PERBAIKAN ERROR #2 DI SINI (Titik)
-    // ==========================================================
     die('Error querying database: ' . $e->getMessage());
 }
 
@@ -76,11 +73,6 @@ $musyrif = [
 ];
 
 // 6. Setting Path Logo
-// ==========================================================
-//           PERBAIKAN ERROR #1 DI SINI (Pake __DIR__)
-// __DIR__ adalah path folder file ini (C:/.../rapot)
-// __DIR__ . '/../' adalah path root proyek (C:/.../rekap-mukholif)
-// ==========================================================
 $logo_path = __DIR__ . '/../assets/Kop Syathiby.jpg';
 if (!file_exists($logo_path)) $logo_path = ''; 
 
@@ -105,8 +97,14 @@ try {
     $mpdf->WriteHTML($html);
 
     // 10. Tampilkan/Download PDF
-    $nama_file = "Rapot " . $santri['nama'] . " - " . $rapot['bulan'] . ".pdf";
-    $mpdf->Output($nama_file, \Mpdf\Output\Destination::INLINE); 
+    
+    // ==========================================================
+    //           PERBAIKAN NAMA FILE DI SINI
+    //  Kita tambahin $rapot['tahun']
+    // ==========================================================
+    $nama_file = "Rapot " . $santri['nama'] . " - " . $rapot['bulan'] . " " . $rapot['tahun'] . ".pdf";
+    
+    $mpdf->Output($nama_file, \Mpdf\Output\Destination::DOWNLOAD); 
     
 } catch (\Mpdf\MpdfException $e) {
     echo 'Error mPDF: ' . $e->getMessage();
