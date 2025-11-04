@@ -261,7 +261,7 @@ $best_students = mysqli_query($conn, "
     <div class="container">
         <header class="dashboard-header">
             <div class="header-shield-bg"><i class="fas fa-shield-alt"></i></div>
-            <h1><i class="fas fa-chart-pie"></i> Aplikasi Pendataan Mukholif</h1>
+            <h1><i class="fas fa-chart-pie"></i> Aplikasi Kepengasuhan Santri</h1>
             <p class="subtitle">Pantau dan kelola data pelanggaran santri dengan mudah</p>
         </header>
         

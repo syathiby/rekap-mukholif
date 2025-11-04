@@ -13,7 +13,7 @@
 │    ├──export_arsip.php
 │    ├──process_export_arsip.php
 ├──assets
-│    └──logo.png
+│    ├──logo.png
 ├──eksekusi/
 │    ├──index.php
 │    ├──process.php
@@ -24,8 +24,9 @@
 │    ├── index.php 
 │    ├── create.php 
 │    ├── edit.php 
+│    ├── bulk-edit.php
 │    ├── delete.php 
-│    └── process.php 
+│    └── process.php
 ├── pelanggaran/
 │    ├── index.php
 │    ├── bahasa/
@@ -71,6 +72,14 @@
 │    ├──history
 │    │    ├──index.php
 │    │    └──procees.php
+├──rapot/
+│   ├── index.php
+│   ├── create.php
+│   ├── process.php
+│   ├── view.php
+│   ├── generate_pdf.php
+│   ├── template_rapot.php
+│   └── helper.php
 ├──rekap/
 │    ├──index.php
 │    ├──per-kamar.php
@@ -79,6 +88,7 @@
 │    ├──get_harian_data.php     ( sambungan untuk chart.php )
 │    ├──santri-pelanggar.php
 │    ├──santri-teladan.php
+│    ├──tren-pelanggaran.php
 │    ├──umum.php
 │    ├──detail.php      ( sambungan untuk umum.php )
 ├── santri/

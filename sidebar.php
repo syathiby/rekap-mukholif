@@ -14,17 +14,14 @@ if (!defined('BASE_URL')) {
 }
 ?>
 
-<!-- ✅ SATU DAFTAR MENU UNTUK SEMUANYA ✅ -->
 <ul class="nav flex-column">
 
-    <!-- Menu Dashboard: Selalu tampil -->
     <li class="nav-item">
         <a class="nav-link apply-color-hover-active color-blue <?= strpos($current_uri, 'index.php') !== false || $current_uri === BASE_URL . '/' ? 'active' : '' ?>" href="<?= BASE_URL ?>/index.php">
             <i class="fas fa-home me-2"></i>Dashboard
         </a>
     </li>
 
-    <!-- Menu Data Santri -->
     <?php if (has_permission('santri_view')): ?>
     <li class="nav-item">
         <a class="nav-link apply-color-hover-active color-green <?= strpos($current_uri, '/santri') !== false ? 'active' : '' ?>" href="<?= BASE_URL ?>/santri">
@@ -33,7 +30,6 @@ if (!defined('BASE_URL')) {
     </li>
     <?php endif; ?>
 
-    <!-- Menu Jenis Pelanggaran -->
     <?php if (has_permission(['jenis_pelanggaran_view', 'jenis_pelanggaran_create', 'jenis_pelanggaran_edit', 'jenis_pelanggaran_delete'])): ?>
     <li class="nav-item">
         <a class="nav-link apply-color-hover-active color-orange <?= strpos($current_uri, '/jenis-pelanggaran') !== false ? 'active' : '' ?>" href="<?= BASE_URL ?>/jenis-pelanggaran">
@@ -42,7 +38,6 @@ if (!defined('BASE_URL')) {
     </li>
     <?php endif; ?>
     
-    <!-- Menu Catatan Pelanggaran -->
     <?php if (has_permission(['pelanggaran_bahasa_input', 'pelanggaran_diniyyah_input', 'pelanggaran_kesantrian_input', 'pelanggaran_pengabdian_input', 'pelanggaran_tahfidz_input'])): ?>
     <li class="nav-item">
         <a class="nav-link apply-color-hover-active color-indigo <?= strpos($current_uri, '/pelanggaran') !== false ? 'active' : '' ?>" href="<?= BASE_URL ?>/pelanggaran">
@@ -51,7 +46,6 @@ if (!defined('BASE_URL')) {
     </li>
     <?php endif; ?>
 
-    <!-- Menu Eksekusi Kebersihan -->
     <?php if (has_permission('eksekusi_manage')): ?>
     <li class="nav-item">
         <a class="nav-link apply-color-hover-active color-teal <?= strpos($current_uri, '/eksekusi') !== false ? 'active' : '' ?>" href="<?= BASE_URL ?>/eksekusi">
@@ -60,7 +54,6 @@ if (!defined('BASE_URL')) {
     </li>
     <?php endif; ?>
 
-    <!-- Menu Arsip -->
     <?php if (has_permission(['arsip_view', 'arsip_create', 'arsip_delete'])): ?>
     <li class="nav-item">
         <a class="nav-link apply-color-hover-active color-purple <?= strpos($current_uri, '/arsip') !== false ? 'active' : '' ?>" href="<?= BASE_URL ?>/arsip">
@@ -69,7 +62,6 @@ if (!defined('BASE_URL')) {
     </li>
     <?php endif; ?>
 
-    <!-- Menu Rekap Pelanggaran -->
     <?php if (has_permission(['rekap_view_umum', 'rekap_view_per_kamar', 'rekap_view_santri', 'rekap_view_statistik', 'rekap_view_tahfidz'])): ?>
     <li class="nav-item">
         <a class="nav-link apply-color-hover-active color-red <?= strpos($current_uri, '/rekap') !== false ? 'active' : '' ?>" href="<?= BASE_URL ?>/rekap">
@@ -78,7 +70,14 @@ if (!defined('BASE_URL')) {
     </li>
     <?php endif; ?>
 
-    <!-- Menu Export Laporan -->
+    
+    <?php if (has_permission(['rapot_view', 'rapot_create', 'rapot_cetak', 'rapot_delete'])): ?>
+    <li class="nav-item">
+        <a class="nav-link apply-color-hover-active color-pink <?= strpos($current_uri, '/rapot') !== false ? 'active' : '' ?>" href="<?= BASE_URL ?>/rapot">
+            <i class="fas fa-file-invoice me-2"></i>Rapot Kepengasuhan
+        </a>
+    </li>
+    <?php endif; ?>
     <?php if (has_permission('export_laporan')): ?>
     <li class="nav-item">
         <a class="nav-link apply-color-hover-active color-cyan <?= strpos($current_uri, '/export') !== false ? 'active' : '' ?>" href="<?= BASE_URL ?>/export">
@@ -87,7 +86,6 @@ if (!defined('BASE_URL')) {
     </li>
     <?php endif; ?>
     
-    <!-- Menu Pengaturan -->
     <?php if (has_permission(['user_manage', 'periode_aktif_manage', 'reset_poin_manage', 'izin_manage', 'history_manage'])): ?>
     <li class="nav-item">
         <a class="nav-link apply-color-hover-active color-gray <?= strpos($current_uri, '/pengaturan') !== false ? 'active' : '' ?>" href="<?= BASE_URL ?>/pengaturan">
