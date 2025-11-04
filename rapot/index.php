@@ -67,9 +67,7 @@ try {
         $types .= "i";
     }
     
-    // --- INI PERUBAHAN SORTING ---
     $sql .= " ORDER BY CAST(s.kamar AS UNSIGNED) ASC, s.nama ASC";
-    // ----------------------------
     
     $stmt = $conn->prepare($sql);
     if (!empty($params)) {
@@ -79,7 +77,7 @@ try {
     $rapot_list = $stmt->get_result()->fetch_all(MYSQLI_ASSOC);
 
 } catch (Exception $e) {
-    die("Error fetching rapot list: " . $e->getMessage());
+    die("Error fetching rapot list: ". $e->getMessage());
 }
 
 // 6. Panggil Header
@@ -158,21 +156,35 @@ require_once __DIR__ . '/../header.php';
             <h6 class="m-0 font-weight-bold text-primary">Data Rapot Tersimpan</h6>
         </div>
         <div class="card-body">
+
+            <form id="bulk-action-form">
+            
+            <?php if (!empty($rapot_list) && has_permission('rapot_cetak')): ?>
+                <button type="button" id="bulk-download-btn" class="btn btn-info shadow-sm mb-3">
+                    <i class="fas fa-file-pdf fa-sm"></i> 
+                    Unduh PDF yang Dipilih
+                </button>
+            <?php endif; ?>
+
             <div class="table-responsive">
                 <table class="table table-bordered" id="dataTable" width="100%" cellspacing="0">
                     <thead>
                         <tr>
+                            <th width="1%" class="text-center align-middle">
+                                <input type="checkbox" id="select-all">
+                            </th>
                             <th width="5%">No.</th>
                             <th>Nama Santri</th>
                             <th width="10%">Kamar</th>
                             <th width="15%">Periode</th>
                             <th width="20%" class="d-none d-md-table-cell">Dicatat Oleh</th>
-                            <th width="10%">Aksi</th> </tr>
+                            <th width="10%">Aksi</th> 
+                        </tr>
                     </thead>
                     <tbody>
                         <?php if (empty($rapot_list)): ?>
                             <tr>
-                                <td colspan="6" class="text-center">
+                                <td colspan="7" class="text-center">
                                     <?php if (!empty($filter_kamar) || !empty($filter_bulan) || !empty($filter_tahun)): ?>
                                         Data rapot tidak ditemukan dengan filter yang dipilih.
                                     <?php else: ?>
@@ -183,6 +195,10 @@ require_once __DIR__ . '/../header.php';
                         <?php else: ?>
                             <?php foreach ($rapot_list as $index => $rapot): ?>
                                 <tr>
+                                    <td class="text-center align-middle">
+                                        <input type="checkbox" class="row-checkbox" 
+                                               value="<?php echo $rapot['id']; ?>">
+                                    </td>
                                     <td><?php echo $index + 1; ?></td>
                                     <td><?php echo htmlspecialchars($rapot['nama_santri'] ?? 'Santri Dihapus'); ?></td>
                                     <td><?php echo htmlspecialchars($rapot['kamar_santri'] ?? 'N/A'); ?></td>
@@ -208,7 +224,7 @@ require_once __DIR__ . '/../header.php';
                                                 
                                                 <?php if (has_permission('rapot_cetak')): ?>
                                                     <a class="dropdown-item" href="generate_pdf.php?id=<?php echo $rapot['id']; ?>"
-                                                       data-bs-toggle="tooltip" title="Unduh PDF">
+                                                       target="_blank" data-bs-toggle="tooltip" title="Unduh PDF">
                                                         <i class="fas fa-file-pdf fa-sm fa-fw mr-2 text-gray-400"></i>
                                                         Unduh PDF
                                                     </a>
@@ -239,11 +255,7 @@ require_once __DIR__ . '/../header.php';
                         <?php endif; ?>
                     </tbody>
                 </table>
-            </div>
-        </div>
-    </div>
-
-</div>
+            </div> </form> </div> </div> </div>
 
 <?php
 // 7. Panggil Footer
@@ -251,31 +263,80 @@ require_once __DIR__ . '/../footer.php';
 ?>
 
 <script>
-// Kita pake 'DOMContentLoaded', ini versi JS murninya $(function() { ... })
-// Fungsinya sama: nunggu semua HTML siap dulu, baru jalanin kodenya.
 document.addEventListener('DOMContentLoaded', function() {
 
-    // 1. Kode tooltip bawaan lu (ini udah bener)
+    // 1. Kode tooltip bawaan lu
     var tooltipTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggle="tooltip"]'))
+    
+    // --- INI YANG DIBENERIN ---
+    // Sebelumnya: tooltipListTriggerList.map (typo)
+    // Sekarang: tooltipTriggerList.map (bener)
     var tooltipList = tooltipTriggerList.map(function (tooltipTriggerEl) {
         return new bootstrap.Tooltip(tooltipTriggerEl)
     });
+    // -------------------------
 
-    // 2. KODE AUTO-SUBMIT (Versi JS murni, gak pake '$')
-    // Ambil semua 3 dropdownnya
+    // 2. KODE AUTO-SUBMIT FILTER (Ini tetep)
     var filterDropdowns = document.querySelectorAll('#kamar, #bulan, #tahun');
-
-    // Pasang 'pendengar' di tiap dropdown
     filterDropdowns.forEach(function(selectElement) {
-        
         selectElement.addEventListener('change', function() {
-            // 'this' nunjuk ke <select> yang baru aja diganti
-            // Cari form terdekat yang ngebungkus 'this', lalu submit
             this.closest('form').submit();
         });
-
     });
-    // ---------------------
+
+    // --- 3. KODE BARU UNTUK BULK DOWNLOAD (NON-ZIP) ---
+    var selectAllCheckbox = document.getElementById('select-all');
+    var rowCheckboxes = document.querySelectorAll('.row-checkbox');
+    var bulkDownloadBtn = document.getElementById('bulk-download-btn'); // Ambil tombolnya
+
+    // Fungsi untuk 'Pilih Semua'
+    if (selectAllCheckbox) {
+        selectAllCheckbox.addEventListener('change', function() {
+            var isChecked = this.checked;
+            rowCheckboxes.forEach(function(checkbox) {
+                checkbox.checked = isChecked;
+            });
+        });
+    }
+    
+    // Fungsi untuk tombol "Unduh PDF yang Dipilih"
+    if (bulkDownloadBtn) {
+        
+        bulkDownloadBtn.addEventListener('click', function() {
+            
+            var checkedIDs = [];
+            // Ambil semua checkbox baris yang lagi dicentang
+            document.querySelectorAll('.row-checkbox:checked').forEach(function(checkbox) {
+                checkedIDs.push(checkbox.value); // Masukin ID-nya ke array
+            });
+
+            // Kalo gak ada yg dicentang, kasih peringatan
+            if (checkedIDs.length === 0) {
+                alert('Pilih minimal satu rapot dulu yang mau di-download.');
+                return; // Berhenti
+            }
+
+            // Kalo ada, kita loop ID-nya
+            checkedIDs.forEach(function(id, index) {
+                
+                // Kasih jeda 1 detik antar download
+                // Ini biar gak di-block sama browser & rasanya "satu-satu"
+                setTimeout(function() {
+                    // Bikin link 'siluman'
+                    var link = document.createElement('a');
+                    // Arahin ke file generate_pdf.php (file LAMA lu)
+                    link.href = 'generate_pdf.php?id=' + id;
+                    
+                    document.body.appendChild(link); // Tambahin ke body
+                    link.click(); // Klik link siluman itu
+                    document.body.removeChild(link); // Hapus lagi
+                    
+                }, index * 1000); // jeda 1000ms = 1 detik
+            });
+
+        });
+    }
+    // ---------------------------------
 
 });
 </script>
