@@ -38,10 +38,7 @@ try {
         die('Error: Data rapot tidak ditemukan.');
     }
     
-    // ==========================================================
-    //           PERBAIKAN SQL-NYA DI SINI
-    //  Kita tambahin 'AND jp.poin > 0'
-    // ==========================================================
+    // Ambil rincian pelanggaran (Query 2)
     $pelanggaran_list = [];
     $sql_pelanggaran = "
         SELECT jp.nama_pelanggaran, jp.poin
@@ -50,7 +47,7 @@ try {
         WHERE p.santri_id = ? 
           AND MONTH(p.tanggal) = FIND_IN_SET(?, 'Januari,Februari,Maret,April,Mei,Juni,Juli,Agustus,September,Oktober,November,Desember')
           AND YEAR(p.tanggal) = ?
-          AND jp.poin > 0  -- <-- INI TAMBAHANNYA
+          AND jp.poin > 0
         ORDER BY p.tanggal DESC
     ";
     
@@ -59,7 +56,6 @@ try {
     $stmt_pelanggaran->execute();
     $pelanggaran_list = $stmt_pelanggaran->get_result()->fetch_all(MYSQLI_ASSOC);
     $stmt_pelanggaran->close();
-    // ==========================================================
 
 } catch (Exception $e) {
     die('Error querying database: ' . $e->getMessage());
@@ -75,9 +71,14 @@ $musyrif = [
     'nama_lengkap' => $rapot['nama_musyrif'] ?? 'User Dihapus'
 ];
 
-// 6. Setting Path Logo (Pake $base_url)
+// 6. Setting Path Logo
+// ==========================================================
+//           PERBAIKAN DI SINI
+// $logo_path (URL) udah bener pake $base_url
+// $logo_file_path (FILE) kita benerin pake __DIR__
+// ==========================================================
 $logo_path = $base_url . '/assets/Kop Syathiby.jpg';
-$logo_file_path = $_SERVER['DOCUMENT_ROOT'] . '/../assets/Kop Syathiby.jpg';
+$logo_file_path = __DIR__ . '/../assets/Kop Syathiby.jpg'; // <-- INI FIX-NYA
 if (!file_exists($logo_file_path)) $logo_path = ''; 
 
 /*
