@@ -35,7 +35,7 @@ if (!function_exists('generatePenilaianDropdown')) {
                 $options = '
                     <option value="">-- Pilih Penilaian --</option>
                     <option value="5">Selalu berkata baik & sopan</option>
-                    <option value="4">Umumnya baik, kadang terlewat</option>
+                    <option value="4">Umumnya baik</option>
                     <option value="3">Perlu banyak diingatkan</option>
                     <option value="2">Sering berkata kotor/tidak sopan</option>
                     <option value="1">Sangat tidak terjaga</option>

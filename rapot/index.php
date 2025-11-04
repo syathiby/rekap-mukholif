@@ -98,14 +98,13 @@ require_once __DIR__ . '/../header.php';
     </div>
     
     <?php 
-    // Kalo header lu udah otomatis nampilin, hapus 3 baris ini
     if (function_exists('show_flash_message')) {
         show_flash_message();
     } 
     ?>
 
     <div class="card shadow mb-4">
-        <a href="#collapseFilter" class="d-block card-header py-3" data-toggle="collapse" role="button" aria-expanded="true" aria-controls="collapseFilter">
+        <a href="#collapseFilter" class="d-block card-header py-3" data-bs-toggle="collapse" role="button" aria-expanded="true" aria-controls="collapseFilter">
             <h6 class="m-0 font-weight-bold text-primary"><i class="fas fa-filter"></i> Filter Data Rapot</h6>
         </a>
         <div class="collapse show" id="collapseFilter">
@@ -165,8 +164,7 @@ require_once __DIR__ . '/../header.php';
                             <th width="10%">Kamar</th>
                             <th width="15%">Periode</th>
                             <th width="20%" class="d-none d-md-table-cell">Dicatat Oleh</th>
-                            <th width="15%">Aksi</th>
-                        </tr>
+                            <th width="10%">Aksi</th> </tr>
                     </thead>
                     <tbody>
                         <?php if (empty($rapot_list)): ?>
@@ -188,26 +186,42 @@ require_once __DIR__ . '/../header.php';
                                     <td><?php echo htmlspecialchars($rapot['bulan']) . ' ' . $rapot['tahun']; ?></td>
                                     <td class="d-none d-md-table-cell"><?php echo htmlspecialchars($rapot['nama_musyrif'] ?? 'User Dihapus'); ?></td>
                                     
-                                    <td class="text-nowrap">
-                                        
-                                        <?php if (has_permission('rapot_view')): ?>
-                                            <a href="view.php?id=<?php echo $rapot['id']; ?>" class="btn btn-success btn-sm mr-1" data-toggle="tooltip" title="View Rapot" target="_blank">
-                                                <i class="fas fa-eye"></i>
-                                            </a>
-                                        <?php endif; ?>
-
-                                        <?php if (has_permission('rapot_cetak')): ?>
-                                            <a href="generate_pdf.php?id=<?php echo $rapot['id']; ?>" class="btn btn-info btn-sm mr-1" data-toggle="tooltip" title="Cetak PDF" target="_blank">
-                                                <i class="fas fa-file-pdf"></i>
-                                            </a>
-                                        <?php endif; ?>
-                                        
-                                        <?php if (has_permission('rapot_delete')): ?>
-                                            <a href="delete.php?id=<?php echo $rapot['id']; ?>" class="btn btn-danger btn-sm" data-toggle="tooltip" title="Hapus Rapot" onclick="return confirm('Yakin mau hapus rapot ini? Data yang dihapus tidak bisa kembali.');">
-                                                <i class="fas fa-trash"></i>
-                                            </a>
-                                        <?php endif; ?>
-
+                                    <td class="text-nowrap text-center">
+                                        <div class="dropdown">
+                                            <button class="btn btn-sm btn-secondary dropdown-toggle" type="button" 
+                                                    id="aksiDropdown-<?php echo $rapot['id']; ?>" 
+                                                    data-bs-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
+                                                <i class="fas fa-cog"></i> </button>
+                                            <div class="dropdown-menu dropdown-menu-right shadow animated--fade-in" 
+                                                 aria-labelledby="aksiDropdown-<?php echo $rapot['id']; ?>">
+                                                
+                                                <?php if (has_permission('rapot_view_detail')): ?>
+                                                    <a class="dropdown-item" href="view.php?id=<?php echo $rapot['id']; ?>" target="_blank" 
+                                                       data-bs-toggle="tooltip" title="Lihat Rapot di Halaman Web">
+                                                        <i class="fas fa-eye fa-sm fa-fw mr-2 text-gray-400"></i>
+                                                        View Rapot
+                                                    </a>
+                                                <?php endif; ?>
+                                                
+                                                <?php if (has_permission('rapot_cetak')): ?>
+                                                    <a class="dropdown-item" href="generate_pdf.php?id=<?php echo $rapot['id']; ?>" target="_blank"
+                                                       data-bs-toggle="tooltip" title="Cetak ke PDF">
+                                                        <i class="fas fa-file-pdf fa-sm fa-fw mr-2 text-gray-400"></i>
+                                                        Cetak PDF
+                                                    </a>
+                                                <?php endif; ?>
+                                                
+                                                <?php if (has_permission('rapot_delete')): ?>
+                                                    <div class="dropdown-divider"></div>
+                                                    <a class="dropdown-item" href="delete.php?id=<?php echo $rapot['id']; ?>" 
+                                                       onclick="return confirm('Yakin mau hapus rapot ini? Data yang dihapus tidak bisa kembali.');"
+                                                       style="color: #e74a3b;" data-bs-toggle="tooltip" title="Hapus Rapot Ini"> 
+                                                       <i class="fas fa-trash fa-sm fa-fw mr-2 text-gray-400"></i>
+                                                        Hapus
+                                                    </a>
+                                                <?php endif; ?>
+                                            </div>
+                                        </div>
                                     </td>
                                 </tr>
                             <?php endforeach; ?>
@@ -220,13 +234,18 @@ require_once __DIR__ . '/../header.php';
 
 </div>
 
-<script>
-$(function () {
-  $('[data-toggle="tooltip"]').tooltip()
-})
-</script>
-
 <?php
-// 7. Panggil Footer
+// 7. Panggil Footer (yang isinya jQuery dan Bootstrap.js)
 require_once __DIR__ . '/../footer.php';
 ?>
+
+<script>
+$(function () {
+  // Inisialisasi semua tooltip yang pake sintaks BS5
+  // Kita pake '[data-bs-toggle="tooltip"]'
+  var tooltipTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggle="tooltip"]'))
+  var tooltipList = tooltipTriggerList.map(function (tooltipTriggerEl) {
+    return new bootstrap.Tooltip(tooltipTriggerEl)
+  })
+})
+</script>
