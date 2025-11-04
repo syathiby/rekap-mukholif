@@ -6,7 +6,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Aplikasi Pendataan Mukholif</title>
+    <title>Aplikasi Kepengasuhan Santri</title>
     
     <!-- Aset & Font -->
     <!-- REVISI: Path favicon jadi dinamis pake BASE_URL -->
@@ -241,7 +241,7 @@
                         <div class="d-flex align-items-center">
                             <!-- REVISI: Path logo jadi dinamis pake BASE_URL -->
                             <img src="<?= BASE_URL ?>/assets/logo.png" alt="Logo" class="header-logo me-2">
-                            <span class="fw-bold app-name align-middle" style="color: #25396f;">Pendataan Mukholif</span>
+                            <span class="fw-bold app-name align-middle" style="color: #25396f;">Kepengasuhan Santri</span>
                         </div>
                     </div>
                     
