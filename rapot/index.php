@@ -66,7 +66,10 @@ try {
         $params[] = $filter_tahun;
         $types .= "i";
     }
-    $sql .= " ORDER BY r.tahun DESC, r.id DESC";
+    
+    // --- INI PERUBAHAN SORTING ---
+    $sql .= " ORDER BY CAST(s.kamar AS UNSIGNED) ASC, s.nama ASC";
+    // ----------------------------
     
     $stmt = $conn->prepare($sql);
     if (!empty($params)) {
@@ -143,7 +146,7 @@ require_once __DIR__ . '/../header.php';
                             <?php endforeach; ?>
                         </select>
                     </div>
-                    <button type="submit" class="btn btn-success mb-2 mr-2"><i class="fas fa-search"></i> Terapkan</button>
+                    
                     <a href="index.php" class="btn btn-secondary mb-2"><i class="fas fa-sync"></i> Reset</a>
                 </form>
             </div>
@@ -195,7 +198,7 @@ require_once __DIR__ . '/../header.php';
                                             <div class="dropdown-menu dropdown-menu-right shadow animated--fade-in" 
                                                  aria-labelledby="aksiDropdown-<?php echo $rapot['id']; ?>">
                                                 
-                                                <?php if (has_permission('rapot_view_detail')): ?>
+                                                <?php if (has_permission('rapot_view')): ?>
                                                     <a class="dropdown-item" href="view.php?id=<?php echo $rapot['id']; ?>" target="_blank" 
                                                        data-bs-toggle="tooltip" title="Lihat Rapot di Halaman Web">
                                                         <i class="fas fa-eye fa-sm fa-fw mr-2 text-gray-400"></i>
@@ -248,10 +251,31 @@ require_once __DIR__ . '/../footer.php';
 ?>
 
 <script>
-$(function () {
-  var tooltipTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggle="tooltip"]'))
-  var tooltipList = tooltipTriggerList.map(function (tooltipTriggerEl) {
-    return new bootstrap.Tooltip(tooltipTriggerEl)
-  })
-})
+// Kita pake 'DOMContentLoaded', ini versi JS murninya $(function() { ... })
+// Fungsinya sama: nunggu semua HTML siap dulu, baru jalanin kodenya.
+document.addEventListener('DOMContentLoaded', function() {
+
+    // 1. Kode tooltip bawaan lu (ini udah bener)
+    var tooltipTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggle="tooltip"]'))
+    var tooltipList = tooltipTriggerList.map(function (tooltipTriggerEl) {
+        return new bootstrap.Tooltip(tooltipTriggerEl)
+    });
+
+    // 2. KODE AUTO-SUBMIT (Versi JS murni, gak pake '$')
+    // Ambil semua 3 dropdownnya
+    var filterDropdowns = document.querySelectorAll('#kamar, #bulan, #tahun');
+
+    // Pasang 'pendengar' di tiap dropdown
+    filterDropdowns.forEach(function(selectElement) {
+        
+        selectElement.addEventListener('change', function() {
+            // 'this' nunjuk ke <select> yang baru aja diganti
+            // Cari form terdekat yang ngebungkus 'this', lalu submit
+            this.closest('form').submit();
+        });
+
+    });
+    // ---------------------
+
+});
 </script>
