@@ -204,10 +204,10 @@ require_once __DIR__ . '/../header.php';
                                                 <?php endif; ?>
                                                 
                                                 <?php if (has_permission('rapot_cetak')): ?>
-                                                    <a class="dropdown-item" href="generate_pdf.php?id=<?php echo $rapot['id']; ?>" target="_blank"
-                                                       data-bs-toggle="tooltip" title="Cetak ke PDF">
+                                                    <a class="dropdown-item" href="generate_pdf.php?id=<?php echo $rapot['id']; ?>"
+                                                       data-bs-toggle="tooltip" title="Unduh PDF">
                                                         <i class="fas fa-file-pdf fa-sm fa-fw mr-2 text-gray-400"></i>
-                                                        Cetak PDF
+                                                        Unduh PDF
                                                     </a>
                                                 <?php endif; ?>
                                                 
@@ -242,7 +242,6 @@ require_once __DIR__ . '/../footer.php';
 <script>
 $(function () {
   // Inisialisasi semua tooltip yang pake sintaks BS5
-  // Kita pake '[data-bs-toggle="tooltip"]'
   var tooltipTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggle="tooltip"]'))
   var tooltipList = tooltipTriggerList.map(function (tooltipTriggerEl) {
     return new bootstrap.Tooltip(tooltipTriggerEl)
