@@ -77,7 +77,7 @@ $musyrif = [
 
 // 6. Setting Path Logo (Pake $base_url)
 $logo_path = $base_url . '/assets/Kop Syathiby.jpg';
-$logo_file_path = $_SERVER['DOCUMENT_ROOT'] . '/rekap-mukholif/assets/Kop Syathiby.jpg';
+$logo_file_path = $_SERVER['DOCUMENT_ROOT'] . '/../assets/Kop Syathiby.jpg';
 if (!file_exists($logo_file_path)) $logo_path = ''; 
 
 /*
