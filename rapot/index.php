@@ -210,6 +210,14 @@ require_once __DIR__ . '/../header.php';
                                                         Unduh PDF
                                                     </a>
                                                 <?php endif; ?>
+
+                                                <?php if (has_permission('rapot_create')): ?>
+                                                    <a class="dropdown-item" href="create.php?duplicate_id=<?php echo $rapot['id']; ?>"
+                                                       data-bs-toggle="tooltip" title="Duplikat rapot ini ke bulan baru">
+                                                        <i class="fas fa-copy fa-sm fa-fw mr-2 text-gray-400"></i>
+                                                        Duplikat
+                                                    </a>
+                                                <?php endif; ?>
                                                 
                                                 <?php if (has_permission('rapot_delete')): ?>
                                                     <div class="dropdown-divider"></div>
@@ -235,13 +243,12 @@ require_once __DIR__ . '/../header.php';
 </div>
 
 <?php
-// 7. Panggil Footer (yang isinya jQuery dan Bootstrap.js)
+// 7. Panggil Footer
 require_once __DIR__ . '/../footer.php';
 ?>
 
 <script>
 $(function () {
-  // Inisialisasi semua tooltip yang pake sintaks BS5
   var tooltipTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggle="tooltip"]'))
   var tooltipList = tooltipTriggerList.map(function (tooltipTriggerEl) {
     return new bootstrap.Tooltip(tooltipTriggerEl)
