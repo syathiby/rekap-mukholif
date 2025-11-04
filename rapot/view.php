@@ -6,7 +6,7 @@ require_once __DIR__ . '/../init.php';
 require_once __DIR__ . '/helper.php'; 
 
 // 2. Cek Izin "SATPAM"
-guard('rapot_view_detail');
+guard('rapot_view');
 
 // 3. Ambil ID Rapot dari URL
 if (empty($_GET['id'])) {
