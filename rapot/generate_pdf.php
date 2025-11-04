@@ -39,10 +39,7 @@ try {
         die('Error: Data rapot tidak ditemukan.');
     }
 
-    // ==========================================================
-    //           PERBAIKAN SQL-NYA DI SINI
-    //  Kita tambahin 'AND jp.poin > 0'
-    // ==========================================================
+    // Ambil rincian pelanggaran (Query 2)
     $pelanggaran_list = [];
     $sql_pelanggaran = "
         SELECT jp.nama_pelanggaran, jp.poin
@@ -51,7 +48,7 @@ try {
         WHERE p.santri_id = ? 
           AND MONTH(p.tanggal) = FIND_IN_SET(?, 'Januari,Februari,Maret,April,Mei,Juni,Juli,Agustus,September,Oktober,November,Desember')
           AND YEAR(p.tanggal) = ?
-          AND jp.poin > 0  -- <-- INI TAMBAHANNYA
+          AND jp.poin > 0
         ORDER BY p.tanggal DESC
     ";
     
@@ -60,10 +57,12 @@ try {
     $stmt_pelanggaran->execute();
     $pelanggaran_list = $stmt_pelanggaran->get_result()->fetch_all(MYSQLI_ASSOC);
     $stmt_pelanggaran->close();
-    // ==========================================================
 
 } catch (Exception $e) {
-    die('Error querying database: ' ( $e->getMessage());
+    // ==========================================================
+    //           PERBAIKAN ERROR #2 DI SINI (Titik)
+    // ==========================================================
+    die('Error querying database: ' . $e->getMessage());
 }
 
 // 5. Siapin data buat dikirim ke template
@@ -77,7 +76,12 @@ $musyrif = [
 ];
 
 // 6. Setting Path Logo
-$logo_path = $_SERVER['DOCUMENT_ROOT'] . '<?= BASE_URL ?>/assets/Kop Syathiby.jpg';
+// ==========================================================
+//           PERBAIKAN ERROR #1 DI SINI (Pake __DIR__)
+// __DIR__ adalah path folder file ini (C:/.../rapot)
+// __DIR__ . '/../' adalah path root proyek (C:/.../rekap-mukholif)
+// ==========================================================
+$logo_path = __DIR__ . '/../assets/Kop Syathiby.jpg';
 if (!file_exists($logo_path)) $logo_path = ''; 
 
 // 7. Proses 'Magic' mPDF
