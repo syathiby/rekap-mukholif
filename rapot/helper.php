@@ -24,9 +24,9 @@ if (!function_exists('generatePenilaianDropdown')) {
             case 'sedekah':
                 $options = '
                     <option value="">-- Pilih Penilaian --</option>
-                    <option value="5">Inisiatif & rutin</option>
-                    <option value="4">Suka berbagi jika diingatkan</option>
-                    <option value="3">Kadang mau, kadang tidak</option>
+                    <option value="5">Tulus dalam berbagi</option>
+                    <option value="4">Suka berbagi</option>
+                    <option value="3">Kadang berbagi</option>
                     <option value="2">Jarang mau berbagi</option>
                     <option value="1">Pelit / tidak peduli</option>
                 ';
@@ -141,7 +141,7 @@ if (!function_exists('getDeskripsiPenilaian')) {
             case 'sholat_malam':
                 switch ($nilai) {
                     case 5: return 'Rutin & Penuh';
-                    case 4: return 'Sering, kadang bolong';
+                    case 4: return 'Sering, kadang terlewat';
                     case 3: return 'Melaksanakan, tapi jarang';
                     case 2: return 'Hampir tidak pernah';
                     case 1: return 'Tidak pernah';
@@ -150,9 +150,9 @@ if (!function_exists('getDeskripsiPenilaian')) {
             
             case 'sedekah':
                 switch ($nilai) {
-                    case 5: return 'Inisiatif & rutin';
-                    case 4: return 'Suka berbagi jika diingatkan';
-                    case 3: return 'Kadang mau, kadang tidak';
+                    case 5: return 'Tulus dalam berbagi';
+                    case 4: return 'Suka berbagi';
+                    case 3: return 'Kadang berbagi';
                     case 2: return 'Jarang mau berbagi';
                     case 1: return 'Pelit / tidak peduli';
                     default: return '-';
@@ -161,7 +161,7 @@ if (!function_exists('getDeskripsiPenilaian')) {
             case 'lisan':
                 switch ($nilai) {
                     case 5: return 'Selalu berkata baik & sopan';
-                    case 4: return 'Umumnya baik, kadang terlewat';
+                    case 4: return 'Umumnya baik';
                     case 3: return 'Perlu banyak diingatkan';
                     case 2: return 'Sering berkata kotor/tidak sopan';
                     case 1: return 'Sangat tidak terjaga';
