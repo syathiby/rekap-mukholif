@@ -77,7 +77,7 @@ $musyrif = [
 ];
 
 // 6. Setting Path Logo
-$logo_path = $_SERVER['DOCUMENT_ROOT'] . '/rekap-mukholif/assets/Kop Syathiby.jpg';
+$logo_path = $_SERVER['DOCUMENT_ROOT'] . '<?= BASE_URL ?>/assets/Kop Syathiby.jpg';
 if (!file_exists($logo_path)) $logo_path = ''; 
 
 // 7. Proses 'Magic' mPDF
