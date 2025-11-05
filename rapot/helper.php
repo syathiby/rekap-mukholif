@@ -218,7 +218,7 @@ if (!function_exists('getDeskripsiPenilaian')) {
 
             default:
                 return [
-                    5 => 'Sangat baik dan stabil',
+                    5 => 'Sangat baik',
                     4 => 'Baik, tapi perlu ditingkatkan',
                     3 => 'Cukup',
                     2 => 'Perlu diperhatikan lagi',
