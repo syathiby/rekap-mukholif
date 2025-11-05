@@ -11,7 +11,7 @@ require_once __DIR__ . '/helper.php';
 guard('rapot_create');
 
 // ==========================================================
-//           LOGIKA DUPLIKAT
+// 		 LOGIKA DUPLIKAT
 // ==========================================================
 $data_duplikat = null;
 $page_title = "Buat Rapot Kepengasuhan Baru";
@@ -34,18 +34,44 @@ if (isset($_GET['duplicate_id'])) {
 // ==========================================================
 
 
-// 3. Ambil data santri untuk dropdown
+// ==========================================================
+// 3. AMBIL DATA SANTRI (VERSI BARU - BISA FILTER)
+// ==========================================================
+$filter_kamar_create = $_GET['kamar'] ?? ''; // Ambil filter kamar dari URL
+
 try {
-    $stmt = $conn->query("
+    // Query dasar
+    $sql_santri = "
         SELECT id, nama, kamar 
         FROM santri 
         WHERE kamar IS NOT NULL AND kamar != '' AND kamar != '0'
-        ORDER BY CAST(kamar AS UNSIGNED), nama
-    ");
-    $santri_list = $stmt->fetch_all(MYSQLI_ASSOC);
+    ";
+    $params_santri = [];
+    $types_santri = "";
+
+    // Terapkan filter kamar HANYA JIKA BUKAN mode duplikat
+    // Kalo duplikat, kita butuh semua santri biar bisa 'selected'
+    if (!empty($filter_kamar_create) && !$data_duplikat) {
+        $sql_santri .= " AND kamar = ?";
+        $params_santri[] = $filter_kamar_create;
+        $types_santri .= "s";
+    }
+    
+    $sql_santri .= " ORDER BY CAST(kamar AS UNSIGNED), nama";
+    
+    // Eksekusi query
+    $stmt = $conn->prepare($sql_santri);
+    if (!empty($params_santri)) {
+        $stmt->bind_param($types_santri, ...$params_santri);
+    }
+    $stmt->execute();
+    $santri_list = $stmt->get_result()->fetch_all(MYSQLI_ASSOC);
+
 } catch (Exception $e) {
     die("Error fetching santri: " . $e->getMessage());
 }
+// ==========================================================
+
 
 // 4. Siapin data bulan (Bahasa Indonesia)
 $bulan_list = [
@@ -63,6 +89,7 @@ require_once __DIR__ . '/../header.php';
 ?>
 
 <style>
+    /* STYLE GAK ADA YANG BERUBAH */
     .btn-group-toggle .btn {
         border-radius: 0.25rem !important; margin-right: 5px; margin-bottom: 5px;
         font-size: 0.85rem; background-color: #f8f9fa; border: 1px solid #ddd; color: #666;
@@ -114,7 +141,13 @@ require_once __DIR__ . '/../header.php';
                                 <div class="form-group mb-md-0">
                                     <label for="santri_id">Pilih Santri</label>
                                     <select name="santri_id" id="santri_id" class="form-control" required>
-                                        <option value="">-- Pilih Santri --</option>
+                                        
+                                        <?php if (empty($santri_list) && !empty($filter_kamar_create) && !$data_duplikat): ?>
+                                            <option value="">-- Tidak ada santri di kamar <?php echo htmlspecialchars($filter_kamar_create); ?> --</option>
+                                        <?php else: ?>
+                                            <option value="">-- Pilih Santri --</option>
+                                        <?php endif; ?>
+
                                         <?php foreach ($santri_list as $santri) : ?>
                                             <?php $selected_santri = ($data_duplikat && $data_duplikat['santri_id'] == $santri['id']) ? 'selected' : ''; ?>
                                             <option value="<?php echo $santri['id']; ?>" <?php echo $selected_santri; ?>>
@@ -147,7 +180,7 @@ require_once __DIR__ . '/../header.php';
                 </div>
 
                 <?php
-                // Helper bikin tombol pilihan (udah bener)
+                // Helper bikin tombol pilihan (gak ada yg berubah)
                 function buatTombolPilihan($key, $data_duplikat = null) {
                     $html = "<div class='btn-group btn-group-toggle flex-wrap' data-bs-toggle='buttons'>";
                     $dropdown_options_html = generatePenilaianDropdown($key);
@@ -269,16 +302,12 @@ require_once __DIR__ . '/../footer.php';
 <script>
 $(document).ready(function() {
     
-    // ==========================================================
-    //           PERBAIKANNYA DI SINI
     // 1. Inisialisasi Select2
-    // ==========================================================
     $('#santri_id').select2({
         theme: "bootstrap-5",
         // Biar Select2-nya gak mental keluar card
         dropdownParent: $('#santri_id').parent() 
     });
-    // ==========================================================
 
     
     // Inisialisasi Tooltip Bootstrap 5
@@ -348,15 +377,11 @@ $(document).ready(function() {
         checkDataUtama();
     });
     
-    // ==========================================================
-    //           PERBAIKANNYA DI SINI
     // 2. Tambahin listener khusus buat Select2
-    // ==========================================================
     $('#santri_id').on('change', function() {
         checkFormValidity();
         checkDataUtama();
     });
-    // ==========================================================
 
 
     // SCRIPT AJAX BUAT CEK POIN (Udah bener)

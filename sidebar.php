@@ -81,7 +81,7 @@ if (!defined('BASE_URL')) {
     <?php if (has_permission('export_laporan')): ?>
     <li class="nav-item">
         <a class="nav-link apply-color-hover-active color-cyan <?= strpos($current_uri, '/export') !== false ? 'active' : '' ?>" href="<?= BASE_URL ?>/export">
-            <i class="fas fa-file-excel me-2"></i>Export Laporan
+            <i class="fas fa-file-excel me-2"></i>Export Data
         </a>
     </li>
     <?php endif; ?>

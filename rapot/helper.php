@@ -4,7 +4,7 @@
 if (!function_exists('generatePenilaianDropdown')) {
     /**
      * FUNGSI DROPDOWN (CREATE.PHP)
-     * Teksnya diubah jadi TANPA TANDA KURUNG.
+     * Bahasa disederhanakan biar tetap sopan tapi natural.
      */
     function generatePenilaianDropdown($key) {
         $options = '';
@@ -14,31 +14,31 @@ if (!function_exists('generatePenilaianDropdown')) {
             case 'sholat_malam':
                 $options = '
                     <option value="">-- Pilih Penilaian --</option>
-                    <option value="5">Rutin & Penuh</option>
-                    <option value="4">Sering, kadang terlewat</option>
-                    <option value="3">Melaksanakan, tapi jarang</option>
-                    <option value="2">Hampir tidak pernah</option>
-                    <option value="1">Tidak pernah</option>
+                    <option value="5">Rajin dan semangat</option>
+                    <option value="4">Cukup rutin, kadang terlewat</option>
+                    <option value="3">Kadang melaksanakan</option>
+                    <option value="2">Jarang melaksanakan</option>
+                    <option value="1">Belum terbiasa melaksanakan</option>
                 ';
                 break;
             case 'sedekah':
                 $options = '
                     <option value="">-- Pilih Penilaian --</option>
-                    <option value="5">Tulus dalam berbagi</option>
-                    <option value="4">Suka berbagi</option>
+                    <option value="5">Dermawan dan suka membantu</option>
+                    <option value="4">Sering berbagi dengan teman</option>
                     <option value="3">Kadang berbagi</option>
-                    <option value="2">Jarang mau berbagi</option>
-                    <option value="1">Pelit / tidak peduli</option>
+                    <option value="2">Kurang punya inisiatif untuk berbagi</option>
+                    <option value="1">Belum terlihat semangat berbagi</option>
                 ';
                 break;
             case 'lisan':
                 $options = '
                     <option value="">-- Pilih Penilaian --</option>
-                    <option value="5">Selalu berkata baik & sopan</option>
-                    <option value="4">Umumnya baik</option>
-                    <option value="3">Perlu banyak diingatkan</option>
-                    <option value="2">Sering berkata kotor/tidak sopan</option>
-                    <option value="1">Sangat tidak terjaga</option>
+                    <option value="5">Sopan dalam berbicara</option>
+                    <option value="4">Umumnya baik, namun perlu ditingkatkan</option>
+                    <option value="3">Perlu dibimbing dalam menjaga ucapan</option>
+                    <option value="2">Kadang bicara kurang sopan</option>
+                    <option value="1">Belum bisa menjaga ucapan dengan baik</option>
                 ';
                 break;
             case 'sikap':
@@ -46,11 +46,11 @@ if (!function_exists('generatePenilaianDropdown')) {
             case 'muamalah':
                 $options = '
                     <option value="">-- Pilih Penilaian --</option>
-                    <option value="5">Menjadi teladan bagi teman</option>
-                    <option value="4">Sopan & menghargai</option>
-                    <option value="3">Standar, kadang kurang sopan</option>
-                    <option value="2">Perlu ditegur/diingatkan</option>
-                    <option value="1">Sering bermasalah dgn teman/asatidz</option>
+                    <option value="5">Berperilaku baik dan berakhlak mulia</option>
+                    <option value="4">Sopan dan menghargai orang lain</option>
+                    <option value="3">Perlu dibiasakan sopan santun</option>
+                    <option value="2">Masih perlu bimbingan dalam bersikap</option>
+                    <option value="1">Sering bersikap kurang menghargai</option>
                 ';
                 break;
             case 'tidur':
@@ -59,61 +59,61 @@ if (!function_exists('generatePenilaianDropdown')) {
                     <option value="">-- Pilih Penilaian --</option>
                     <option value="5">Selalu tepat waktu</option>
                     <option value="4">Hampir selalu tepat waktu</option>
-                    <option value="3">Beberapa kali terlambat/menunda</option>
+                    <option value="3">Kadang terlambat</option>
                     <option value="2">Sering terlambat</option>
-                    <option value="1">Sangat sering terlambat</option>
+                    <option value="1">Perlu dibiasakan disiplin waktu</option>
                 ';
                 break;
             case 'seragam':
                 $options = '
                     <option value="">-- Pilih Penilaian --</option>
-                    <option value="5">Sangat rapi & lengkap</option>
-                    <option value="4">Rapi, kadang ada atribut kurang</option>
-                    <option value="3">Kurang rapi / tidak lengkap</option>
-                    <option value="2">Sering melanggar aturan</option>
-                    <option value="1">Tidak peduli aturan</option>
+                    <option value="5">Selalu berpakaian rapi, bersih, dan sesuai aturan</option>
+                    <option value="4">Umumnya rapi dan bersih, kadang kurang lengkap</option>
+                    <option value="3">Cukup rapi namun masih perlu perbaikan</option>
+                    <option value="2">Kurang memperhatikan kerapian dan kelengkapan</option>
+                    <option value="1">Sering tidak rapi dan tidak sesuai ketentuan</option>
                 ';
                 break;
             case 'bahasa_arab':
                 $options = '
                     <option value="">-- Pilih Penilaian --</option>
-                    <option value="5">Aktif berbahasa Arab</option>
-                    <option value="4">Berusaha, walau masih campur</option>
-                    <option value="3">Paham, tapi pasif / malu</option>
-                    <option value="2">Sering pakai Bahasa Indonesia</option>
-                    <option value="1">Tidak mau berusaha</option>
+                    <option value="5">Aktif dan percaya diri pakai Bahasa Arab</option>
+                    <option value="4">Berusaha berbicara walau belum lancar</option>
+                    <option value="3">Paham tapi masih pasif</option>
+                    <option value="2">Lebih sering pakai Bahasa Indonesia</option>
+                    <option value="1">Belum berusaha berbicara Bahasa Arab</option>
                 ';
                 break;
             case 'mandi':
             case 'penampilan':
                 $options = '
                     <option value="">-- Pilih Penilaian --</option>
-                    <option value="5">Sangat bersih & rapi</option>
-                    <option value="4">Bersih & rapi</option>
-                    <option value="3">Kadang terlihat kotor/kusut</option>
-                    <option value="2">Harus disuruh untuk rapi/bersih</option>
-                    <option value="1">Tidak peduli kebersihan</option>
+                    <option value="5">Selalu bersih dan rapi</option>
+                    <option value="4">Umumnya bersih dan rapi</option>
+                    <option value="3">Kadang kurang rapi</option>
+                    <option value="2">Perlu dibiasakan menjaga kerapian</option>
+                    <option value="1">Kurang memperhatikan kebersihan diri</option>
                 ';
                 break;
             case 'piket':
             case 'kerapihan_barang':
                 $options = '
                     <option value="">-- Pilih Penilaian --</option>
-                    <option value="5">Sangat rapi & tuntas</option>
-                    <option value="4">Rapi & bertanggung jawab</option>
-                    <option value="3">Melaksanakan, tapi harus diingatkan</option>
-                    <option value="2">Malas-malasan / tidak tuntas</option>
-                    <option value="1">Tidak mau melaksanakan</option>
+                    <option value="5">Inisiatif, tanpa komando</option>
+                    <option value="4">Melaksanakan dengan baik</option>
+                    <option value="3">Melaksanakan tapi perlu diingatkan</option>
+                    <option value="2">Kurang inisiatif atau belum tuntas</option>
+                    <option value="1">Belum terlihat tanggung jawab</option>
                 ';
                 break;
             default:
                 $options = '
                     <option value="">-- Pilih Penilaian --</option>
-                    <option value="5">Sangat konsisten</option>
-                    <option value="4">Perlu ditingkatkan</option>
+                    <option value="5">Sangat baik dan stabil</option>
+                    <option value="4">Baik, tapi perlu ditingkatkan</option>
                     <option value="3">Cukup</option>
-                    <option value="2">Kurang</option>
-                    <option value="1">Sangat kurang</option>
+                    <option value="2">Perlu diperhatikan lagi</option>
+                    <option value="1">Perlu bimbingan lebih lanjut</option>
                 ';
                 break;
         }
@@ -122,127 +122,108 @@ if (!function_exists('generatePenilaianDropdown')) {
 }
 
 // ==========================================================
-//           FUNGSI DESKRIPSI (BUAT PDF-NYA) KITA UBAH JUGA
+//           FUNGSI DESKRIPSI (BUAT PDF-NYA)
 // ==========================================================
 
 if (!function_exists('getDeskripsiPenilaian')) {
-    /**
-     * Mengubah nilai angka (1-5) menjadi teks deskripsi SPESIFIK (TANPA TANDA KURUNG).
-     * @param string $key Nama sub mutu (cth: 'puasa_sunnah')
-     * @param int $nilai Nilai dari 1 sampai 5
-     * @return string Deskripsi penilaian
-     */
     function getDeskripsiPenilaian($key, $nilai) {
-        
         switch ($key) {
-            
             case 'puasa_sunnah':
             case 'sholat_duha':
             case 'sholat_malam':
-                switch ($nilai) {
-                    case 5: return 'Rutin & Penuh';
-                    case 4: return 'Sering, kadang terlewat';
-                    case 3: return 'Melaksanakan, tapi jarang';
-                    case 2: return 'Hampir tidak pernah';
-                    case 1: return 'Tidak pernah';
-                    default: return '-';
-                }
-            
+                return [
+                    5 => 'Rajin dan semangat',
+                    4 => 'Cukup rutin, kadang terlewat',
+                    3 => 'Kadang melaksanakan',
+                    2 => 'Jarang melaksanakan',
+                    1 => 'Belum terbiasa melaksanakan'
+                ][$nilai] ?? '-';
+
             case 'sedekah':
-                switch ($nilai) {
-                    case 5: return 'Tulus dalam berbagi';
-                    case 4: return 'Suka berbagi';
-                    case 3: return 'Kadang berbagi';
-                    case 2: return 'Jarang mau berbagi';
-                    case 1: return 'Pelit / tidak peduli';
-                    default: return '-';
-                }
+                return [
+                    5 => 'Dermawan dan suka membantu',
+                    4 => 'Sering berbagi dengan teman',
+                    3 => 'Kadang berbagi',
+                    2 => 'Kurang punya inisiatif untuk berbagi',
+                    1 => 'Belum terlihat semangat berbagi'
+                ][$nilai] ?? '-';
 
             case 'lisan':
-                switch ($nilai) {
-                    case 5: return 'Selalu berkata baik & sopan';
-                    case 4: return 'Umumnya baik';
-                    case 3: return 'Perlu banyak diingatkan';
-                    case 2: return 'Sering berkata kotor/tidak sopan';
-                    case 1: return 'Sangat tidak terjaga';
-                    default: return '-';
-                }
-            
+                return [
+                    5 => 'Sopan dalam berbicara',
+                    4 => 'Umumnya baik, namun perlu ditingkatkan',
+                    3 => 'Perlu dibimbing dalam menjaga ucapan',
+                    2 => 'Kadang bicara kurang sopan',
+                    1 => 'Belum bisa menjaga ucapan dengan baik'
+                ][$nilai] ?? '-';
+
             case 'sikap':
             case 'kesopanan':
             case 'muamalah':
-                switch ($nilai) {
-                    case 5: return 'Menjadi teladan bagi teman';
-                    case 4: return 'Sopan & menghargai';
-                    case 3: return 'Standar, kadang kurang sopan';
-                    case 2: return 'Perlu ditegur/diingatkan';
-                    case 1: return 'Sering bermasalah dgn teman/asatidz';
-                    default: return '-';
-                }
+                return [
+                    5 => 'Berperilaku baik dan berakhlak mulia',
+                    4 => 'Sopan dan menghargai orang lain',
+                    3 => 'Perlu dibiasakan sopan santun',
+                    2 => 'Masih perlu bimbingan dalam bersikap',
+                    1 => 'Sering bersikap kurang menghargai'
+                ][$nilai] ?? '-';
 
             case 'tidur':
             case 'keterlambatan':
-                switch ($nilai) {
-                    case 5: return 'Selalu tepat waktu';
-                    case 4: return 'Hampir selalu tepat waktu';
-                    case 3: return 'Beberapa kali terlambat/menunda';
-                    case 2: return 'Sering terlambat';
-                    case 1: return 'Sangat sering terlambat';
-                    default: return '-';
-                }
+                return [
+                    5 => 'Selalu tepat waktu',
+                    4 => 'Hampir selalu tepat waktu',
+                    3 => 'Kadang terlambat',
+                    2 => 'Sering terlambat',
+                    1 => 'Perlu dibiasakan disiplin waktu'
+                ][$nilai] ?? '-';
 
             case 'seragam':
-                switch ($nilai) {
-                    case 5: return 'Sangat rapi & lengkap';
-                    case 4: return 'Rapi, kadang ada atribut kurang';
-                    case 3: return 'Kurang rapi / tidak lengkap';
-                    case 2: return 'Sering melanggar aturan';
-                    case 1: return 'Tidak peduli aturan';
-                    default: return '-';
-                }
+                return [
+                    5 => 'Selalu berpakaian rapi, bersih, dan sesuai aturan',
+                    4 => 'Umumnya rapi dan bersih, kadang kurang lengkap',
+                    3 => 'Cukup rapi namun masih perlu perbaikan',
+                    2 => 'Kurang memperhatikan kerapian dan kelengkapan',
+                    1 => 'Sering tidak rapi dan tidak sesuai ketentuan'
+                ][$nilai] ?? '-';
 
             case 'bahasa_arab':
-                switch ($nilai) {
-                    case 5: return 'Aktif berbahasa Arab';
-                    case 4: return 'Berusaha, walau masih campur';
-                    case 3: return 'Paham, tapi pasif / malu';
-                    case 2: return 'Sering pakai Bahasa Indonesia';
-                    case 1: return 'Tidak mau berusaha';
-                    default: return '-';
-                }
-                
+                return [
+                    5 => 'Aktif dan percaya diri pakai Bahasa Arab',
+                    4 => 'Berusaha berbicara walau belum lancar',
+                    3 => 'Paham tapi masih pasif',
+                    2 => 'Lebih sering pakai Bahasa Indonesia',
+                    1 => 'Belum berusaha berbicara Bahasa Arab'
+                ][$nilai] ?? '-';
+
             case 'mandi':
             case 'penampilan':
-                switch ($nilai) {
-                    case 5: return 'Sangat bersih & rapi';
-                    case 4: return 'Bersih & rapi';
-                    case 3: return 'Kadang terlihat kotor/kusut';
-                    case 2: return 'Harus disuruh untuk rapi/bersih';
-                    case 1: return 'Tidak peduli kebersihan';
-                    default: return '-';
-                }
-                
+                return [
+                    5 => 'Selalu bersih dan rapi',
+                    4 => 'Umumnya bersih dan rapi',
+                    3 => 'Kadang kurang rapi',
+                    2 => 'Perlu dibiasakan menjaga kerapian',
+                    1 => 'Kurang memperhatikan kebersihan diri'
+                ][$nilai] ?? '-';
+
             case 'piket':
             case 'kerapihan_barang':
-                switch ($nilai) {
-                    case 5: return 'Sangat rapi & tuntas';
-                    case 4: return 'Rapi & bertanggung jawab';
-                    case 3: return 'Melaksanakan, tapi harus diingatkan';
-                    case 2: return 'Malas-malasan / tidak tuntas';
-                    case 1: return 'Tidak mau melaksanakan';
-                    default: return '-';
-                }
+                return [
+                    5 => 'Inisiatif, tanpa komando',
+                    4 => 'Melaksanakan dengan baik',
+                    3 => 'Melaksanakan tapi perlu diingatkan',
+                    2 => 'Kurang inisiatif atau belum tuntas',
+                    1 => 'Belum terlihat tanggung jawab'
+                ][$nilai] ?? '-';
 
-            // Fallback
             default:
-                switch ($nilai) {
-                    case 5: return 'Sangat konsisten';
-                    case 4: return 'Perlu ditingkatkan';
-                    case 3: return 'Cukup';
-                    case 2: return 'Kurang';
-                    case 1: return 'Sangat kurang';
-                    default: return '-';
-                }
+                return [
+                    5 => 'Sangat baik dan stabil',
+                    4 => 'Baik, tapi perlu ditingkatkan',
+                    3 => 'Cukup',
+                    2 => 'Perlu diperhatikan lagi',
+                    1 => 'Perlu bimbingan lebih lanjut'
+                ][$nilai] ?? '-';
         }
     }
 }

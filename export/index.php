@@ -10,7 +10,6 @@ require_once __DIR__ . '/../header.php';
 ?>
 
 <?php
-
 // Ambil daftar kamar unik dari database
 $kamar_list = [];
 $sql_kamar = "SELECT DISTINCT kamar FROM santri WHERE kamar IS NOT NULL AND kamar != '' ORDER BY CAST(kamar AS UNSIGNED) ASC";
@@ -27,10 +26,8 @@ if ($result_kamar && $result_kamar->num_rows > 0) {
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Export Laporan Pelanggaran</title>
-    <!-- Pakai CDN Tailwind CSS -->
+    <title>Export Laporan & Data</title>
     <script src="https://cdn.tailwindcss.com"></script>
-    <!-- Font Google Inter -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
@@ -90,12 +87,13 @@ if ($result_kamar && $result_kamar->num_rows > 0) {
 <body class="bg-gradient-to-br from-gray-50 to-indigo-100 min-h-screen">
 
     <main class="p-4 sm:p-8">
+        
         <div class="max-w-4xl mx-auto bg-white/90 backdrop-blur-sm p-6 sm:p-10 rounded-3xl shadow-2xl shadow-indigo-500/10 border border-gray-200">
             
             <div class="flex flex-col sm:flex-row items-start sm:items-center justify-between mb-8 pb-4 border-b border-gray-200">
                 <div>
                     <h1 class="text-3xl font-bold text-gray-900">Export Laporan Lengkap</h1>
-                    <p class="text-gray-600 mt-2">Pilih rentang tanggal & kamar untuk mengunduh laporan lengkap (3-in-1).</p>
+                    <p class="text-gray-600 mt-2">Pilih rentang tanggal & kamar untuk mengunduh laporan pelanggaran (4-in-1).</p>
                 </div>
                 <div class="text-indigo-500 mt-4 sm:mt-0 p-3 bg-indigo-100 rounded-full">
                     <svg xmlns="http://www.w3.org/2000/svg" class="h-8 w-8" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
@@ -106,7 +104,6 @@ if ($result_kamar && $result_kamar->num_rows > 0) {
 
             <form action="process-export.php" method="POST" class="space-y-8">
 
-                <!-- Filter Rentang Tanggal -->
                 <div>
                     <label class="block text-base font-semibold text-gray-800 mb-3">Rentang Tanggal</label>
                     <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -125,7 +122,6 @@ if ($result_kamar && $result_kamar->num_rows > 0) {
                     </div>
                 </div>
 
-                <!-- Filter Per Kamar -->
                 <div>
                     <label for="kamar" class="block text-base font-semibold text-gray-800 mb-3">Filter Kamar</label>
                     <select id="kamar" name="kamar" class="block w-full px-3 py-2.5 bg-gray-50 border border-gray-300 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 text-sm rounded-lg">
@@ -136,7 +132,6 @@ if ($result_kamar && $result_kamar->num_rows > 0) {
                     </select>
                 </div>
                 
-                <!-- Tombol Export -->
                 <div class="pt-6 flex justify-end">
                     <button type="submit" name="export" class="inline-flex items-center justify-center px-8 py-3.5 border border-transparent text-base font-medium rounded-xl shadow-sm text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 transition-all duration-300 transform hover:scale-105">
                         <svg class="w-5 h-5 mr-3" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" /></svg>
@@ -145,7 +140,39 @@ if ($result_kamar && $result_kamar->num_rows > 0) {
                 </div>
             </form>
         </div>
-    </main>
+        <div class="max-w-4xl mx-auto bg-white/90 backdrop-blur-sm p-6 sm:p-10 rounded-3xl shadow-2xl shadow-indigo-500/10 border border-gray-200 mt-8">
+            
+            <div class="flex flex-col sm:flex-row items-start sm:items-center justify-between mb-8 pb-4 border-b border-gray-200">
+                <div>
+                    <h1 class="text-3xl font-bold text-gray-900">Export Data Master</h1>
+                    <p class="text-gray-600 mt-2">Unduh data mentah (RAW) dari database untuk arsip atau olah data.</p>
+                </div>
+                <div class="text-green-500 mt-4 sm:mt-0 p-3 bg-green-100 rounded-full">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-8 w-8" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M4 7v10c0 2.21 3.582 4 8 4s8-1.79 8-4V7M4 7c0 2.21 3.582 4 8 4s8-1.79 8-4M4 7c0-2.21 3.582-4 8-4s8 1.79 8 4m0 5c0 2.21-3.582 4-8 4s-8-1.79-8-4" />
+                    </svg>
+                </div>
+            </div>
+
+            <form action="process-export.php" method="POST" class="flex flex-col sm:flex-row sm:justify-end gap-4">
+                
+                <button type="submit" name="export_santri" class="inline-flex items-center justify-center px-6 py-3 border border-transparent text-base font-medium rounded-xl shadow-sm text-white bg-green-600 hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500 transition-all duration-300 transform hover:scale-105">
+                    <svg class="w-5 h-5 mr-3" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z" />
+                    </svg>
+                    Export Data Santri
+                </button>
+                
+                <button type="submit" name="export_jenis_pelanggaran" class="inline-flex items-center justify-center px-6 py-3 border border-transparent text-base font-medium rounded-xl shadow-sm text-white bg-gray-700 hover:bg-gray-800 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-gray-500 transition-all duration-300 transform hover:scale-105">
+                     <svg class="w-5 h-5 mr-3" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                    </svg>
+                    Export Jenis Pelanggaran
+                </button>
+
+            </form>
+        </div>
+        </main>
 
 </body>
 </html>
