@@ -25,9 +25,11 @@ function applySheetStyles(Worksheet &$sheet) {
     $headerStyle = [
         'font' => ['bold' => true, 'color' => ['rgb' => 'FFFFFF']],
         'alignment' => ['horizontal' => Alignment::HORIZONTAL_CENTER, 'vertical' => Alignment::VERTICAL_CENTER],
-        'fill' => ['fillType' => \PhpOffice\PhpSpreadsheet\Style\Fill::FILL_SOLID, 'startColor' => ['rgb' => '4F46E5']]
+        'fill' => ['fillType' => \PhpOffice\PhpSpreadsheet\Style\Fill::FILL_SOLID, 'startColor' => ['rgb' => '4F46E5']] // Biru Indigo
     ];
+    // REVISI: Terapkan style header & row height
     $sheet->getStyle('A1:' . $highestColumn . '1')->applyFromArray($headerStyle);
+    $sheet->getRowDimension(1)->setRowHeight(25);
 
     // Auto size kolom biar rapi
     foreach (range('A', $highestColumn) as $columnID) {
@@ -39,31 +41,38 @@ function applySheetStyles(Worksheet &$sheet) {
         'borders' => [
             'allBorders' => [
                 'borderStyle' => Border::BORDER_THIN,
-                'color' => ['rgb' => 'E5E7EB'],
+                'color' => ['rgb' => 'E5E7EB'], // Gray-200
             ],
         ],
     ];
     $sheet->getStyle('A1:' . $highestColumn . $highestRow)->applyFromArray($borderStyle);
+    
+    // Set alignment default
+    $sheet->getStyle('A2:' . $highestColumn . $highestRow)->getAlignment()->setVertical(Alignment::VERTICAL_TOP);
+    $sheet->getStyle('A2:' . $highestColumn . $highestRow)->getAlignment()->setWrapText(true);
+
 
     // Aktifkan fitur filter otomatis di header
     $sheet->setAutoFilter('A1:' . $highestColumn . '1');
 }
 
+// =================================================================================
+// --- LOGIKA UTAMA: CEK TOMBOL MANA YANG DIKLIK ---
+// =================================================================================
 
-// Cek apakah tombol export ditekan
+// Buat objek Spreadsheet baru
+$spreadsheet = new Spreadsheet();
+
+
+// --- OPSI 1: Laporan Pelanggaran Lengkap (4-in-1) ---
 if (isset($_POST['export'])) {
 
     // Ambil data dari form
     $tanggal_mulai = $_POST['tanggal_mulai'] ?? date('Y-m-01');
     $tanggal_selesai = $_POST['tanggal_selesai'] ?? date('Y-m-t');
     $kamar = $_POST['kamar'] ?? 'semua';
-
-    // Buat objek Spreadsheet baru
-    $spreadsheet = new Spreadsheet();
-
-    // =================================================================================
+    
     // --- 1. MEMBUAT SHEET: LAPORAN DETAIL (PELANGGARAN UMUM) ---
-    // =================================================================================
     $sheetDetail = $spreadsheet->getActiveSheet();
     $sheetDetail->setTitle('Detail Pelanggaran Umum');
     
@@ -103,9 +112,7 @@ if (isset($_POST['export'])) {
     applySheetStyles($sheetDetail);
 
 
-    // =================================================================================
     // --- 2. MEMBUAT SHEET: REKAP PER SANTRI (PELANGGARAN UMUM) ---
-    // =================================================================================
     $sheetRekapSantri = $spreadsheet->createSheet();
     $sheetRekapSantri->setTitle('Rekap Santri (Umum)');
 
@@ -139,9 +146,7 @@ if (isset($_POST['export'])) {
     applySheetStyles($sheetRekapSantri);
 
 
-    // =================================================================================
     // --- 3. MEMBUAT SHEET: REKAP PER KAMAR (PELANGGARAN UMUM) ---
-    // =================================================================================
     $sheetRekapKamar = $spreadsheet->createSheet();
     $sheetRekapKamar->setTitle('Rekap Kamar (Umum)');
 
@@ -175,9 +180,7 @@ if (isset($_POST['export'])) {
     applySheetStyles($sheetRekapKamar);
 
 
-    // =================================================================================
     // --- 4. REVISI: REKAP PELANGGARAN KEBERSIHAN PER KAMAR ---
-    // =================================================================================
     $sheetKebersihan = $spreadsheet->createSheet();
     $sheetKebersihan->setTitle('Rekap Kebersihan Kamar');
 
@@ -213,31 +216,99 @@ if (isset($_POST['export'])) {
     }
     $stmt->close();
     applySheetStyles($sheetKebersihan);
-
-
-    // =================================================================================
-    // --- PROSES DOWNLOAD FILE ---
-    // =================================================================================
     
     // Set sheet pertama yang aktif saat file dibuka
     $spreadsheet->setActiveSheetIndex(0);
-
+    
     $kamarLabel = ($kamar === 'semua') ? 'Semua_Kamar' : 'Kamar_' . str_replace(' ', '_', $kamar);
     $namaFile = 'Laporan_Lengkap_Pelanggaran_' . $kamarLabel . '_' . date('d-m-Y') . '.xlsx';
-    
-    header('Content-Type: application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
-    header('Content-Disposition: attachment;filename="' . $namaFile . '"');
-    header('Cache-Control: max-age=0');
 
-    $writer = new Xlsx($spreadsheet);
-    $writer->save('php://output');
-    
-    $conn->close();
-    exit();
 
+// --- OPSI 2: Export Master Data Santri (Urutan V11.0) ---
+} elseif (isset($_POST['export_santri'])) {
+
+    $sheet = $spreadsheet->getActiveSheet();
+    $sheet->setTitle('Data Santri');
+    
+    $headers = ['ID Santri', 'Nama Lengkap', 'Kelas', 'Kamar', 'Poin Aktif'];
+    $sheet->fromArray($headers, NULL, 'A1');
+    
+    // Urutan dari V11.0
+    $sql = "SELECT id, nama, kelas, kamar, poin_aktif 
+            FROM santri 
+            ORDER BY CAST(kamar AS UNSIGNED) ASC, kelas ASC, nama ASC"; // <-- Pakai CAST biar urutan kamar bener
+            
+    $result = $conn->query($sql);
+    
+    if ($result && $result->num_rows > 0) {
+        $rowNum = 2;
+        while ($row = $result->fetch_assoc()) {
+            $rowData = [$row['id'], $row['nama'], $row['kelas'], $row['kamar'], $row['poin_aktif']];
+            $sheet->fromArray($rowData, NULL, 'A' . $rowNum);
+            $rowNum++;
+        }
+    }
+    
+    applySheetStyles($sheet);
+    $namaFile = 'Master_Data_Santri_' . date('d-m-Y') . '.xlsx';
+
+
+// --- OPSI 3: Export Master Data Jenis Pelanggaran (REVISI V12.0) ---
+} elseif (isset($_POST['export_jenis_pelanggaran'])) {
+
+    $sheet = $spreadsheet->getActiveSheet();
+    $sheet->setTitle('Data Jenis Pelanggaran');
+    
+    $headers = ['ID', 'Nama Pelanggaran', 'Poin', 'Kategori', 'Bagian'];
+    $sheet->fromArray($headers, NULL, 'A1');
+    
+    // REVISI V12.0: Ubah ORDER BY sesuai permintaan (pake 2x FIELD())
+    // 1. Urutkan berdasarkan Bagian (sesuai list, TAHFIDZ ditambahin)
+    // 2. Urutkan berdasarkan Kategori (sesuai logika, bukan abjad)
+    // 3. Urutkan berdasarkan Poin (kecil ke besar)
+    // 4. Urutkan berdasarkan Nama (A-Z)
+    $sql = "SELECT id, nama_pelanggaran, poin, kategori, bagian 
+            FROM jenis_pelanggaran 
+            ORDER BY 
+                FIELD(bagian, 'Kesantrian', 'Bahasa', 'Diniyyah', 'TAHFIDZ', 'Pengabdian'),
+                FIELD(kategori, 'Ringan', 'Sedang', 'Berat', 'Sangat Berat'),
+                poin ASC,
+                nama_pelanggaran ASC"; // <-- REVISI DI SINI
+                
+    $result = $conn->query($sql);
+    
+    if ($result && $result->num_rows > 0) {
+        $rowNum = 2;
+        while ($row = $result->fetch_assoc()) {
+            $rowData = [$row['id'], $row['nama_pelanggaran'], $row['poin'], $row['kategori'], $row['bagian']];
+            $sheet->fromArray($rowData, NULL, 'A' . $rowNum);
+            $rowNum++;
+        }
+    }
+    
+    applySheetStyles($sheet);
+    $namaFile = 'Master_Data_Jenis_Pelanggaran_' . date('d-m-Y') . '.xlsx';
+
+
+// --- FALLBACK: Jika tidak ada tombol yang ditekan ---
 } else {
     // Jika diakses langsung, redirect ke halaman form
-    header('Location: export.php');
+    header('Location: index.php');
     exit();
 }
+
+
+// =================================================================================
+// --- PROSES DOWNLOAD FILE (Berlaku untuk semua OPSI) ---
+// =================================================================================
+
+header('Content-Type: application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
+header('Content-Disposition: attachment;filename="' . $namaFile . '"');
+header('Cache-Control: max-age=0');
+
+$writer = new Xlsx($spreadsheet);
+$writer->save('php://output');
+
+$conn->close();
+exit();
 ?>

@@ -9,6 +9,13 @@ require_once __DIR__ . '/helper.php';
 // 2. Cek Izin "SATPAM"
 guard('rapot_cetak');
 
+// ==========================================================
+//           PERUBAHAN DI SINI: Mode Output
+// ==========================================================
+$output_mode = $_GET['output'] ?? 'download'; // 'download' (default) or 'string'
+// ==========================================================
+
+
 // 3. Ambil ID Rapot dari URL
 if (empty($_GET['id'])) {
     die('Error: ID Rapot tidak ditemukan.');
@@ -90,21 +97,31 @@ try {
         'margin_left' => 10,
         'margin_right' => 10,
         'margin_top' => 7,
-        'margin_bottom' => 7,
+        'margin_bottom' => 4,
     ]);
 
     // 9. Tulis HTML ke PDF
     $mpdf->WriteHTML($html);
 
     // 10. Tampilkan/Download PDF
+    $nama_santri_clean = preg_replace("/[^a-zA-Z0-9 ]/", "", $santri['nama']);
+    $nama_file = "Rapot {$nama_santri_clean} - {$rapot['bulan']} {$rapot['tahun']}.pdf";
     
     // ==========================================================
-    //           PERBAIKAN NAMA FILE DI SINI
-    //  Kita tambahin $rapot['tahun']
+    //           PERUBAHAN DI SINI (LOGIKA OUTPUT)
     // ==========================================================
-    $nama_file = "Rapot " . $santri['nama'] . " - " . $rapot['bulan'] . " " . $rapot['tahun'] . ".pdf";
-    
-    $mpdf->Output($nama_file, \Mpdf\Output\Destination::DOWNLOAD); 
+    if ($output_mode === 'string') {
+        // Return sebagai string buat ditangkep bulk processor
+        $pdf_content = $mpdf->Output($nama_file, \Mpdf\Output\Destination::STRING_RETURN);
+        
+        // Kirim header yang bener biar 'fetch' ngenalin ini sbg PDF
+        header('Content-Type: application/pdf');
+        echo $pdf_content;
+    } else {
+        // Mode default: force download (buat link 'Unduh PDF' biasa)
+        $mpdf->Output($nama_file, \Mpdf\Output\Destination::DOWNLOAD); 
+    }
+    // ==========================================================
     
 } catch (\Mpdf\MpdfException $e) {
     echo 'Error mPDF: ' . $e->getMessage();

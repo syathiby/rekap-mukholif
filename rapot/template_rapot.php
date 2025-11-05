@@ -137,7 +137,6 @@
         .ttd-container .nama-musyrif {
             margin-top: 50px; 
             font-weight: bold;
-            text-decoration: underline;
         }
     </style>
 </head>

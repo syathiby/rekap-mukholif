@@ -16,12 +16,10 @@ $bagian = 'Bahasa';
 // =======================================================
 // BAGIAN 1: TANGKAP "SURAT TUGAS" DARI URL
 // =======================================================
-
-// Pastikan semua parameter yang dibutuhkan ada
+// ... (LOGIKA PHP KAMU AMAN, GW GAK SENTUH) ...
 if (!isset($_GET['santri_id']) || !isset($_GET['start_date']) || !isset($_GET['end_date'])) {
     die("<div class='container my-4'><div class='alert alert-danger'>Informasi tidak lengkap untuk menampilkan detail.</div></div>");
 }
-
 $santri_id = (int)$_GET['santri_id'];
 $start_date = $_GET['start_date'];
 $end_date = $_GET['end_date'];
@@ -29,18 +27,14 @@ $end_date = $_GET['end_date'];
 // =======================================================
 // BAGIAN 2: AMBIL DATA DARI DATABASE
 // =======================================================
-
-// Query 1: Ambil data profil santri yang bersangkutan
+// ... (LOGIKA PHP KAMU AMAN, GW GAK SENTUH) ...
 $stmt_santri = mysqli_prepare($conn, "SELECT nama, kelas, kamar FROM santri WHERE id = ?");
 mysqli_stmt_bind_param($stmt_santri, "i", $santri_id);
 mysqli_stmt_execute($stmt_santri);
 $santri = mysqli_stmt_get_result($stmt_santri)->fetch_assoc();
-
 if (!$santri) {
     die("<div class='container my-4'><div class='alert alert-danger'>Data santri tidak ditemukan.</div></div>");
 }
-
-// Query 2: Ambil semua rincian pelanggaran santri tersebut pada rentang tanggal yang ditentukan
 $sql_detail = "
     SELECT 
         p.tanggal,
@@ -54,22 +48,15 @@ $sql_detail = "
       AND DATE(p.tanggal) BETWEEN ? AND ?
     ORDER BY p.tanggal DESC
 ";
-
 $stmt_detail = mysqli_prepare($conn, $sql_detail);
 mysqli_stmt_bind_param($stmt_detail, "isss", $santri_id, $bagian, $start_date, $end_date);
 mysqli_stmt_execute($stmt_detail);
 $result_detail = mysqli_stmt_get_result($stmt_detail);
 $detail_list = mysqli_fetch_all($result_detail, MYSQLI_ASSOC);
-
-// Kalkulasi statistik untuk di card summary
 $total_pelanggaran = count($detail_list);
 $total_poin = array_sum(array_column($detail_list, 'poin'));
-
 ?>
 
-<!-- ======================================================= -->
-<!-- BAGIAN 3: TAMPILAN DETAIL PELANGGARAN -->
-<!-- ======================================================= -->
 <!DOCTYPE html>
 <html lang="id">
 <head>
@@ -95,27 +82,40 @@ $total_poin = array_sum(array_column($detail_list, 'poin'));
         .stat-card { background: linear-gradient(135deg, var(--primary) 0%, var(--primary-dark) 100%); }
         .stat-number { font-size: 2.5rem; font-weight: 700; color: white; }
         .stat-label { font-size: 1rem; color: rgba(255, 255, 255, 0.8); }
+
+        /* =============================================================
+        === PERBAIKAN 1: TAMBAHAN CSS RESPONSIVE ===
+        =============================================================
+        */
+        @media (max-width: 767.98px) {
+            .page-title {
+                font-size: 1.75rem; /* Kecilin font judul di HP */
+            }
+            .profile-card-info {
+                text-align: center; /* Bikin info santri center di HP */
+            }
+        }
     </style>
 </head>
 <body>
 <div class="container py-4">
     
-    <!-- Tombol Kembali & Judul -->
-    <div class="d-flex justify-content-between align-items-center mb-4">
-        <a href="javascript:history.back()" class="btn btn-outline-secondary"><i class="fas fa-arrow-left me-2"></i>Kembali</a>
-        <h1 class="page-title mb-0 text-end">Detail Pelanggaran Bahasa</h1>
+    <div class="d-flex flex-column flex-md-row justify-content-md-between align-items-start align-items-md-center mb-4">
+        <a href="javascript:history.back()" class="btn btn-outline-secondary mb-3 mb-md-0"><i class="fas fa-arrow-left me-2"></i>Kembali</a>
+        
+        <h1 class="page-title mb-0 w-100 w-md-auto text-center text-md-end">Detail Pelanggaran Bahasa</h1>
     </div>
 
-    <!-- Kartu Profil Santri & Periode -->
+
     <div class="card mb-4">
         <div class="card-body">
             <div class="row align-items-center">
-                <div class="col-md-6">
+                <div class="col-md-6 profile-card-info text-md-start">
                     <h3 class="fw-bold mb-1"><?= htmlspecialchars($santri['nama']) ?></h3>
                     <p class="text-muted mb-0">Kelas: <strong><?= htmlspecialchars($santri['kelas']) ?></strong> | Kamar: <strong><?= htmlspecialchars($santri['kamar']) ?></strong></p>
                 </div>
                 <div class="col-md-6 text-md-end mt-3 mt-md-0">
-                    <span class="badge bg-light text-dark fs-6 p-2">
+                    <span class="badge bg-light text-dark fs-6 p-2 d-block d-md-inline-block text-center text-wrap">
                         <i class="fas fa-calendar-alt me-2"></i>
                         Periode: <?= date('d M Y', strtotime($start_date)) ?> s/d <?= date('d M Y', strtotime($end_date)) ?>
                     </span>
@@ -124,7 +124,6 @@ $total_poin = array_sum(array_column($detail_list, 'poin'));
         </div>
     </div>
 
-    <!-- Kartu Statistik Ringkasan -->
     <div class="row g-4 mb-4">
         <div class="col-md-6">
             <div class="card stat-card text-white p-3">
@@ -144,7 +143,6 @@ $total_poin = array_sum(array_column($detail_list, 'poin'));
         </div>
     </div>
 
-    <!-- Kartu Tabel Rincian -->
     <div class="card">
         <div class="card-header">
              <h5 class="card-title fw-bold mb-0"><i class="fas fa-list-ul me-2"></i>Rincian Pelanggaran</h5>

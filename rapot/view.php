@@ -72,13 +72,8 @@ $musyrif = [
 ];
 
 // 6. Setting Path Logo
-// ==========================================================
-//           PERBAIKAN DI SINI
-// $logo_path (URL) udah bener pake $base_url
-// $logo_file_path (FILE) kita benerin pake __DIR__
-// ==========================================================
 $logo_path = $base_url . '/assets/Kop Syathiby.jpg';
-$logo_file_path = __DIR__ . '/../assets/Kop Syathiby.jpg'; // <-- INI FIX-NYA
+$logo_file_path = __DIR__ . '/../assets/Kop Syathiby.jpg'; // <-- FIX-nya
 if (!file_exists($logo_file_path)) $logo_path = ''; 
 
 /*
@@ -103,7 +98,12 @@ echo '<!DOCTYPE html>
             background-color: white;
             box-shadow: 0 0 10px rgba(0,0,0,0.5);
             margin: 20px auto;
-            padding: 7mm 10mm 7mm 10mm;
+            
+            /* ==========================================================
+                         PERBAIKANNYA DI SINI (PADDING BAWAH)
+               ========================================================== */
+            padding: 7mm 10mm 4mm 10mm; /* Atas, Kanan, BAWAH (Jadi 4mm), Kiri */
+            
             box-sizing: border-box;
         }
         @media print {

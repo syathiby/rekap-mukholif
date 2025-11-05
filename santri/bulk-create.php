@@ -6,19 +6,18 @@ guard('santri_create');
 
 // Logika proses form HANYA jika ada request POST
 if ($_SERVER["REQUEST_METHOD"] == "POST") {
+    // ... (Logika PHP kamu udah bener, gw gak ubah) ...
     $santri_list = explode("\n", $_POST['list_santri']);
     $success_count = 0;
     $error_count = 0;
     $errors = [];
     
-    // [FIX EFISIENSI] Siapkan statement HANYA SEKALI di luar loop
     $query = "INSERT INTO santri (nama, kelas, kamar) VALUES (?, ?, ?)";
     $stmt = mysqli_prepare($conn, $query);
 
     foreach ($santri_list as $index => $line) {
         $line_number = $index + 1;
         
-        // Lewati baris kosong
         if (empty(trim($line))) continue;
 
         $data = array_map('trim', explode(',', $line));
@@ -27,16 +26,14 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
             list($nama, $kelas_raw, $kamar_raw) = $data;
             
             if (empty($nama) || empty($kelas_raw) || empty($kamar_raw)) {
-                $errors[] = "Baris $line_number: Data tidak lengkap (Nama, Kelas, Kamar semua harus diisi)";
+                $errors[] = "Baris $line_number: Data tidak lengkap";
                 $error_count++;
                 continue;
             }
             
-            // [FIX TIPE DATA] Ubah kelas dan kamar menjadi angka (integer)
             $kelas = intval($kelas_raw);
             $kamar = intval($kamar_raw);
 
-            // [FIX TIPE DATA] Ganti "sss" menjadi "sii" (string, integer, integer)
             mysqli_stmt_bind_param($stmt, "sii", $nama, $kelas, $kamar);
             
             if (mysqli_stmt_execute($stmt)) {
@@ -46,12 +43,11 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
                 $error_count++;
             }
         } else {
-            $errors[] = "Baris $line_number: Format tidak valid (harus Nama,Kelas,Kamar)";
+            $errors[] = "Baris $line_number: Format tidak valid";
             $error_count++;
         }
     }
     
-    // [FIX EFISIENSI] Tutup statement SETELAH loop selesai
     mysqli_stmt_close($stmt);
     
     $_SESSION['bulk_upload_result'] = [
@@ -101,9 +97,13 @@ require_once __DIR__ . '/../header.php';
         background-color: var(--primary-color);
         border-color: var(--primary-color);
     }
-    textarea {
-        min-height: 350px;
+
+    /* --- PERUBAHAN DI SINI --- */
+    /* Gw ganti dari 'textarea' jadi 'textarea#list_santri' biar lebih spesifik */
+    textarea#list_santri {
+        min-height: 550px; 
         font-family: monospace;
+        /* Scrollbar akan otomatis muncul jika kontennya melebihi tinggi ini */
     }
 
     @media (max-width: 576px) {
@@ -123,6 +123,10 @@ require_once __DIR__ . '/../header.php';
         .form-actions .btn {
             padding: .375rem .75rem;
             font-size: 1rem;
+        }
+        /* Menyesuaikan tinggi textarea di HP */
+        textarea#list_santri {
+            min-height: 400px;
         }
     }
 </style>
