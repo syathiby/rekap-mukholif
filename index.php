@@ -6,7 +6,7 @@
 require_once __DIR__ . '/init.php';
 
 // 2. Jalankan 'SATPAM' buat ngejaga halaman
-guard();  
+guard();
 
 // 3. Kalau lolos, baru panggil Tampilan
 require_once __DIR__ . '/header.php';
@@ -117,6 +117,39 @@ $best_students = mysqli_query($conn, "
     ORDER BY s.nama ASC
     LIMIT 5
 ");
+
+// =============================================================
+// PERSIAPAN UNTUK LOGIKA TAMPILAN BERDASARKAN IZIN (REVISI 2)
+// =============================================================
+// Ini asumsi ada fungsi has_permission() di init.php ya
+
+// Izin Sesuai Arahan Baru:
+$can_view_pel_terkini = has_permission('rekap_view_statistik'); // Tombol "Lihat semua" Pelanggaran Terkini
+$can_view_rekap_santri = has_permission('rekap_view_santri');   // Tombol "Lihat semua" Top Pelanggar & Santri Teladan
+
+// Card 1: Total Santri
+$can_view_santri = has_permission('santri_view');
+$santri_href = $can_view_santri ? 'href="santri/index.php"' : 'href="#"';
+$santri_style = !$can_view_santri ? 'style="cursor: not-allowed; opacity: 0.7;"' : '';
+$santri_onclick = !$can_view_santri ? 'onclick="event.preventDefault(); return false;"' : '';
+
+// Card 2: Jenis Pelanggaran
+$can_view_jp = has_permission('jenis_pelanggaran_view');
+$jp_href = $can_view_jp ? 'href="jenis-pelanggaran/index.php"' : 'href="#"';
+$jp_style = !$can_view_jp ? 'style="cursor: not-allowed; opacity: 0.7;"' : '';
+$jp_onclick = !$can_view_jp ? 'onclick="event.preventDefault(); return false;"' : '';
+
+// Card 3: Total Pelanggaran (Chart)
+$can_view_chart = has_permission('rekap_view_statistik');
+$chart_href = $can_view_chart ? 'href="rekap/chart.php"' : 'href="#"';
+$chart_style = !$can_view_chart ? 'style="cursor: not-allowed; opacity: 0.7;"' : '';
+$chart_onclick = !$can_view_chart ? 'onclick="event.preventDefault(); return false;"' : '';
+
+// Card 4: Santri Teladan (Izin: rekap_view_santri)
+$teladan_href = $can_view_rekap_santri ? 'href="rekap/santri-teladan.php"' : 'href="#"';
+$teladan_style = !$can_view_rekap_santri ? 'style="cursor: not-allowed; opacity: 0.7;"' : '';
+$teladan_onclick = !$can_view_rekap_santri ? 'onclick="event.preventDefault(); return false;"' : '';
+
 ?>
 <!DOCTYPE html>
 <html lang="id">
@@ -162,7 +195,7 @@ $best_students = mysqli_query($conn, "
             transition: all 0.3s ease-in-out; position: relative; overflow: hidden;
             border: 1px solid #e5e7eb; text-decoration: none; color: inherit; display: block;
         }
-        .stat-card:hover { transform: translateY(-8px) scale(1.02); box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -4px rgba(0, 0, 0, 0.1); }
+        a.stat-card:hover { transform: translateY(-8px) scale(1.02); box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -4px rgba(0, 0, 0, 0.1); }
         .stat-icon {
             font-size: 2.5rem; margin-bottom: 1.25rem; transition: transform 0.3s ease;
             display: inline-flex; align-items: center; justify-content: center;
@@ -268,7 +301,9 @@ $best_students = mysqli_query($conn, "
         <div class="content-section">
             <div class="section-header">
                 <h2 class="section-title"><i class="fas fa-history"></i> Pelanggaran Terkini</h2>
-                <a href="rekap/tren-pelanggaran.php" class="view-all-link">Lihat semua <i class="fas fa-chevron-right"></i></a>
+                <?php if ($can_view_pel_terkini): // Izin: rekap_view_statistik ?>
+                    <a href="rekap/tren-pelanggaran.php" class="view-all-link">Lihat semua <i class="fas fa-chevron-right"></i></a>
+                <?php endif; ?>
             </div>
             <div class="recent-violations">
                 <table class="violation-table">
@@ -306,19 +341,24 @@ $best_students = mysqli_query($conn, "
         </div>
         
         <div class="stats-grid">
-            <a href="santri/index.php" class="stat-card santri">
+            <!-- Card 1: Total Santri (Izin: santri_view) -->
+            <a <?= $santri_href ?> class="stat-card santri" <?= $santri_style ?> <?= $santri_onclick ?>>
                 <div class="stat-icon"><i class="fas fa-user-graduate"></i></div>
                 <h3>Total Santri</h3>
                 <div class="stat-value"><?= number_format($stats['santri'] ?? 0) ?></div>
                 <p class="stat-description">Santri terdaftar</p>
             </a>
-            <a href="jenis-pelanggaran/index.php" class="stat-card pelanggaran">
+            
+            <!-- Card 2: Jenis Pelanggaran (Izin: jenis_pelanggaran_view) -->
+            <a <?= $jp_href ?> class="stat-card pelanggaran" <?= $jp_style ?> <?= $jp_onclick ?>>
                 <div class="stat-icon"><i class="fas fa-clipboard-check"></i></div>
                 <h3>Jenis Pelanggaran</h3>
                 <div class="stat-value"><?= number_format($stats['jenis_pelanggaran'] ?? 0) ?></div>
                 <p class="stat-description">Kategori pelanggaran</p>
             </a>
-            <a href="rekap/chart.php" class="stat-card violations">
+            
+            <!-- Card 3: Total Pelanggaran (Izin: rekap_view_statistik) -->
+            <a <?= $chart_href ?> class="stat-card violations" <?= $chart_style ?> <?= $chart_onclick ?>>
                 <div class="stat-icon"><i class="fas fa-exclamation-circle"></i></div>
                 <h3>Total Pelanggaran</h3>
                 <div class="stat-value"><?= number_format($stats['total_pelanggaran'] ?? 0) ?></div>
@@ -329,7 +369,9 @@ $best_students = mysqli_query($conn, "
                     </div>
                 <?php endif; ?>
             </a>
-            <a href="rekap/santri-teladan.php" class="stat-card clean">
+            
+            <!-- Card 4: Santri Teladan (Izin: rekap_view_santri) -->
+            <a <?= $teladan_href ?> class="stat-card clean" <?= $teladan_style ?> <?= $teladan_onclick ?>>
                 <div class="stat-icon"><i class="fas fa-award"></i></div>
                 <h3>Santri Teladan</h3>
                 <div class="stat-value"><?= number_format($stats['santri_tanpa_pelanggaran'] ?? 0) ?></div>
@@ -359,7 +401,9 @@ $best_students = mysqli_query($conn, "
                 <div class="student-list-card">
                     <div class="list-header">
                         <h3 class="list-title"><i class="fas fa-exclamation-triangle" style="color: var(--danger)"></i> Top Pelanggar Hirosah</h3>
-                        <a href="rekap/santri-pelanggar.php" class="view-all-link">Lihat semua <i class="fas fa-chevron-right"></i></a>
+                        <?php if ($can_view_rekap_santri): // Izin: rekap_view_santri ?>
+                            <a href="rekap/santri-pelanggar.php" class="view-all-link">Lihat semua <i class="fas fa-chevron-right"></i></a>
+                        <?php endif; ?>
                     </div>
                     <?php if(mysqli_num_rows($top_violators) > 0): ?>
                         <?php while($violator = mysqli_fetch_assoc($top_violators)): ?>
@@ -379,7 +423,9 @@ $best_students = mysqli_query($conn, "
                 <div class="student-list-card">
                     <div class="list-header">
                         <h3 class="list-title"><i class="fas fa-medal" style="color: var(--success)"></i> Daftar Santri Teladan</h3>
-                        <a href="rekap/santri-teladan.php" class="view-all-link">Lihat semua <i class="fas fa-chevron-right"></i></a>
+                        <?php if ($can_view_rekap_santri): // Izin: rekap_view_santri ?>
+                            <a href="rekap/santri-teladan.php" class="view-all-link">Lihat semua <i class="fas fa-chevron-right"></i></a>
+                        <?php endif; ?>
                     </div>
                     <?php if(mysqli_num_rows($best_students) > 0): ?>
                         <?php while($student = mysqli_fetch_assoc($best_students)): ?>

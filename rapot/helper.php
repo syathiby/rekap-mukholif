@@ -10,7 +10,7 @@ if (!function_exists('generatePenilaianDropdown')) {
             case 'sholat_malam':
                 $options = '
                     <option value="">-- Pilih Penilaian --</option>
-                    <option value="5">Rajin dan semangat</option>
+                    <option value="5">Konsisten melaksanakan</option>
                     <option value="4">Cukup rutin</option>
                     <option value="3">Kadang melaksanakan</option>
                     <option value="2">Jarang melaksanakan</option>
@@ -121,6 +121,15 @@ if (!function_exists('generatePenilaianDropdown')) {
                 ';
                 break;
             case 'mandi':
+                $options = '
+                    <option value="">-- Pilih Penilaian --</option>
+                    <option value="5">Selalu menjaga kebersihan diri setiap hari</option>
+                    <option value="4">Cukup rutin menjaga kebersihan diri</option>
+                    <option value="3">Kadang kurang memperhatikan waktu mandi</option>
+                    <option value="2">Sering menunda atau jarang mandi</option>
+                    <option value="1">Kurang memperhatikan kebersihan pribadi</option>
+                ';
+                break;
             case 'penampilan':
                 $options = '
                     <option value="">-- Pilih Penilaian --</option>
@@ -169,7 +178,7 @@ if (!function_exists('getDeskripsiPenilaian')) {
             case 'sholat_duha':
             case 'sholat_malam':
                 return [
-                    5 => 'Rajin dan semangat melaksanakan ibadah sunnah',
+                    5 => 'Konsisten melaksanakan',
                     4 => 'Cukup rutin',
                     3 => 'Kadang melaksanakan',
                     2 => 'Jarang melaksanakan',
@@ -265,6 +274,13 @@ if (!function_exists('getDeskripsiPenilaian')) {
 
             // ================== KEBERSIHAN & KERAPIHAN ==================
             case 'mandi':
+                return [
+                    5 => 'Selalu menjaga kebersihan diri setiap hari',
+                    4 => 'Cukup rutin menjaga kebersihan diri',
+                    3 => 'Kadang kurang memperhatikan waktu mandi',
+                    2 => 'Sering menunda atau jarang mandi',
+                    1 => 'Kurang memperhatikan kebersihan pribadi'
+                ][$nilai] ?? '-';
             case 'penampilan':
                 return [
                     5 => 'Selalu bersih dan rapi',

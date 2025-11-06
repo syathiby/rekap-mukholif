@@ -45,7 +45,7 @@ if (!empty($filter_kategori)) {
 if (!empty($where_clauses)) {
     $query .= " WHERE " . implode(" AND ", $where_clauses);
 }
-$query .= " ORDER BY nama_pelanggaran ASC";
+$query .= " ORDER BY CAST(SUBSTRING_INDEX(SUBSTRING_INDEX(nama_pelanggaran, ' ', -1), ')', 1) AS UNSIGNED) ASC";
 
 // --- EKSEKUSI QUERY ---
 $stmt = mysqli_prepare($conn, $query);

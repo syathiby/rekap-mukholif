@@ -8,6 +8,9 @@ guard('pelanggaran_kesantrian_input');
 // 3. Kalau lolos, baru panggil Tampilan
 require_once __DIR__ . '/../../header.php';
 
+// =========================================================================
+// ✅ Query disamakan, pakai prepared statement (lebih aman)
+// =========================================================================
 $bagian = 'Kesantrian';
 $stmt = $conn->prepare("
     SELECT id, nama_pelanggaran, poin 
@@ -19,156 +22,281 @@ $stmt->bind_param("s", $bagian);
 $stmt->execute();
 $jenis_pelanggaran_result = $stmt->get_result();
 
-// Siapkan data pelanggaran untuk JavaScript
-$pelanggaran_list_for_js = [];
-while ($jp = $jenis_pelanggaran_result->fetch_assoc()) {
-    $pelanggaran_list_for_js[] = [
-        'id'    => $jp['id'],
-        'value' => htmlspecialchars($jp['nama_pelanggaran']),
-        'label' => htmlspecialchars($jp['nama_pelanggaran']) . ' (Poin: ' . $jp['poin'] . ')',
-    ];
-}
-// Kembalikan pointer result set ke awal untuk jaga-jaga jika masih dibutuhkan
-$jenis_pelanggaran_result->data_seek(0);
+// ❌ Hapus blok 'Siapkan data pelanggaran untuk JavaScript'
 ?>
 
-<!-- CSS untuk jQuery UI Autocomplete -->
-<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/jqueryui/1.12.1/jquery-ui.min.css">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/css/select2.min.css">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/select2-bootstrap-5-theme@1.3.0/dist/select2-bootstrap-5-theme.min.css">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/jqueryui/1.13.2/themes/base/jquery-ui.min.css">
+
 <style>
-    .ui-autocomplete { 
-        z-index: 1050;
-        max-height: 200px;
+    /* -- Style Autocomplete (Santri) -- */
+    .ui-autocomplete {
+        z-index: 1051;
+        max-height: 250px;
         overflow-y: auto;
-        overflow-x: hidden;
+        border-radius: 0.5rem;
+        border: 1px solid #dee2e6;
+        box-shadow: 0 4px 12px rgba(0,0,0,0.1);
     }
-    .ui-menu-item-wrapper {
-        font-size: 0.9rem;
+
+    /* -- Style Select2 (Pelanggaran) -- */
+    .select2-container--bootstrap-5 .select2-dropdown {
+        border-radius: 0.5rem;
+        border: 1px solid #dee2e6;
+        box-shadow: 0 4px 12px rgba(0,0,0,0.1);
     }
-    .form-top-section { 
-        background-color: #f8f9fa; 
-        padding: 1.5rem; 
-        border: 1px solid #dee2e6; 
-        border-radius: 0.5rem; 
-        margin-bottom: 1.5rem; 
+    .select2-container--bootstrap-5 .select2-selection {
+        border-radius: 0.5rem !important;
+        border: 1px solid #ced4da;
+        min-height: calc(1.5em + 0.75rem + 2px);
+        padding: 0.375rem 0.75rem;
+        font-size: 1rem;
     }
-    @media (max-width: 576px) {
-        .container {
-            padding-left: 0.75rem;
-            padding-right: 0.75rem;
-        }
-        .card-header h5 {
-            font-size: 1rem;
-        }
+    .select2-container--bootstrap-5 .select2-selection--single .select2-selection__rendered {
+        line-height: 1.5;
+        padding-left: 0;
+    }
+    .select2-container--bootstrap-5.select2-container--focus .select2-selection {
+        /* ✅ WARNA DISESUAIKAN JADI PRIMARY (Biru) */
+        border-color: var(--bs-primary);
+        box-shadow: 0 0 0 0.25rem rgba(var(--bs-primary-rgb), 0.25);
+    }
+
+    /* -- Style Input Form -- */
+    .form-control, .form-select {
+        border-radius: 0.5rem;
+    }
+
+    /* -- Style Stepper (BARU) -- */
+    .form-step {
+        margin-bottom: 2rem;
+    }
+    .form-step-label {
+        display: flex;
+        align-items: center;
+        font-size: 1.15rem;
+        font-weight: 600;
+        color: #343a40;
+        margin-bottom: 0.85rem;
+    }
+    .form-step-label .step-number {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        width: 30px;
+        height: 30px;
+        border-radius: 50%;
+        /* ✅ WARNA DISESUAIKAN JADI PRIMARY (Biru) */
+        background-color: var(--bs-primary);
+        color: #fff;
+        font-size: 1rem;
+        font-weight: 700;
+        margin-right: 0.75rem;
+    }
+
+    /* -- Style Tombol "Tambah" Santri -- */
+    .input-group .btn-primary { /* Tetap primary (biru) sesuai tema */
+        border-top-right-radius: 0.5rem !important;
+        border-bottom-right-radius: 0.5rem !important;
+    }
+
+    /* -- Style Tabel (Minimalis) -- */
+    .table-wrapper {
+        border: 1px solid #dee2e6;
+        border-radius: 0.5rem;
+        overflow: hidden;
+    }
+    .table {
+        margin-bottom: 0;
+    }
+    .table thead th {
+        background-color: #f8f9fa;
+        color: #343a40;
+        font-weight: 600;
+        border-bottom: 2px solid #dee2e6;
+        border-top: 0;
+        white-space: nowrap;
+        padding: 0.75rem 1rem;
+    }
+    .table tbody td {
+        padding: 0.75rem 1rem;
+        vertical-align: middle;
+    }
+    .table tbody tr:last-child td {
+        border-bottom: 0;
+    }
+
+    /* -- Style Tombol Hapus (Minimalis) -- */
+    .btn-hapus {
+        background-color: #fdf2f2;
+        color: #dc3545;
+        border: 1px solid #fadddd;
+        border-radius: 0.375rem;
+        width: 38px;
+        height: 38px;
+    }
+    .btn-hapus:hover {
+        background-color: #dc3545;
+        color: #fff;
+        border-color: #dc3545;
+    }
+    
+    /* -- Style Pesan Tabel Kosong -- */
+    #empty-table-message {
+        border: 2px dashed #dee2e6;
+        border-radius: 0.5rem;
+        background-color: #f8f9fa;
+    }
+
+    /* -- Style Tombol Simpan -- */
+    .btn-success { /* Sesuai warna asli tombol simpan kesantrian */
+        font-size: 1.1rem;
+        font-weight: 600;
+        padding: 0.85rem;
+        border-radius: 0.5rem;
+    }
+
+    /* -- Responsive di HP -- */
+    @media (max-width: 767px) {
         .card-body {
-            padding: 1rem;
+            padding: 1.25rem !important;
         }
-        .form-top-section {
-            padding: 1rem;
+        .form-card-header h4 {
+            font-size: 1.25rem;
         }
-        .table th, .table td {
-            font-size: 0.8rem;
-            padding: 0.5rem 0.4rem;
-            white-space: normal !important;
+        .form-step-label {
+            font-size: 1.05rem;
         }
-        .btn {
+        .form-step-label .step-number {
+            width: 26px;
+            height: 26px;
             font-size: 0.9rem;
         }
-        .button-group-bottom {
-            flex-direction: column;
-            gap: 0.5rem !important;
+        .table thead th,
+        .table tbody td {
+            font-size: 0.9rem;
+            padding: 0.6rem 0.5rem;
         }
-        .button-group-bottom .btn {
-            width: 100%;
+        .btn-hapus {
+            width: 34px;
+            height: 34px;
+        }
+        #empty-table-message {
+            font-size: 0.9rem;
         }
     }
 </style>
 
-<div class="container mt-4 mb-5">
-    <div class="card shadow" style="max-width: 900px; margin: auto;">
-        <div class="card-header bg-primary text-white d-flex justify-content-between align-items-center">
-            <h5 class="mb-0"><i class="fas fa-users-cog me-2"></i>Pencatatan Pelanggaran Kesantrian</h5>
-            <a href="../" class="btn btn-light btn-sm"><i class="fas fa-arrow-left me-1"></i>Kembali</a>
-        </div>
-        <div class="card-body">
+<div class="container my-4">
+    <div class="card col-xl-10 col-lg-12 mx-auto shadow-sm">
+        <div class="card-header bg-primary text-white">
+            <div class="d-none d-md-flex justify-content-between align-items-center">
+                <h4 class="mb-0">
+                    <i class="fas fa-users-cog me-2"></i> Pencatatan Pelanggaran Kesantrian
+                </h4>
+                <?php if (has_permission('rekap_view_kesantrian')): // Asumsi permission-nya ini ?>
+                <a href="rekap.php" class="btn btn-light btn-sm">
+                    Lihat Rekap <i class="fas fa-chart-line ms-1"></i>
+                </a>
+                <?php endif; ?>
+            </div>
 
-            <!-- Notifikasi -->
-            <?php
-            if (isset($_GET['status'])) {
-                $status = $_GET['status'];
-                $pesan = '';
-                $alert_type = '';
-                switch ($status) {
-                    case 'success':
-                        $pesan = '<strong>Berhasil!</strong> Data pelanggaran telah sukses disimpan.';
-                        $alert_type = 'success';
-                        break;
-                    case 'error_db':
-                        $pesan = '<strong>Gagal!</strong> Terjadi kesalahan saat menyimpan ke database.';
-                        $alert_type = 'danger';
-                        break;
-                    case 'error_validation':
-                        $pesan = '<strong>Gagal!</strong> Data yang dikirim tidak lengkap.';
-                        $alert_type = 'warning';
-                        break;
-                }
-                if ($pesan) {
-                    echo '<div class="alert alert-' . $alert_type . ' alert-dismissible fade show" role="alert">' . $pesan . '<button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button></div>';
-                }
-            }
-            ?>
+            <div class="d-md-none text-center">
+                <h4 class="mb-2">
+                    <i class="fas fa-users-cog me-2"></i> Pencatatan Pelanggaran Kesantrian
+                </h4>
+                <?php if (has_permission('rekap_view_kesantrian')): ?>
+                <a href="rekap.php" class="btn btn-light btn-sm w-100 d-flex justify-content-center align-items-center">
+                    <span>Lihat Rekap</span>
+                    <i class="fas fa-chart-line ms-1"></i>
+                </a>
+                <?php endif; ?>
+            </div>
+        </div>
+        
+        <div class="card-body p-3 p-md-4">
             
-            <form id="pelanggaranForm" action="process.php" method="POST">
+            <?php if (isset($_SESSION['message'])): ?>
+                <div class="alert alert-<?php echo $_SESSION['message']['type']; ?> alert-dismissible fade show" role="alert">
+                    <?php echo $_SESSION['message']['text']; ?>
+                    <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                </div>
+                <?php unset($_SESSION['message']); ?>
+            <?php endif; ?>
+
+            <form action="process.php" method="POST" id="form-pelanggaran">
                 
-                <!-- Bagian Info Kesantrian -->
-                <div class="form-top-section">
+                <div class="form-step">
+                    <label class="form-step-label">
+                        <span class="step-number">1</span> Pilih Jenis Pelanggaran
+                    </label>
                     <div class="row g-3">
-                        <div class="col-md-6">
-                            <label for="pelanggaranSearch" class="form-label fw-bold">Jenis Pelanggaran</label>
-                            <input type="text" id="pelanggaranSearch" class="form-control" placeholder="Ketik jenis pelanggaran..." required>
-                            <input type="hidden" id="jenis_pelanggaran_id" name="jenis_pelanggaran_id">
+                        <div class="col-md-8">
+                            <select name="jenis_pelanggaran_id" id="jenis_pelanggaran_id" class="form-control" required>
+                                <option value="">Pilih atau ketik nama pelanggaran</option>
+                                <?php
+                                // ✅ Loop PHP untuk generate <option>
+                                if ($jenis_pelanggaran_result && $jenis_pelanggaran_result->num_rows > 0) {
+                                    // Reset pointer
+                                    $jenis_pelanggaran_result->data_seek(0); 
+                                    while ($jp = $jenis_pelanggaran_result->fetch_assoc()) {
+                                        $text_label = sprintf("%s (Poin: %d)", htmlspecialchars($jp['nama_pelanggaran']), $jp['poin']);
+                                        echo '<option value="' . $jp['id'] . '">' . $text_label . '</option>';
+                                    }
+                                } else {
+                                    echo '<option value="" disabled>Gagal memuat data pelanggaran. Cek query.</option>';
+                                }
+                                ?>
+                            </select>
                         </div>
-                        <div class="col-md-6">
-                            <label for="tanggal" class="form-label fw-bold">Waktu Kejadian</label>
-                            <input type="datetime-local" class="form-control" id="tanggal" name="tanggal" value="<?= date('Y-m-d\TH:i'); ?>" required>
+                        <div class="col-md-4">
+                            <input type="datetime-local" name="tanggal" id="tanggal" class="form-control" value="<?php echo date('Y-m-d\TH:i'); ?>" required>
                         </div>
                     </div>
                 </div>
 
-                <!-- Bagian Cari & Tambah Santri -->
-                <div class="row mb-3">
-                    <div class="col-md-8">
-                        <label for="santriSearch" class="form-label">Cari Santri:</label>
-                        <input type="text" id="santriSearch" class="form-control" placeholder="Ketik min. 2 huruf nama santri...">
-                    </div>
-                    <div class="col-md-4 d-flex align-items-end mt-2 mt-md-0">
-                        <button type="button" id="tambahSantri" class="btn btn-primary w-100">
-                            <i class="fas fa-plus"></i>
-                            <span class="d-none d-sm-inline"> Tambah ke Daftar</span>
+                <div class="form-step">
+                    <label for="santri-search" class="form-step-label">
+                        <span class="step-number">2</span> Cari dan Tambahkan Santri
+                    </label>
+                    <div class="input-group">
+                        <input type="text" id="santri-search" class="form-control" placeholder="Ketik nama santri untuk mencari...">
+                        <button class="btn btn-primary" type="button" id="btn-tambah-santri" disabled>
+                            <i class="fas fa-plus"></i><span class="d-none d-sm-inline ms-1">Tambah</span>
                         </button>
                     </div>
                 </div>
                 
-                <!-- Tabel Daftar Santri -->
-                <div class="table-responsive">
-                    <table class="table table-bordered table-striped" id="daftarSantri">
-                        <thead class="table-light">
-                            <tr>
-                                <th>Nama Santri</th>
-                                <th class="text-center">Kelas</th>
-                                <th class="text-center">Kamar</th>
-                                <th class="text-center">Aksi</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            <!-- Daftar santri yang melanggar akan muncul di sini -->
-                        </tbody>
-                    </table>
+                <div class="form-step">
+                    <label class="form-step-label">
+                        <span class="step-number">3</span> Daftar Santri Ditambahkan
+                    </label>
+                    
+                    <div class="table-wrapper table-responsive">
+                        <table class="table table-striped table-hover" id="tabel-santri-pelanggar">
+                            <thead>
+                                <tr>
+                                    <th>Nama Santri</th>
+                                    <th>Kelas</th>
+                                    <th>Kamar</th>
+                                    <th class="text-center">Aksi</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                </tbody>
+                        </table>
+                    </div>
+                    <div id="empty-table-message" class="text-center text-muted p-4">
+                        <i class="fas fa-users-slash fa-2x mb-2 d-block"></i>
+                        Belum ada santri yang ditambahkan.
+                    </div>
                 </div>
-                
-                <!-- Tombol Aksi Form -->
-                <div class="mt-3 d-flex justify-content-end gap-2 button-group-bottom">
-                    <button type="button" id="resetForm" class="btn btn-danger"><i class="fas fa-sync-alt me-2"></i>Reset Form</button>
-                    <button type="submit" name="simpan_pelanggaran_kesantrian" class="btn btn-success"><i class="fas fa-save me-2"></i>Simpan Pelanggaran</button>
+
+                <div class="d-grid mt-4">
+                    <button type="submit" name="simpan_pelanggaran_kesantrian" class="btn btn-success">
+                        <i class="fas fa-save me-1"></i> Simpan Semua Pelanggaran
+                    </button>
                 </div>
             </form>
         </div>
@@ -177,128 +305,158 @@ $jenis_pelanggaran_result->data_seek(0);
 
 <?php require_once __DIR__ . '/../../footer.php'; ?>
 
-<!-- Panggil jQuery dan jQuery UI -->
 <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
-<script src="https://code.jquery.com/ui/1.12.1/jquery-ui.min.js"></script>
-
-<!-- Kirim data PHP ke JavaScript -->
-<script>
-const jenisPelanggaranData = <?= json_encode($pelanggaran_list_for_js); ?>;
-</script>
+<script src="https://code.jquery.com/ui/1.13.2/jquery-ui.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
 
 <script>
 $(document).ready(function() {
+    let selectedSantri = null;
 
-    let santriTerpilih = null;
-    let pelanggaranTerpilih = null;
-
-    // ✅ FIX: Pencarian pelanggaran diubah agar mencari di semua bagian teks
-    $("#pelanggaranSearch").autocomplete({
-        source: function(request, response) {
-            // Buat pola pencarian (regex) yang case-insensitive
-            var matcher = new RegExp($.ui.autocomplete.escapeRegex(request.term), "i");
-            // Filter data pelanggaran berdasarkan pola di atas
-            var filteredData = $.grep(jenisPelanggaranData, function(item) {
-                // Cek apakah teks yang diketik ada di dalam label pelanggaran
-                return matcher.test(item.label);
-            });
-            response(filteredData);
-        },
-        minLength: 1,
-        select: function(event, ui) {
-            pelanggaranTerpilih = ui.item;
-            $("#pelanggaranSearch").val(ui.item.value); // Tampilkan nama pelanggaran
-            $("#jenis_pelanggaran_id").val(ui.item.id); // Simpan ID di input hidden
-            return false;
+    // =================================================================
+    // ✅ FUNGSI HELPER UNTUK MENCEGAH XSS (Security)
+    // =================================================================
+    function escapeHTML(str) {
+        if (str === null || typeof str === 'undefined') {
+            return '';
         }
-    }).autocomplete("instance")._renderItem = function(ul, item) {
-        return $("<li>")
-            .append(`<div>${item.label}</div>`) 
-            .appendTo(ul);
-    };
+        return $('<div>').text(str).html();
+    }
 
-    $("#santriSearch").autocomplete({
-        source: function(request, response) {
-            $.ajax({
-                url: "search_santri.php",
-                dataType: "json",
-                data: {
-                    term: request.term
-                },
-                success: function(data) {
-                    response(data);
-                }
-            });
-        },
+    // =================================================================
+    // ✅ INISIALISASI Select2 (Untuk Pelanggaran)
+    // =================================================================
+    $('#jenis_pelanggaran_id').select2({
+        theme: "bootstrap-5",
+        dropdownParent: $('#jenis_pelanggaran_id').parent()
+    });
+
+
+    // =================================================================
+    // ✅ INISIALISASI Autocomplete (Santri)
+    // =================================================================
+    $("#santri-search").autocomplete({
+        source: "search_santri.php", // Pastikan file ini ada dan berfungsi
         minLength: 2,
         select: function(event, ui) {
-            santriTerpilih = ui.item; 
-            $("#santriSearch").val(ui.item.nama);
-            return false;
+            selectedSantri = ui.item;
+            $('#btn-tambah-santri').prop('disabled', false);
         }
     }).autocomplete("instance")._renderItem = function(ul, item) {
         return $("<li>")
-            .append(`<div>${item.label}</div>`) 
+            .append("<div>" + item.label + "</div>")
             .appendTo(ul);
     };
 
-    $("#tambahSantri").on('click', function() {
-        if (!santriTerpilih) {
-            alert("Silakan cari dan pilih santri terlebih dahulu!");
+    // =================================================================
+    // ✅ Reset pilihan jika input dikosongkan manual (UX)
+    // =================================================================
+    $("#santri-search").on('keyup', function() {
+        if ($(this).val().trim() === '') {
+            selectedSantri = null;
+            $('#btn-tambah-santri').prop('disabled', true);
+        }
+    });
+
+    // =================================================================
+    // ✅ Fungsi untuk cek tabel kosong
+    // =================================================================
+    function checkTableEmpty() {
+        // ✅ Ganti ID tabel
+        const tableBody = $('#tabel-santri-pelanggar tbody');
+        const emptyMessage = $('#empty-table-message');
+        const tableWrapper = $('.table-wrapper'); 
+
+        if (tableBody.find('tr').length === 0) {
+            emptyMessage.show();
+            tableWrapper.hide(); 
+        } else {
+            emptyMessage.hide();
+            tableWrapper.show(); 
+        }
+    }
+    
+    checkTableEmpty();
+
+    // =================================================================
+    // ✅ FUNGSI TABEL (Update dengan escapeHTML & Tombol Hapus Minimalis)
+    // =================================================================
+    function tambahSantri() {
+        if (!selectedSantri) return;
+
+        // ✅ Ganti ID tabel
+        if ($('#tabel-santri-pelanggar').find('tr[data-id="' + selectedSantri.id + '"]').length > 0) {
+            alert('Santri sudah ada dalam daftar.');
+            resetInput();
             return;
         }
 
-        const sudahAda = $(`#daftarSantri tbody input[value='${santriTerpilih.id}']`).length > 0;
-        if (sudahAda) {
-            alert("Santri ini sudah ada di dalam daftar!");
-            return;
-        }
+        // ✅ Pakai selectedSantri.value (untuk nama), .kelas, .kamar
+        let namaSantri = escapeHTML(selectedSantri.value);
+        let kelasSantri = escapeHTML(selectedSantri.kelas);
+        let kamarSantri = escapeHTML(selectedSantri.kamar);
 
-        const barisBaru = `
-            <tr>
+        let barisBaru = `
+            <tr data-id="${selectedSantri.id}">
                 <td>
-                    <input type="hidden" name="santri_id[]" value="${santriTerpilih.id}">
-                    ${santriTerpilih.nama}
+                    ${namaSantri}
+                    <input type="hidden" name="santri_ids[]" value="${selectedSantri.id}">
                 </td>
-                <td class="text-center">${santriTerpilih.kelas}</td>
-                <td class="text-center">${santriTerpilih.kamar}</td>
+                <td>${kelasSantri}</td>
+                <td>${kamarSantri}</td>
                 <td class="text-center">
-                    <button type="button" class="btn btn-danger btn-sm hapus-santri">Hapus</button>
+                    <button type="button" class="btn btn-sm btn-hapus" title="Hapus Santri">
+                        <i class="fas fa-trash"></i>
+                    </button>
                 </td>
             </tr>
         `;
-        $("#daftarSantri tbody").append(barisBaru);
-
-        $("#santriSearch").val('');
-        santriTerpilih = null;
+        // ✅ Ganti ID tabel
+        $('#tabel-santri-pelanggar tbody').append(barisBaru);
+        resetInput();
+        checkTableEmpty(); 
+    }
+    
+    // ✅ Ganti ID Tombol
+    $('#btn-tambah-santri').click(tambahSantri);
+    
+    $('#santri-search').on('keydown', function(e) {
+        if (e.key === 'Enter' && selectedSantri) {
+            e.preventDefault();
+            tambahSantri();
+        }
     });
 
-    $("#daftarSantri").on('click', '.hapus-santri', function() {
+    // ✅ Ganti ID tabel
+    $('#tabel-santri-pelanggar').on('click', '.btn-hapus', function() {
         $(this).closest('tr').remove();
+        checkTableEmpty(); 
     });
     
-    $("#resetForm").on('click', function(){
-        $("#daftarSantri tbody").empty();
-        $("#pelanggaranForm")[0].reset();
-        $("#santriSearch").val('');
-        santriTerpilih = null;
-        
-        $("#pelanggaranSearch").val('');
-        $("#jenis_pelanggaran_id").val('');
-        pelanggaranTerpilih = null;
-    });
+    function resetInput() {
+        $("#santri-search").val('');
+        // ✅ Ganti ID Tombol
+        $('#btn-tambah-santri').prop('disabled', true);
+        selectedSantri = null;
+        $("#santri-search").focus(); 
+    }
 
-    $("#pelanggaranForm").on('submit', function(e){
+    // =================================================================
+    // ✅ VALIDASI SUBMIT
+    // =================================================================
+    // ✅ Ganti ID form
+    $("#form-pelanggaran").on('submit', function(e) {
         if (!$("#jenis_pelanggaran_id").val()) {
             e.preventDefault();
             alert("Jenis pelanggaran belum dipilih!");
+            $('#jenis_pelanggaran_id').select2('open');
             return;
         }
-
-        const jumlahSantri = $("#daftarSantri tbody tr").length;
-        if(jumlahSantri === 0){
+        // ✅ Ganti ID tabel
+        if ($('#tabel-santri-pelanggar tbody tr').length === 0) {
             e.preventDefault();
-            alert("Daftar santri pelanggar tidak boleh kosong!");
+            alert('Daftar santri pelanggar tidak boleh kosong!');
+            $('#santri-search').focus();
         }
     });
 });
