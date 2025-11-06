@@ -42,7 +42,7 @@ if (!function_exists('generatePenilaianDropdown')) {
                 $options = '
                     <option value="">-- Pilih Penilaian --</option>
                     <option value="5">Sopan dalam berbicara</option>
-                    <option value="4">Umumnya baik, namun perlu ditingkatkan</option>
+                    <option value="4">Umumnya baik</option>
                     <option value="3">Perlu dibimbing dalam menjaga ucapan</option>
                     <option value="2">Kadang bicara kurang sopan</option>
                     <option value="1">Belum bisa menjaga ucapan dengan baik</option>
@@ -52,7 +52,7 @@ if (!function_exists('generatePenilaianDropdown')) {
                 $options = '
                     <option value="">-- Pilih Penilaian --</option>
                     <option value="5">Berperilaku baik terhadap sesama</option>
-                    <option value="4">Menunjukkan sikap yang baik, namun perlu ditingkatkan</option>
+                    <option value="4">Menunjukkan sikap yang baik</option>
                     <option value="3">Perlu dibiasakan sopan santun</option>
                     <option value="2">Masih perlu bimbingan dalam bersikap</option>
                     <option value="1">Sering bersikap kurang menghargai</option>
@@ -206,7 +206,7 @@ if (!function_exists('getDeskripsiPenilaian')) {
             case 'lisan':
                 return [
                     5 => 'Sopan dalam berbicara',
-                    4 => 'Umumnya baik, namun perlu ditingkatkan',
+                    4 => 'Umumnya baik',
                     3 => 'Perlu dibimbing dalam menjaga ucapan',
                     2 => 'Kadang bicara kurang sopan',
                     1 => 'Belum bisa menjaga ucapan dengan baik'
@@ -214,7 +214,7 @@ if (!function_exists('getDeskripsiPenilaian')) {
             case 'sikap':
                 return [
                     5 => 'Berperilaku baik terhadap sesama',
-                    4 => 'Menunjukkan sikap baik namun perlu ditingkatkan',
+                    4 => 'Menunjukkan sikap baik',
                     3 => 'Perlu dibiasakan sopan santun',
                     2 => 'Masih perlu bimbingan dalam bersikap',
                     1 => 'Sering bersikap kurang menghargai'
