@@ -1,6 +1,7 @@
 <?php
 // File: rekap-mukholif/rapot/create.php
 // VERSI FINAL: Pake layout Pilihan Ganda + BISA DUPLIKAT + AJAX Cek Poin
+// UPDATE: Logika Bulan/Tahun Realtime + Panduan Modal
 
 // 1. Panggil 'Otak' aplikasi dulu
 require_once __DIR__ . '/../init.php';
@@ -11,7 +12,7 @@ require_once __DIR__ . '/helper.php';
 guard('rapot_create');
 
 // ==========================================================
-// 		 LOGIKA DUPLIKAT
+//       LOGIKA DUPLIKAT
 // ==========================================================
 $data_duplikat = null;
 $page_title = "Buat Rapot Kepengasuhan Baru";
@@ -78,10 +79,37 @@ $bulan_list = [
     'Januari', 'Februari', 'Maret', 'April', 'Mei', 'Juni',
     'Juli', 'Agustus', 'September', 'Oktober', 'November', 'Desember'
 ];
-$bulan_sekarang_idx = (int)date('n') - 1; 
-$bulan_rapot_idx = ($bulan_sekarang_idx == 0) ? 11 : $bulan_sekarang_idx - 1; 
-$bulan_default = $bulan_list[$bulan_rapot_idx];
-$tahun_default = ($bulan_sekarang_idx == 0) ? (int)date('Y') - 1 : (int)date('Y');
+
+// Cek dulu, ini mode duplikat bukan?
+if ($data_duplikat) {
+    // === LOGIKA UNTUK DUPLIKAT (Otomatis Maju 1 Bulan) ===
+    $bulan_lama = $data_duplikat['bulan'];
+    $tahun_lama = (int)$data_duplikat['tahun'];
+    
+    // Cari index bulan lama (0-11)
+    $bulan_lama_idx = array_search($bulan_lama, $bulan_list);
+    
+    if ($bulan_lama_idx !== false) {
+        // Kalo Nopember (10) -> 11 (Desember)
+        // Kalo Desember (11) -> 0 (Januari)
+        $bulan_baru_idx = ($bulan_lama_idx + 1) % 12; 
+        $bulan_default = $bulan_list[$bulan_baru_idx];
+        
+        // Kalo bulan lamanya Desember (11), tahun nambah 1
+        $tahun_default = ($bulan_lama_idx == 11) ? $tahun_lama + 1 : $tahun_lama;
+    } else {
+        // Kalo data bulan lama aneh, fallback ke realtime
+        $bulan_sekarang_idx = (int)date('n') - 1;
+        $bulan_default = $bulan_list[$bulan_sekarang_idx];
+        $tahun_default = (int)date('Y');
+    }
+} else {
+    // === LOGIKA REALTIME (Permintaan User) ===
+    // Kalo BUKAN duplikat, pake bulan & tahun sekarang
+    $bulan_sekarang_idx = (int)date('n') - 1;
+    $bulan_default = $bulan_list[$bulan_sekarang_idx];
+    $tahun_default = (int)date('Y');
+}
 
 
 // 5. Panggil Header
@@ -123,6 +151,13 @@ require_once __DIR__ . '/../header.php';
 
     <h1 class="h3 mb-4 text-gray-800"><?php echo htmlspecialchars($page_title, ENT_QUOTES, 'UTF-8'); ?></h1>
 
+    <div class="alert alert-info shadow-sm" role="alert">
+        <h5 class="alert-heading" style="font-size: 1.1rem;"><i class="fas fa-book-reader me-2"></i>Panduan Cepat!</h5>
+        <p>Halaman ini digunakan untuk mengisi nilai rapot bulanan santri satu per satu.</p>
+        <button type="button" class="btn btn-sm btn-info" data-bs-toggle="modal" data-bs-target="#guideModal">
+            <i class="fas fa-book-open me-1"></i> Buka Buku Panduan
+        </button>
+    </div>
     <div class="card shadow mb-4">
         <div class="card-header py-3">
             <h6 class="m-0 font-weight-bold text-primary">Form Input Penilaian Santri</h6>
@@ -323,6 +358,40 @@ $(document).ready(function() {
         }
     }
 
+    // === TAMBAHAN: JS UNTUK MODAL PANDUAN ===
+    let modalTriggerElement = null;
+    const guideModalElement = document.getElementById('guideModal');
+    const guideModalTriggers = document.querySelectorAll('button[data-bs-target="#guideModal"]');
+    
+    // Fungsi untuk balikin fokus
+    function returnFocusToTrigger() {
+        if (modalTriggerElement && document.body.contains(modalTriggerElement)) {
+            modalTriggerElement.focus();
+        }
+        modalTriggerElement = null; // Bersihin
+    }
+    
+    // Fungsi untuk nyimpen tombol pemicu
+    function setModalTrigger(e) {
+        modalTriggerElement = this;
+    }
+    
+    // Pasang listener 'click' ke pemicu modal
+    guideModalTriggers.forEach(trigger => {
+        if(trigger) trigger.addEventListener('click', setModalTrigger);
+    });
+    
+    // Pasang listener 'click' ke tombol penutup modal
+    const allModalCloseButtons = document.querySelectorAll('#guideModal [data-bs-dismiss="modal"]');
+    allModalCloseButtons.forEach(btn => {
+        btn.addEventListener('click', returnFocusToTrigger);
+    });
+    
+    // Failsafe kalo ditutup pake 'Esc'
+    if (guideModalElement) guideModalElement.addEventListener('hidden.bs.modal', returnFocusToTrigger);
+    // === AKHIR TAMBAHAN JS MODAL ===
+
+
     // === BAGIAN VALIDASI FORM ===
     var autoCatatanBtn = $('#btn-auto-catatan');
     var simpanBtn = $('button[name="simpan_rapot"]');
@@ -437,3 +506,45 @@ $(document).ready(function() {
     
 });
 </script>
+
+<div class="modal fade" id="guideModal" tabindex="-1" aria-labelledby="guideModalLabel" aria-hidden="true">
+  <div class="modal-dialog modal-dialog-centered modal-dialog-scrollable">
+    <div class="modal-content">
+      <div class="modal-header bg-info text-white">
+        <h5 class="modal-title" id="guideModalLabel"><i class="fas fa-book-open me-2"></i>Buku Panduan - Halaman Buat Rapot</h5>
+        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+      </div>
+      <div class="modal-body">
+        <p>Gunakan halaman ini untuk mengisi nilai atau menduplikat rapot dari bulan sebelumnya.</p>
+        
+        <h6><i class="fas fa-user-check me-1"></i> 1. Data Utama</h6>
+        <ul class="mb-3">
+          <li><strong>Pilih Santri:</strong> Gunakan 'Select2' untuk mencari dan memilih santri.</li>
+          <li><strong>Bulan & Tahun:</strong> Otomatis terisi ke bulan dan tahun <strong>saat ini (realtime)</strong>.</li>
+        </ul>
+
+        <h6><i class="fas fa-copy me-1"></i> 2. Mode Duplikat</h6>
+        <ul class="mb-3">
+          <li>Jika Anda datang dari tombol "Duplikat", Santri & semua 20 nilai akan otomatis terisi.</li>
+          <li>Bulan & Tahun akan otomatis maju <strong>satu bulan</strong> dari rapot aslinya.</li>
+          <li>Anda tinggal periksa lagi nilainya dan simpan.</li>
+        </ul>
+
+        <h6><i class="fas fa-sync-alt me-1"></i> 3. Cek Poin</h6>
+        <ul class="mb-3">
+          <li>Tombol "Cek Poin" akan aktif setelah Santri, Bulan, dan Tahun terisi.</li>
+          <li>Gunakan ini untuk melihat rekap poin mukholif santri tersebut di periode yang dipilih, <strong>sebelum</strong> Anda memberi nilai.</li>
+        </ul>
+
+        <h6><i class="fas fa-magic me-1"></i> 4. Catatan Otomatis & Simpan</h6>
+        <ul class="mb-0">
+          <li>Tombol "Buat Catatan Otomatis" dan "Simpan" hanya akan aktif jika <strong>semua 20 nilai</strong> sudah terisi.</li>
+          <li>Klik "Buat Catatan Otomatis" untuk merangkum nilai-nilai yang buruk/baik ke dalam kolom catatan.</li>
+        </ul>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-primary" data-bs-dismiss="modal">Saya Mengerti</button>
+      </div>
+    </div>
+  </div>
+</div>
