@@ -3,10 +3,50 @@
 require_once __DIR__ . '/../init.php';
 
 // 2. Jalankan 'SATPAM' buat ngejaga halaman
-guard('santri_view');  
+guard('santri_view');
+
+// =================================================================
+// REVISI LOGIKA FILTER: DIPINDAH KE ATAS SEBELUM HEADER
+// =================================================================
+if (isset($_GET['reset'])) {
+    unset($_SESSION['filter_santri']);
+    // Baris echo <script> DIHAPUS karena itu yang bikin error headers already sent
+    header('Location: index.php'); // <-- Sekarang aman dieksekusi
+    exit;
+}
+
+// Cek jika ada filter BARU dari $_GET
+if (isset($_GET['nama']) || isset($_GET['kelas']) || isset($_GET['kamar'])) {
+    // Simpan filter baru ke session
+    $_SESSION['filter_santri'] = [
+        'nama' => $_GET['nama'] ?? '',
+        'kelas' => $_GET['kelas'] ?? '',
+        'kamar' => $_GET['kamar'] ?? '',
+    ];
+    // Ambil filter dari yg baru diset
+    $nama_search = $_SESSION['filter_santri']['nama'];
+    $kelas_search = $_SESSION['filter_santri']['kelas'];
+    $kamar_search = $_SESSION['filter_santri']['kamar'];
+} 
+// Jika tidak ada filter baru, coba ambil dari session LAMA
+elseif (isset($_SESSION['filter_santri'])) {
+    $nama_search = $_SESSION['filter_santri']['nama'] ?? '';
+    $kelas_search = $_SESSION['filter_santri']['kelas'] ?? '';
+    $kamar_search = $_SESSION['filter_santri']['kamar'] ?? '';
+} 
+// Jika tidak ada sama sekali, kosongkan
+else {
+    $nama_search = '';
+    $kelas_search = '';
+    $kamar_search = '';
+}
+// =================================================================
+// AKHIR BLOK LOGIKA FILTER
+// =================================================================
+
 
 // 3. Kalau lolos, baru panggil Tampilan
-require_once __DIR__ . '/../header.php';
+require_once __DIR__ . '/../header.php'; // <-- HTML MULAI DI SINI
 
 
 // =================================================================
@@ -20,7 +60,6 @@ if (isset($_SESSION['bulk_upload_result'])) {
     $error_count = $result['error'];
     $errors = $result['errors'];
     
-    // Tentukan warna notifikasi berdasarkan hasilnya
     $alert_class = ($error_count > 0) ? 'alert-warning' : 'alert-success';
 
     echo "
@@ -31,7 +70,6 @@ if (isset($_SESSION['bulk_upload_result'])) {
             Gagal: <strong>{$error_count} santri</strong>.
         </p>";
 
-    // Jika ada error, tampilkan detailnya di dalam dropdown
     if ($error_count > 0) {
         echo "<hr>";
         echo "<details>";
@@ -49,7 +87,6 @@ if (isset($_SESSION['bulk_upload_result'])) {
     </div>
     ";
     
-    // Hapus session setelah ditampilkan
     unset($_SESSION['bulk_upload_result']);
 }
 
@@ -73,10 +110,6 @@ else if (isset($_SESSION['error_message'])) {
     unset($_SESSION['error_message']);
 }
 
-// Ambil setiap parameter filter secara terpisah
-$nama_search = $_GET['nama'] ?? '';
-$kelas_search = $_GET['kelas'] ?? '';
-$kamar_search = $_GET['kamar'] ?? '';
 
 // Persiapan untuk query yang dinamis dan aman
 $where_clauses = [];
@@ -110,9 +143,21 @@ $can_edit = has_permission('santri_edit');
 $can_delete = has_permission('santri_delete');
 
 // Hitung colspan dinamis untuk tabel
-$colspan = 3; // Kolom dasar: Nama, Kelas, Kamar
+$colspan = 4; // Kolom dasar: No, Nama, Kelas, Kamar
 if ($can_delete) $colspan++; // Tambah 1 jika bisa hapus (untuk checkbox)
 if ($can_edit || $can_delete) $colspan++; // Tambah 1 jika bisa edit atau hapus (untuk kolom Aksi)
+
+// Ambil total data (dihitung sekali saja)
+$total = 0;
+$count_query = "SELECT COUNT(*) as total FROM santri" . $where_sql;
+$stmt_count = mysqli_prepare($conn, $count_query);
+if (!empty($params)) {
+    mysqli_stmt_bind_param($stmt_count, $types, ...$params);
+}
+mysqli_stmt_execute($stmt_count);
+$count_result = mysqli_stmt_get_result($stmt_count);
+$total = mysqli_fetch_assoc($count_result)['total'];
+mysqli_stmt_close($stmt_count);
 ?>
 
 <style>
@@ -169,17 +214,42 @@ if ($can_edit || $can_delete) $colspan++; // Tambah 1 jika bisa edit atau hapus 
         max-height: 60vh;
         overflow-y: auto;
     }
+    
+    /* Perbaikan layout tombol bulk */
+    .card-action-bulk {
+        padding: 1rem;
+        background-color: #fff;
+    }
+
     @media (max-width: 768px) {
         .page-title-card h2 { font-size: 1.25rem; }
-        .toolbar {
-            display: grid;
-            grid-template-columns: 1fr 1fr;
-            gap: 0.75rem;
-        }
         .filter-buttons {
             display: grid;
             grid-template-columns: 1fr auto;
             gap: 0.5rem;
+        }
+    }
+    
+    /* === CSS TAMBAHAN UNTUK STACKING TOMBOL DI HP === */
+    @media (max-width: 767px) { /* Target 'md' breakpoint */
+        .card-action-bulk > div {
+            /* Container utama: justify-between */
+            flex-direction: column;
+            align-items: stretch !important;
+            gap: 1rem;
+        }
+        .card-action-bulk .d-flex.gap-2 {
+            /* Grup 1 (Tambah) & Grup 2 (Edit/Hapus) */
+            flex-direction: column;
+            align-items: stretch !important;
+            width: 100%;
+        }
+        .card-action-bulk .btn-group {
+            /* Grup khusus Edit/Hapus */
+            display: flex;
+        }
+        .card-action-bulk .btn-group .btn {
+            flex-grow: 1; /* Biar tombol Edit/Hapus sama rata */
         }
     }
 </style>
@@ -196,25 +266,14 @@ if ($can_edit || $can_delete) $colspan++; // Tambah 1 jika bisa edit atau hapus 
             <div>
                 <span class="badge bg-light text-dark fs-6">
                     <i class="fas fa-database me-1"></i>
-                    <?php 
-                    $count_query = "SELECT COUNT(*) as total FROM santri" . $where_sql;
-                    $stmt_count = mysqli_prepare($conn, $count_query);
-                    if (!empty($params)) {
-                        mysqli_stmt_bind_param($stmt_count, $types, ...$params);
-                    }
-                    mysqli_stmt_execute($stmt_count);
-                    $count_result = mysqli_stmt_get_result($stmt_count);
-                    $total = mysqli_fetch_assoc($count_result)['total'];
-                    echo $total . " Santri";
-                    mysqli_stmt_close($stmt_count);
-                    ?>
+                    <?php echo $total . " Santri"; ?>
                 </span>
             </div>
         </div>
     </div>
     
     <div class="filter-card p-3 p-md-4 mb-4">
-        <form class="row g-3" method="GET" action="">
+        <form class="row g-3" method="GET" action="index.php">
             <div class="col-12 col-md-4">
                 <input class="form-control" type="search" name="nama" placeholder="Cari Nama Santri..." value="<?= htmlspecialchars($nama_search) ?>">
             </div>
@@ -226,33 +285,59 @@ if ($can_edit || $can_delete) $colspan++; // Tambah 1 jika bisa edit atau hapus 
             </div>
             <div class="col-12 col-md-2 filter-buttons">
                 <button class="btn btn-primary" type="submit"><i class="fas fa-filter me-1"></i> Cari</button>
-                <a href="?" class="btn btn-outline-secondary" title="Reset Filter"><i class="fas fa-times"></i></a>
+                <a href="index.php?reset=1" class="btn btn-outline-secondary" title="Reset Filter" id="resetFilterBtn"><i class="fas fa-times"></i></a>
             </div>
         </form>
     </div>
 
-    <div class="mb-3 toolbar">
-        <?php if ($can_create): ?>
-            <a href="create.php" class="btn btn-success"><i class="fas fa-user-plus me-1"></i> Tambah Santri</a>
-            <a href="bulk-create.php" class="btn btn-info"><i class="fas fa-file-import me-1"></i> Bulk Input</a>
-        <?php endif; ?>
-        <?php if ($can_edit): ?>
-            <a href="bulk-edit.php" class="btn btn-warning"><i class="fas fa-pen-to-square me-1"></i> Bulk Edit</a>
-        <?php endif; ?>
-        <?php if ($can_delete): ?>
-            <button type="button" class="btn btn-danger" onclick="confirmBulkDelete()"><i class="fas fa-user-minus me-1"></i> Hapus Terpilih</button>
-        <?php endif; ?>
-    </div>
+    <form method="POST" action="" id="bulkDeleteForm">
+        <div class="card shadow-sm mb-3 card-action-bulk">
+            <div class="d-flex flex-wrap justify-content-between align-items-center gap-2">
+                
+                <div class="d-flex flex-wrap gap-2">
+                    <?php if ($can_create): ?>
+                        <a href="create.php" class="btn btn-success">
+                            <i class="fas fa-user-plus me-1"></i> 
+                            <span>Tambah Santri</span>
+                        </a>
+                        <a href="bulk-create.php" class="btn btn-info">
+                            <i class="fas fa-file-import me-1"></i> 
+                            <span>Bulk Input</span>
+                        </a>
+                    <?php endif; ?>
+                </div>
 
-    <div class="table-container">
-        <form id="form-bulk-delete" method="post" action="bulk-delete.php">
+                <div class="d-flex flex-wrap justify-content-end align-items-center gap-2">
+                    <div class="btn-group" role="group">
+                        <?php if ($can_edit): ?>
+                            <a href="bulk-edit.php" class="btn btn-warning" id="bulkEditBtn">
+                                <i class="fas fa-pen-to-square me-1"></i> 
+                                <span>Bulk Edit</span>
+                            </a>
+                        <?php endif; ?>
+                        <?php if ($can_delete): ?>
+                            <button type="submit" class="btn btn-danger" id="bulkDeleteBtn" disabled form="bulkDeleteForm">
+                                <i class="fas fa-user-minus me-1"></i> 
+                                <span>Hapus Terpilih</span>
+                            </button>
+                        <?php endif; ?>
+                    </div>
+                    <div id="selected-count-info" class="d-none">
+                        </div>
+                </div>
+
+            </div>
+        </div>
+
+        <div class="table-container">
             <div class="table-responsive">
                 <table class="table table-hover mb-0">
                     <thead>
                         <tr>
                             <?php if ($can_delete): ?>
-                                <th class="text-center" width="50px"><input type="checkbox" id="select-all"></th>
+                                <th class="text-center" width="50px"><input type="checkbox" id="selectAll"></th>
                             <?php endif; ?>
+                            <th width="5%" class="text-center">No.</th>
                             <th>Nama Santri</th>
                             <th>Kelas</th>
                             <th>Kamar</th>
@@ -263,7 +348,7 @@ if ($can_edit || $can_delete) $colspan++; // Tambah 1 jika bisa edit atau hapus 
                     </thead>
                     <tbody>
                         <?php
-                        $query = "SELECT * FROM santri" . $where_sql . " ORDER BY nama ASC";
+                        $query = "SELECT * FROM santri" . $where_sql . " ORDER BY CAST(kamar AS UNSIGNED) ASC, nama ASC";
                         $stmt = mysqli_prepare($conn, $query);
                         if (!empty($params)) {
                             mysqli_stmt_bind_param($stmt, $types, ...$params);
@@ -272,12 +357,16 @@ if ($can_edit || $can_delete) $colspan++; // Tambah 1 jika bisa edit atau hapus 
                         $result = mysqli_stmt_get_result($stmt);
                         
                         if (mysqli_num_rows($result) > 0) {
+                            $no = 1; // Inisialisasi nomor
                             while ($row = mysqli_fetch_assoc($result)) {
                         ?>
                         <tr>
                             <?php if ($can_delete): ?>
-                                <td class="text-center"><input type="checkbox" name="ids[]" value="<?= $row['id'] ?>"></td>
+                                <td class="text-center align-middle">
+                                    <input type="checkbox" class="row-checkbox" value="<?= $row['id'] ?>">
+                                </td>
                             <?php endif; ?>
+                            <td class="text-center align-middle"><?= $no++; ?></td>
                             <td>
                                 <div class="d-flex align-items-center">
                                     <div class="avatar me-3">
@@ -292,15 +381,15 @@ if ($can_edit || $can_delete) $colspan++; // Tambah 1 jika bisa edit atau hapus 
                                     </div>
                                 </div>
                             </td>
-                            <td><span class="badge bg-info text-dark"><?= htmlspecialchars($row['kelas']) ?></span></td>
-                            <td>
+                            <td class="align-middle"><span class="badge bg-info text-dark"><?= htmlspecialchars($row['kelas']) ?></span></td>
+                            <td class="align-middle">
                                 <span class="badge bg-light text-dark">
                                     <i class="fas fa-door-open me-1"></i>
                                     <?= htmlspecialchars($row['kamar']) ?>
                                 </span>
                             </td>
                             <?php if ($can_edit || $can_delete): ?>
-                                <td>
+                                <td class="align-middle">
                                     <div class="d-flex">
                                         <?php if ($can_edit): ?>
                                             <a href="edit.php?id=<?= $row['id'] ?>" class="btn btn-sm btn-warning me-2" title="Edit"><i class="fas fa-edit"></i></a>
@@ -322,9 +411,8 @@ if ($can_edit || $can_delete) $colspan++; // Tambah 1 jika bisa edit atau hapus 
                     </tbody>
                 </table>
             </div>
-        </form>
-    </div>
-</div>
+        </div>
+    </form> </div>
 
 <div class="modal fade" id="infoModal" tabindex="-1" aria-labelledby="infoModalLabel" aria-hidden="true">
   <div class="modal-dialog modal-dialog-centered">
@@ -349,67 +437,178 @@ if ($can_edit || $can_delete) $colspan++; // Tambah 1 jika bisa edit atau hapus 
   </div>
 </div>
 
-<div class="modal fade" id="confirmModal" tabindex="-1" aria-labelledby="confirmModalLabel" aria-hidden="true">
-  <div class="modal-dialog modal-dialog-centered">
-    <div class="modal-content">
-      <div class="modal-header">
-        <h5 class="modal-title" id="confirmModalLabel">Konfirmasi</h5>
-        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
-      </div>
-      <div class="modal-body" id="confirmModalBody"></div>
-      <div class="modal-footer">
-        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Batal</button>
-        <button type="button" class="btn btn-danger" id="confirmModalButton">Yakin</button>
-      </div>
+<div class="modal fade" id="confirmDeleteModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+            <div class="modal-header bg-danger text-white">
+                <h5 class="modal-title"><i class="fas fa-exclamation-triangle me-2"></i>Konfirmasi Penghapusan</h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <p id="confirmMessage">Apakah Anda benar-benar yakin?</p>
+                <p class="fw-bold text-danger">
+                    PERINGATAN: Semua riwayat pelanggaran santri yang terkait juga akan terhapus secara permanen. Tindakan ini tidak dapat dibatalkan.
+                </p>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Batal</button>
+                <a href="#" id="confirmDeleteButton" class="btn btn-danger">Yakin, Hapus Permanen</a>
+            </div>
+        </div>
     </div>
-  </div>
 </div>
 
 <?php require_once __DIR__ . '/../footer.php'; ?>
 
 <script>
 document.addEventListener('DOMContentLoaded', function() {
-    const confirmModalEl = document.getElementById('confirmModal');
-    const confirmModal = new bootstrap.Modal(confirmModalEl);
-    const confirmModalBody = document.getElementById('confirmModalBody');
-    let confirmModalButton = document.getElementById('confirmModalButton');
+    
+    // --- Bagian Modal Konfirmasi ---
+    const confirmModalElement = document.getElementById('confirmDeleteModal');
+    const confirmModal = new bootstrap.Modal(confirmModalElement);
+    const confirmMessage = document.getElementById('confirmMessage');
+    const confirmBtn = document.getElementById('confirmDeleteButton');
 
-    // Cek jika elemen #select-all ada sebelum menambahkan event listener
-    const selectAllCheckbox = document.getElementById("select-all");
+    // Fungsi untuk Hapus Satuan (Single Delete)
+    window.showConfirmDelete = function(deleteUrl) {
+        confirmMessage.textContent = 'Apakah Anda benar-benar yakin ingin menghapus santri ini?';
+        confirmBtn.onclick = function() {
+            window.location.href = deleteUrl;
+        };
+        confirmBtn.removeAttribute('href'); // Hapus href lama jika ada
+        confirmModal.show();
+    }
+
+    // --- Bagian Checkbox Pinter & Bulk Action ---
+    const selectAllCheckbox = document.getElementById('selectAll');
+    const rowCheckboxes = document.querySelectorAll('.row-checkbox');
+    const bulkDeleteForm = document.getElementById('bulkDeleteForm'); 
+    const bulkEditBtn = document.getElementById('bulkEditBtn'); 
+    const bulkDeleteBtn = document.getElementById('bulkDeleteBtn');
+    const selectedCountInfo = document.getElementById('selected-count-info');
+    const resetFilterBtn = document.getElementById('resetFilterBtn'); 
+
+    // Kunci unik untuk halaman ini
+    const STORAGE_KEY = 'selectedSantriIds'; 
+
+    function getStoredIds() {
+        const storedIdsJson = sessionStorage.getItem(STORAGE_KEY);
+        return storedIdsJson ? new Set(JSON.parse(storedIdsJson)) : new Set();
+    }
+    
+    function saveStoredIds(idsSet) {
+        sessionStorage.setItem(STORAGE_KEY, JSON.stringify([...idsSet]));
+    }
+
+    // Saat halaman load, centang checkbox berdasarkan data di sessionStorage
+    function loadSelections() {
+        const selectedIds = getStoredIds();
+        rowCheckboxes.forEach(checkbox => {
+            const checkboxId = parseInt(checkbox.value); 
+            checkbox.checked = selectedIds.has(checkboxId);
+        });
+    }
+
+    // Fungsi yang dipanggil setiap kali ada checkbox di-klik
+    function handleSelectionChange() {
+        const selectedIds = getStoredIds();
+        rowCheckboxes.forEach(checkbox => {
+            const checkboxId = parseInt(checkbox.value);
+            if (checkbox.checked) {
+                selectedIds.add(checkboxId);
+            } else {
+                selectedIds.delete(checkboxId);
+            }
+        });
+        saveStoredIds(selectedIds);
+        toggleActionButtons();
+    }
+    
+    // Update status 'Select All' (dicentang atau tidak)
+    function updateSelectAllState() {
+        if (selectAllCheckbox) {
+             const totalVisibleCheckboxes = rowCheckboxes.length;
+             const checkedVisibleCount = document.querySelectorAll('.row-checkbox:checked').length;
+             selectAllCheckbox.checked = totalVisibleCheckboxes > 0 && totalVisibleCheckboxes === checkedVisibleCount;
+        }
+    }
+
+    // Atur tombol (disabled/enabled) dan badge (tampil/sembunyi)
+    function toggleActionButtons() {
+        const selectedIds = getStoredIds();
+        const checkedCount = selectedIds.size;
+        
+        // Tombol Bulk Edit tidak lagi diatur
+        if (bulkDeleteBtn) bulkDeleteBtn.disabled = checkedCount === 0;
+
+        if (selectedCountInfo) {
+            if (checkedCount > 0) {
+                selectedCountInfo.innerHTML = `<span class="badge bg-secondary">${checkedCount} data terpilih</span>`;
+                selectedCountInfo.classList.remove('d-none');
+            } else {
+                selectedCountInfo.classList.add('d-none');
+            }
+        }
+        updateSelectAllState(); 
+    }
+
+    // --- Pasang Event Listener ---
+
+    // 1. Listener untuk checkbox 'Select All'
     if (selectAllCheckbox) {
-        selectAllCheckbox.onclick = function() {
-            document.querySelectorAll('input[name="ids[]"]').forEach(checkbox => {
+        selectAllCheckbox.addEventListener('change', function() {
+            rowCheckboxes.forEach(checkbox => {
                 checkbox.checked = this.checked;
             });
-        }
+            handleSelectionChange();
+        });
     }
 
-    window.showConfirmDelete = function(deleteUrl) {
-        confirmModalBody.textContent = 'Apakah Anda yakin ingin menghapus santri ini?';
-        const newBtn = confirmModalButton.cloneNode(true);
-        confirmModalButton.parentNode.replaceChild(newBtn, confirmModalButton);
-        confirmModalButton = newBtn;
-        confirmModalButton.style.display = 'inline-block';
-        confirmModalButton.onclick = () => window.location.href = deleteUrl;
-        confirmModal.show();
-    }
+    // 2. Listener untuk semua checkbox di tiap baris
+    rowCheckboxes.forEach(checkbox => {
+        checkbox.addEventListener('change', handleSelectionChange);
+    });
 
-    window.confirmBulkDelete = function() {
-        const checkedBoxes = document.querySelectorAll('input[name="ids[]"]:checked');
-        if (checkedBoxes.length === 0) {
-            confirmModalBody.textContent = 'Silakan pilih santri yang akan dihapus terlebih dahulu.';
-            confirmModalButton.style.display = 'none';
-        } else {
-            confirmModalBody.textContent = `Anda yakin ingin menghapus ${checkedBoxes.length} santri terpilih?`;
-            confirmModalButton.style.display = 'inline-block';
-            const newBtn = confirmModalButton.cloneNode(true);
-            confirmModalButton.parentNode.replaceChild(newBtn, confirmModalButton);
-            confirmModalButton = newBtn;
-            confirmModalButton.onclick = () => document.getElementById('form-bulk-delete').submit();
-        }
-        confirmModal.show();
-    }
+    // 3. Listener untuk 'Bulk Edit' DIHAPUS (karena sudah jadi link biasa)
 
+    // 4. Listener untuk form (saat tombol 'Hapus Terpilih' di-submit)
+    if (bulkDeleteForm) {
+        bulkDeleteForm.addEventListener('submit', function(e) {
+            e.preventDefault(); // Stop submit dulu
+            bulkDeleteForm.action = 'bulk-delete.php'; // Arahkan ke bulk-delete
+
+            const selectedIds = getStoredIds();
+            if (selectedIds.size > 0) {
+                 bulkDeleteForm.innerHTML = ''; // Kosongkan form
+                 selectedIds.forEach(id => {
+                     const hiddenInput = document.createElement('input');
+                     hiddenInput.type = 'hidden';
+                     hiddenInput.name = 'ids[]';
+                     hiddenInput.value = id;
+                     bulkDeleteForm.appendChild(hiddenInput);
+                 });
+
+                 // Tampilkan modal konfirmasi
+                 confirmMessage.textContent = `Apakah Anda yakin ingin menghapus ${selectedIds.size} santri terpilih?`;
+                 confirmBtn.onclick = function() {
+                     bulkDeleteForm.submit(); // Lanjutkan submit
+                 };
+                 confirmBtn.removeAttribute('href');
+                 confirmModal.show();
+            }
+        });
+    }
+    
+    // 5. Listener untuk tombol 'Reset Filter'
+    if (resetFilterBtn) {
+        resetFilterBtn.addEventListener('click', function(e) {
+            // Hapus storage SEBELUM pindah halaman
+            sessionStorage.removeItem(STORAGE_KEY);
+            // Biarkan link 'href="index.php?reset=1"' bekerja normal
+        });
+    }
+    
+    // 6. Listener untuk modal info (biar fokusnya bener)
     const infoModalEl = document.getElementById('infoModal');
     if (infoModalEl) {
         infoModalEl.addEventListener('hide.bs.modal', function () {
@@ -418,5 +617,10 @@ document.addEventListener('DOMContentLoaded', function() {
             }
         });
     }
+
+    // --- Inisialisasi Saat Halaman Load ---
+    loadSelections();
+    toggleActionButtons();
+
 });
 </script>
