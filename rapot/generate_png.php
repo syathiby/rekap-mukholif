@@ -9,7 +9,7 @@ require_once __DIR__ . '/helper.php';
 guard('rapot_cetak');
 
 // ==========================================================
-//           PERUBAHAN DI SINI: Mode Output
+//           Mode Output
 // ==========================================================
 $mode = $_GET['mode'] ?? 'page'; // 'page' (default) or 'html'
 // ==========================================================
@@ -95,7 +95,7 @@ $html = ob_get_contents();
 ob_end_clean(); 
 
 // ==========================================================
-//           PERUBAHAN DI SINI (LOGIKA OUTPUT)
+//           LOGIKA OUTPUT
 // ==========================================================
 if ($mode === 'html') {
     // Mode 'html': Cuma echo HTML mentahnya buat ditangkep bulk processor
@@ -105,34 +105,152 @@ if ($mode === 'html') {
 // ==========================================================
 
 // Mode 'page' (default): Tampilkan halaman loading html2canvas
-
+// ==========================================================
+//           MULAI PERBAIKAN TAMPILAN DI SINI
+// ==========================================================
 ?>
 <!DOCTYPE html>
-<html>
+<html lang="id">
 <head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Memproses Rapot PNG...</title>
+    
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css">
+    
     <script src="https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js"></script>
+    
     <style>
-        body { font-family: Arial, sans-serif; background-color: #f0f0f0; 
-               display: flex; flex-direction: column; justify-content: center; 
-               align-items: center; min-height: 100vh; }
-        .page-wrapper {
-            width: 210mm; min-height: 297mm; background-color: white;
-            box-shadow: 0 0 10px rgba(0,0,0,0.5); margin: 20px auto;
-            padding: 7mm 10mm 4mm 10mm; /* Margin bawah sempit */
+        /* CSS Reset & Font */
+        body, html {
+            margin: 0;
+            padding: 0;
+            width: 100%;
+            min-height: 100vh;
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, 
+                "Helvetica Neue", Arial, sans-serif;
             box-sizing: border-box;
         }
-        .loading-text { font-size: 1.2rem; font-weight: bold; color: #333; margin-top: 20px; }
+
+        /* Latar belakang & Layout */
+        body { 
+            background-color: #f4f7f6;
+            display: flex; 
+            flex-direction: column; 
+            justify-content: center; 
+            align-items: center; 
+            padding: 20px; /* Kasih jarak dari pinggir layar HP */
+        }
+
+        /* Box Loading (Responsif) */
+        .loader-card {
+            background-color: #ffffff;
+            border-radius: 12px;
+            box-shadow: 0 8px 20px rgba(0, 0, 0, 0.08);
+            padding: 32px 40px; /* Padding default buat desktop */
+            text-align: center;
+            width: 100%;
+            max-width: 400px; 
+            transition: all 0.3s ease;
+            
+            /* ================================== */
+            /* PERBAIKAN RESPONSIVE      */
+            /* ================================== */
+            box-sizing: border-box; /* PENTING: Biar padding gak ngerusak width 100% */
+        }
+
+        /* Ikon Spinner */
+        .loader-card .icon-wrapper {
+            font-size: 48px;
+            color: #007bff;
+            margin-bottom: 24px;
+        }
+
+        /* Teks Loading */
+        .loader-card .loading-text { 
+            font-size: 1.1rem; 
+            font-weight: 600; 
+            color: #333; 
+            margin-bottom: 8px;
+        }
+        
+        /* Teks Sub-info */
+        .loader-card .sub-text {
+            font-size: 0.9rem;
+            color: #777;
+        }
+
+        /* State Selesai (Ikon Ceklis) */
+        .loader-card.success .icon-wrapper {
+            color: #28a745;
+        }
+        
+        /* State Error (Ikon X) */
+        .loader-card.error .icon-wrapper {
+            color: #dc3545;
+        }
+
+        /* Ini buat nyembunyiin Rapot aslinya */
+        .hidden-content-wrapper {
+            position: absolute;
+            left: -9999px;
+            top: -9999px;
+            opacity: 0;
+        }
+        
+        /* Style A4 asli */
+        .page-wrapper {
+            width: 210mm; 
+            min-height: 297mm; 
+            background-color: white;
+            box-shadow: none; 
+            margin: 0; 
+            padding: 7mm 10mm 4mm 10mm; 
+            box-sizing: border-box;
+        }
+
+        /* ================================== */
+        /* PERBAIKAN RESPONSIVE (HP)    */
+        /* ================================== */
+        @media (max-width: 480px) {
+            body {
+                padding: 15px; /* Kurangi padding body di HP */
+            }
+            
+            .loader-card {
+                padding: 24px 20px; /* Kurangi padding card di HP */
+            }
+
+            .loader-card .icon-wrapper {
+                font-size: 40px; /* Kecilin ikon */
+                margin-bottom: 20px;
+            }
+
+            .loader-card .loading-text {
+                font-size: 1rem; /* Kecilin font */
+            }
+
+            .loader-card .sub-text {
+                font-size: 0.85rem;
+            }
+        }
     </style>
 </head>
 <body>
 
-    <div class="loading-text" id="loading-message">
-        <i class="fas fa-spinner fa-spin"></i> 
-        Sedang menyiapkan PNG... Mohon tunggu...
+    <div class="loader-card" id="loader-card">
+        <div class="icon-wrapper" id="loader-icon">
+            <i class="fas fa-spinner fa-spin"></i>
+        </div>
+        <div class="loading-text" id="loading-message">
+            Sedang menyiapkan PNG...
+        </div>
+        <div class="sub-text" id="sub-message">
+            Mohon tunggu sebentar, jangan tutup tab ini.
+        </div>
     </div>
 
-    <div style="opacity: 0; height: 0; overflow: hidden;">
+    <div class="hidden-content-wrapper">
         <div class="page-wrapper" id="target-rapot">
             <?php echo $html; ?>
         </div>
@@ -140,25 +258,52 @@ if ($mode === 'html') {
 
     <script>
         document.addEventListener('DOMContentLoaded', function() {
+            // Ambil elemen-elemen
             var targetElement = document.getElementById('target-rapot');
+            var loaderCard = document.getElementById('loader-card');
             var loadingMessage = document.getElementById('loading-message');
+            var subMessage = document.getElementById('sub-message');
+            var loaderIcon = document.getElementById('loader-icon');
+            
+            // Opsi html2canvas
             var options = {
-                useCORS: true, width: targetElement.scrollWidth, 
-                height: targetElement.scrollHeight, windowWidth: 1000 
+                useCORS: true, 
+                scale: 1.5 
             };
+
+            // Mulai proses screenshot
             html2canvas(targetElement, options).then(function(canvas) {
+                // 1. Ubah jadi gambar
                 var dataURL = canvas.toDataURL('image/png', 0.9);
+                
+                // 2. Bikin link download palsu
                 var link = document.createElement('a');
                 link.href = dataURL;
                 link.download = '<?php echo addslashes($nama_file); ?>';
+                
+                // 3. Klik link-nya 
                 document.body.appendChild(link);
                 link.click();
                 document.body.removeChild(link);
-                loadingMessage.innerText = "Download berhasil! Tab ini akan ditutup...";
-                setTimeout(function() { window.close(); }, 2000);
+
+                // 4. Kasih feedback SUKSES
+                loaderCard.classList.add('success');
+                loaderIcon.innerHTML = '<i class="fas fa-check-circle"></i>';
+                loadingMessage.innerText = "Download Berhasil!";
+                subMessage.innerText = "Anda akan diarahkan kembali...";
+
+                // 5. Balik ke Index
+                setTimeout(function() { 
+                    window.location.href = 'index.php'; 
+                }, 2000); 
+
             }).catch(function(error) {
-                loadingMessage.style.color = 'red';
-                loadingMessage.innerText = 'Error: ' + error;
+                // 6. Kasih feedback ERROR
+                loaderCard.classList.add('error');
+                loaderIcon.innerHTML = '<i class="fas fa-times-circle"></i>';
+                loadingMessage.style.color = '#dc3545';
+                loadingMessage.innerText = 'Oops, Gagal Membuat PNG';
+                subMessage.innerText = 'Error: ' + error.message; 
                 console.error('Oops, ada error:', error);
             });
         });

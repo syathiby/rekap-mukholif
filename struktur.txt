@@ -14,6 +14,7 @@
 │    ├──process_export_arsip.php
 ├──assets
 │    ├──logo.png
+│    ├──Kop Syathiby.jpg
 ├──eksekusi/
 │    ├──index.php
 │    ├──process.php
@@ -79,7 +80,12 @@
 │   ├── view.php
 │   ├── generate_pdf.php
 │   ├── template_rapot.php
-│   └── helper.php
+│   ├── helper.php
+│   ├── bulk_delete.php
+│   ├── bulk_processor.php
+│   ├── generate_catatan.php
+│   ├── generate_png.php
+│   ├── get_pelanggaran_santri.php
 ├──rekap/
 │    ├──index.php
 │    ├──per-kamar.php
