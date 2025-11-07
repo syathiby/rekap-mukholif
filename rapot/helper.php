@@ -31,7 +31,7 @@ if (!function_exists('generatePenilaianDropdown')) {
             case 'ibadah_lainnya':
                 $options = '
                     <option value="">-- Pilih Penilaian --</option>
-                    <option value="5">Konsisten mengamalkan ibadah sunnah</option>
+                    <option value="5">Konsisten mengamalkan</option>
                     <option value="4">Cukup rutin</option>
                     <option value="3">Kadang mengamalkan</option>
                     <option value="2">Jarang melaksanakan sunnah</option>
@@ -59,14 +59,23 @@ if (!function_exists('generatePenilaianDropdown')) {
                 ';
                 break;
             case 'kesopanan':
+                $options = '
+                    <option value="">-- Pilih Penilaian --</option>
+                    <option value="5">Selalu berbicara dan bertingkah dengan adab yang baik</option>
+                    <option value="4">Pada umumnya, sopan dalam berbicara dan bersikap</option>
+                    <option value="3">Kadang kurang memperhatikan kesopanan</option>
+                    <option value="2">Sering berbicara atau bersikap tanpa adab</option>
+                    <option value="1">Perlu pembinaan serius dalam menjaga sopan santun</option>
+                ';
+                break;
             case 'muamalah':
                 $options = '
                     <option value="">-- Pilih Penilaian --</option>
-                    <option value="5">Menunjukkan sikap yang baik dalam keseharian</option>
-                    <option value="4">Umumnya baik dalam pergaulan</option>
-                    <option value="3">Perlu dibiasakan sopan dalam interaksi</option>
-                    <option value="2">Sering kurang menjaga adab</option>
-                    <option value="1">Perlu perhatian dalam akhlak sosial</option>
+                    <option value="5">Berinteraksi dengan baik terhadap sesama</option>
+                    <option value="4">Umumnya baik dalam hubungan sosial</option>
+                    <option value="3">Kadang kurang memahami adab bermuamalah</option>
+                    <option value="2">Sering bersikap egois atau kurang menghargai orang lain</option>
+                    <option value="1">Perlu dibina dalam hal etika dan tanggung jawab sosial</option>
                 ';
                 break;
             case 'tidur':
@@ -84,7 +93,7 @@ if (!function_exists('generatePenilaianDropdown')) {
                 $options = '
                     <option value="">-- Pilih Penilaian --</option>
                     <option value="5">Selalu berpakaian rapi, bersih, dan sesuai aturan</option>
-                    <option value="4">Umumnya rapi dan bersih, kadang kurang lengkap</option>
+                    <option value="4">Umumnya rapi dan bersih</option>
                     <option value="3">Cukup rapi namun masih perlu perbaikan</option>
                     <option value="2">Kurang memperhatikan kerapian dan kelengkapan</option>
                     <option value="1">Sering tidak rapi dan tidak sesuai ketentuan</option>
@@ -104,7 +113,7 @@ if (!function_exists('generatePenilaianDropdown')) {
                 $options = '
                     <option value="">-- Pilih Penilaian --</option>
                     <option value="5">Taat dan patuh terhadap arahan</option>
-                    <option value="4">Umumnya patuh, kadang perlu diingatkan</option>
+                    <option value="4">Umumnya patuh</option>
                     <option value="3">Kadang kurang teliti dalam menjalankan arahan</option>
                     <option value="2">Sering lalai terhadap instruksi</option>
                     <option value="1">Kurang menunjukkan sikap taat</option>
@@ -141,14 +150,23 @@ if (!function_exists('generatePenilaianDropdown')) {
                 ';
                 break;
             case 'piket':
+                $options = '
+                    <option value="">-- Pilih Penilaian --</option>
+                    <option value="5">Piket dengan bersih dan tanpa komando</option>
+                    <option value="4">Melaksanakan piket dengan baik setelah diarahkan</option>
+                    <option value="3">Melaksanakan piket namun perlu diingatkan</option>
+                    <option value="2">Kurang peduli terhadap kebersihan bersama</option>
+                    <option value="1">Tidak melaksanakan tugas piket dengan tanggung jawab</option>
+                ';
+                break;
             case 'kerapihan_barang':
                 $options = '
                     <option value="">-- Pilih Penilaian --</option>
-                    <option value="5">Inisiatif, tanpa komando</option>
-                    <option value="4">Melaksanakan dengan baik</option>
-                    <option value="3">Melaksanakan tapi perlu diingatkan</option>
-                    <option value="2">Kurang inisiatif atau belum tuntas</option>
-                    <option value="1">Belum terlihat tanggung jawab</option>
+                    <option value="5">Barang pribadi selalu tertata rapi dan bersih</option>
+                    <option value="4">Umumnya rapi namun kurang konsisten</option>
+                    <option value="3">Perlu diingatkan untuk menjaga kerapihan barang</option>
+                    <option value="2">Sering terlihat berantakan atau tidak teratur</option>
+                    <option value="1">Kurang tanggung jawab dalam menjaga barang pribadi</option>
                 ';
                 break;
             default:
@@ -195,7 +213,7 @@ if (!function_exists('getDeskripsiPenilaian')) {
             case 'sunnah_tidur':
             case 'ibadah_lainnya':
                 return [
-                    5 => 'Konsisten mengamalkan ibadah sunnah',
+                    5 => 'Konsisten mengamalkan',
                     4 => 'Cukup rutin',
                     3 => 'Kadang mengamalkan',
                     2 => 'Jarang melaksanakan sunnah',
@@ -220,13 +238,21 @@ if (!function_exists('getDeskripsiPenilaian')) {
                     1 => 'Sering bersikap kurang menghargai'
                 ][$nilai] ?? '-';
             case 'kesopanan':
+                return [
+                    5 => 'Selalu berbicara dan bertingkah dengan adab yang baik',
+                    4 => 'Pada umumnya, sopan dalam berbicara dan bersikap',
+                    3 => 'Kadang kurang memperhatikan kesopanan',
+                    2 => 'Sering berbicara atau bersikap tanpa adab',
+                    1 => 'Perlu pembinaan serius dalam menjaga sopan santun'
+                ][$nilai] ?? '-';
+
             case 'muamalah':
                 return [
-                    5 => 'Menunjukkan sikap yang baik dalam keseharian',
-                    4 => 'Umumnya baik dalam pergaulan',
-                    3 => 'Perlu dibiasakan sopan dalam interaksi',
-                    2 => 'Sering kurang menjaga adab',
-                    1 => 'Perlu perhatian dalam akhlak sosial'
+                    5 => 'Berinteraksi dengan baik terhadap sesama',
+                    4 => 'Umumnya baik dalam hubungan sosial',
+                    3 => 'Kadang kurang memahami adab bermuamalah',
+                    2 => 'Sering bersikap egois atau kurang menghargai orang lain',
+                    1 => 'Perlu dibina dalam hal etika dan tanggung jawab sosial'
                 ][$nilai] ?? '-';
 
             // ================== KEDISIPLINAN ==================
@@ -242,7 +268,7 @@ if (!function_exists('getDeskripsiPenilaian')) {
             case 'seragam':
                 return [
                     5 => 'Selalu berpakaian rapi, bersih, dan sesuai aturan',
-                    4 => 'Umumnya rapi dan bersih, kadang kurang lengkap',
+                    4 => 'Umumnya rapi dan bersih',
                     3 => 'Cukup rapi namun masih perlu perbaikan',
                     2 => 'Kurang memperhatikan kerapian dan kelengkapan',
                     1 => 'Sering tidak rapi dan tidak sesuai ketentuan'
@@ -258,7 +284,7 @@ if (!function_exists('getDeskripsiPenilaian')) {
             case 'mengikuti_arahan':
                 return [
                     5 => 'Taat dan patuh terhadap arahan',
-                    4 => 'Umumnya patuh, kadang perlu diingatkan',
+                    4 => 'Umumnya patuh',
                     3 => 'Kadang kurang teliti dalam menjalankan arahan',
                     2 => 'Sering lalai terhadap instruksi',
                     1 => 'Kurang menunjukkan sikap taat'
@@ -290,13 +316,21 @@ if (!function_exists('getDeskripsiPenilaian')) {
                     1 => 'Kurang memperhatikan kebersihan diri'
                 ][$nilai] ?? '-';
             case 'piket':
+                return [
+                    5 => 'Piket dengan bersih dan tanpa komando',
+                    4 => 'Melaksanakan piket dengan baik setelah diarahkan',
+                    3 => 'Melaksanakan piket namun perlu diingatkan',
+                    2 => 'Kurang peduli terhadap kebersihan bersama',
+                    1 => 'Tidak melaksanakan tugas piket dengan tanggung jawab'
+                ][$nilai] ?? '-';
+
             case 'kerapihan_barang':
                 return [
-                    5 => 'Inisiatif, tanpa komando',
-                    4 => 'Melaksanakan dengan baik',
-                    3 => 'Melaksanakan tapi perlu diingatkan',
-                    2 => 'Kurang inisiatif atau belum tuntas',
-                    1 => 'Belum terlihat tanggung jawab'
+                    5 => 'Barang pribadi selalu tertata rapi dan bersih',
+                    4 => 'Umumnya rapi namun kurang konsisten',
+                    3 => 'Perlu diingatkan untuk menjaga kerapihan barang',
+                    2 => 'Sering terlihat berantakan atau tidak teratur',
+                    1 => 'Kurang tanggung jawab dalam menjaga barang pribadi'
                 ][$nilai] ?? '-';
 
             // ================== DEFAULT ==================

@@ -18,7 +18,7 @@ if (empty($santri_id) || empty($bulan) || empty($tahun)) {
     die('Error: Data santri, bulan, atau tahun tidak lengkap.');
 }
 
-// 2. Kalkulasi Total Poin Pelanggaran (Logika dari process.php)
+// 2. Kalkulasi Total Poin Pelanggaran
 $total_poin_pelanggaran = 0;
 try {
     $sql_poin = "
@@ -41,12 +41,10 @@ try {
     }
     $stmt_poin->close();
 } catch (Exception $e) {
-    // Kalau query gagal, biarkan poinnya 0. Tidak perlu hentikan eksekusi.
-    // error_log('Gagal ambil poin di generate_catatan: ' . $e->getMessage());
+    // Kalau query gagal, biarkan poinnya 0.
 }
 
-
-// 3. Siapkan "kamus" untuk menerjemahkan 'key' menjadi 'Nama Penilaian'
+// 3. Kamus Nama Penilaian
 $nama_penilaian = [
     'puasa_sunnah' => 'Puasa Sunnah', 'sholat_duha' => 'Sholat Duha', 'sholat_malam' => 'Sholat Malam',
     'sedekah' => 'Sedekah & Berbagi', 'sunnah_tidur' => 'Sunnah sebelum tidur', 'ibadah_lainnya' => 'Ibadah lainnya',
@@ -56,15 +54,14 @@ $nama_penilaian = [
     'mandi' => 'Mandi', 'penampilan' => 'Penampilan', 'piket' => 'Piket', 'kerapihan_barang' => 'Kerapihan Barang'
 ];
 
-// 4. Ambil data nilai dari AJAX (jQuery)
+// 4. Ambil data nilai dari AJAX
 $nilai = $_POST;
 $poin_terbaik = [];
 $poin_terburuk = [];
 
-// Pisahkan mana nilai tinggi (5) dan nilai rendah (1 atau 2)
+// Pisahkan nilai tinggi (5) dan rendah (1/2)
 foreach ($nilai as $key => $val) {
-    if (!isset($nama_penilaian[$key])) continue; // Lewati data selain penilaian
-    
+    if (!isset($nama_penilaian[$key])) continue;
     $skor = (int)$val;
     
     if ($skor == 5) {
@@ -74,45 +71,39 @@ foreach ($nilai as $key => $val) {
     }
 }
 
-// 5. Buat kalimat catatan
+// 5. Buat kalimat catatan versi hangat
 $catatan = "";
 
-// --- Bagian 1: Komentar Penilaian Baik ---
+// Bagian 1: Aspek Baik
 if (count($poin_terbaik) > 0) {
     $list_terbaik = array_slice($poin_terbaik, 0, 3);
-    $catatan .= "Ananda menunjukkan perkembangan yang baik, terutama dalam aspek " . implode(', ', $list_terbaik) . ". ";
+    $catatan .= "Alhamdulillah, Ananda menunjukkan sikap yang baik, terutama dalam aspek " . implode(', ', $list_terbaik) . ". ";
     if (count($poin_terbaik) > 3) {
-        $catatan .= "Dan juga beberapa aspek lainnya. ";
+        $catatan .= "Masih banyak hal positif lainnya yang patut diapresiasi. ";
     }
 } else {
-    $catatan .= "Ananda sudah menunjukkan usaha yang cukup baik dalam mengikuti kegiatan sehari-hari. ";
+    $catatan .= "Ananda telah berusaha dengan baik dalam menjalankan kegiatan hariannya. ";
 }
 
-// --- Bagian 2: Komentar Penilaian Kurang ---
+// Bagian 2: Aspek Perlu Perbaikan
 if (count($poin_terburuk) > 0) {
     $list_terburuk = array_slice($poin_terburuk, 0, 2);
-    $catatan .= "Namun masih perlu perhatian dan pembiasaan lebih baik pada aspek " . implode(', ', $list_terburuk) . ". ";
+    $catatan .= "Namun, perlu ditingkatkan lagi pada aspek " . implode(', ', $list_terburuk) . ". ";
 } else {
-    if (count($poin_terbaik) > 15) {
-        $catatan .= "Secara keseluruhan, Ananda sangat konsisten dan menunjukkan kedisiplinan yang baik. ";
-    } else {
-        $catatan .= "Tidak ditemukan hal yang perlu menjadi perhatian khusus pada bulan ini. ";
-    }
+    $catatan .= "Tidak ditemukan catatan yang perlu diperbaiki secara khusus pada bulan ini. ";
 }
 
-// ==========================================================
-//           BAGIAN 3: Komentar Soal Poin Pelanggaran
-// ==========================================================
+// Bagian 3: Komentar Poin Pelanggaran
 if ($total_poin_pelanggaran > 0) {
-    $catatan .= "Tercatat ada " . $total_poin_pelanggaran . " poin pelanggaran pada bulan ini yang perlu menjadi bahan evaluasi dan pembinaan lebih lanjut. ";
+    $catatan .= "Tercatat ada " . $total_poin_pelanggaran . " poin pelanggaran yang menjadi bahan evaluasi bersama. ";
 } else {
     if (count($poin_terburuk) == 0) {
-         $catatan .= "Ananda juga tercatat tanpa pelanggaran pada bulan ini. ";
+        $catatan .= "Ananda juga tercatat tanpa pelanggaran pada bulan ini. ";
     }
 }
 
-// Kalimat penutup
-$catatan .= "Semoga Ananda dapat terus mempertahankan dan meningkatkan pencapaian dan juga karakternya.";
+// Penutup
+$catatan .= "Semoga Ananda terus tumbuh menjadi pribadi yang disiplin, berakhlak baik, dan membawa kebaikan di sekitarnya.";
 
 // 6. Kirim balik catatannya ke JavaScript
 echo $catatan;
