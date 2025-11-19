@@ -1,5 +1,13 @@
 <?php
-
+// AMBIL VERSI LOGO OTOMATIS (CACHE BUSTING)
+// Path ini harus nunjuk ke file di server, BUKAN URL.
+// Kita asumsi /assets/logo.png ada di folder root (htdocs/public_html)
+// Kalau project lu di subfolder (misal: htdocs/aplikasi-santri), ganti path-nya jadi:
+// $logo_server_path = $_SERVER['DOCUMENT_ROOT'] . '/aplikasi-santri/assets/logo.png';
+$logo_server_path = $_SERVER['DOCUMENT_ROOT'] . '/assets/logo.png';
+$logo_version = file_exists($logo_server_path)
+    ? filemtime($logo_server_path)
+    : '1'; // Fallback jika file tidak ditemukan
 ?>
 <!DOCTYPE html>
 <html lang="id">
@@ -9,8 +17,8 @@
     <title>Aplikasi Kepengasuhan Santri</title>
     
     <!-- Aset & Font -->
-    <!-- REVISI: Path favicon jadi dinamis pake BASE_URL -->
-    <link rel="icon" type="image/png" sizes="64x64" href="<?= BASE_URL ?>/assets/logo.png">
+    <!-- REVISI: Path favicon jadi dinamis + otomatis cache bust -->
+    <link rel="icon" type="image/png" sizes="64x64" href="<?= BASE_URL ?>/assets/logo.png?v=<?= $logo_version ?>">
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css">
     <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -239,8 +247,8 @@
                             <i class="fas fa-bars"></i>
                         </button>
                         <div class="d-flex align-items-center">
-                            <!-- REVISI: Path logo jadi dinamis pake BASE_URL -->
-                            <img src="<?= BASE_URL ?>/assets/logo.png" alt="Logo" class="header-logo me-2">
+                            <!-- REVISI: Path logo jadi dinamis + otomatis cache bust -->
+                            <img src="<?= BASE_URL ?>/assets/logo.png?v=<?= $logo_version ?>" alt="Logo" class="header-logo me-2">
                             <span class="fw-bold app-name align-middle" style="color: #25396f;">Kepengasuhan Santri</span>
                         </div>
                     </div>

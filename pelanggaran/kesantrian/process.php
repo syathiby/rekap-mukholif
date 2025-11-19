@@ -8,10 +8,14 @@ guard('pelanggaran_kesantrian_input');
 if (isset($_POST['simpan_pelanggaran_kesantrian'])) {
     $jenis_pelanggaran_id = (int)$_POST['jenis_pelanggaran_id'];
     $tanggal = $_POST['tanggal'];
-    $santri_ids = isset($_POST['santri_id']) ? $_POST['santri_id'] : []; // Pastikan ini sesuai dengan nama di form
+    
+    // ✅ PERBAIKAN DISINI: Ubah 'santri_id' jadi 'santri_ids' sesuai name di HTML/JS
+    $santri_ids = isset($_POST['santri_ids']) ? $_POST['santri_ids'] : []; 
+    
     $dicatat_oleh = $_SESSION['user_id'];
 
     // Validasi Awal
+    // Pastikan array santri_ids tidak kosong
     if (empty($jenis_pelanggaran_id) || empty($tanggal) || empty($santri_ids) || !is_array($santri_ids)) {
         $_SESSION['message'] = ['type' => 'danger', 'text' => 'Data tidak lengkap. Pilih jenis pelanggaran, tanggal, dan tambahkan minimal satu santri.'];
         header("Location: create.php");
@@ -39,9 +43,11 @@ if (isset($_POST['simpan_pelanggaran_kesantrian'])) {
     // =================================================================
     // LANGKAH #2: Siapkan DUA Query (INSERT dan UPDATE)
     // =================================================================
+    // Query Insert Riwayat
     $query_insert = "INSERT INTO pelanggaran (santri_id, jenis_pelanggaran_id, tanggal, dicatat_oleh) VALUES (?, ?, ?, ?)";
     $stmt_insert = mysqli_prepare($conn, $query_insert);
 
+    // Query Update Poin Santri
     $query_update = "UPDATE santri SET poin_aktif = poin_aktif + ? WHERE id = ?";
     $stmt_update = mysqli_prepare($conn, $query_update);
 
@@ -58,6 +64,7 @@ if (isset($_POST['simpan_pelanggaran_kesantrian'])) {
         $santri_id_int = (int)$santri_id;
 
         // Proses 1: Insert riwayat pelanggaran
+        // Parameter: santri_id (i), jenis_pelanggaran_id (i), tanggal (s), dicatat_oleh (i)
         mysqli_stmt_bind_param($stmt_insert, "iisi", $santri_id_int, $jenis_pelanggaran_id, $tanggal, $dicatat_oleh);
         $exec_insert = mysqli_stmt_execute($stmt_insert);
 
@@ -86,7 +93,9 @@ if (isset($_POST['simpan_pelanggaran_kesantrian'])) {
     // LANGKAH #4: Finalisasi (Commit atau Rollback)
     // =================================================================
     if ($error_count > 0) {
-        // Alih-alih pake status redirect, kita pake session message biar lebih informatif
+        // Rollback otomatis sudah dipanggil di dalam loop jika error, 
+        // tapi good practice memastikan transaction selesai jika logic lain error
+        // Disini kita kirim pesan error
         $_SESSION['message'] = [
             'type' => 'danger',
             'text' => "Terjadi kesalahan! Proses dibatalkan. Gagal di santri ke-" . ($success_count + 1) . ". Error: " . $error_message

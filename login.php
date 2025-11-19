@@ -7,6 +7,18 @@ if (session_status() === PHP_SESSION_NONE) {
 
 // Panggil file config sakti kita buat dapetin BASE_URL
 require_once __DIR__ . '/config.php';
+
+// --- START: KODE OTOMATIS VERSI LOGO ---
+// Path ini harus nunjuk ke file di server, BUKAN URL.
+// Asumsi /assets/logo.png ada di folder root (htdocs/public_html)
+// Kalau project lu di subfolder (misal: htdocs/aplikasi-santri), ganti path-nya jadi:
+// $logo_server_path = $_SERVER['DOCUMENT_ROOT'] . '/aplikasi-santri/assets/logo.png';
+$logo_server_path = $_SERVER['DOCUMENT_ROOT'] . '/assets/logo.png';
+$logo_version = file_exists($logo_server_path)
+    ? filemtime($logo_server_path)
+    : '1'; // Fallback jika file tidak ditemukan
+// --- END: KODE OTOMATIS VERSI LOGO ---
+
 include 'db.php';
 
 $error = '';
@@ -60,8 +72,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Aplikasi Kepengasuhan Santri</title>
-    <!-- REVISI: Path favicon jadi dinamis pake BASE_URL -->
-    <link rel="icon" type="image/png" sizes="64x64" href="<?= BASE_URL ?>/assets/logo.png">
+    <!-- REVISI: Path favicon jadi dinamis + otomatis cache bust -->
+    <link rel="icon" type="image/png" sizes="64x64" href="<?= BASE_URL ?>/assets/logo.png?v=<?= $logo_version ?>">
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -142,8 +154,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 <body>
     <div class="login-card">
         <div class="login-header">
-            <!-- REVISI: Path logo jadi dinamis pake BASE_URL -->
-            <img src="<?= BASE_URL ?>/assets/logo.png" alt="Logo Aplikasi" class="login-logo">
+            <!-- REVISI: Path logo jadi dinamis + otomatis cache bust -->
+            <img src="<?= BASE_URL ?>/assets/logo.png?v=<?= $logo_version ?>" alt="Logo Aplikasi" class="login-logo">
             <h4>Login Sistem</h4>
             <p class="text-muted">Masukkan kredensial Anda untuk melanjutkan</p>
         </div>
