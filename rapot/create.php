@@ -272,7 +272,7 @@ require_once __DIR__ . '/../header.php';
                         <div class="mb-3"><label class="question-label">Keterlambatan</label><?php echo buatTombolPilihan('keterlambatan', $data_duplikat); ?></div>
                         <div class="mb-3"><label class="question-label">Seragam</label><?php echo buatTombolPilihan('seragam', $data_duplikat); ?></div>
                         <div class="mb-3"><label class="question-label">Makan</label><?php echo buatTombolPilihan('makan', $data_duplikat); ?></div>
-                        <div class="mb-3"><label class="question-label">Mengikuti arahan</label><?php echo buatTombolPilihan('mengikuti_arahan', $data_duplikat); ?></div>
+                        <div class="mb-3"><label class="question-label">Mengikuti arahan</label><?php echo buatTombolPilihan('arahan', $data_duplikat); ?></div>
                         <div class="mb-3"><label class="question-label">Berbahasa arab di kamar</label><?php echo buatTombolPilihan('bahasa_arab', $data_duplikat); ?></div>
                     </div>
                 </div>
