@@ -110,6 +110,7 @@ if (!function_exists('generatePenilaianDropdown')) {
                 ';
                 break;
             case 'mengikuti_arahan':
+            case 'arahan':
                 $options = '
                     <option value="">-- Pilih Penilaian --</option>
                     <option value="5">Taat dan patuh terhadap arahan</option>
@@ -282,6 +283,7 @@ if (!function_exists('getDeskripsiPenilaian')) {
                     1 => 'Kurang memperhatikan adab makan'
                 ][$nilai] ?? '-';
             case 'mengikuti_arahan':
+            case 'arahan':
                 return [
                     5 => 'Taat dan patuh terhadap arahan',
                     4 => 'Umumnya patuh',
