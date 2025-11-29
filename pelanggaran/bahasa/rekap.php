@@ -21,86 +21,135 @@ if (!$periode_aktif) {
     die("<div class='container my-4'><div class='alert alert-warning'><strong>Peringatan:</strong> Periode aktif belum diatur. Silakan atur di Pengaturan.</div></div>");
 }
 
-// ✅ PERUBAHAN: Ambil data untuk semua filter dropdown
+// Data Filter: Kamar & Kelas
 $kamars_result = mysqli_query($conn, "SELECT DISTINCT kamar FROM santri WHERE kamar IS NOT NULL AND kamar != '' ORDER BY CAST(kamar AS UNSIGNED) ASC");
 $kelas_list = mysqli_query($conn, "SELECT DISTINCT CAST(kelas AS UNSIGNED) AS kelas FROM santri WHERE kelas IS NOT NULL AND kelas != '' ORDER BY kelas ASC");
 
-// ✅ PERUBAHAN: Ambil semua filter dari URL
+// Data Filter Level Bahasa
+$levels_result = mysqli_query($conn, "SELECT id, nama_pelanggaran FROM jenis_pelanggaran WHERE bagian = 'Bahasa' ORDER BY poin ASC");
+
+// Ambil filter dari URL
 $filter_kamar = $_GET['kamar'] ?? '';
-$filter_kelas = $_GET['kelas'] ?? ''; // Tambahan filter kelas
+$filter_kelas = $_GET['kelas'] ?? '';
+$filter_level = $_GET['level'] ?? '';
 $start_date = $_GET['start_date'] ?? $periode_aktif;
 $end_date = $_GET['end_date'] ?? date('Y-m-d');
 
 
 // =======================================================
-// BAGIAN 2: QUERY UTAMA (PERINGKAT & GRAFIK)
+// BAGIAN 2: QUERY UTAMA (SNAPSHOT LOGIC)
 // =======================================================
 
-// ✅ PERBAIKAN: Siapkan parameter sekali untuk semua query
-$base_params = [$bagian, $start_date, $end_date];
-$base_types = "sss";
+// Kita ambil SEMUA santri dulu sesuai filter kamar/kelas
+// Nanti logic "Level Terakhir" kita hitung pakai Subquery UNION biar akurat sesuai tanggal
 
-$extra_sql = "";
+$params = []; 
+$types = ""; 
+
+$sql_base = "SELECT id, nama, kelas, kamar FROM santri WHERE 1=1";
+
 if (!empty($filter_kamar)) {
-    $extra_sql .= " AND s.kamar = ?";
-    $base_params[] = $filter_kamar;
-    $base_types .= "s";
+    $sql_base .= " AND kamar = ?";
+    $params[] = $filter_kamar;
+    $types .= "s";
 }
 if (!empty($filter_kelas)) {
-    $extra_sql .= " AND s.kelas = ?";
-    $base_params[] = $filter_kelas;
-    $base_types .= "s";
+    $sql_base .= " AND kelas = ?";
+    $params[] = $filter_kelas;
+    $types .= "s";
 }
 
-// Query Peringkat
-$sql_peringkat = "
-    SELECT 
-        s.id, s.nama, s.kelas, s.kamar,
-        COUNT(p.id) AS total_pelanggaran,
-        COALESCE(SUM(jp.poin), 0) AS total_poin
-    FROM santri s
-    LEFT JOIN pelanggaran p ON s.id = p.santri_id
-    JOIN jenis_pelanggaran jp ON p.jenis_pelanggaran_id = jp.id
-    WHERE jp.bagian = ? 
-      AND DATE(p.tanggal) BETWEEN ? AND ?
-      {$extra_sql}
-    GROUP BY s.id, s.nama, s.kelas, s.kamar
-    HAVING total_pelanggaran > 0
-    ORDER BY total_poin DESC, total_pelanggaran DESC, s.nama ASC
-";
-$stmt_peringkat = mysqli_prepare($conn, $sql_peringkat);
-mysqli_stmt_bind_param($stmt_peringkat, $base_types, ...$base_params);
-mysqli_stmt_execute($stmt_peringkat);
-$result_peringkat = mysqli_stmt_get_result($stmt_peringkat);
-$peringkat_list = mysqli_fetch_all($result_peringkat, MYSQLI_ASSOC);
+$stmt_base = mysqli_prepare($conn, $sql_base);
+if (!empty($params)) {
+    mysqli_stmt_bind_param($stmt_base, $types, ...$params);
+}
+mysqli_stmt_execute($stmt_base);
+$result_santri = mysqli_stmt_get_result($stmt_base);
 
-// Data untuk Grafik 1: Top 5 Santri
+$peringkat_list = [];
+
+// =======================================================
+// BAGIAN 3: PROSES DATA (Mencari Status Terakhir per Santri)
+// =======================================================
+
+// Siapkan Query buat nyari "Last Status" di rentang tanggal
+// Kita gabung tabel PELANGGARAN (Aktif) + LOG_BAHASA (Riwayat)
+// Ambil yang tanggalnya paling akhir di dalam filter
+$sql_snapshot = "
+    SELECT 
+        u.tanggal, 
+        jp.nama_pelanggaran, 
+        jp.poin, 
+        jp.id as level_id
+    FROM (
+        SELECT jenis_pelanggaran_id, tanggal, santri_id FROM pelanggaran 
+        UNION ALL
+        SELECT jenis_pelanggaran_id, tanggal_melanggar as tanggal, santri_id FROM log_bahasa
+    ) AS u
+    JOIN jenis_pelanggaran jp ON u.jenis_pelanggaran_id = jp.id
+    WHERE u.santri_id = ? 
+      AND jp.bagian = ?
+      AND DATE(u.tanggal) BETWEEN ? AND ?
+    ORDER BY u.tanggal DESC 
+    LIMIT 1
+";
+$stmt_snapshot = mysqli_prepare($conn, $sql_snapshot);
+
+while ($santri = mysqli_fetch_assoc($result_santri)) {
+    // Cek status terakhir si santri ini di rentang tanggal yg dipilih
+    mysqli_stmt_bind_param($stmt_snapshot, "isss", $santri['id'], $bagian, $start_date, $end_date);
+    mysqli_stmt_execute($stmt_snapshot);
+    $res_snapshot = mysqli_stmt_get_result($stmt_snapshot);
+    $snapshot = mysqli_fetch_assoc($res_snapshot);
+
+    // Kalau ada data pelanggaran di rentang tgl tsb
+    if ($snapshot) {
+        // Cek Filter Level (Kalau user milih level tertentu)
+        if (!empty($filter_level) && $snapshot['level_id'] != $filter_level) {
+            continue; // Skip kalau levelnya gak cocok sama filter
+        }
+
+        // Masukin ke list buat ditampilin
+        $peringkat_list[] = [
+            'id' => $santri['id'],
+            'nama' => $santri['nama'],
+            'kelas' => $santri['kelas'],
+            'kamar' => $santri['kamar'],
+            'total_poin' => $snapshot['poin'], // Poin sesuai saat itu
+            'level_sekarang' => $snapshot['nama_pelanggaran'], // Level sesuai saat itu
+            'tanggal_terakhir' => $snapshot['tanggal']
+        ];
+    }
+}
+
+// Urutkan Array (Poin Tertinggi diatas)
+usort($peringkat_list, function($a, $b) {
+    if ($b['total_poin'] == $a['total_poin']) {
+        return strcmp($a['nama'], $b['nama']); // Kalau poin sama, urut abjad
+    }
+    return $b['total_poin'] - $a['total_poin'];
+});
+
+// Data untuk Grafik (Diambil dari array yang udah diproses)
 $top_5_santri = array_slice($peringkat_list, 0, 5);
 $json_top_santri = json_encode([
     'labels' => array_column($top_5_santri, 'nama'),
     'data' => array_column($top_5_santri, 'total_poin')
 ]);
 
-// Data untuk Grafik 2: Sebaran per Kelas
-$sql_kelas_chart = "
-    SELECT s.kelas, COUNT(p.id) as total
-    FROM pelanggaran p
-    JOIN santri s ON p.santri_id = s.id
-    JOIN jenis_pelanggaran jp ON p.jenis_pelanggaran_id = jp.id
-    WHERE jp.bagian = ? AND DATE(p.tanggal) BETWEEN ? AND ?
-    {$extra_sql}
-    GROUP BY s.kelas ORDER BY total DESC
-";
-$stmt_kelas_chart = mysqli_prepare($conn, $sql_kelas_chart);
-mysqli_stmt_bind_param($stmt_kelas_chart, $base_types, ...$base_params);
-mysqli_stmt_execute($stmt_kelas_chart);
-$result_kelas_chart = mysqli_stmt_get_result($stmt_kelas_chart);
-$data_kelas_chart = mysqli_fetch_all($result_kelas_chart, MYSQLI_ASSOC);
-
+// Hitung sebaran kelas manual dari array hasil
+$kelas_stats = [];
+foreach ($peringkat_list as $p) {
+    $kls = $p['kelas'];
+    if (!isset($kelas_stats[$kls])) $kelas_stats[$kls] = 0;
+    $kelas_stats[$kls]++;
+}
+arsort($kelas_stats); // Urutkan kelas terbanyak
 $json_kelas_chart = json_encode([
-    'labels' => array_column($data_kelas_chart, 'kelas'),
-    'data' => array_column($data_kelas_chart, 'total')
+    'labels' => array_keys($kelas_stats),
+    'data' => array_values($kelas_stats)
 ]);
+
 ?>
 
 <!DOCTYPE html>
@@ -133,6 +182,19 @@ $json_kelas_chart = json_encode([
         .total-poin { font-size: 1.25rem; font-weight: 700; color: var(--primary); }
         .btn-detail { background-color: var(--primary-light); color: var(--primary); font-weight: 600; text-decoration: none; transition: all 0.2s; }
         .btn-detail:hover { background-color: var(--primary); color: white; }
+        
+        /* ✅ REVISI WARNA: Soft Red (Merah Kalem) */
+        .level-badge {
+            background-color: #fee2e2; /* Background merah muda lembut */
+            color: #991b1b; /* Teks merah tua */
+            border: 1px solid #fecaca; /* Border tipis */
+            font-weight: 600;
+            padding: 6px 16px;
+            border-radius: 50px;
+            font-size: 0.85rem;
+            display: inline-block;
+            white-space: nowrap;
+        }
     </style>
 </head>
 <body>
@@ -143,15 +205,15 @@ $json_kelas_chart = json_encode([
         <div class="card-body">
             <h5 class="card-title fw-bold mb-3"><i class="fas fa-filter me-2"></i>Filter Data</h5>
             <form method="get" id="filterForm" class="row g-3 align-items-end">
-                <div class="col-lg-3 col-md-6">
+                <div class="col-lg-2 col-md-6">
                     <label for="start_date" class="form-label">Dari Tanggal</label>
                     <input type="date" class="form-control" name="start_date" value="<?= htmlspecialchars($start_date) ?>">
                 </div>
-                <div class="col-lg-3 col-md-6">
+                <div class="col-lg-2 col-md-6">
                     <label for="end_date" class="form-label">Sampai Tanggal</label>
                     <input type="date" class="form-control" name="end_date" value="<?= htmlspecialchars($end_date) ?>">
                 </div>
-                <div class="col-lg-3 col-md-6">
+                <div class="col-lg-2 col-md-6">
                     <label for="kamar" class="form-label">Kamar</label>
                     <select name="kamar" id="kamar" class="form-select">
                         <option value="">Semua Kamar</option>
@@ -162,13 +224,24 @@ $json_kelas_chart = json_encode([
                         <?php endwhile; ?>
                     </select>
                 </div>
-                <div class="col-lg-3 col-md-6">
+                <div class="col-lg-2 col-md-6">
                     <label for="kelas" class="form-label">Kelas</label>
                     <select name="kelas" id="kelas" class="form-select">
                         <option value="">Semua Kelas</option>
                         <?php mysqli_data_seek($kelas_list, 0); while ($k = mysqli_fetch_assoc($kelas_list)): ?>
                         <option value="<?= htmlspecialchars($k['kelas']) ?>" <?= ($filter_kelas == $k['kelas']) ? 'selected' : '' ?>>
                             <?= htmlspecialchars($k['kelas']) ?>
+                        </option>
+                        <?php endwhile; ?>
+                    </select>
+                </div>
+                <div class="col-lg-4 col-md-12">
+                    <label for="level" class="form-label">Level Bahasa</label>
+                    <select name="level" id="level" class="form-select">
+                        <option value="">Semua Level</option>
+                        <?php mysqli_data_seek($levels_result, 0); while ($l = mysqli_fetch_assoc($levels_result)): ?>
+                        <option value="<?= htmlspecialchars($l['id']) ?>" <?= ($filter_level == $l['id']) ? 'selected' : '' ?>>
+                            <?= htmlspecialchars($l['nama_pelanggaran']) ?>
                         </option>
                         <?php endwhile; ?>
                     </select>
@@ -204,15 +277,20 @@ $json_kelas_chart = json_encode([
                         <th class="text-center">Peringkat</th>
                         <th>Santri</th>
                         <th class="text-center">Total Poin</th>
-                        <th class="text-center">Jumlah Pelanggaran</th>
+                        <th class="text-center">Level Saat Ini</th>
                         <th class="text-center">Aksi</th>
                     </tr>
                 </thead>
                 <tbody>
                     <?php if (empty($peringkat_list)): ?>
-                        <tr><td colspan="5" class="text-center p-5 text-muted"><i class="fas fa-check-circle fa-3x mb-3"></i><br>Alhamdulillah, tidak ada pelanggaran bahasa ditemukan.</td></tr>
+                        <tr><td colspan="5" class="text-center p-5 text-muted"><i class="fas fa-check-circle fa-3x mb-3"></i><br>Alhamdulillah, tidak ada pelanggaran bahasa sesuai filter.</td></tr>
                     <?php else: ?>
-                        <?php foreach ($peringkat_list as $index => $row): $no = $index + 1; ?>
+                        <?php foreach ($peringkat_list as $index => $row): 
+                            $no = $index + 1; 
+                            // ✅ REVISI TEKS: Hapus kata (Bahasa) biar singkat
+                            $level_singkat = str_ireplace(['(Bahasa)', '(bahasa)'], '', $row['level_sekarang']);
+                            $level_singkat = trim($level_singkat); // Hapus spasi sisa
+                        ?>
                         <tr class="rank-<?= $no ?>">
                             <td class="text-center">
                                 <?php if ($no <= 3): ?>
@@ -226,13 +304,18 @@ $json_kelas_chart = json_encode([
                                 <small class="text-muted">Kls: <?= htmlspecialchars($row['kelas']) ?> | Kmr: <?= htmlspecialchars($row['kamar']) ?></small>
                             </td>
                             <td class="text-center">
-                                <span class="total-poin"><?= $row['total_poin'] ?></span>
+                                <span class="total-poin">
+                                    <?= $row['total_poin'] ?>
+                                </span>
                             </td>
                             <td class="text-center">
-                                <span class="badge bg-secondary rounded-pill"><?= $row['total_pelanggaran'] ?></span>
+                                <!-- ✅ REVISI TAMPILAN: Soft Red & Teks Singkat -->
+                                <span class="level-badge">
+                                    <?= htmlspecialchars($level_singkat) ?>
+                                </span>
                             </td>
                             <td class="text-center">
-                                <?php // ✅ PERUBAHAN: Link detail membawa semua filter
+                                <?php 
                                 $detail_link = "detail-bahasa.php?santri_id={$row['id']}&start_date=$start_date&end_date=$end_date&kamar=" . urlencode($filter_kamar) . "&kelas=" . urlencode($filter_kelas);
                                 ?>
                                 <a href="<?= $detail_link ?>" class="btn btn-sm btn-detail rounded-pill px-3">
@@ -250,7 +333,6 @@ $json_kelas_chart = json_encode([
 
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 <script>
-// Chart rendering script (tidak berubah)
 document.addEventListener('DOMContentLoaded', function () {
     const dataTopSantri = <?= $json_top_santri ?>;
     const ctxTopSantri = document.getElementById('chartTopSantri').getContext('2d');
@@ -265,7 +347,6 @@ document.addEventListener('DOMContentLoaded', function () {
     }
 });
 
-// ✅ TAMBAHAN: Script untuk auto-submit filter
 document.addEventListener('DOMContentLoaded', function() {
     const filterForm = document.getElementById('filterForm');
     const filterInputs = filterForm.querySelectorAll('select, input[type="date"]');
