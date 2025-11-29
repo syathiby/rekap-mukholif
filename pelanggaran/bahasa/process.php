@@ -2,8 +2,8 @@
 if (session_status() === PHP_SESSION_NONE) {
     session_start();
 }
-require_once __DIR__ . '/../../init.php';
-guard('pelanggaran_bahasa_input');
+require_once __DIR__ . '/../../init.php'; // Sesuaikan path init.php lu
+guard('pelanggaran_bahasa_input'); // Pastikan guard-nya sesuai permission lu
 
 if (isset($_POST['create_bulk_pelanggaran'])) {
     $jenis_pelanggaran_id = (int)$_POST['jenis_pelanggaran_id'];
@@ -11,50 +11,69 @@ if (isset($_POST['create_bulk_pelanggaran'])) {
     $santri_ids = isset($_POST['santri_ids']) ? $_POST['santri_ids'] : [];
     $dicatat_oleh = $_SESSION['user_id'];
 
-    // Validasi Awal: Pastikan semua data penting ada
+    // 1. Validasi Input
     if (empty($jenis_pelanggaran_id) || empty($tanggal) || empty($santri_ids) || !is_array($santri_ids)) {
-        $_SESSION['message'] = ['type' => 'danger', 'text' => 'Data tidak lengkap. Pilih jenis pelanggaran, tanggal, dan tambahkan minimal satu santri.'];
-        header("Location: create.php");
+        $_SESSION['message'] = ['type' => 'danger', 'text' => 'Data tidak lengkap. Pilih jenis pelanggaran, tanggal, dan minimal satu santri.'];
+        header("Location: ../../create.php");
         exit();
     }
 
-    // =================================================================
-    // LANGKAH #1: Ambil Poin dari Jenis Pelanggaran (INI BARU)
-    // =================================================================
-    // Kita perlu tahu berapa poin yang akan ditambahkan.
-    $query_get_poin = "SELECT poin FROM jenis_pelanggaran WHERE id = ?";
-    $stmt_get_poin = mysqli_prepare($conn, $query_get_poin);
-    mysqli_stmt_bind_param($stmt_get_poin, "i", $jenis_pelanggaran_id);
-    mysqli_stmt_execute($stmt_get_poin);
-    $result_poin = mysqli_stmt_get_result($stmt_get_poin);
-    $data_pelanggaran = mysqli_fetch_assoc($result_poin);
-    mysqli_stmt_close($stmt_get_poin);
+    // 2. Ambil Info Pelanggaran Baru (Poin & Bagian)
+    $query_get_info = "SELECT poin, bagian FROM jenis_pelanggaran WHERE id = ?";
+    $stmt_get_info = mysqli_prepare($conn, $query_get_info);
+    mysqli_stmt_bind_param($stmt_get_info, "i", $jenis_pelanggaran_id);
+    mysqli_stmt_execute($stmt_get_info);
+    $result_info = mysqli_stmt_get_result($stmt_get_info);
+    $data_pelanggaran = mysqli_fetch_assoc($result_info);
+    
+    // PENTING: Statement ini ditutup DISINI. Jangan ditutup lagi di bawah.
+    mysqli_stmt_close($stmt_get_info);
 
-    // Jika jenis pelanggaran tidak ditemukan atau poinnya 0, kita bisa langsung skip proses update poin
     if (!$data_pelanggaran) {
         $_SESSION['message'] = ['type' => 'danger', 'text' => 'Jenis pelanggaran tidak valid.'];
-        header("Location: create.php");
+        header("Location: ../../create.php");
         exit();
     }
-    $poin_to_add = (int)$data_pelanggaran['poin'];
 
+    $bagian_pelanggaran = $data_pelanggaran['bagian']; 
+    $poin_baru = (int)$data_pelanggaran['poin'];
 
     // =================================================================
-    // LANGKAH #2: Siapkan DUA Query (INSERT dan UPDATE)
+    // PERSIAPAN QUERY (PREPARED STATEMENTS)
     // =================================================================
+    
+    // A. Query cari pelanggaran lama (Khusus Bahasa)
+    $query_cari_lama = "SELECT p.id, p.jenis_pelanggaran_id, p.tanggal, jp.poin 
+                        FROM pelanggaran p 
+                        JOIN jenis_pelanggaran jp ON p.jenis_pelanggaran_id = jp.id 
+                        WHERE p.santri_id = ? AND jp.bagian = 'Bahasa'";
+    $stmt_cari_lama = mysqli_prepare($conn, $query_cari_lama);
+
+    // B. Query Log History
+    $query_log = "INSERT INTO log_bahasa (santri_id, jenis_pelanggaran_id, poin_lama, tanggal_melanggar, diganti_oleh) 
+                  VALUES (?, ?, ?, ?, ?)";
+    $stmt_log = mysqli_prepare($conn, $query_log);
+
+    // C. Query Kurangi Poin Santri
+    $query_kurangi_poin = "UPDATE santri SET poin_aktif = poin_aktif - ? WHERE id = ?";
+    $stmt_kurangi_poin = mysqli_prepare($conn, $query_kurangi_poin);
+
+    // D. Query Hapus Pelanggaran Lama
+    $query_hapus_lama = "DELETE FROM pelanggaran WHERE id = ?";
+    $stmt_hapus_lama = mysqli_prepare($conn, $query_hapus_lama);
+
+    // E. Query Insert Pelanggaran Baru
     $query_insert = "INSERT INTO pelanggaran (santri_id, jenis_pelanggaran_id, tanggal, dicatat_oleh) VALUES (?, ?, ?, ?)";
     $stmt_insert = mysqli_prepare($conn, $query_insert);
 
-    // Query baru untuk mengupdate poin_aktif di tabel santri
-    $query_update = "UPDATE santri SET poin_aktif = poin_aktif + ? WHERE id = ?";
-    $stmt_update = mysqli_prepare($conn, $query_update);
+    // F. Query Tambah Poin Baru
+    $query_tambah_poin = "UPDATE santri SET poin_aktif = poin_aktif + ? WHERE id = ?";
+    $stmt_tambah_poin = mysqli_prepare($conn, $query_tambah_poin);
 
 
     // =================================================================
-    // LANGKAH #3: Gunakan DATABASE TRANSACTION (SANGAT PENTING!)
+    // EKSEKUSI TRANSAKSI
     // =================================================================
-    // Ini biar prosesnya "all or nothing". Kalau ada satu aja error di tengah jalan,
-    // semua data yang udah masuk bakal dibatalin. Jadi data lu nggak bakal setengah-setengah.
     mysqli_begin_transaction($conn);
 
     $success_count = 0;
@@ -64,56 +83,101 @@ if (isset($_POST['create_bulk_pelanggaran'])) {
     foreach ($santri_ids as $santri_id) {
         $santri_id_int = (int)$santri_id;
 
-        // Proses 1: Masukkan ke tabel pelanggaran
+        // --- STEP 1: LOGIKA KHUSUS BAHASA (REPLACE & LOG) ---
+        if ($bagian_pelanggaran === 'Bahasa') {
+            
+            // Cari data lama
+            mysqli_stmt_bind_param($stmt_cari_lama, "i", $santri_id_int);
+            mysqli_stmt_execute($stmt_cari_lama);
+            $result_lama = mysqli_stmt_get_result($stmt_cari_lama);
+
+            while ($row_lama = mysqli_fetch_assoc($result_lama)) {
+                $id_lama = $row_lama['id'];
+                $poin_lama = (int)$row_lama['poin'];
+                $jp_id_lama = $row_lama['jenis_pelanggaran_id'];
+                $tgl_lama = $row_lama['tanggal'];
+
+                // 1.1 Backup ke tabel log_bahasa
+                mysqli_stmt_bind_param($stmt_log, "iiisi", $santri_id_int, $jp_id_lama, $poin_lama, $tgl_lama, $dicatat_oleh);
+                $exec_log = mysqli_stmt_execute($stmt_log);
+                
+                if (!$exec_log) {
+                    $error_count++;
+                    $error_message = "Gagal backup log bahasa: " . mysqli_error($conn);
+                    mysqli_rollback($conn);
+                    break 2; // Keluar dari foreach
+                }
+
+                // 1.2 Kurangi poin santri
+                if ($poin_lama > 0) {
+                    mysqli_stmt_bind_param($stmt_kurangi_poin, "ii", $poin_lama, $santri_id_int);
+                    mysqli_stmt_execute($stmt_kurangi_poin);
+                }
+
+                // 1.3 Hapus data lama
+                mysqli_stmt_bind_param($stmt_hapus_lama, "i", $id_lama);
+                mysqli_stmt_execute($stmt_hapus_lama);
+            }
+            // Bersihin result set biar loop berikutnya aman
+            mysqli_free_result($result_lama);
+        }
+
+        // --- STEP 2: INSERT DATA BARU ---
+        
+        // 2.1 Insert ke tabel pelanggaran
         mysqli_stmt_bind_param($stmt_insert, "iisi", $santri_id_int, $jenis_pelanggaran_id, $tanggal, $dicatat_oleh);
         $exec_insert = mysqli_stmt_execute($stmt_insert);
 
-        // Proses 2: Update poin_aktif di tabel santri
-        $exec_update = true; // Anggap sukses dulu
-        if ($exec_insert && $poin_to_add > 0) { // Hanya update jika insert berhasil DAN poinnya lebih dari 0
-            mysqli_stmt_bind_param($stmt_update, "ii", $poin_to_add, $santri_id_int);
-            $exec_update = mysqli_stmt_execute($stmt_update);
+        // 2.2 Update poin santri
+        $exec_update = true;
+        if ($exec_insert && $poin_baru > 0) {
+            mysqli_stmt_bind_param($stmt_tambah_poin, "ii", $poin_baru, $santri_id_int);
+            $exec_update = mysqli_stmt_execute($stmt_tambah_poin);
         }
 
-        // Cek apakah kedua proses berhasil
         if ($exec_insert && $exec_update) {
             $success_count++;
         } else {
             $error_count++;
-            $error_message = mysqli_error($conn); // Simpan pesan error terakhir
-            // Jika ada satu saja yang gagal, langsung batalkan semua dan keluar dari loop
+            $error_message = mysqli_error($conn);
             mysqli_rollback($conn);
             break; 
         }
     }
 
-    // Tutup prepared statements
+    // Tutup statement (KECUALI stmt_get_info yg udah ditutup di atas)
+    mysqli_stmt_close($stmt_cari_lama);
+    mysqli_stmt_close($stmt_log);
+    mysqli_stmt_close($stmt_kurangi_poin);
+    mysqli_stmt_close($stmt_hapus_lama);
     mysqli_stmt_close($stmt_insert);
-    mysqli_stmt_close($stmt_update);
+    mysqli_stmt_close($stmt_tambah_poin);
 
     // =================================================================
-    // LANGKAH #4: Finalisasi (Commit atau Rollback)
+    // FINALISASI
     // =================================================================
     if ($error_count > 0) {
-        // Jika ada error, sesi pesan diisi dengan info kegagalan.
-        // Rollback sudah dijalankan di dalam loop tadi.
         $_SESSION['message'] = [
             'type' => 'danger',
-            'text' => "Terjadi kesalahan! Proses dibatalkan. Gagal di santri ke-" . ($success_count + 1) . ". Error: " . $error_message
+            'text' => "Gagal memproses data! Error: " . $error_message
         ];
     } else {
-        // Jika semua berhasil, commit transaksi untuk menyimpan permanen semua perubahan.
         mysqli_commit($conn);
+        
+        $msg_text = "Berhasil! $success_count data tersimpan.";
+        if ($bagian_pelanggaran === 'Bahasa') {
+            $msg_text .= " Data bahasa lama sudah diarsipkan ke Log.";
+        }
+        
         $_SESSION['message'] = [
             'type' => 'success',
-            'text' => "Proses selesai. Berhasil mencatat $success_count pelanggaran dan memperbarui poin."
+            'text' => $msg_text
         ];
     }
 
-    header("Location: create.php");
+    header("Location: ../bahasa/create.php");
     exit();
 }
 
-// Redirect jika ada yang coba akses file ini langsung
-header("Location: create.php");
+header("Location: ../bahasa/create.php");
 exit();
