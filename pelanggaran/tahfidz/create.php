@@ -9,7 +9,7 @@ guard('pelanggaran_tahfidz_input');
 require_once __DIR__ . '/../../header.php'; 
 
 // =========================================================================
-// ✅ Query disederhanakan (WHERE Tahfidz)
+// ✅ Query Tahfidz
 // =========================================================================
 $sql_query = "
     SELECT id, nama_pelanggaran, poin 
@@ -26,15 +26,14 @@ $jenis_pelanggaran_list_result = mysqli_query($conn, trim($sql_query));
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/jqueryui/1.13.2/themes/base/jquery-ui.min.css">
 
 <style>
-    /* ✅ PERBAIKAN 1: Definisikan warna merah soft baru */
+    /* ✅ DEFINISI WARNA MERAH TAHFIDZ */
     :root {
-        --bs-tahfidz-red: #D9534F; /* Merah klasik yg lebih soft */
+        --bs-tahfidz-red: #D9534F; /* Merah soft */
         --bs-tahfidz-red-rgb: 217, 83, 79;
-        --bs-tahfidz-red-dark: #C9302C; /* Untuk hover */
-        --bs-tahfidz-red-darker: #C12E2A; /* Untuk hover border */
+        --bs-tahfidz-red-dark: #C9302C;
     }
 
-    /* -- Style Autocomplete (Santri) -- */
+    /* -- Style Autocomplete -- */
     .ui-autocomplete {
         z-index: 1051;
         max-height: 250px;
@@ -44,7 +43,7 @@ $jenis_pelanggaran_list_result = mysqli_query($conn, trim($sql_query));
         box-shadow: 0 4px 12px rgba(0,0,0,0.1);
     }
 
-    /* -- Style Select2 (Pelanggaran) -- */
+    /* -- Style Select2 -- */
     .select2-container--bootstrap-5 .select2-dropdown {
         border-radius: 0.5rem;
         border: 1px solid #dee2e6;
@@ -61,171 +60,72 @@ $jenis_pelanggaran_list_result = mysqli_query($conn, trim($sql_query));
         line-height: 1.5;
         padding-left: 0;
     }
+    /* Warna Focus Select2 Merah */
     .select2-container--bootstrap-5.select2-container--focus .select2-selection {
-        /* ✅ PERBAIKAN 1: Gunakan warna soft red */
         border-color: var(--bs-tahfidz-red);
         box-shadow: 0 0 0 0.25rem rgba(var(--bs-tahfidz-red-rgb), 0.25);
     }
 
-    /* -- Style Input Form -- */
-    .form-control, .form-select {
-        border-radius: 0.5rem;
-    }
-
-    /* -- Style Stepper (BARU) -- */
-    .form-step {
-        margin-bottom: 2rem;
-    }
+    /* -- Style Stepper -- */
+    .form-step { margin-bottom: 2rem; }
     .form-step-label {
-        display: flex;
-        align-items: center;
-        font-size: 1.15rem;
-        font-weight: 600;
-        color: #343a40;
-        margin-bottom: 0.85rem;
+        display: flex; align-items: center; font-size: 1.15rem; font-weight: 600; color: #343a40; margin-bottom: 0.85rem;
     }
     .form-step-label .step-number {
-        display: inline-flex;
-        align-items: center;
-        justify-content: center;
-        width: 30px;
-        height: 30px;
-        border-radius: 50%;
-        /* ✅ PERBAIKAN 1: Gunakan warna soft red */
-        background-color: var(--bs-tahfidz-red);
-        color: #fff;
-        font-size: 1rem;
-        font-weight: 700;
-        margin-right: 0.75rem;
+        display: inline-flex; align-items: center; justify-content: center; width: 30px; height: 30px;
+        border-radius: 50%; 
+        background-color: var(--bs-tahfidz-red); /* Merah Tahfidz */
+        color: #fff; font-size: 1rem; font-weight: 700; margin-right: 0.75rem;
     }
 
-    /* ✅ PERBAIKAN 1: Buat class tombol soft red baru */
+    /* -- Custom Button Red -- */
     .btn-tahfidz-red {
         background-color: var(--bs-tahfidz-red);
         border-color: var(--bs-tahfidz-red);
         color: #fff;
+        font-weight: 600;
+        padding: 0.85rem; /* Padding gede buat tombol simpan */
+        border-radius: 0.5rem;
     }
     .btn-tahfidz-red:hover {
         background-color: var(--bs-tahfidz-red-dark);
-        border-color: var(--bs-tahfidz-red-darker);
+        border-color: var(--bs-tahfidz-red-dark);
         color: #fff;
     }
 
-    /* -- Style Tombol "Tambah" Santri -- */
-    .input-group .btn-tahfidz-red { /* ✅ PERBAIKAN 1: Ganti ke class baru */
-        border-top-right-radius: 0.5rem !important;
-        border-bottom-right-radius: 0.5rem !important;
-    }
-
-    /* -- Style Tabel (Minimalis) -- */
-    .table-wrapper {
-        border: 1px solid #dee2e6;
-        border-radius: 0.5rem;
-        overflow: hidden;
-    }
-    .table {
-        margin-bottom: 0;
-    }
-    .table thead th {
-        background-color: #f8f9fa;
-        color: #343a40;
-        font-weight: 600;
-        border-bottom: 2px solid #dee2e6;
-        border-top: 0;
-        white-space: nowrap;
-        padding: 0.75rem 1rem;
-    }
-    .table tbody td {
-        padding: 0.75rem 1rem;
-        vertical-align: middle;
-    }
-    .table tbody tr:last-child td {
-        border-bottom: 0;
-    }
-
-    /* -- Style Tombol Hapus (Minimalis) -- */
-    .btn-hapus {
-        background-color: #fdf2f2;
-        color: #dc3545;
-        border: 1px solid #fadddd;
-        border-radius: 0.375rem;
-        width: 38px;
-        height: 38px;
-    }
-    .btn-hapus:hover {
-        background-color: #dc3545;
-        color: #fff;
-        border-color: #dc3545;
-    }
+    /* -- Style Table -- */
+    .table-wrapper { border: 1px solid #dee2e6; border-radius: 0.5rem; overflow: hidden; }
+    .table { margin-bottom: 0; }
+    .table thead th { background-color: #f8f9fa; color: #343a40; font-weight: 600; border-bottom: 2px solid #dee2e6; padding: 0.75rem 1rem; white-space: nowrap; }
+    .table tbody td { padding: 0.75rem 1rem; vertical-align: middle; }
     
-    /* -- Style Pesan Tabel Kosong -- */
-    #empty-table-message {
-        border: 2px dashed #dee2e6;
-        border-radius: 0.5rem;
-        background-color: #f8f9fa;
-    }
-
-    /* ✅ PERBAIKAN 2: Ganti style tombol simpan ke .btn-success */
-    .btn-success { 
-        font-size: 1.1rem;
-        font-weight: 600;
-        padding: 0.85rem;
-        border-radius: 0.5rem;
-    }
-
-    /* -- Responsive di HP -- */
+    /* -- Responsive Tweaks -- */
     @media (max-width: 767px) {
-        .card-body {
-            padding: 1.25rem !important;
-        }
-        .form-card-header h4 {
-            font-size: 1.25rem;
-        }
-        .form-step-label {
-            font-size: 1.05rem;
-        }
-        .form-step-label .step-number {
-            width: 26px;
-            height: 26px;
-            font-size: 0.9rem;
-        }
-        .table thead th,
-        .table tbody td {
-            font-size: 0.9rem;
-            padding: 0.6rem 0.5rem;
-        }
-        .btn-hapus {
-            width: 34px;
-            height: 34px;
-        }
-        #empty-table-message {
-            font-size: 0.9rem;
-        }
+        .card-body { padding: 1.25rem !important; }
+        .form-step-label { font-size: 1.05rem; }
+        .form-step-label .step-number { width: 26px; height: 26px; font-size: 0.9rem; margin-right: 0.5rem; }
+        
+        /* Input date margin fix */
+        input[type="datetime-local"] { margin-top: 0.5rem; }
+        
+        /* Padding tabel HP */
+        .table tbody td { padding: 0.75rem 0.5rem; }
     }
 </style>
 
 <div class="container my-4">
     <div class="card col-xl-10 col-lg-12 mx-auto shadow-sm">
+        <!-- Header Merah Tahfidz -->
         <div class="card-header text-white" style="background-color: var(--bs-tahfidz-red);">
-            <div class="d-none d-md-flex justify-content-between align-items-center">
-                <h4 class="mb-0">
-                    <i class="fas fa-book-reader me-2"></i> Catat Pelanggaran Tahfidz
+            <div class="d-flex justify-content-between align-items-center">
+                <h4 class="mb-0 fs-5 fs-md-4">
+                    <i class="fas fa-book-reader me-2"></i> Input Tahfidz
                 </h4>
+                
                 <?php if (has_permission('rekap_view_tahfidz')): ?>
-                <a href="rekap.php" class="btn btn-light btn-sm">
-                    Lihat Rekap <i class="fas fa-chart-line ms-1"></i>
-                </a>
-                <?php endif; ?>
-            </div>
-
-            <div class="d-md-none text-center">
-                <h4 class="mb-2">
-                    <i class="fas fa-book-reader me-2"></i> Catat Pelanggaran Tahfidz
-                </h4>
-                <?php if (has_permission('rekap_view_tahfidz')): ?>
-                <a href="rekap.php" class="btn btn-light btn-sm w-100 d-flex justify-content-center align-items-center">
-                    <span>Lihat Rekap</span>
-                    <i class="fas fa-chart-line ms-1"></i>
+                <a href="rekap.php" class="btn btn-light btn-sm d-flex align-items-center gap-2" style="color: var(--bs-tahfidz-red); font-weight: bold;">
+                    <i class="fas fa-chart-line"></i> 
+                    <span class="d-none d-sm-inline">Rekap</span>
                 </a>
                 <?php endif; ?>
             </div>
@@ -233,6 +133,7 @@ $jenis_pelanggaran_list_result = mysqli_query($conn, trim($sql_query));
         
         <div class="card-body p-3 p-md-4">
             
+            <!-- Flash Message -->
             <?php if (isset($_SESSION['message'])): ?>
                 <div class="alert alert-<?php echo $_SESSION['message']['type']; ?> alert-dismissible fade show" role="alert">
                     <?php echo $_SESSION['message']['text']; ?>
@@ -248,22 +149,20 @@ $jenis_pelanggaran_list_result = mysqli_query($conn, trim($sql_query));
                         <span class="step-number">1</span> Pilih Jenis Pelanggaran
                     </label>
                     <div class="row g-3">
-                        <div class="col-md-8">
+                        <div class="col-12 col-md-8">
                             <select name="jenis_pelanggaran_id" id="jenis_pelanggaran_id" class="form-control" required>
-                                <option value="">-- Pilih atau ketik nama pelanggaran --</option>
+                                <option value="">Pilih atau ketik nama pelanggaran...</option>
                                 <?php
                                 if ($jenis_pelanggaran_list_result && mysqli_num_rows($jenis_pelanggaran_list_result) > 0) {
                                     while ($jp = mysqli_fetch_assoc($jenis_pelanggaran_list_result)) {
                                         $text_label = sprintf("%s (Poin: %d)", htmlspecialchars($jp['nama_pelanggaran']), $jp['poin']);
                                         echo '<option value="' . $jp['id'] . '">' . $text_label . '</option>';
                                     }
-                                } else {
-                                    echo '<option value="" disabled>Gagal memuat data pelanggaran. Cek query.</option>';
                                 }
                                 ?>
                             </select>
                         </div>
-                        <div class="col-md-4">
+                        <div class="col-12 col-md-4">
                             <input type="datetime-local" name="tanggal" id="tanggal" class="form-control" value="<?php echo date('Y-m-d\TH:i'); ?>" required>
                         </div>
                     </div>
@@ -271,19 +170,17 @@ $jenis_pelanggaran_list_result = mysqli_query($conn, trim($sql_query));
 
                 <div class="form-step">
                     <label for="santri-search" class="form-step-label">
-                        <span class="step-number">2</span> Cari dan Tambahkan Santri
+                        <span class="step-number">2</span> Cari Santri
                     </label>
                     <div class="input-group">
-                        <input type="text" id="santri-search" class="form-control" placeholder="Ketik nama santri untuk mencari...">
-                        <button class="btn btn-tahfidz-red" type="button" id="btn-tambah-santri" disabled>
-                            <i class="fas fa-plus"></i><span class="d-none d-sm-inline ms-1">Tambah</span>
-                        </button>
+                        <span class="input-group-text bg-white text-muted border-end-0"><i class="fas fa-search"></i></span>
+                        <input type="text" id="santri-search" class="form-control border-start-0 ps-0" placeholder="Ketik nama santri, pilih, langsung masuk tabel...">
                     </div>
                 </div>
                 
                 <div class="form-step">
                     <label class="form-step-label">
-                        <span class="step-number">3</span> Daftar Santri Ditambahkan
+                        <span class="step-number">3</span> Daftar Pelanggar
                     </label>
                     
                     <div class="table-wrapper table-responsive">
@@ -291,24 +188,30 @@ $jenis_pelanggaran_list_result = mysqli_query($conn, trim($sql_query));
                             <thead>
                                 <tr>
                                     <th>Nama Santri</th>
-                                    <th>Kelas</th>
-                                    <th>Kamar</th>
-                                    <th class="text-center">Aksi</th>
+                                    <!-- 
+                                        RESPONSIVE HEADER:
+                                        Kelas & Kamar hilang di HP (d-none), muncul di Laptop (d-md-table-cell) 
+                                    -->
+                                    <th class="d-none d-md-table-cell">Kelas</th>
+                                    <th class="d-none d-md-table-cell">Kamar</th>
+                                    <th class="text-center" style="width: 60px;">Aksi</th>
                                 </tr>
                             </thead>
                             <tbody>
-                                </tbody>
+                                <!-- Data masuk lewat JS -->
+                            </tbody>
                         </table>
                     </div>
                     <div id="empty-table-message" class="text-center text-muted p-4">
-                        <i class="fas fa-users-slash fa-2x mb-2 d-block"></i>
+                        <i class="fas fa-users-slash fa-2x mb-2 d-block opacity-50"></i>
                         Belum ada santri yang ditambahkan.
                     </div>
                 </div>
 
                 <div class="d-grid mt-4">
-                    <button type="submit" name="create_bulk_pelanggaran" class="btn btn-success">
-                        <i class="fas fa-save me-1"></i> Simpan Semua Pelanggaran
+                    <!-- Tombol Simpan Merah -->
+                    <button type="submit" name="create_bulk_pelanggaran" class="btn btn-tahfidz-red shadow-sm">
+                        <i class="fas fa-save me-2"></i> Simpan Data Tahfidz
                     </button>
                 </div>
             </form>
@@ -327,37 +230,37 @@ $(document).ready(function() {
     let selectedSantri = null;
 
     function escapeHTML(str) {
-        if (str === null || typeof str === 'undefined') {
-            return '';
-        }
+        if (str === null || typeof str === 'undefined') return '';
         return $('<div>').text(str).html();
     }
 
+    // Init Select2 - Width 100%
     $('#jenis_pelanggaran_id').select2({
         theme: "bootstrap-5",
-        dropdownParent: $('#jenis_pelanggaran_id').parent()
+        dropdownParent: $('#jenis_pelanggaran_id').parent(),
+        placeholder: "Pilih pelanggaran...",
+        width: '100%' 
     });
 
+    // ==========================================
+    // ✅ AUTOCOMPLETE + AUTO ADD
+    // ==========================================
     $("#santri-search").autocomplete({
         source: "search_santri.php",
         minLength: 2,
         select: function(event, ui) {
             selectedSantri = ui.item;
-            $('#btn-tambah-santri').prop('disabled', false);
+            tambahSantri(); // Auto Add trigger
+            $(this).val(''); // Reset input
+            return false;
         }
     }).autocomplete("instance")._renderItem = function(ul, item) {
-        return $("<li>")
-            .append("<div>" + item.label + "</div>")
-            .appendTo(ul);
+        return $("<li>").append("<div class='py-1 px-2'>" + item.label + "</div>").appendTo(ul);
     };
 
-    $("#santri-search").on('keyup', function() {
-        if ($(this).val().trim() === '') {
-            selectedSantri = null;
-            $('#btn-tambah-santri').prop('disabled', true);
-        }
-    });
-
+    // ==========================================
+    // ✅ FUNGSI CEK TABEL KOSONG (GLOBAL)
+    // ==========================================
     function checkTableEmpty() {
         const tableBody = $('#tabel-santri-pelanggar tbody');
         const emptyMessage = $('#empty-table-message');
@@ -372,14 +275,19 @@ $(document).ready(function() {
         }
     }
     
+    // Bikin Global
+    window.checkTableEmpty = checkTableEmpty;
     checkTableEmpty();
 
+    // ==========================================
+    // ✅ FUNGSI TAMBAH SANTRI (RESPONSIVE ROW)
+    // ==========================================
     function tambahSantri() {
         if (!selectedSantri) return;
 
+        // Cek Duplikat
         if ($('#tabel-santri-pelanggar').find('tr[data-id="' + selectedSantri.id + '"]').length > 0) {
-            alert('Santri sudah ada dalam daftar.');
-            resetInput();
+            alert('Santri atas nama ' + selectedSantri.value + ' sudah ada di daftar.');
             return;
         }
 
@@ -387,57 +295,55 @@ $(document).ready(function() {
         let kelasSantri = escapeHTML(selectedSantri.kelas);
         let kamarSantri = escapeHTML(selectedSantri.kamar);
 
+        // LOGIC HTML BARIS TABEL
         let barisBaru = `
             <tr data-id="${selectedSantri.id}">
                 <td>
-                    ${namaSantri}
+                    <div class="fw-bold text-dark">${namaSantri}</div>
+                    
+                    <!-- 
+                       TAMPILAN HP (d-md-none):
+                       Kelas & Kamar jadi badge di bawah nama
+                    -->
+                    <div class="d-block d-md-none mt-1">
+                        <span class="badge bg-light text-secondary border me-1">Kelas: ${kelasSantri}</span>
+                        <span class="badge bg-light text-secondary border">Kamar: ${kamarSantri}</span>
+                    </div>
+
                     <input type="hidden" name="santri_ids[]" value="${selectedSantri.id}">
                 </td>
-                <td>${kelasSantri}</td>
-                <td>${kamarSantri}</td>
-                <td class="text-center">
-                    <button type="button" class="btn btn-sm btn-hapus" title="Hapus Santri">
+
+                <!-- 
+                   TAMPILAN LAPTOP (d-none d-md-table-cell):
+                   Kelas & Kamar muncul di kolom terpisah
+                -->
+                <td class="d-none d-md-table-cell text-nowrap align-middle">${kelasSantri}</td>
+                <td class="d-none d-md-table-cell text-nowrap align-middle">${kamarSantri}</td>
+                
+                <td class="text-center align-middle">
+                    <button type="button" class="btn btn-sm btn-light text-danger border btn-delete-row" onclick="$(this).closest('tr').remove(); checkTableEmpty();" title="Hapus">
                         <i class="fas fa-trash"></i>
                     </button>
                 </td>
             </tr>
         `;
+        
         $('#tabel-santri-pelanggar tbody').append(barisBaru);
-        resetInput();
-        checkTableEmpty(); 
-    }
-    
-    $('#btn-tambah-santri').click(tambahSantri);
-    
-    $('#santri-search').on('keydown', function(e) {
-        if (e.key === 'Enter' && selectedSantri) {
-            e.preventDefault();
-            tambahSantri();
-        }
-    });
-
-    $('#tabel-santri-pelanggar').on('click', '.btn-hapus', function() {
-        $(this).closest('tr').remove();
-        checkTableEmpty(); 
-    });
-    
-    function resetInput() {
-        $("#santri-search").val('');
-        $('#btn-tambah-santri').prop('disabled', true);
         selectedSantri = null;
-        $("#santri-search").focus(); 
+        checkTableEmpty(); 
     }
 
+    // Validasi Submit
     $("#form-pelanggaran").on('submit', function(e) {
         if (!$("#jenis_pelanggaran_id").val()) {
             e.preventDefault();
-            alert("Jenis pelanggaran belum dipilih!");
+            alert("Pilih jenis pelanggaran dulu ya!");
             $('#jenis_pelanggaran_id').select2('open');
             return;
         }
         if ($('#tabel-santri-pelanggar tbody tr').length === 0) {
             e.preventDefault();
-            alert('Daftar santri pelanggar tidak boleh kosong!');
+            alert('Belum ada santri yang ditambahkan.');
             $('#santri-search').focus();
         }
     });

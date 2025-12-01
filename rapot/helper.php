@@ -164,7 +164,7 @@ if (!function_exists('generatePenilaianDropdown')) {
                 $options = '
                     <option value="">-- Pilih Penilaian --</option>
                     <option value="5">Barang pribadi selalu tertata rapi dan bersih</option>
-                    <option value="4">Umumnya rapi namun kurang konsisten</option>
+                    <option value="4">Umumnya rapi</option>
                     <option value="3">Perlu diingatkan untuk menjaga kerapihan barang</option>
                     <option value="2">Sering terlihat berantakan atau tidak teratur</option>
                     <option value="1">Kurang tanggung jawab dalam menjaga barang pribadi</option>
@@ -329,7 +329,7 @@ if (!function_exists('getDeskripsiPenilaian')) {
             case 'kerapihan_barang':
                 return [
                     5 => 'Barang pribadi selalu tertata rapi dan bersih',
-                    4 => 'Umumnya rapi namun kurang konsisten',
+                    4 => 'Umumnya rapi',
                     3 => 'Perlu diingatkan untuk menjaga kerapihan barang',
                     2 => 'Sering terlihat berantakan atau tidak teratur',
                     1 => 'Kurang tanggung jawab dalam menjaga barang pribadi'
