@@ -71,7 +71,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Aplikasi Kepengasuhan Santri</title>
+    <title>AsuhTrack</title>
     <!-- REVISI: Path favicon jadi dinamis + otomatis cache bust -->
     <link rel="icon" type="image/png" sizes="64x64" href="<?= BASE_URL ?>/assets/logo.png?v=<?= $logo_version ?>">
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">

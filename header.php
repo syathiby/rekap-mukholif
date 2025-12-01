@@ -14,7 +14,7 @@ $logo_version = file_exists($logo_server_path)
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Aplikasi Kepengasuhan Santri</title>
+    <title>AsuhTrack</title>
     
     <!-- Aset & Font -->
     <!-- REVISI: Path favicon jadi dinamis + otomatis cache bust -->
@@ -249,7 +249,7 @@ $logo_version = file_exists($logo_server_path)
                         <div class="d-flex align-items-center">
                             <!-- REVISI: Path logo jadi dinamis + otomatis cache bust -->
                             <img src="<?= BASE_URL ?>/assets/logo.png?v=<?= $logo_version ?>" alt="Logo" class="header-logo me-2">
-                            <span class="fw-bold app-name align-middle" style="color: #25396f;">Kepengasuhan Santri</span>
+                            <span class="fw-bold app-name align-middle" style="color: #25396f;">AsuhTrack</span>
                         </div>
                     </div>
                     
