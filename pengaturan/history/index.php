@@ -83,11 +83,11 @@ $bagian_result = mysqli_query($conn, "SELECT DISTINCT bagian FROM jenis_pelangga
     /* TABLE STYLING - CLEAN & RESPONSIVE SCROLL */
     .table-responsive {
         border-radius: 16px;
-        overflow-x: auto; /* Kunci scroll horizontal di HP */
-        -webkit-overflow-scrolling: touch; /* Biar smooth di iPhone */
+        overflow-x: auto;
+        -webkit-overflow-scrolling: touch;
     }
     
-    .table { margin-bottom: 0; white-space: nowrap; /* Biar kolom gak kelipet di HP */ }
+    .table { margin-bottom: 0; white-space: nowrap; }
 
     .table thead th {
         background-color: #f8fafc;
@@ -201,7 +201,7 @@ $bagian_result = mysqli_query($conn, "SELECT DISTINCT bagian FROM jenis_pelangga
                                 </td>
                                 <td class="text-center">
                                     <span class="badge badge-soft-danger rounded-pill px-3">
-                                        -<?= htmlspecialchars($row['poin']) ?>
+                                        <?= htmlspecialchars($row['poin']) ?>
                                     </span>
                                 </td>
                                 <td class="text-muted small">
