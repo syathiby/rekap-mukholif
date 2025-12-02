@@ -40,9 +40,6 @@ $end_date = $_GET['end_date'] ?? date('Y-m-d');
 // BAGIAN 2: QUERY UTAMA (SNAPSHOT LOGIC)
 // =======================================================
 
-// Kita ambil SEMUA santri dulu sesuai filter kamar/kelas
-// Nanti logic "Level Terakhir" kita hitung pakai Subquery UNION biar akurat sesuai tanggal
-
 $params = []; 
 $types = ""; 
 
@@ -72,9 +69,6 @@ $peringkat_list = [];
 // BAGIAN 3: PROSES DATA (Mencari Status Terakhir per Santri)
 // =======================================================
 
-// Siapkan Query buat nyari "Last Status" di rentang tanggal
-// Kita gabung tabel PELANGGARAN (Aktif) + LOG_BAHASA (Riwayat)
-// Ambil yang tanggalnya paling akhir di dalam filter
 $sql_snapshot = "
     SELECT 
         u.tanggal, 
@@ -91,60 +85,81 @@ $sql_snapshot = "
       AND jp.bagian = ?
       AND DATE(u.tanggal) BETWEEN ? AND ?
     ORDER BY u.tanggal DESC 
-    LIMIT 1
+    LIMIT 2
 ";
 $stmt_snapshot = mysqli_prepare($conn, $sql_snapshot);
 
 while ($santri = mysqli_fetch_assoc($result_santri)) {
-    // Cek status terakhir si santri ini di rentang tanggal yg dipilih
     mysqli_stmt_bind_param($stmt_snapshot, "isss", $santri['id'], $bagian, $start_date, $end_date);
     mysqli_stmt_execute($stmt_snapshot);
     $res_snapshot = mysqli_stmt_get_result($stmt_snapshot);
-    $snapshot = mysqli_fetch_assoc($res_snapshot);
+    
+    $history_data = [];
+    while ($r = mysqli_fetch_assoc($res_snapshot)) {
+        $history_data[] = $r;
+    }
+    
+    $snapshot = $history_data[0] ?? null;       // Data Terbaru
+    $prev_snapshot = $history_data[1] ?? null;  // Data Sebelumnya
 
-    // Kalau ada data pelanggaran di rentang tgl tsb
     if ($snapshot) {
-        // Cek Filter Level (Kalau user milih level tertentu)
         if (!empty($filter_level) && $snapshot['level_id'] != $filter_level) {
-            continue; // Skip kalau levelnya gak cocok sama filter
+            continue; 
         }
 
-        // Masukin ke list buat ditampilin
+        // --- LOGIC TREND (NAIK/TURUN) ---
+        // Default kosong (biar kalau stabil/baru gak muncul apa-apa)
+        $trend_html = ''; 
+
+        if ($prev_snapshot) {
+            $diff = $snapshot['poin'] - $prev_snapshot['poin'];
+            
+            if ($diff > 0) {
+                // NAIK (Merah) - Pakai margin-start (ms-1) biar ada jarak dikit dari angka
+                $trend_html = '<small class="text-danger ms-2" title="Naik '.$diff.' poin"><i class="fas fa-arrow-up"></i></small>';
+            } elseif ($diff < 0) {
+                // TURUN (Hijau)
+                $trend_html = '<small class="text-success ms-2" title="Turun '.abs($diff).' poin"><i class="fas fa-arrow-down"></i></small>';
+            }
+            // ELSE: Kalau 0 (Stabil), biarkan kosong
+        }
+        // ELSE: Kalau gak ada history (Data Baru), biarkan kosong
+
         $peringkat_list[] = [
             'id' => $santri['id'],
             'nama' => $santri['nama'],
             'kelas' => $santri['kelas'],
             'kamar' => $santri['kamar'],
-            'total_poin' => $snapshot['poin'], // Poin sesuai saat itu
-            'level_sekarang' => $snapshot['nama_pelanggaran'], // Level sesuai saat itu
-            'tanggal_terakhir' => $snapshot['tanggal']
+            'total_poin' => $snapshot['poin'],
+            'level_sekarang' => $snapshot['nama_pelanggaran'],
+            'tanggal_terakhir' => $snapshot['tanggal'],
+            'trend_html' => $trend_html 
         ];
     }
 }
 
-// Urutkan Array (Poin Tertinggi diatas)
+// Urutkan Array
 usort($peringkat_list, function($a, $b) {
     if ($b['total_poin'] == $a['total_poin']) {
-        return strcmp($a['nama'], $b['nama']); // Kalau poin sama, urut abjad
+        return strcmp($a['nama'], $b['nama']); 
     }
     return $b['total_poin'] - $a['total_poin'];
 });
 
-// Data untuk Grafik (Diambil dari array yang udah diproses)
+// Data untuk Grafik
 $top_5_santri = array_slice($peringkat_list, 0, 5);
 $json_top_santri = json_encode([
     'labels' => array_column($top_5_santri, 'nama'),
     'data' => array_column($top_5_santri, 'total_poin')
 ]);
 
-// Hitung sebaran kelas manual dari array hasil
 $kelas_stats = [];
 foreach ($peringkat_list as $p) {
     $kls = $p['kelas'];
     if (!isset($kelas_stats[$kls])) $kelas_stats[$kls] = 0;
     $kelas_stats[$kls]++;
 }
-arsort($kelas_stats); // Urutkan kelas terbanyak
+arsort($kelas_stats);
 $json_kelas_chart = json_encode([
     'labels' => array_keys($kelas_stats),
     'data' => array_values($kelas_stats)
@@ -183,11 +198,10 @@ $json_kelas_chart = json_encode([
         .btn-detail { background-color: var(--primary-light); color: var(--primary); font-weight: 600; text-decoration: none; transition: all 0.2s; }
         .btn-detail:hover { background-color: var(--primary); color: white; }
         
-        /* ✅ REVISI WARNA: Soft Red (Merah Kalem) */
         .level-badge {
-            background-color: #fee2e2; /* Background merah muda lembut */
-            color: #991b1b; /* Teks merah tua */
-            border: 1px solid #fecaca; /* Border tipis */
+            background-color: #fee2e2; 
+            color: #991b1b; 
+            border: 1px solid #fecaca; 
             font-weight: 600;
             padding: 6px 16px;
             border-radius: 50px;
@@ -287,9 +301,8 @@ $json_kelas_chart = json_encode([
                     <?php else: ?>
                         <?php foreach ($peringkat_list as $index => $row): 
                             $no = $index + 1; 
-                            // ✅ REVISI TEKS: Hapus kata (Bahasa) biar singkat
                             $level_singkat = str_ireplace(['(Bahasa)', '(bahasa)'], '', $row['level_sekarang']);
-                            $level_singkat = trim($level_singkat); // Hapus spasi sisa
+                            $level_singkat = trim($level_singkat); 
                         ?>
                         <tr class="rank-<?= $no ?>">
                             <td class="text-center">
@@ -304,12 +317,14 @@ $json_kelas_chart = json_encode([
                                 <small class="text-muted">Kls: <?= htmlspecialchars($row['kelas']) ?> | Kmr: <?= htmlspecialchars($row['kamar']) ?></small>
                             </td>
                             <td class="text-center">
-                                <span class="total-poin">
-                                    <?= $row['total_poin'] ?>
-                                </span>
+                                <div class="d-flex align-items-center justify-content-center">
+                                    <span class="total-poin">
+                                        <?= $row['total_poin'] ?>
+                                    </span>
+                                    <?= $row['trend_html'] ?>
+                                </div>
                             </td>
                             <td class="text-center">
-                                <!-- ✅ REVISI TAMPILAN: Soft Red & Teks Singkat -->
                                 <span class="level-badge">
                                     <?= htmlspecialchars($level_singkat) ?>
                                 </span>
