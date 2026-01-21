@@ -310,55 +310,50 @@
         </tbody>
     </table>
 
-    <!-- POIN PELANGGARAN -->
-    <table class="poin-table-pelanggaran">
+    <!-- POIN PELANGGARAN & REWARD (BERSEBELAHAN - KOMPATIBEL MPDF) -->
+    <table width="100%" style="margin-top: 10px; font-size: 9pt; line-height: 1.3; border-collapse: collapse;">
         <tr>
-            <td class="poin-text">Total Poin Pelanggaran</td>
-            <td class="poin-nilai">
-                <?php 
-                echo ($rapot['total_poin_pelanggaran_saat_itu'] > 0) ? $rapot['total_poin_pelanggaran_saat_itu'] : '-'; 
-                ?>
+            <!-- Kolom Pelanggaran -->
+            <td width="50%" style="padding: 6px 8px; background: #fdecec; border-left: 3px solid #e60000; vertical-align: top;">
+                <div style="color: #c00; font-weight: bold; margin-bottom: 2px;">Poin Pelanggaran</div>
+                <div style="font-weight: bold; color: #000;">
+                    <?php echo ($rapot['total_poin_pelanggaran_saat_itu'] > 0) ? $rapot['total_poin_pelanggaran_saat_itu'] : '–'; ?>
+                </div>
+                <?php if (!empty($pelanggaran_list)): ?>
+                    <div style="margin-top: 3px; font-size: 8.5pt; color: #555;">
+                        <b>Rincian:</b> 
+                        <?php
+                        $rincian = [];
+                        foreach ($pelanggaran_list as $p) {
+                            $rincian[] = htmlspecialchars($p['nama_pelanggaran']) . ' (' . $p['poin'] . ')';
+                        }
+                        echo implode(', ', $rincian);
+                        ?>
+                    </div>
+                <?php endif; ?>
             </td>
-        </tr>
-    </table>
-    
-    <?php if (!empty($pelanggaran_list)): ?>
-        <div class="rincian-pelanggaran">
-            <b>Rincian Poin:</b> 
-            <?php
-            $rincian_array = [];
-            foreach ($pelanggaran_list as $pelanggaran) {
-                $rincian_array[] = htmlspecialchars($pelanggaran['nama_pelanggaran']) . ' (' . $pelanggaran['poin'] . ')';
-            }
-            echo implode(', ', $rincian_array);
-            ?>
-        </div>
-    <?php endif; ?>
 
-    <!-- POIN REWARD -->
-    <table class="poin-table-reward">
-        <tr>
-            <td class="poin-text">Total Poin Reward</td>
-            <td class="poin-nilai">
-                <?php 
-                echo ($rapot['total_poin_reward_saat_itu'] > 0) ? $rapot['total_poin_reward_saat_itu'] : '-'; 
-                ?>
+            <!-- Kolom Reward -->
+            <td width="50%" style="padding: 6px 8px; background: #ecf8f0; border-left: 3px solid #009900; vertical-align: top;">
+                <div style="color: #090; font-weight: bold; margin-bottom: 2px;">Poin Reward</div>
+                <div style="font-weight: bold; color: #000;">
+                    <?php echo ($rapot['total_poin_reward_saat_itu'] > 0) ? $rapot['total_poin_reward_saat_itu'] : '–'; ?>
+                </div>
+                <?php if (!empty($reward_list)): ?>
+                    <div style="margin-top: 3px; font-size: 8.5pt; color: #555;">
+                        <b>Rincian:</b> 
+                        <?php
+                        $rincian = [];
+                        foreach ($reward_list as $r) {
+                            $rincian[] = htmlspecialchars($r['nama_reward']) . ' (' . $r['poin'] . ')';
+                        }
+                        echo implode(', ', $rincian);
+                        ?>
+                    </div>
+                <?php endif; ?>
             </td>
         </tr>
     </table>
-    
-    <?php if (!empty($reward_list)): ?>
-        <div class="rincian-reward">
-            <b>Rincian Reward:</b> 
-            <?php
-            $rincian_array = [];
-            foreach ($reward_list as $reward) {
-                $rincian_array[] = htmlspecialchars($reward['nama_reward']) . ' (' . $reward['poin'] . ')';
-            }
-            echo implode(', ', $rincian_array);
-            ?>
-        </div>
-    <?php endif; ?>
 
     <div class="catatan">
         <b>Catatan:</b>

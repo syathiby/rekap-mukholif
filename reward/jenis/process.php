@@ -67,4 +67,52 @@ if (isset($_POST['bulk_update'])) {
     header("Location: index.php");
     exit;
 }
+
+// --- 4. PROSES TAMBAH BANYAK (Bulk Insert) ---
+if (isset($_POST['add_bulk'])) {
+    guard('jenis_reward_create');
+
+    $lines = explode("\n", trim($_POST['bulk_input']));
+    $success_count = 0;
+    $errors = [];
+
+    foreach ($lines as $line) {
+        $line = trim($line);
+        if (empty($line)) continue;
+
+        // Pisahkan dengan koma (,)
+        $parts = array_map('trim', explode(',', $line));
+        
+        $nama = mysqli_real_escape_string($conn, $parts[0] ?? '');
+        $poin = (int) ($parts[1] ?? 0);
+        $desc = mysqli_real_escape_string($conn, $parts[2] ?? '');
+
+        if (empty($nama) || $poin <= 0) {
+            $errors[] = "Baris tidak valid: '$line'";
+            continue;
+        }
+
+        $query = "INSERT INTO jenis_reward (nama_reward, poin_reward, deskripsi) VALUES ('$nama', '$poin', '$desc')";
+        if (mysqli_query($conn, $query)) {
+            $success_count++;
+        } else {
+            $errors[] = "Gagal menyimpan: '$nama' - " . mysqli_error($conn);
+        }
+    }
+
+    if (!empty($errors)) {
+        $_SESSION['message'] = [
+            'type' => 'warning',
+            'text' => "$success_count berhasil ditambahkan. Ada error: " . implode('<br>', array_slice($errors, 0, 3))
+        ];
+    } else {
+        $_SESSION['message'] = [
+            'type' => 'success',
+            'text' => "Berhasil menambahkan $success_count reward sekaligus!"
+        ];
+    }
+
+    header("Location: index.php");
+    exit;
+}
 ?>
