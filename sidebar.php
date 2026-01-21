@@ -46,6 +46,14 @@ if (!defined('BASE_URL')) {
     </li>
     <?php endif; ?>
 
+    <?php if (has_permission(['jenis_reward_view', 'reward_input', 'reward_history'])): ?>
+    <li class="nav-item">
+        <a class="nav-link apply-color-hover-active color-orange <?= strpos($current_uri, '/reward') !== false ? 'active' : '' ?>" href="<?= BASE_URL ?>/reward">
+            <i class="fas fa-trophy me-2"></i>Reward & Prestasi
+        </a>
+    </li>
+    <?php endif; ?>
+
     <?php if (has_permission('eksekusi_manage')): ?>
     <li class="nav-item">
         <a class="nav-link apply-color-hover-active color-teal <?= strpos($current_uri, '/eksekusi') !== false ? 'active' : '' ?>" href="<?= BASE_URL ?>/eksekusi">

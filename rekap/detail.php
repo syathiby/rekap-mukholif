@@ -23,8 +23,8 @@ $filter_kamar = $_GET['kamar'] ?? null;
 $filter_bagian = $_GET['bagian'] ?? null;
 $filter_kategori = $_GET['kategori'] ?? null;
 
-// Query 1: Ambil data profil santri
-$stmt_santri = $conn->prepare("SELECT nama, kelas, kamar FROM santri WHERE id = ?");
+// Query 1: Ambil data profil santri     
+$stmt_santri = $conn->prepare("SELECT nama, kelas, kamar, poin_aktif FROM santri WHERE id = ?");
 $stmt_santri->bind_param("i", $santri_id);
 $stmt_santri->execute();
 $santri = $stmt_santri->get_result()->fetch_assoc();
@@ -256,6 +256,10 @@ function getKategoriInfo($kategori) {
                     <div class="stat-item">
                         <div class="stat-number"><?= $total_poin ?></div>
                         <div class="stat-label">Total Poin</div>
+                    </div>
+                    <div class="stat-item" style="grid-column: 1 / -1; padding-top: 1rem; border-top: 1px dashed var(--border-color);">
+                        <div class="stat-number text-danger"><?= $santri['poin_aktif'] ?></div>
+                        <div class="stat-label">Total Poin Aktif</div>
                     </div>
                 </div>
             </div>

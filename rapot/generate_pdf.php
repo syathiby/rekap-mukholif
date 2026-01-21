@@ -1,28 +1,19 @@
 <?php
 // File: rekap-mukholif/rapot/generate_pdf.php
 
-// 1. Panggil semua file penting
 require_once __DIR__ . '/../init.php'; 
 require_once __DIR__ . '/../vendor/autoload.php'; 
 require_once __DIR__ . '/helper.php'; 
 
-// 2. Cek Izin "SATPAM"
 guard('rapot_cetak');
 
-// ==========================================================
-//           PERUBAHAN DI SINI: Mode Output
-// ==========================================================
-$output_mode = $_GET['output'] ?? 'download'; // 'download' (default) or 'string'
-// ==========================================================
+$output_mode = $_GET['output'] ?? 'download';
 
-
-// 3. Ambil ID Rapot dari URL
 if (empty($_GET['id'])) {
     die('Error: ID Rapot tidak ditemukan.');
 }
 $rapot_id = (int)$_GET['id'];
 
-// 4. Ambil Data Rapot (Query 1)
 try {
     $sql = "
         SELECT 
@@ -46,7 +37,7 @@ try {
         die('Error: Data rapot tidak ditemukan.');
     }
 
-    // Ambil rincian pelanggaran (Query 2)
+    // Ambil rincian pelanggaran
     $pelanggaran_list = [];
     $sql_pelanggaran = "
         SELECT jp.nama_pelanggaran, jp.poin
@@ -58,18 +49,34 @@ try {
           AND jp.poin > 0
         ORDER BY p.tanggal DESC
     ";
-    
     $stmt_pelanggaran = $conn->prepare($sql_pelanggaran);
     $stmt_pelanggaran->bind_param("isi", $rapot['santri_id'], $rapot['bulan'], $rapot['tahun']);
     $stmt_pelanggaran->execute();
     $pelanggaran_list = $stmt_pelanggaran->get_result()->fetch_all(MYSQLI_ASSOC);
     $stmt_pelanggaran->close();
 
+    // === TAMBAHAN: Ambil rincian REWARD ===
+    $reward_list = [];
+    $sql_reward = "
+        SELECT jr.nama_reward, jr.poin_reward AS poin
+        FROM daftar_reward rwd
+        JOIN jenis_reward jr ON rwd.jenis_reward_id = jr.id
+        WHERE rwd.santri_id = ? 
+          AND MONTH(rwd.tanggal) = FIND_IN_SET(?, 'Januari,Februari,Maret,April,Mei,Juni,Juli,Agustus,September,Oktober,November,Desember')
+          AND YEAR(rwd.tanggal) = ?
+          AND jr.poin_reward > 0  -- DIPERBAIKI: gunakan poin_reward, bukan poin
+        ORDER BY rwd.tanggal DESC
+    ";
+    $stmt_reward = $conn->prepare($sql_reward);
+    $stmt_reward->bind_param("isi", $rapot['santri_id'], $rapot['bulan'], $rapot['tahun']);
+    $stmt_reward->execute();
+    $reward_list = $stmt_reward->get_result()->fetch_all(MYSQLI_ASSOC);
+    $stmt_reward->close();
+
 } catch (Exception $e) {
     die('Error querying database: ' . $e->getMessage());
 }
 
-// 5. Siapin data buat dikirim ke template
 $santri = [
     'nama' => $rapot['nama_santri'] ?? 'Santri Dihapus',
     'kamar' => $rapot['kamar_santri'] ?? 'N/A',
@@ -79,18 +86,15 @@ $musyrif = [
     'nama_lengkap' => $rapot['nama_musyrif'] ?? 'User Dihapus'
 ];
 
-// 6. Setting Path Logo
 $logo_path = __DIR__ . '/../assets/Kop Syathiby.jpg';
 if (!file_exists($logo_path)) $logo_path = ''; 
 
-// 7. Proses 'Magic' mPDF
 ob_start(); 
 include 'template_rapot.php'; 
 $html = ob_get_contents();
 ob_end_clean(); 
 
 try {
-    // 8. Konfigurasi mPDF
     $mpdf = new \Mpdf\Mpdf([
         'mode' => 'utf-8',
         'format' => 'A4',
@@ -100,28 +104,18 @@ try {
         'margin_bottom' => 4,
     ]);
 
-    // 9. Tulis HTML ke PDF
     $mpdf->WriteHTML($html);
 
-    // 10. Tampilkan/Download PDF
     $nama_santri_clean = preg_replace("/[^a-zA-Z0-9 ]/", "", $santri['nama']);
     $nama_file = "Rapot {$nama_santri_clean} - {$rapot['bulan']} {$rapot['tahun']}.pdf";
     
-    // ==========================================================
-    //           PERUBAHAN DI SINI (LOGIKA OUTPUT)
-    // ==========================================================
     if ($output_mode === 'string') {
-        // Return sebagai string buat ditangkep bulk processor
         $pdf_content = $mpdf->Output($nama_file, \Mpdf\Output\Destination::STRING_RETURN);
-        
-        // Kirim header yang bener biar 'fetch' ngenalin ini sbg PDF
         header('Content-Type: application/pdf');
         echo $pdf_content;
     } else {
-        // Mode default: force download (buat link 'Unduh PDF' biasa)
         $mpdf->Output($nama_file, \Mpdf\Output\Destination::DOWNLOAD); 
     }
-    // ==========================================================
     
 } catch (\Mpdf\MpdfException $e) {
     echo 'Error mPDF: ' . $e->getMessage();
