@@ -78,84 +78,14 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600&display=swap" rel="stylesheet">
-    <style>
-        body {
-            background-color: #f4f7fa;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            min-height: 100vh;
-            margin: 0;
-            padding: 20px;
-            font-family: 'Poppins', sans-serif;
-        }
-        .login-card {
-            background: #fff;
-            border-radius: 12px;
-            box-shadow: 0 8px 24px rgba(0,0,0,0.08);
-            padding: 2.5rem;
-            width: 100%;
-            max-width: 400px;
-        }
-        .login-header {
-            text-align: center;
-            margin-bottom: 2rem;
-        }
-        .login-logo {
-            max-width: 60px;
-            margin-bottom: 1rem;
-        }
-        .login-header h4 {
-            font-weight: 600;
-            color: #1e293b;
-        }
-        .form-control {
-            border-radius: 8px;
-            padding: 0.75rem 1rem;
-            border: 1px solid #e2e8f0;
-        }
-        .form-control:focus {
-            border-color: #0d6efd;
-            box-shadow: 0 0 0 0.25rem rgba(13, 110, 253, 0.1);
-        }
-        .btn-login {
-            background-color: #0d6efd;
-            border: none;
-            padding: 0.75rem;
-            font-weight: 500;
-            border-radius: 8px;
-        }
-        .btn-login:hover {
-            background-color: #0b5ed7;
-        }
-        .password-wrapper {
-            position: relative;
-            display: flex;
-            align-items: center;
-        }
-        .password-wrapper .form-control {
-            padding-right: 40px;
-        }
-        .password-toggle {
-            position: absolute;
-            right: 12px;
-            cursor: pointer;
-            background: none;
-            border: none;
-            color: #6c757d;
-            padding: 0;
-            line-height: 1;
-        }
-        .alert {
-            border-radius: 8px;
-        }
-    </style>
+    <link rel="stylesheet" href="<?= BASE_URL ?>/style.css?v=<?= time() ?>">
+
 </head>
-<body>
-    <div class="login-card">
+<body class="login-body">
+    <div class="login-card-wrapper">
         <div class="login-header">
             <!-- REVISI: Path logo jadi dinamis + otomatis cache bust -->
-            <img src="<?= BASE_URL ?>/assets/logo.png?v=<?= $logo_version ?>" alt="Logo Aplikasi" class="login-logo">
+            <img src="<?= BASE_URL ?>/assets/logo.png?v=<?= $logo_version ?>" alt="Logo Aplikasi" class="login-logo login-logo-animate">
             <h4>Login Sistem</h4>
             <p class="text-muted">Masukkan kredensial Anda untuk melanjutkan</p>
         </div>

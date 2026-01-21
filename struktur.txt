@@ -1,134 +1,149 @@
 /rekap-mukholif/
 │
 ├──arsip/
-│    ├──index.php
-│    ├──procees.php
-│    ├──view.php
 │    ├──arsip_kebersihan.php
 │    ├──arsip_pelanggaran.php
 │    ├──arsip_santri.php
-│    ├──detail-pelanggaran.php
-│    ├──detail-kamar.php
 │    ├──create.php
+│    ├──detail-kamar.php
+│    ├──detail-pelanggaran.php
 │    ├──export_arsip.php
+│    ├──index.php
+│    ├──process.php
 │    ├──process_export_arsip.php
-├──assets
-│    ├──logo.png
+│    ├──view.php
+├──assets/
 │    ├──Kop Syathiby.jpg
+│    ├──logo.png
 ├──eksekusi/
 │    ├──index.php
 │    ├──process.php
 ├──export/
 │    ├──index.php
-│    ├──procees-export.php
-├── jenis-pelanggaran/
-│    ├── index.php 
-│    ├── create.php 
-│    ├── edit.php 
-│    ├── bulk-edit.php
-│    ├── delete.php 
-│    └── process.php
-├── pelanggaran/
-│    ├── index.php
-│    ├── bahasa/
+│    ├──process-export.php
+├──jenis-pelanggaran/
+│    ├──bulk-edit.php
+│    ├──create.php
+│    ├──delete.php
+│    ├──edit.php
+│    ├──index.php
+│    ├──process.php
+├──pelanggaran/
+│    ├──index.php
+│    ├──bahasa/
+│    │    ├──create.php
+│    │    ├──detail-bahasa.php
+│    │    ├──process.php
+│    │    ├──rekap.php
+│    │    ├──search_santri.php
+│    ├──diniyyah/
+│    │    ├──create.php
+│    │    ├──detail-diniyyah.php
+│    │    ├──process.php
+│    │    ├──rekap.php
+│    │    ├──search_santri.php
+│    ├──kesantrian/
+│    │    ├──create.php
+│    │    ├──detail-kesantrian.php
+│    │    ├──process.php
+│    │    ├──rekap.php
+│    │    ├──search_santri.php
+│    ├──pengabdian/
 │    │    ├──create.php
 │    │    ├──process.php
-│    │    ├──rekap.php
 │    │    ├──search_santri.php
-│    │    ├──detail-bahasa.php
-│    ├── diniyyah/
-│    │    ├──create.php  
-│    │    ├──process.php
-│    │    ├──rekap.php
-│    │    ├──search_santri.php
-│    │    ├──detail-diniyyah.php
-│    ├── kesantrian/
-│    │    ├──create.php  
-│    │    ├──process.php
-│    │    ├──search_santri.php   
-│    │    ├──rekap.php 
-│    │    ├──detail-kesantrian.php  
-│    ├── pengabdian/
-│    │    ├──create.php  
-│    │    ├──process.php
-│    │    ├──search_santri.php 
-│    └── tahfidz/         
-│       ├── create.php
-│       ├── process.php
-│       ├── rekap.php
-│       ├── search_santri.php
-│       └── detail-tahfidz.php
+│    └──tahfidz/
+│         ├──create.php
+│         ├──detail-tahfidz.php
+│         ├──process.php
+│         ├──rekap.php
+│         ├──search_santri.php
 ├──pengaturan/
 │    ├──index.php
-│    ├──periode-aktif
+│    ├──history/
+│    │    ├──history_view.php
 │    │    ├──index.php
-│    │    └──procees.php
-│    ├──izin
+│    │    ├──process.php
+│    ├──izin/
 │    │    ├──index.php
-│    │    └──procees.php
-│    ├──reset-poin
+│    │    ├──process.php
+│    ├──periode-aktif/
 │    │    ├──index.php
-│    │    └──procees.php
-│    ├──users
-│    │    ├──create.php
-│    │    └──procees-create.php
-│    ├──history
+│    │    ├──process.php
+│    ├──reset-poin/
 │    │    ├──index.php
-│    │    ├──procees.php
-│    │    └──history_view.php
+│    │    ├──process.php
+│    └──users/
+│         ├──delete-user.php
+│         ├──form-user.php
+│         ├──index.php
+│         ├──process-user.php
 ├──rapot/
-│   ├── index.php
-│   ├── create.php
-│   ├── process.php
-│   ├── view.php
-│   ├── generate_pdf.php
-│   ├── template_rapot.php
-│   ├── helper.php
-│   ├── bulk_delete.php
-│   ├── bulk_processor.php
-│   ├── generate_catatan.php
-│   ├── generate_png.php
-│   ├── get_pelanggaran_santri.php
+│    ├──bulk_delete.php
+│    ├──bulk_processor.php
+│    ├──create.php
+│    ├──delete.php
+│    ├──generate_catatan.php
+│    ├──generate_pdf.php
+│    ├──generate_png.php
+│    ├──get_pelanggaran_santri.php
+│    ├──get_reward_santri.php
+│    ├──helper.php
+│    ├──index.php
+│    ├──process.php
+│    ├──template_rapot.php
+│    ├──view.php
 ├──rekap/
+│    ├──chart.php
+│    ├──detail-kamar.php
+│    ├──detail-pelanggaran.php
+│    ├──detail.php
+│    ├──get_harian_data.php
 │    ├──index.php
 │    ├──per-kamar.php
-│    ├──chart.php
-│    ├──detail-pelanggaran.php  ( sambungan untuk santri-pelanggar.php )
-│    ├──get_harian_data.php     ( sambungan untuk chart.php )
 │    ├──santri-pelanggar.php
 │    ├──santri-teladan.php
 │    ├──tren-pelanggaran.php
 │    ├──umum.php
-│    ├──detail.php      ( sambungan untuk umum.php )
-├── santri/
-│    ├── index.php         
-│    ├── create.php        
-│    ├── edit.php          
-│    ├── delete.php        
-│    ├── search.php
-│    ├── bulk-delete.php   
-│    └── bulk-create.php
-│    └── bulk-edit.php
-├── reward/
-│   ├── jenis/
-│   │   ├── index.php    (List jenis reward)
-│   │   ├── create.php   (Form tambah jenis)
-│   │   └── process.php  (Logika CRUD jenis)
-│   ├── input/
-│   │   ├── create.php   (Form kasih reward ke santri)
-│   │   ├── history.php  (Riwayat pemberian reward)
-│   │   └── process.php  (Logika kurangi poin & simpan data)
+├──reward/
+│    ├──index.php
+│    ├──history/
+│    │    ├──index.php
+│    ├──input/
+│    │    ├──create.php
+│    │    ├──delete.php
+│    │    ├──edit.php
+│    │    ├──process.php
+│    │    ├──search_santri.php
+│    └──jenis/
+│         ├──bulk-delete.php
+│         ├──bulk-edit.php
+│         ├──create.php
+│         ├──delete.php
+│         ├──edit.php
+│         ├──index.php
+│         ├──process.php
+├──santri/
+│    ├──bulk-create.php
+│    ├──bulk-delete.php
+│    ├──bulk-edit.php
+│    ├──create.php
+│    ├──delete.php
+│    ├──edit.php
+│    ├──index.php
+│    ├──search.php
 │
-├─auth.php
-├─access_denied.php
-├─init.php
-├─helpers.php
-├─config.php
-├─db.php                    
-├─footer.php
-├─header.php
-├─index.php
-├─login.php
-├─logout.php
-├─sidebar.php
-├─style.css
+├──access_denied.php
+├──auth.php
+├──config.php
+├──db.php
+├──footer.php
+├──header.php
+├──helpers.php
+├──index.php
+├──init.php
+├──login.php
+├──logout.php
+├──sidebar.php
+├──struktur.txt
+└──style.css
