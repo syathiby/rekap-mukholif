@@ -1,20 +1,16 @@
 <?php
 // File: rekap-mukholif/rapot/view.php
 
-// 1. Panggil file penting
 require_once __DIR__ . '/../init.php'; 
 require_once __DIR__ . '/helper.php'; 
 
-// 2. Cek Izin "SATPAM"
 guard('rapot_view');
 
-// 3. Ambil ID Rapot dari URL
 if (empty($_GET['id'])) {
     die('Error: ID Rapot tidak ditemukan.');
 }
 $rapot_id = (int)$_GET['id'];
 
-// 4. Ambil Data Rapot (Query 1)
 try {
     $sql = "
         SELECT 
@@ -38,7 +34,7 @@ try {
         die('Error: Data rapot tidak ditemukan.');
     }
     
-    // Ambil rincian pelanggaran (Query 2)
+    // Ambil rincian pelanggaran
     $pelanggaran_list = [];
     $sql_pelanggaran = "
         SELECT jp.nama_pelanggaran, jp.poin
@@ -50,18 +46,34 @@ try {
           AND jp.poin > 0
         ORDER BY p.tanggal DESC
     ";
-    
     $stmt_pelanggaran = $conn->prepare($sql_pelanggaran);
     $stmt_pelanggaran->bind_param("isi", $rapot['santri_id'], $rapot['bulan'], $rapot['tahun']);
     $stmt_pelanggaran->execute();
     $pelanggaran_list = $stmt_pelanggaran->get_result()->fetch_all(MYSQLI_ASSOC);
     $stmt_pelanggaran->close();
 
+    // === TAMBAHAN: Ambil rincian REWARD ===
+    $reward_list = [];
+    $sql_reward = "
+        SELECT jr.nama_reward, jr.poin_reward AS poin
+        FROM daftar_reward rwd
+        JOIN jenis_reward jr ON rwd.jenis_reward_id = jr.id
+        WHERE rwd.santri_id = ? 
+          AND MONTH(rwd.tanggal) = FIND_IN_SET(?, 'Januari,Februari,Maret,April,Mei,Juni,Juli,Agustus,September,Oktober,November,Desember')
+          AND YEAR(rwd.tanggal) = ?
+          AND jr.poin_reward > 0  -- DIPERBAIKI: gunakan poin_reward, bukan poin
+        ORDER BY rwd.tanggal DESC
+    ";
+    $stmt_reward = $conn->prepare($sql_reward);
+    $stmt_reward->bind_param("isi", $rapot['santri_id'], $rapot['bulan'], $rapot['tahun']);
+    $stmt_reward->execute();
+    $reward_list = $stmt_reward->get_result()->fetch_all(MYSQLI_ASSOC);
+    $stmt_reward->close();
+
 } catch (Exception $e) {
     die('Error querying database: ' . $e->getMessage());
 }
 
-// 5. Siapin data buat dikirim ke template
 $santri = [
     'nama' => $rapot['nama_santri'] ?? 'Santri Dihapus',
     'kamar' => $rapot['kamar_santri'] ?? 'N/A',
@@ -71,14 +83,10 @@ $musyrif = [
     'nama_lengkap' => $rapot['nama_musyrif'] ?? 'User Dihapus'
 ];
 
-// 6. Setting Path Logo
 $logo_path = $base_url . '/assets/Kop Syathiby.jpg';
-$logo_file_path = __DIR__ . '/../assets/Kop Syathiby.jpg'; // <-- FIX-nya
+$logo_file_path = __DIR__ . '/../assets/Kop Syathiby.jpg';
 if (!file_exists($logo_file_path)) $logo_path = ''; 
 
-/*
- * 7. TAMPILKAN SEBAGAI HTML
- */
 echo '<!DOCTYPE html>
 <html>
 <head>
@@ -98,12 +106,7 @@ echo '<!DOCTYPE html>
             background-color: white;
             box-shadow: 0 0 10px rgba(0,0,0,0.5);
             margin: 20px auto;
-            
-            /* ==========================================================
-                         PERBAIKANNYA DI SINI (PADDING BAWAH)
-               ========================================================== */
-            padding: 7mm 10mm 4mm 10mm; /* Atas, Kanan, BAWAH (Jadi 4mm), Kiri */
-            
+            padding: 7mm 10mm 4mm 10mm;
             box-sizing: border-box;
         }
         @media print {
@@ -119,7 +122,6 @@ echo '<!DOCTYPE html>
 <body>
     <div class="page-wrapper">';
 
-// 8. Panggil template rapotnya
 include 'template_rapot.php';
 
 echo '

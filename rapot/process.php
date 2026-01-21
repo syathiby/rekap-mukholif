@@ -17,7 +17,7 @@ if (isset($_POST['simpan_rapot'])) {
     $catatan = $_POST['catatan_musyrif'];
     $musyrif_id = (int)$_SESSION['user_id']; 
 
-    // Ambil semua nilai (biar rapi)
+    // Ambil semua nilai ibadah (biar rapi)
     $puasa_sunnah = (int)$_POST['puasa_sunnah'];
     $sholat_duha = (int)$_POST['sholat_duha'];
     $sholat_malam = (int)$_POST['sholat_malam'];
@@ -41,13 +41,9 @@ if (isset($_POST['simpan_rapot'])) {
 
     
     try {
-        // 5. Kalkulasi Total Poin Pelanggaran (Pake MySQLi)
+        // 5. Kalkulasi Total Poin Pelanggaran
         $total_poin_pelanggaran = 0;
         
-        // ==========================================================
-        //           PERBAIKAN SQL-NYA DI SINI
-        // Kita ganti MONTHNAME() jadi MONTH() dan FIND_IN_SET()
-        // ==========================================================
         $sql_poin = "
             SELECT SUM(jp.poin) AS total_poin
             FROM pelanggaran p
@@ -56,10 +52,8 @@ if (isset($_POST['simpan_rapot'])) {
               AND MONTH(p.tanggal) = FIND_IN_SET(?, 'Januari,Februari,Maret,April,Mei,Juni,Juli,Agustus,September,Oktober,November,Desember')
               AND YEAR(p.tanggal) = ?
         ";
-        // ==========================================================
         
         $stmt_poin = $conn->prepare($sql_poin);
-        // bind_param-nya udah bener (i, s, i), gak perlu diubah
         $stmt_poin->bind_param("isi", $santri_id, $bulan, $tahun); 
         $stmt_poin->execute();
         
@@ -70,8 +64,30 @@ if (isset($_POST['simpan_rapot'])) {
         }
         $stmt_poin->close();
 
+        // 6. KALKULASI TOTAL POIN REWARD
+        $total_poin_reward = 0;
+        
+        $sql_reward = "
+            SELECT SUM(jr.poin_reward) AS total_poin_reward
+            FROM daftar_reward rwd
+            JOIN jenis_reward jr ON rwd.jenis_reward_id = jr.id
+            WHERE rwd.santri_id = ? 
+              AND MONTH(rwd.tanggal) = FIND_IN_SET(?, 'Januari,Februari,Maret,April,Mei,Juni,Juli,Agustus,September,Oktober,November,Desember')
+              AND YEAR(rwd.tanggal) = ?
+        ";
+        
+        $stmt_reward = $conn->prepare($sql_reward);
+        $stmt_reward->bind_param("isi", $santri_id, $bulan, $tahun);
+        $stmt_reward->execute();
+        
+        $hasil_reward = $stmt_reward->get_result()->fetch_assoc();
+        
+        if ($hasil_reward && $hasil_reward['total_poin_reward'] > 0) {
+            $total_poin_reward = (int)$hasil_reward['total_poin_reward'];
+        }
+        $stmt_reward->close();
 
-        // 6. Siapin query INSERT (Pake MySQLi)
+        // 8. Siapin query INSERT dengan placeholder yang benar
         $sql_insert = "
             INSERT INTO rapot_kepengasuhan (
                 santri_id, musyrif_id, bulan, tahun, 
@@ -79,52 +95,78 @@ if (isset($_POST['simpan_rapot'])) {
                 lisan, sikap, kesopanan, muamalah, 
                 tidur, keterlambatan, seragam, makan, arahan, bahasa_arab, 
                 mandi, penampilan, piket, kerapihan_barang, 
-                total_poin_pelanggaran_saat_itu, catatan_musyrif
+                total_poin_pelanggaran_saat_itu, total_poin_reward_saat_itu, catatan_musyrif
             ) VALUES (
                 ?, ?, ?, ?, 
                 ?, ?, ?, ?, ?, ?, 
                 ?, ?, ?, ?, 
                 ?, ?, ?, ?, ?, ?, 
                 ?, ?, ?, ?,
-                ?, ?
+                ?, ?, ?
             )
-        "; 
+        ";
 
         $stmt_insert = $conn->prepare($sql_insert);
         
-        $stmt_insert->bind_param("iissiiiiiiiiiiiiiiiiiiiiis", 
-            $santri_id, $musyrif_id, $bulan, $tahun,
-            $puasa_sunnah, $sholat_duha, $sholat_malam, $sedekah, $sunnah_tidur, $ibadah_lainnya,
-            $lisan, $sikap, $kesopanan, $muamalah,
-            $tidur, $keterlambatan, $seragam, $makan, $arahan, $bahasa_arab,
-            $mandi, $penampilan, $piket, $kerapihan_barang,
-            $total_poin_pelanggaran, $catatan
-        );
-
-        // 7. Eksekusi query
-        $stmt_insert->execute();
-
-        // 8. Kasih notif sukses & redirect
-        set_flash_message('Rapot baru berhasil disimpan!', 'success');
+        if (!$stmt_insert) {
+            throw new Exception("Prepare failed: " . $conn->error);
+        }
         
-        header('Location: index.php'); // Redirect ke halaman daftar rapot
+        // --- PERBAIKAN UTAMA (FIXED) ---
+        // Penjelasan Format:
+        // "iiss" -> santri_id(i), musyrif_id(i), bulan(s), tahun(s) [4 param]
+        // 20 x "i" -> Variabel ibadah [20 param]
+        // "ii" -> total_pelanggaran(i), total_reward(i) [2 param]
+        // "s" -> catatan(s) [1 param]
+        // Total = 27 Parameter.
+        
+        $types = "iiss" . str_repeat("i", 22) . "s"; 
+
+        $success = $stmt_insert->bind_param(
+            $types, 
+            $santri_id, $musyrif_id, $bulan, $tahun, // 4 param
+            $puasa_sunnah, $sholat_duha, $sholat_malam, $sedekah, $sunnah_tidur, $ibadah_lainnya, // 6 param
+            $lisan, $sikap, $kesopanan, $muamalah, // 4 param
+            $tidur, $keterlambatan, $seragam, $makan, $arahan, $bahasa_arab, // 6 param
+            $mandi, $penampilan, $piket, $kerapihan_barang, // 4 param
+            $total_poin_pelanggaran, $total_poin_reward, $catatan // 3 param
+        );
+        
+        if (!$success) {
+            throw new Exception("Bind param failed: " . $stmt_insert->error);
+        }
+
+        // 9. Eksekusi query
+        $executed = $stmt_insert->execute();
+        
+        if (!$executed) {
+            throw new Exception("Execute failed: " . $stmt_insert->error);
+        }
+
+        // 10. Kasih notif sukses & redirect
+        set_flash_message('Rapot baru berhasil disimpan dengan poin reward!', 'success');
+        
+        header('Location: index.php');
         exit; 
 
-    } catch (Exception $e) {
-        // Kalo gagal
+    } catch (Throwable $e) { // Ganti Exception jadi Throwable biar nangkep semua error
+        // Debug detail
+        error_log("RAPOT PROCESS ERROR: " . $e->getMessage());
+        error_log("Santri ID: $santri_id, Bulan: $bulan, Tahun: $tahun");
+        error_log("Total Poin Pelanggaran: $total_poin_pelanggaran");
+        error_log("Total Poin Reward: $total_poin_reward");
+        
         set_flash_message('Error: ' . $e->getMessage(), 'danger');
-        header('Location: create.php'); // Balikin ke form create
+        header('Location: create.php');
         exit;
 
     } finally {
-        // Selalu tutup statement
-        if (isset($stmt_insert)) {
-            $stmt_insert->close();
-        }
+        if (isset($stmt_poin) && $stmt_poin) $stmt_poin->close();
+        if (isset($stmt_reward) && $stmt_reward) $stmt_reward->close();
+        if (isset($stmt_insert) && $stmt_insert) $stmt_insert->close();
     }
 
 } else {
-    // Kalo diakses langsung tanpa submit
     header('Location: create.php');
     exit;
 }

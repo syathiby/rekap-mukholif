@@ -2,7 +2,7 @@
 // File: rekap-mukholif/rapot/template_rapot.php
 /**
  * Ini adalah file TEMPLATE HTML+CSS.
- * Versi FIX: Nambahin rincian poin minimalis.
+ * Versi FIX: Nambahin rincian poin minimalis + REWARD.
  */
 ?>
 <!DOCTYPE html>
@@ -73,13 +73,13 @@
             font-weight: bold;
         }
 
-        /* CSS BAR POIN */
-        .poin-table {
+        /* CSS BAR POIN PELANGGARAN */
+        .poin-table-pelanggaran {
             width: 100%;
             border-collapse: collapse;
             margin-top: 1px;
         }
-        .poin-table td {
+        .poin-table-pelanggaran td {
             border: 1px solid #C00;
             padding: 3px 5px; 
             background-color: #e60000;
@@ -93,18 +93,33 @@
             width: 15%;
             text-align: center;
         }
-        
+
+        /* CSS BAR POIN REWARD */
+        .poin-table-reward {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 1px;
+        }
+        .poin-table-reward td {
+            border: 1px solid #090;
+            padding: 3px 5px; 
+            background-color: #009900;
+            color: white;
+            font-weight: bold;
+        }
+
         /* ==========================================================
                           CSS BARU BUAT RINCIAN POIN
            ========================================================== */
-        .rincian-pelanggaran {
-            font-size: 9pt; /* Bikin lebih kecil biar minimalis */
+        .rincian-pelanggaran,
+        .rincian-reward {
+            font-size: 9pt;
             color: #333;
             padding: 4px 6px;
-            border: 1px solid #ddd; /* Kasih border tipis */
-            border-top: none; /* Nempel sama bar merah di atasnya */
-            background: #f9f9f9; /* Kasih background beda dikit */
-            line-height: 1.4; /* Atur spasi baris */
+            border: 1px solid #ddd;
+            border-top: none;
+            background: #f9f9f9;
+            line-height: 1.4;
         }
         /* ========================================================== */
 
@@ -281,7 +296,6 @@
                 <td colspan="3" style="text-align: right;">Jumlah</td>
                 <td class="nilai-angka">
                     <?php
-                    // Kalkulasi total nilai
                     $total_nilai = $rapot['puasa_sunnah'] + $rapot['sholat_duha'] + $rapot['sholat_malam'] + 
                                    $rapot['sedekah'] + $rapot['sunnah_tidur'] + $rapot['ibadah_lainnya'] + 
                                    $rapot['lisan'] + $rapot['sikap'] + $rapot['kesopanan'] + $rapot['muamalah'] + 
@@ -296,7 +310,8 @@
         </tbody>
     </table>
 
-    <table class="poin-table">
+    <!-- POIN PELANGGARAN -->
+    <table class="poin-table-pelanggaran">
         <tr>
             <td class="poin-text">Total Poin Pelanggaran</td>
             <td class="poin-nilai">
@@ -313,14 +328,38 @@
             <?php
             $rincian_array = [];
             foreach ($pelanggaran_list as $pelanggaran) {
-                // Kita bikin format: Nama (Poin)
                 $rincian_array[] = htmlspecialchars($pelanggaran['nama_pelanggaran']) . ' (' . $pelanggaran['poin'] . ')';
             }
-            // Kita gabung semua jadi satu baris, dipisah koma
             echo implode(', ', $rincian_array);
             ?>
         </div>
     <?php endif; ?>
+
+    <!-- POIN REWARD -->
+    <table class="poin-table-reward">
+        <tr>
+            <td class="poin-text">Total Poin Reward</td>
+            <td class="poin-nilai">
+                <?php 
+                echo ($rapot['total_poin_reward_saat_itu'] > 0) ? $rapot['total_poin_reward_saat_itu'] : '-'; 
+                ?>
+            </td>
+        </tr>
+    </table>
+    
+    <?php if (!empty($reward_list)): ?>
+        <div class="rincian-reward">
+            <b>Rincian Reward:</b> 
+            <?php
+            $rincian_array = [];
+            foreach ($reward_list as $reward) {
+                $rincian_array[] = htmlspecialchars($reward['nama_reward']) . ' (' . $reward['poin'] . ')';
+            }
+            echo implode(', ', $rincian_array);
+            ?>
+        </div>
+    <?php endif; ?>
+
     <div class="catatan">
         <b>Catatan:</b>
         <p><?php echo nl2br(htmlspecialchars($rapot['catatan_musyrif'])); ?></p>

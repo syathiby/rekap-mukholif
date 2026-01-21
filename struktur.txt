@@ -46,7 +46,8 @@
 │    │    ├──create.php  
 │    │    ├──process.php
 │    │    ├──search_santri.php   
-│    │    ├──rekap.php  
+│    │    ├──rekap.php 
+│    │    ├──detail-kesantrian.php  
 │    ├── pengabdian/
 │    │    ├──create.php  
 │    │    ├──process.php
@@ -73,7 +74,8 @@
 │    │    └──procees-create.php
 │    ├──history
 │    │    ├──index.php
-│    │    └──procees.php
+│    │    ├──procees.php
+│    │    └──history_view.php
 ├──rapot/
 │   ├── index.php
 │   ├── create.php
@@ -107,6 +109,15 @@
 │    ├── bulk-delete.php   
 │    └── bulk-create.php
 │    └── bulk-edit.php
+├── reward/
+│   ├── jenis/
+│   │   ├── index.php    (List jenis reward)
+│   │   ├── create.php   (Form tambah jenis)
+│   │   └── process.php  (Logika CRUD jenis)
+│   ├── input/
+│   │   ├── create.php   (Form kasih reward ke santri)
+│   │   ├── history.php  (Riwayat pemberian reward)
+│   │   └── process.php  (Logika kurangi poin & simpan data)
 │
 ├─auth.php
 ├─access_denied.php

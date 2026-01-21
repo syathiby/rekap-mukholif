@@ -282,7 +282,7 @@ $query = $stmt->get_result();
                                 <td>
                                     <div class="fw-bold"><?= htmlspecialchars($row['nama']) ?></div>
                                     <small class="text-muted">Kls: <?= htmlspecialchars($row['kelas']) ?> | Kmr: <?= htmlspecialchars($row['kamar']) ?></small>
-                                    <small class="poin-aktif-info">Total Poin: <?= $row['poin_aktif'] ?></small>
+                                    <small class="poin-aktif-info">Poin Aktif: <?= $row['poin_aktif'] ?></small>
                                 </td>
                                 <td class="text-center">
                                     <span class="poin-value"><?= $row['total_poin_periode'] ?></span>
