@@ -1,5 +1,5 @@
-<?php
-require_once '../../init.php';
+﻿<?php
+require_once __DIR__ . '/../../bootstrap/init.php';
 // Gunakan guard history atau permission khusus delete
 guard('reward_input'); 
 

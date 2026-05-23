@@ -1,5 +1,5 @@
-<?php
-require_once '../../init.php';
+﻿<?php
+require_once __DIR__ . '/../../bootstrap/init.php';
 guard('jenis_reward_delete');
 
 if (isset($_GET['id'])) {

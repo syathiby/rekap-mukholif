@@ -1,12 +1,12 @@
-<?php 
+﻿<?php 
 // 1. Panggil 'Otak' aplikasi dulu
-require_once __DIR__ . '/../init.php';
+require_once __DIR__ . '/../bootstrap/init.php';
 
 // 2. Jalankan 'SATPAM' buat ngejaga halaman
 guard(['pelanggaran_bahasa_input', 'pelanggaran_diniyyah_input', 'pelanggaran_tahfidz_input', 'pelanggaran_kesantrian_input', 'pelanggaran_pengabdian_input']);   
 
 // 3. Kalau lolos, baru panggil Tampilan
-require_once __DIR__ . '/../header.php'; 
+require_once __DIR__ . '/../layouts/header.php'; 
 ?>
 
 <!DOCTYPE html>
@@ -191,4 +191,4 @@ require_once __DIR__ . '/../header.php';
 </body>
 </html>
 
-<?php include '../footer.php'; ?>
+<?php include __DIR__ . '/../layouts/footer.php'; ?>

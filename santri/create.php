@@ -1,7 +1,7 @@
-<?php
+﻿<?php
 // BAGIAN 1: LOGIKA RUANG MESIN (SEMUA PROSES DI SINI)
 if (session_status() === PHP_SESSION_NONE) { session_start(); }
-require_once __DIR__ . '/../init.php';
+require_once __DIR__ . '/../bootstrap/init.php';
 guard('santri_create'); 
 
 // [FIX] Logika POST yang sudah dibersihkan dan disatukan
@@ -47,7 +47,7 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
 }
 
 // BAGIAN 2: PERSIAPAN TAMPILAN WAHANA
-require_once __DIR__ . '/../header.php';
+require_once __DIR__ . '/../layouts/header.php';
 ?>
 <!DOCTYPE html>
 <html lang="id">
@@ -178,4 +178,4 @@ require_once __DIR__ . '/../header.php';
 </body>
 </html>
 
-<?php require_once __DIR__ . '/../footer.php'; ?>
+<?php require_once __DIR__ . '/../layouts/footer.php'; ?>

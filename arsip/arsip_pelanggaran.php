@@ -1,12 +1,12 @@
-<?php
+﻿<?php
 // 1. Panggil 'Otak' aplikasi dulu
-require_once __DIR__ . '/../init.php';
+require_once __DIR__ . '/../bootstrap/init.php';
 
 // 2. Jalankan 'SATPAM' buat ngejaga halaman
 guard('arsip_view');
 
 // 3. Kalau lolos, baru panggil Tampilan
-require_once __DIR__ . '/../header.php';
+require_once __DIR__ . '/../layouts/header.php';
 
 $arsip_id = (int)($_GET['id'] ?? 0);
 if ($arsip_id < 1) die('Arsip tidak ditemukan');
@@ -233,4 +233,4 @@ document.addEventListener('DOMContentLoaded', function() {
 });
 </script>
 
-<?php include '../footer.php'; ?>
+<?php include __DIR__ . '/../layouts/footer.php'; ?>

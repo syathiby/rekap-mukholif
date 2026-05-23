@@ -1,6 +1,6 @@
-<?php 
+﻿<?php 
 // 1. Panggil 'Otak' aplikasi dulu
-require_once __DIR__ . '/../init.php';
+require_once __DIR__ . '/../bootstrap/init.php';
 
 // 2. Jalankan 'SATPAM' buat ngejaga halaman
 guard('jenis_pelanggaran_edit'); 
@@ -31,7 +31,7 @@ mysqli_stmt_execute($stmt);
 $result = mysqli_stmt_get_result($stmt);
 
 // 7. Panggil Tampilan
-require_once __DIR__ . '/../header.php';
+require_once __DIR__ . '/../layouts/header.php';
 ?>
 
 <style>
@@ -136,5 +136,5 @@ require_once __DIR__ . '/../header.php';
 
 <?php 
 mysqli_stmt_close($stmt);
-require_once __DIR__ . '/../footer.php'; 
+require_once __DIR__ . '/../layouts/footer.php'; 
 ?>

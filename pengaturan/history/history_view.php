@@ -1,11 +1,11 @@
-<?php
+﻿<?php
 // FILE: history_view.php
 if (session_status() === PHP_SESSION_NONE) {
     session_start();
 }
-require_once __DIR__ . '/../../init.php';
+require_once __DIR__ . '/../../bootstrap/init.php';
 guard('history_manage'); 
-require_once __DIR__ . '/../../header.php'; 
+require_once __DIR__ . '/../../layouts/header.php'; 
 
 // [LOGIC PENTING] Tangkap filter dari URL biar pas balik filternya gak ilang
 $prev_tanggal = $_GET['tanggal'] ?? date('Y-m-d');
@@ -137,4 +137,4 @@ $result = mysqli_query($conn, $query);
     </div>
 </div>
 
-<?php require_once __DIR__ . '/../../footer.php'; ?>
+<?php require_once __DIR__ . '/../../layouts/footer.php'; ?>

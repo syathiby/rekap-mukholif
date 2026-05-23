@@ -1,18 +1,18 @@
-<?php
+﻿<?php
 // 1. Panggil 'Otak' aplikasi dulu
-require_once __DIR__ . '/../init.php';
+require_once __DIR__ . '/../bootstrap/init.php';
 
 // 2. Jalankan 'SATPAM' buat ngejaga halaman
 guard('rekap_view_per_kamar');
 
 // 3. Kalau lolos, baru panggil Tampilan
-require_once __DIR__ . '/../header.php'; 
+require_once __DIR__ . '/../layouts/header.php'; 
 
 // Cek apakah parameter kamar ada di URL
 if (!isset($_GET['kamar']) || empty($_GET['kamar'])) {
     // Tampilkan pesan error dengan style yang lebih baik
     echo '<div class="content-wrapper"><div class="container-fluid"><div class="alert alert-danger">Nama kamar tidak ditemukan.</div></div></div>';
-    require_once __DIR__ . '/../footer.php';
+    require_once __DIR__ . '/../layouts/footer.php';
     exit();
 }
 
@@ -315,5 +315,5 @@ $result_pelanggaran = $stmt_pelanggaran->get_result();
 <?php
 $stmt_pelanggaran->close();
 $conn->close();
-require_once __DIR__ . '/../footer.php';
+require_once __DIR__ . '/../layouts/footer.php';
 ?>

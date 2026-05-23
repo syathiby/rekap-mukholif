@@ -1,6 +1,6 @@
 <?php
 // 1. Panggil 'Otak' aplikasi dulu
-require_once __DIR__ . '/../init.php';
+require_once __DIR__ . '/../bootstrap/init.php';
 
 // 2. Jalankan 'SATPAM' buat ngejaga halaman
 guard('santri_view');
@@ -46,7 +46,7 @@ else {
 
 
 // 3. Kalau lolos, baru panggil Tampilan
-require_once __DIR__ . '/../header.php'; // <-- HTML MULAI DI SINI
+require_once __DIR__ . '/../layouts/header.php'; // <-- HTML MULAI DI SINI
 
 
 // =================================================================
@@ -273,7 +273,7 @@ mysqli_stmt_close($stmt_count);
     </div>
     
     <div class="filter-card p-3 p-md-4 mb-4">
-        <form class="row g-3" method="GET" action="index.php">
+        <form class="row g-3" method="GET" action="index.php" id="filterForm">
             <div class="col-12 col-md-4">
                 <input class="form-control" type="search" name="nama" placeholder="Cari Nama Santri..." value="<?= htmlspecialchars($nama_search) ?>">
             </div>
@@ -285,7 +285,7 @@ mysqli_stmt_close($stmt_count);
             </div>
             <div class="col-12 col-md-2 filter-buttons">
                 <button class="btn btn-primary" type="submit"><i class="fas fa-filter me-1"></i> Cari</button>
-                <a href="index.php?reset=1" class="btn btn-outline-secondary" title="Reset Filter" id="resetFilterBtn"><i class="fas fa-times"></i></a>
+                <a href="index.php?reset=1" class="btn btn-outline-secondary" id="resetFilterBtn" title="Reset Filter"><i class="fas fa-times"></i></a>
             </div>
         </form>
     </div>
@@ -329,7 +329,8 @@ mysqli_stmt_close($stmt_count);
             </div>
         </div>
 
-        <div class="table-container">
+        <div id="table-data-wrapper">
+            <div class="table-container">
             <div class="table-responsive">
                 <table class="table table-hover mb-0">
                     <thead>
@@ -412,6 +413,7 @@ mysqli_stmt_close($stmt_count);
                 </table>
             </div>
         </div>
+        </div> <!-- Close table-data-wrapper -->
     </form> </div>
 
 <div class="modal fade" id="infoModal" tabindex="-1" aria-labelledby="infoModalLabel" aria-hidden="true">
@@ -458,7 +460,7 @@ mysqli_stmt_close($stmt_count);
     </div>
 </div>
 
-<?php require_once __DIR__ . '/../footer.php'; ?>
+<?php require_once __DIR__ . '/../layouts/footer.php'; ?>
 
 <script>
 document.addEventListener('DOMContentLoaded', function() {
@@ -480,8 +482,8 @@ document.addEventListener('DOMContentLoaded', function() {
     }
 
     // --- Bagian Checkbox Pinter & Bulk Action ---
-    const selectAllCheckbox = document.getElementById('selectAll');
-    const rowCheckboxes = document.querySelectorAll('.row-checkbox');
+    let selectAllCheckbox = document.getElementById('selectAll');
+    let rowCheckboxes = document.querySelectorAll('.row-checkbox');
     const bulkDeleteForm = document.getElementById('bulkDeleteForm'); 
     const bulkEditBtn = document.getElementById('bulkEditBtn'); 
     const bulkDeleteBtn = document.getElementById('bulkDeleteBtn');
@@ -615,6 +617,62 @@ document.addEventListener('DOMContentLoaded', function() {
             if (document.activeElement && infoModalEl.contains(document.activeElement)) {
                 document.activeElement.blur();
             }
+        });
+    }
+
+    // --- INSTANT FILTERING & AJAX SUBMIT ---
+    let debounceTimer;
+    $('#filterForm input').on('input', function() {
+        clearTimeout(debounceTimer);
+        debounceTimer = setTimeout(function() {
+            $('#filterForm').submit();
+        }, 300);
+    });
+
+    $('#filterForm').on('submit', function(e) {
+        e.preventDefault();
+        
+        const form = $(this);
+        const url = 'index.php?' + form.serialize();
+        
+        $('#table-data-wrapper').css('opacity', 0.5);
+        
+        $.ajax({
+            url: url,
+            method: 'GET',
+            success: function(html) {
+                const newTable = $(html).find('#table-data-wrapper').html();
+                $('#table-data-wrapper').html(newTable);
+                window.history.pushState(null, '', url);
+                
+                // Re-bind listeners because elements were swapped
+                rebindCheckboxes();
+                loadSelections();
+                toggleActionButtons();
+            },
+            complete: function() {
+                $('#table-data-wrapper').css('opacity', 1);
+            }
+        });
+    });
+
+    function rebindCheckboxes() {
+        selectAllCheckbox = document.getElementById('selectAll');
+        if (selectAllCheckbox) {
+            selectAllCheckbox.replaceWith(selectAllCheckbox.cloneNode(true));
+            selectAllCheckbox = document.getElementById('selectAll');
+            selectAllCheckbox.addEventListener('change', function() {
+                const visibleCheckboxes = document.querySelectorAll('.row-checkbox');
+                visibleCheckboxes.forEach(checkbox => {
+                    checkbox.checked = this.checked;
+                });
+                handleSelectionChange();
+            });
+        }
+        
+        rowCheckboxes = document.querySelectorAll('.row-checkbox');
+        rowCheckboxes.forEach(checkbox => {
+            checkbox.addEventListener('change', handleSelectionChange);
         });
     }
 

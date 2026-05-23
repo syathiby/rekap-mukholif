@@ -1,6 +1,6 @@
 <?php
 if (session_status() === PHP_SESSION_NONE) { session_start(); }
-require_once __DIR__ . '/../../init.php';
+require_once __DIR__ . '/../../bootstrap/init.php';
 guard('izin_manage');
 
 // =================================================================
@@ -21,9 +21,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $loggedInUserId = $_SESSION['user_id'] ?? null; 
     
     if ($userId === $loggedInUserId) {
-        // Jika user mencoba mengedit izinnya sendiri, langsung tendang!
-        $conn->close(); // Tutup koneksi sebelum redirect
-        header("Location: " . BASE_URL . "/access_denied.php");
+        // Jika user mencoba mengedit izinnya sendiri, langsung tendang ke dashboard!
+        $_SESSION['error_message'] = "❌ Kamu tidak bisa mengubah izin milikmu sendiri.";
+        header("Location: " . BASE_URL . "/index.php");
         exit;
     }
     // --- AKHIR DARI LOGIKA BARU ---

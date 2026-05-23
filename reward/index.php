@@ -1,11 +1,11 @@
-<?php
+﻿<?php
 // 1. Panggil Otak
-require_once __DIR__ . '/../init.php';
+require_once __DIR__ . '/../bootstrap/init.php';
 // 2. Satpam (Cek login umum aja)
 // 2. Satpam (Cek apakah user punya hak akses ke modul reward)
 guard(['jenis_reward_view', 'reward_input', 'reward_history']); 
 
-require_once __DIR__ . '/../header.php';
+require_once __DIR__ . '/../layouts/header.php';
 ?>
 
 <div class="content-wrapper" style="padding: 20px;">
@@ -69,4 +69,4 @@ require_once __DIR__ . '/../header.php';
     .hover-up:hover { transform: translateY(-5px); }
 </style>
 
-<?php require_once __DIR__ . '/../footer.php'; ?>
+<?php require_once __DIR__ . '/../layouts/footer.php'; ?>

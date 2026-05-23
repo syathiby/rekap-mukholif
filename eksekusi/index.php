@@ -1,12 +1,12 @@
-<?php 
+﻿<?php 
 // 1. Panggil 'Otak' aplikasi dulu
-require_once __DIR__ . '/../init.php';
+require_once __DIR__ . '/../bootstrap/init.php';
 
 // 2. Jalankan 'SATPAM' buat ngejaga halaman
 guard('eksekusi_manage'); 
 
 // 3. Kalau lolos, baru panggil Tampilan
-require_once __DIR__ . '/../header.php'; 
+require_once __DIR__ . '/../layouts/header.php'; 
 ?>
 
 <?php
@@ -274,7 +274,7 @@ $pelanggaranQuery = mysqli_query($conn, "
     </form>
 </div>
 
-<?php include '../footer.php'; mysqli_close($conn); ?>
+<?php include __DIR__ . '/../layouts/footer.php'; mysqli_close($conn); ?>
 
 <!-- Animation trigger script -->
 <script>

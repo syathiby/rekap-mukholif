@@ -1,10 +1,10 @@
-<?php
+﻿<?php
 if (session_status() === PHP_SESSION_NONE) {
     session_start();
 }
 
 // 1. Panggil 'Otak' aplikasi dulu
-require_once __DIR__ . '/../../init.php';
+require_once __DIR__ . '/../../bootstrap/init.php';
 
 // 2. Jalankan 'SATPAM' buat ngejaga halaman
 guard('reset_poin_manage');
@@ -13,7 +13,7 @@ guard('reset_poin_manage');
 $santri_result = mysqli_query($conn, "SELECT id, nama, poin_aktif FROM santri WHERE poin_aktif > 0 ORDER BY nama ASC");
 
 // 4. Kalau lolos, baru panggil Tampilan
-require_once __DIR__ . '/../../header.php';
+require_once __DIR__ . '/../../layouts/header.php';
 ?>
 
 <style>
@@ -128,7 +128,7 @@ require_once __DIR__ . '/../../header.php';
 
 <?php
 // Panggil footer DULU, baru jalankan script yang butuh JQuery
-include __DIR__ . '/../../footer.php';
+include __DIR__ . '/../../layouts/footer.php';
 ?>
 
 <script>

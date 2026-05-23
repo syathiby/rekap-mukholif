@@ -68,7 +68,7 @@ if (!function_exists('guard')) {
                 
                 // ...langsung tampilkan halaman 'access_denied.php' di sini juga.
                 // Metode 'require' lebih baik daripada redirect karena URL di browser tidak berubah.
-                require __DIR__ . '/access_denied.php';
+                require __DIR__ . '/../bootstrap/access_denied.php';
                 
                 // ...dan yang paling penting, hentikan paksa eksekusi skrip.
                 exit; 

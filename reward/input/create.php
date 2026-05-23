@@ -1,7 +1,7 @@
-<?php 
-require_once '../../init.php';
+﻿<?php 
+require_once __DIR__ . '/../../bootstrap/init.php';
 guard('reward_input');  
-require_once '../../header.php'; 
+require_once __DIR__ . '/../../layouts/header.php'; 
 
 // Ambil data Reward
 $stmt = $conn->prepare("SELECT id, nama_reward, poin_reward FROM jenis_reward ORDER BY nama_reward ASC");
@@ -345,7 +345,7 @@ $jenis_reward_result = $stmt->get_result();
     </div>
 </div>
 
-<?php require_once '../../footer.php'; ?>
+<?php require_once __DIR__ . '/../../layouts/footer.php'; ?>
 
 <!-- Script JS -->
 <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>

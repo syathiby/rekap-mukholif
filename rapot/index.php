@@ -1,9 +1,9 @@
-<?php
+﻿<?php
 // File: rekap-mukholif/rapot/index.php
 // VERSI 9.0: Fix 'Aria-Hidden' paling 'paksa' dengan listener 'click' di tombol [data-bs-dismiss]
 
 // 1. Panggil 'Otak' aplikasi dulu
-require_once __DIR__ . '/../init.php';
+require_once __DIR__ . '/../bootstrap/init.php';
 guard('rapot_view');
 
 // === PENGECEKAN IZIN DI AWAL ===
@@ -82,7 +82,7 @@ try {
 
 // 5. Panggil Header
 $page_title = "Daftar Rapot Kepengasuhan";
-require_once __DIR__ . '/../header.php';
+require_once __DIR__ . '/../layouts/header.php';
 ?>
 
 <div class="container-fluid">
@@ -714,5 +714,5 @@ document.addEventListener('DOMContentLoaded', function() {
 
 <?php
 // 7. Panggil Footer (Gak berubah)
-require_once __DIR__ . '/../footer.php';
+require_once __DIR__ . '/../layouts/footer.php';
 ?>

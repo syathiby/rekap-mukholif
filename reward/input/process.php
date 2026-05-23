@@ -1,5 +1,5 @@
-<?php
-require_once '../../init.php';
+﻿<?php
+require_once __DIR__ . '/../../bootstrap/init.php';
 
 if (isset($_POST['add_reward_bulk'])) {
     guard('reward_input');

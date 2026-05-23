@@ -1,8 +1,8 @@
-<?php
+﻿<?php
 if (session_status() === PHP_SESSION_NONE) {
     session_start();
 }
-require_once __DIR__ . '/../../init.php';
+require_once __DIR__ . '/../../bootstrap/init.php';
 guard('reset_poin_manage');
 
 // Fungsi pembantu untuk me-reset poin satu santri

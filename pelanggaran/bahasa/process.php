@@ -2,8 +2,10 @@
 if (session_status() === PHP_SESSION_NONE) {
     session_start();
 }
-require_once __DIR__ . '/../../init.php'; // Sesuaikan path init.php lu
+require_once __DIR__ . '/../../bootstrap/init.php'; // Sesuaikan path init.php lu
 guard('pelanggaran_bahasa_input'); // Pastikan guard-nya sesuai permission lu
+
+$is_ajax = (!empty($_SERVER['HTTP_X_REQUESTED_WITH']) && strtolower($_SERVER['HTTP_X_REQUESTED_WITH']) === 'xmlhttprequest');
 
 if (isset($_POST['create_bulk_pelanggaran'])) {
     $jenis_pelanggaran_id = (int)$_POST['jenis_pelanggaran_id'];
@@ -13,8 +15,13 @@ if (isset($_POST['create_bulk_pelanggaran'])) {
 
     // 1. Validasi Input
     if (empty($jenis_pelanggaran_id) || empty($tanggal) || empty($santri_ids) || !is_array($santri_ids)) {
+        if ($is_ajax) {
+            header('Content-Type: application/json');
+            echo json_encode(['status' => 'error', 'message' => 'Data tidak lengkap. Pilih jenis pelanggaran, tanggal, dan minimal satu santri.']);
+            exit();
+        }
         $_SESSION['message'] = ['type' => 'danger', 'text' => 'Data tidak lengkap. Pilih jenis pelanggaran, tanggal, dan minimal satu santri.'];
-        header("Location: ../../create.php");
+        header("Location: ../bahasa/create.php");
         exit();
     }
 
@@ -30,8 +37,13 @@ if (isset($_POST['create_bulk_pelanggaran'])) {
     mysqli_stmt_close($stmt_get_info);
 
     if (!$data_pelanggaran) {
+        if ($is_ajax) {
+            header('Content-Type: application/json');
+            echo json_encode(['status' => 'error', 'message' => 'Jenis pelanggaran tidak valid.']);
+            exit();
+        }
         $_SESSION['message'] = ['type' => 'danger', 'text' => 'Jenis pelanggaran tidak valid.'];
-        header("Location: ../../create.php");
+        header("Location: ../bahasa/create.php");
         exit();
     }
 
@@ -157,6 +169,14 @@ if (isset($_POST['create_bulk_pelanggaran'])) {
     // FINALISASI
     // =================================================================
     if ($error_count > 0) {
+        if ($is_ajax) {
+            header('Content-Type: application/json');
+            echo json_encode([
+                'status' => 'error',
+                'message' => "Gagal memproses data! Error: " . $error_message
+            ]);
+            exit();
+        }
         $_SESSION['message'] = [
             'type' => 'danger',
             'text' => "Gagal memproses data! Error: " . $error_message
@@ -169,6 +189,14 @@ if (isset($_POST['create_bulk_pelanggaran'])) {
             $msg_text .= " Data bahasa lama sudah diarsipkan ke Log.";
         }
         
+        if ($is_ajax) {
+            header('Content-Type: application/json');
+            echo json_encode([
+                'status' => 'success',
+                'message' => $msg_text
+            ]);
+            exit();
+        }
         $_SESSION['message'] = [
             'type' => 'success',
             'text' => $msg_text
@@ -179,5 +207,10 @@ if (isset($_POST['create_bulk_pelanggaran'])) {
     exit();
 }
 
+if ($is_ajax) {
+    header('Content-Type: application/json');
+    echo json_encode(['status' => 'error', 'message' => 'Akses langsung tidak diizinkan.']);
+    exit();
+}
 header("Location: ../bahasa/create.php");
 exit();

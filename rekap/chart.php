@@ -1,12 +1,12 @@
-<?php
+﻿<?php
 // 1. Panggil 'Otak' aplikasi dulu
-require_once __DIR__ . '/../init.php';
+require_once __DIR__ . '/../bootstrap/init.php';
 
 // 2. Jalankan 'SATPAM' buat ngejaga halaman
 guard('rekap_view_statistik');
 
 // 3. Kalau lolos, baru panggil Tampilan
-require_once __DIR__ . '/../header.php';
+require_once __DIR__ . '/../layouts/header.php';
 
 // Ambil periode aktif dari pengaturan
 $q = mysqli_query($conn, "SELECT nilai FROM pengaturan WHERE nama = 'periode_aktif' LIMIT 1");
@@ -476,4 +476,4 @@ $json_per_bagian = json_encode(['labels' => array_column($data_per_bagian, 'bagi
     });
 </script>
 
-<?php require_once __DIR__ . '/../footer.php'; ?>
+<?php require_once __DIR__ . '/../layouts/footer.php'; ?>

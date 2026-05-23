@@ -1,7 +1,7 @@
-<?php
+﻿<?php
 // BAGIAN 1: LOGIKA RUANG MESIN (SEBELUM ADA TAMPILAN APAPUN)
 if (session_status() === PHP_SESSION_NONE) { session_start(); }
-require_once __DIR__ . '/../init.php';
+require_once __DIR__ . '/../bootstrap/init.php';
 guard('santri_edit');
 
 // ---- SEMUA LOGIKA PEMROSESAN FORM PINDAH KE SINI ----
@@ -61,7 +61,7 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
 // BAGIAN 2: PERSIAPAN TAMPILAN WAHANA (UNTUK MENAMPILKAN DATA AWAL)
 // Logika di bawah ini hanya berjalan saat methodnya GET (pertama kali buka halaman)
 // atau setelah error di atas (untuk menampilkan ulang form)
-require_once __DIR__ . '/../header.php';
+require_once __DIR__ . '/../layouts/header.php';
 
 // Secure the ID parameter
 $id = isset($_GET['id']) ? intval($_GET['id']) : 0;

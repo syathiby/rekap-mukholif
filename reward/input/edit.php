@@ -1,7 +1,7 @@
-<?php
-require_once '../../init.php';
+﻿<?php
+require_once __DIR__ . '/../../bootstrap/init.php';
 guard('reward_input');
-require_once '../../header.php';
+require_once __DIR__ . '/../../layouts/header.php';
 
 $id = (int) $_GET['id'];
 
@@ -74,4 +74,4 @@ $reward_list = mysqli_query($conn, "SELECT * FROM jenis_reward ORDER BY nama_rew
         </div>
     </div>
 </div>
-<?php require_once '../../footer.php'; ?>
+<?php require_once __DIR__ . '/../../layouts/footer.php'; ?>

@@ -1,11 +1,11 @@
-<?php
+﻿<?php
 // FILE: index.php
 if (session_status() === PHP_SESSION_NONE) {
     session_start();
 }
-require_once __DIR__ . '/../../init.php';
+require_once __DIR__ . '/../../bootstrap/init.php';
 guard('history_manage'); 
-require_once __DIR__ . '/../../header.php'; 
+require_once __DIR__ . '/../../layouts/header.php'; 
 
 $tanggal = $_GET['tanggal'] ?? date('Y-m-d');
 $bagian  = $_GET['bagian'] ?? '';
@@ -274,4 +274,4 @@ Swal.fire({ icon: 'error', title: 'Gagal', text: '<?= addslashes($_SESSION['pesa
 <?php endif; ?>
 </script>
 
-<?php require_once __DIR__ . '/../../footer.php'; ?>
+<?php require_once __DIR__ . '/../../layouts/footer.php'; ?>

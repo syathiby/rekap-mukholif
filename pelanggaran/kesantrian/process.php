@@ -2,8 +2,10 @@
 if (session_status() === PHP_SESSION_NONE) {
     session_start();
 }
-require_once __DIR__ . '/../../init.php';
+require_once __DIR__ . '/../../bootstrap/init.php';
 guard('pelanggaran_kesantrian_input');
+
+$is_ajax = (!empty($_SERVER['HTTP_X_REQUESTED_WITH']) && strtolower($_SERVER['HTTP_X_REQUESTED_WITH']) === 'xmlhttprequest');
 
 if (isset($_POST['simpan_pelanggaran_kesantrian'])) {
     $jenis_pelanggaran_id = (int)$_POST['jenis_pelanggaran_id'];
@@ -17,6 +19,11 @@ if (isset($_POST['simpan_pelanggaran_kesantrian'])) {
     // Validasi Awal
     // Pastikan array santri_ids tidak kosong
     if (empty($jenis_pelanggaran_id) || empty($tanggal) || empty($santri_ids) || !is_array($santri_ids)) {
+        if ($is_ajax) {
+            header('Content-Type: application/json');
+            echo json_encode(['status' => 'error', 'message' => 'Data tidak lengkap. Pilih jenis pelanggaran, tanggal, dan tambahkan minimal satu santri.']);
+            exit();
+        }
         $_SESSION['message'] = ['type' => 'danger', 'text' => 'Data tidak lengkap. Pilih jenis pelanggaran, tanggal, dan tambahkan minimal satu santri.'];
         header("Location: create.php");
         exit();
@@ -34,6 +41,11 @@ if (isset($_POST['simpan_pelanggaran_kesantrian'])) {
     mysqli_stmt_close($stmt_get_poin);
 
     if (!$data_pelanggaran) {
+        if ($is_ajax) {
+            header('Content-Type: application/json');
+            echo json_encode(['status' => 'error', 'message' => 'Jenis pelanggaran tidak valid.']);
+            exit();
+        }
         $_SESSION['message'] = ['type' => 'danger', 'text' => 'Jenis pelanggaran tidak valid.'];
         header("Location: create.php");
         exit();
@@ -95,13 +107,28 @@ if (isset($_POST['simpan_pelanggaran_kesantrian'])) {
     if ($error_count > 0) {
         // Rollback otomatis sudah dipanggil di dalam loop jika error, 
         // tapi good practice memastikan transaction selesai jika logic lain error
-        // Disini kita kirim pesan error
+        if ($is_ajax) {
+            header('Content-Type: application/json');
+            echo json_encode([
+                'status' => 'error',
+                'message' => "Terjadi kesalahan! Proses dibatalkan. Gagal di santri ke-" . ($success_count + 1) . ". Error: " . $error_message
+            ]);
+            exit();
+        }
         $_SESSION['message'] = [
             'type' => 'danger',
             'text' => "Terjadi kesalahan! Proses dibatalkan. Gagal di santri ke-" . ($success_count + 1) . ". Error: " . $error_message
         ];
     } else {
         mysqli_commit($conn); // Simpan permanen semua perubahan
+        if ($is_ajax) {
+            header('Content-Type: application/json');
+            echo json_encode([
+                'status' => 'success',
+                'message' => "Proses selesai. Berhasil mencatat $success_count pelanggaran dan memperbarui poin."
+            ]);
+            exit();
+        }
         $_SESSION['message'] = [
             'type' => 'success',
             'text' => "Proses selesai. Berhasil mencatat $success_count pelanggaran dan memperbarui poin."
@@ -113,5 +140,10 @@ if (isset($_POST['simpan_pelanggaran_kesantrian'])) {
 }
 
 // Redirect jika akses langsung
+if ($is_ajax) {
+    header('Content-Type: application/json');
+    echo json_encode(['status' => 'error', 'message' => 'Akses langsung tidak diizinkan.']);
+    exit();
+}
 header("Location: ../../index.php");
 exit();

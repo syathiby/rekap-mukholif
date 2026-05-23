@@ -1,12 +1,12 @@
-<?php
+﻿<?php
 // 1. Panggil 'Otak' aplikasi dulu
-require_once __DIR__ . '/../../init.php';
+require_once __DIR__ . '/../../bootstrap/init.php';
 
 // 2. Jalankan 'SATPAM' buat ngejaga halaman
 guard('user_manage'); 
 
 // 3. Kalau lolos, baru panggil Tampilan
-require_once __DIR__ . '/../../header.php';
+require_once __DIR__ . '/../../layouts/header.php';
 
 // --- LOGIKA PHP TIDAK DIUBAH SAMA SEKALI ---
 $sql = "SELECT id, nama_lengkap, username, role FROM users ORDER BY nama_lengkap ASC";
@@ -284,5 +284,5 @@ if ($result) {
 </html>
 
 <?php
-require_once __DIR__ . '/../../footer.php';
+require_once __DIR__ . '/../../layouts/footer.php';
 ?>

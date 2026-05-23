@@ -1,12 +1,12 @@
 <?php 
 // 1. Panggil 'Otak' aplikasi dulu
-require_once __DIR__ . '/../init.php';
+require_once __DIR__ . '/../bootstrap/init.php';
 
 // 2. Jalankan 'SATPAM' buat ngejaga halaman
 guard('jenis_pelanggaran_view'); 
 
 // 3. Kalau lolos, baru panggil Tampilan
-require_once __DIR__ . '/../header.php';
+require_once __DIR__ . '/../layouts/header.php';
 
 // === PENGECEKAN IZIN DI AWAL ===
 $can_create = has_permission('jenis_pelanggaran_create');
@@ -230,6 +230,7 @@ if ($can_edit || $can_delete) $colspan++; // Tambah 1 untuk Aksi
             </div>
         </div>
         
+        <div id="table-data-wrapper">
         <div class="table-container">
             <div class="table-responsive">
                 <table class="table table-striped table-hover mb-0">
@@ -307,6 +308,7 @@ if ($can_edit || $can_delete) $colspan++; // Tambah 1 untuk Aksi
                 </table>
             </div>
         </div>
+        </div> <!-- Close table-data-wrapper -->
     </form>
 </div>
 
@@ -333,7 +335,7 @@ if ($can_edit || $can_delete) $colspan++; // Tambah 1 untuk Aksi
 
 <?php 
 mysqli_stmt_close($stmt);
-require_once __DIR__ . '/../footer.php'; 
+require_once __DIR__ . '/../layouts/footer.php'; 
 ?>
 
 <script>
@@ -352,8 +354,8 @@ document.addEventListener('DOMContentLoaded', function() {
         confirmModal.show();
     }
 
-    const selectAllCheckbox = document.getElementById('selectAll');
-    const rowCheckboxes = document.querySelectorAll('.row-checkbox');
+    let selectAllCheckbox = document.getElementById('selectAll');
+    let rowCheckboxes = document.querySelectorAll('.row-checkbox');
     const bulkActionForm = document.getElementById('bulkActionForm');
     const bulkEditBtn = document.getElementById('bulkEditBtn');
     const bulkDeleteBtn = document.getElementById('bulkDeleteBtn');
@@ -490,30 +492,66 @@ document.addEventListener('DOMContentLoaded', function() {
     loadSelections();
     toggleActionButtons();
 
-    // --- Logika Auto Load Filter (Tetap Sama) ---
-    const filterForm = document.getElementById('filterForm');
-    const searchInput = document.getElementById('search');
-    const bagianSelect = document.getElementById('bagian');
-    const kategoriSelect = document.getElementById('kategori');
+    // --- INSTANT FILTERING & AJAX SUBMIT ---
     let debounceTimer; 
 
     function submitFilterForm() {
-        filterForm.submit();
+        $('#filterForm').submit();
     }
 
     function debounceSubmit() {
         clearTimeout(debounceTimer); 
-        debounceTimer = setTimeout(submitFilterForm, 500); 
+        debounceTimer = setTimeout(submitFilterForm, 300); 
     }
 
-    if (bagianSelect) {
-        bagianSelect.addEventListener('change', submitFilterForm);
-    }
-    if (kategoriSelect) {
-        kategoriSelect.addEventListener('change', submitFilterForm);
-    }
-    if (searchInput) {
-        searchInput.addEventListener('input', debounceSubmit);
+    $('#filterForm input').on('input', debounceSubmit);
+    $('#filterForm select').on('change', submitFilterForm);
+
+    $('#filterForm').on('submit', function(e) {
+        e.preventDefault();
+        
+        const form = $(this);
+        const url = 'index.php?' + form.serialize();
+        
+        $('#table-data-wrapper').css('opacity', 0.5);
+        
+        $.ajax({
+            url: url,
+            method: 'GET',
+            success: function(html) {
+                const newTable = $(html).find('#table-data-wrapper').html();
+                $('#table-data-wrapper').html(newTable);
+                window.history.pushState(null, '', url);
+                
+                // Re-bind listeners because elements were swapped
+                rebindCheckboxes();
+                loadSelections();
+                toggleActionButtons();
+            },
+            complete: function() {
+                $('#table-data-wrapper').css('opacity', 1);
+            }
+        });
+    });
+
+    function rebindCheckboxes() {
+        selectAllCheckbox = document.getElementById('selectAll');
+        if (selectAllCheckbox) {
+            selectAllCheckbox.replaceWith(selectAllCheckbox.cloneNode(true));
+            selectAllCheckbox = document.getElementById('selectAll');
+            selectAllCheckbox.addEventListener('change', function() {
+                const visibleCheckboxes = document.querySelectorAll('.row-checkbox');
+                visibleCheckboxes.forEach(checkbox => {
+                    checkbox.checked = this.checked;
+                });
+                handleSelectionChange();
+            });
+        }
+        
+        rowCheckboxes = document.querySelectorAll('.row-checkbox');
+        rowCheckboxes.forEach(checkbox => {
+            checkbox.addEventListener('change', handleSelectionChange);
+        });
     }
 });
 </script>

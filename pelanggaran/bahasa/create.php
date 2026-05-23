@@ -1,12 +1,12 @@
 <?php 
 // 1. Panggil 'Otak' aplikasi dulu
-require_once __DIR__ . '/../../init.php';
+require_once __DIR__ . '/../../bootstrap/init.php';
 
 // 2. Jalankan 'SATPAM' buat ngejaga halaman
 guard('pelanggaran_bahasa_input');
 
 // 3. Kalau lolos, baru panggil Tampilan
-require_once __DIR__ . '/../../header.php'; 
+require_once __DIR__ . '/../../layouts/header.php'; 
 
 // =========================================================================
 // ✅ Query Jenis Pelanggaran
@@ -238,7 +238,7 @@ $jenis_pelanggaran_list_result = mysqli_query($conn, trim($sql_query));
     </div>
 </div>
 
-<?php require_once __DIR__ . '/../../footer.php'; ?>
+<?php require_once __DIR__ . '/../../layouts/footer.php'; ?>
 
 <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
 <script src="https://code.jquery.com/ui/1.13.2/jquery-ui.min.js"></script>
@@ -341,18 +341,55 @@ $(document).ready(function() {
         checkTableEmpty(); 
     }
 
+    // Validasi & Submit AJAX
     $("#form-pelanggaran").on('submit', function(e) {
+        e.preventDefault(); // Stop normal form submit
+
         if (!$("#jenis_pelanggaran_id").val()) {
-            e.preventDefault();
             alert("Mohon pilih Level Bahasa terlebih dahulu.");
             $('#jenis_pelanggaran_id').select2('open');
             return;
         }
         if ($('#tabel-santri-pelanggar tbody tr').length === 0) {
-            e.preventDefault();
             alert('Belum ada santri yang ditambahkan ke dalam daftar.');
             $('#santri-search').focus();
+            return;
         }
+
+        const form = $(this);
+        const submitBtn = form.find('button[type="submit"]');
+        const originalBtnHtml = submitBtn.html();
+
+        // Prevent double submit by disabling button & showing loading spinner
+        submitBtn.prop('disabled', true).html('<i class="fas fa-spinner fa-spin me-2"></i>Menyimpan...');
+
+        $.ajax({
+            url: form.attr('action'),
+            method: form.attr('method'),
+            data: form.serialize() + '&create_bulk_pelanggaran=1', // Ensure key exists
+            dataType: 'json',
+            success: function(response) {
+                if (response.status === 'success') {
+                    alert(response.message);
+                    
+                    // Reset the form
+                    $('#tabel-santri-pelanggar tbody').empty();
+                    checkTableEmpty();
+                    $('#jenis_pelanggaran_id').val('').trigger('change');
+                    $('#santri-search').val('');
+                } else {
+                    alert("❌ Error: " + response.message);
+                }
+            },
+            error: function(xhr, status, error) {
+                alert("❌ Gagal mengirim data. Terjadi kesalahan jaringan.");
+                console.error(error);
+            },
+            complete: function() {
+                // Re-enable submit button
+                submitBtn.prop('disabled', false).html(originalBtnHtml);
+            }
+        });
     });
 });
 </script>

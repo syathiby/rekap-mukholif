@@ -1,5 +1,5 @@
-<?php
-require_once '../../init.php'; // Load DB & Auth
+﻿<?php
+require_once __DIR__ . '/../../bootstrap/init.php'; // Load DB & Auth
 
 // --- 1. PROSES TAMBAH BARU ---
 if (isset($_POST['add_jenis'])) {

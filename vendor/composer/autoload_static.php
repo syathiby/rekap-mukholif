@@ -15,46 +15,45 @@ class ComposerStaticInite875ae8441d070d7dda5f4b47a2117aa
     );
 
     public static $prefixLengthsPsr4 = array (
-        's' => 
+        's' =>
         array (
             'setasign\\Fpdi\\' => 14,
         ),
-        'Z' => 
+        'Z' =>
         array (
             'ZipStream\\' => 10,
         ),
-        'S' => 
+        'S' =>
         array (
             'Symfony\\Polyfill\\Php80\\' => 23,
             'Symfony\\Polyfill\\Mbstring\\' => 26,
             'Symfony\\Polyfill\\Ctype\\' => 23,
         ),
-        'P' => 
+        'P' =>
         array (
             'Psr\\SimpleCache\\' => 16,
             'Psr\\Log\\' => 8,
             'Psr\\Http\\Message\\' => 17,
-            'Psr\\Http\\Client\\' => 16,
             'PhpOption\\' => 10,
             'PhpOffice\\PhpSpreadsheet\\' => 25,
         ),
-        'M' => 
+        'M' =>
         array (
             'Mpdf\\PsrLogAwareTrait\\' => 22,
             'Mpdf\\PsrHttpMessageShim\\' => 24,
             'Mpdf\\' => 5,
             'Matrix\\' => 7,
         ),
-        'G' => 
+        'G' =>
         array (
             'GrahamCampbell\\ResultType\\' => 26,
         ),
-        'D' => 
+        'D' =>
         array (
             'Dotenv\\' => 7,
             'DeepCopy\\' => 9,
         ),
-        'C' => 
+        'C' =>
         array (
             'Composer\\Pcre\\' => 14,
             'Complex\\' => 8,
@@ -62,84 +61,79 @@ class ComposerStaticInite875ae8441d070d7dda5f4b47a2117aa
     );
 
     public static $prefixDirsPsr4 = array (
-        'setasign\\Fpdi\\' => 
+        'setasign\\Fpdi\\' =>
         array (
             0 => __DIR__ . '/..' . '/setasign/fpdi/src',
         ),
-        'ZipStream\\' => 
+        'ZipStream\\' =>
         array (
             0 => __DIR__ . '/..' . '/maennchen/zipstream-php/src',
         ),
-        'Symfony\\Polyfill\\Php80\\' => 
+        'Symfony\\Polyfill\\Php80\\' =>
         array (
             0 => __DIR__ . '/..' . '/symfony/polyfill-php80',
         ),
-        'Symfony\\Polyfill\\Mbstring\\' => 
+        'Symfony\\Polyfill\\Mbstring\\' =>
         array (
             0 => __DIR__ . '/..' . '/symfony/polyfill-mbstring',
         ),
-        'Symfony\\Polyfill\\Ctype\\' => 
+        'Symfony\\Polyfill\\Ctype\\' =>
         array (
             0 => __DIR__ . '/..' . '/symfony/polyfill-ctype',
         ),
-        'Psr\\SimpleCache\\' => 
+        'Psr\\SimpleCache\\' =>
         array (
             0 => __DIR__ . '/..' . '/psr/simple-cache/src',
         ),
-        'Psr\\Log\\' => 
+        'Psr\\Log\\' =>
         array (
             0 => __DIR__ . '/..' . '/psr/log/src',
         ),
-        'Psr\\Http\\Message\\' => 
+        'Psr\\Http\\Message\\' =>
         array (
-            0 => __DIR__ . '/..' . '/psr/http-factory/src',
-            1 => __DIR__ . '/..' . '/psr/http-message/src',
+            0 => __DIR__ . '/..' . '/psr/http-message/src',
         ),
-        'Psr\\Http\\Client\\' => 
-        array (
-            0 => __DIR__ . '/..' . '/psr/http-client/src',
-        ),
-        'PhpOption\\' => 
+        'PhpOption\\' =>
         array (
             0 => __DIR__ . '/..' . '/phpoption/phpoption/src/PhpOption',
         ),
-        'PhpOffice\\PhpSpreadsheet\\' => 
+        'PhpOffice\\PhpSpreadsheet\\' =>
         array (
             0 => __DIR__ . '/..' . '/phpoffice/phpspreadsheet/src/PhpSpreadsheet',
         ),
-        'Mpdf\\PsrLogAwareTrait\\' => 
+        'Mpdf\\PsrLogAwareTrait\\' =>
         array (
             0 => __DIR__ . '/..' . '/mpdf/psr-log-aware-trait/src',
         ),
-        'Mpdf\\PsrHttpMessageShim\\' => 
+        'Mpdf\\PsrHttpMessageShim\\' =>
         array (
             0 => __DIR__ . '/..' . '/mpdf/psr-http-message-shim/src',
         ),
-        'Mpdf\\' => 
+        'Mpdf\\' =>
         array (
             0 => __DIR__ . '/..' . '/mpdf/mpdf/src',
         ),
-        'Matrix\\' => 
+        'Matrix\\' =>
         array (
             0 => __DIR__ . '/..' . '/markbaker/matrix/classes/src',
         ),
-        'GrahamCampbell\\ResultType\\' => 
+        'GrahamCampbell\\ResultType\\' =>
         array (
             0 => __DIR__ . '/..' . '/graham-campbell/result-type/src',
         ),
-        'Dotenv\\' => 
+        'Dotenv\\' =>
         array (
             0 => __DIR__ . '/..' . '/vlucas/phpdotenv/src',
         ),
-        'DeepCopy\\' => 
+        'DeepCopy\\' =>
         array (
             0 => __DIR__ . '/..' . '/myclabs/deep-copy/src/DeepCopy',
         ),
-        'Composer\\Pcre\\' => 
+        'Composer\\Pcre\\' =>
         array (
             0 => __DIR__ . '/..' . '/composer/pcre/src',
         ),
-        'Complex\\' => 
+        'Complex\\' =>
         array (
             0 => __DIR__ . '/..' . '/markbaker/complex/classes/src',
         ),

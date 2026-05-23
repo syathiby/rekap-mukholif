@@ -3,13 +3,13 @@
 // PROTOKOL BARU UNTUK PINTU LOBI UTAMA (DASHBOARD)
 // =================================================================
 // 1. Panggil 'Otak' aplikasi dulu
-require_once __DIR__ . '/init.php';
+require_once __DIR__ . '/bootstrap/init.php';
 
 // 2. Jalankan 'SATPAM' buat ngejaga halaman
 guard();
 
 // 3. Kalau lolos, baru panggil Tampilan
-require_once __DIR__ . '/header.php';
+require_once __DIR__ . '/layouts/header.php';
 
 // =================================================================
 // PENGUMPULAN DATA UNTUK DASHBOARD (VERSI FINAL & BENAR)
@@ -176,7 +176,8 @@ $teladan_onclick = !$can_view_rekap_santri ? 'onclick="event.preventDefault(); r
                     <a href="rekap/tren-pelanggaran.php" class="view-all-link">Lihat semua <i class="fas fa-chevron-right"></i></a>
                 <?php endif; ?>
             </div>
-            <div class="recent-violations">
+            <!-- Tampilan Desktop: Tabel dalam kartu -->
+            <div class="recent-violations d-none d-lg-block">
                 <table class="violation-table">
                     <thead>
                         <tr>
@@ -209,6 +210,59 @@ $teladan_onclick = !$can_view_rekap_santri ? 'onclick="event.preventDefault(); r
                     </tbody>
                 </table>
             </div>
+
+            <!-- Tampilan Mobile: List Kartu Modern -->
+            <?php if(mysqli_num_rows($recent_violations) > 0): ?>
+                <?php mysqli_data_seek($recent_violations, 0); // Reset pointer ?>
+                <div class="mobile-violations-list d-lg-none mb-4">
+                    <?php while($violation = mysqli_fetch_assoc($recent_violations)): 
+                        $time_ago = time_elapsed_string($violation['tanggal']);
+                        $initial = htmlspecialchars(substr($violation['nama'] ?? 'S', 0, 1));
+                        
+                        // Soft colors based on category
+                        $avatar_bg = '#f1f5f9';
+                        $avatar_color = '#475569';
+                        $pel_nama = strtolower($violation['nama_pelanggaran'] ?? '');
+                        if (strpos($pel_nama, 'bahasa') !== false) {
+                            $avatar_bg = '#eef2ff';
+                            $avatar_color = '#4f46e5';
+                        } elseif (strpos($pel_nama, 'diniyyah') !== false) {
+                            $avatar_bg = '#ecfdf5';
+                            $avatar_color = '#10b981';
+                        } elseif (strpos($pel_nama, 'tahfidz') !== false) {
+                            $avatar_bg = '#fff1f2';
+                            $avatar_color = '#f43f5e';
+                        } elseif (strpos($pel_nama, 'kebersihan') !== false) {
+                            $avatar_bg = '#f0fdfa';
+                            $avatar_color = '#0d9488';
+                        }
+                    ?>
+                        <div class="mobile-violation-card">
+                            <div class="mobile-violation-avatar" style="background-color: <?= $avatar_bg ?>; color: <?= $avatar_color ?>;">
+                                <?= $initial ?>
+                            </div>
+                            <div class="mobile-violation-content">
+                                <div class="mobile-violation-header">
+                                    <div class="mobile-violation-name"><?= htmlspecialchars($violation['nama'] ?? 'Penghuni Kamar') ?></div>
+                                    <div class="mobile-violation-time"><?= $time_ago ?></div>
+                                </div>
+                                <div class="mobile-violation-title">
+                                    <?= htmlspecialchars($violation['nama_pelanggaran'] ?? '') ?>
+                                </div>
+                                <div class="mobile-violation-meta">
+                                    <span><i class="fas fa-home"></i> Kamar <?= htmlspecialchars($violation['kamar'] ?? '') ?></span>
+                                    <span><i class="fas fa-user-edit"></i> <?= htmlspecialchars($violation['pencatat'] ?? 'N/A') ?></span>
+                                </div>
+                            </div>
+                        </div>
+                    <?php endwhile; ?>
+                </div>
+            <?php else: ?>
+                <div class="empty-state d-lg-none mb-4" style="background: white; border-radius: 14px; padding: 2rem; border: 1px solid var(--border-color); text-align: center;">
+                    <i class="fas fa-check-circle text-success" style="font-size: 2.5rem; margin-bottom: 0.5rem;"></i>
+                    <p class="text-muted text-sm mb-0">Alhamdulillah, tidak ada pelanggaran baru-baru ini.</p>
+                </div>
+            <?php endif; ?>
         </div>
         
         <div class="stats-grid">
@@ -320,7 +374,7 @@ $teladan_onclick = !$can_view_rekap_santri ? 'onclick="event.preventDefault(); r
         </div>
     </div>
 
-    <?php include 'footer.php'; ?>
+    <?php include __DIR__ . '/layouts/footer.php'; ?>
     
     <?php
     function time_elapsed_string($datetime, $full = false) {

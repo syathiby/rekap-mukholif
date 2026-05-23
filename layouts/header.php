@@ -1,10 +1,10 @@
 <?php
 // AMBIL VERSI LOGO OTOMATIS (CACHE BUSTING)
 // Path ini harus nunjuk ke file di server, BUKAN URL.
-// Kita asumsi /assets/logo.png ada di folder root (htdocs/public_html)
+// Kita asumsi /assets/img/logo.png ada di folder assets/img/
 // Kalau project lu di subfolder (misal: htdocs/aplikasi-santri), ganti path-nya jadi:
-// $logo_server_path = $_SERVER['DOCUMENT_ROOT'] . '/aplikasi-santri/assets/logo.png';
-$logo_server_path = $_SERVER['DOCUMENT_ROOT'] . '/assets/logo.png';
+// $logo_server_path = $_SERVER['DOCUMENT_ROOT'] . '/aplikasi-santri/assets/img/logo.png';
+$logo_server_path = $_SERVER['DOCUMENT_ROOT'] . '/assets/img/logo.png';
 $logo_version = file_exists($logo_server_path)
     ? filemtime($logo_server_path)
     : '1'; // Fallback jika file tidak ditemukan
@@ -18,7 +18,7 @@ $logo_version = file_exists($logo_server_path)
     
     <!-- Aset & Font -->
     <!-- REVISI: Path favicon jadi dinamis + otomatis cache bust -->
-    <link rel="icon" type="image/png" sizes="64x64" href="<?= BASE_URL ?>/assets/logo.png?v=<?= $logo_version ?>">
+    <link rel="icon" type="image/png" sizes="64x64" href="<?= BASE_URL ?>/assets/img/logo.png?v=<?= $logo_version ?>">
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css">
     <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -28,7 +28,7 @@ $logo_version = file_exists($logo_server_path)
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/select2-bootstrap-5-theme@1.3.0/dist/select2-bootstrap-5-theme.min.css" />
     
     <!-- Custom Style (Centralized) -->
-    <link rel="stylesheet" href="<?= BASE_URL ?>/style.css?v=<?= time() ?>">
+    <link rel="stylesheet" href="<?= BASE_URL ?>/assets/css/style.css?v=<?= time() ?>">
 </head>
 <body>
     <!-- Sidebar untuk Desktop -->
@@ -80,7 +80,7 @@ $logo_version = file_exists($logo_server_path)
                         </button>
                         <div class="d-flex align-items-center">
                             <!-- REVISI: Path logo jadi dinamis + otomatis cache bust -->
-                            <img src="<?= BASE_URL ?>/assets/logo.png?v=<?= $logo_version ?>" alt="Logo" class="header-logo me-2">
+                            <img src="<?= BASE_URL ?>/assets/img/logo.png?v=<?= $logo_version ?>" alt="Logo" class="header-logo me-2">
                             <span class="fw-bold app-name align-middle" style="color: #25396f;">AsuhTrack</span>
                         </div>
                     </div>

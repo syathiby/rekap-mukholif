@@ -1,8 +1,8 @@
-<?php
+﻿<?php
 // File: rekap-mukholif/rapot/create.php
 // VERSI FINAL TERPADU + AUTO CEK POIN & REWARD
 
-require_once __DIR__ . '/../init.php';
+require_once __DIR__ . '/../bootstrap/init.php';
 require_once __DIR__ . '/helper.php';
 
 guard('rapot_create');
@@ -75,7 +75,7 @@ if ($data_duplikat) {
     $tahun_default = (int)date('Y');
 }
 
-require_once __DIR__ . '/../header.php';
+require_once __DIR__ . '/../layouts/header.php';
 ?>
 
 <style>
@@ -298,7 +298,7 @@ require_once __DIR__ . '/../header.php';
     </div>
 </div>
 
-<?php require_once __DIR__ . '/../footer.php'; ?>
+<?php require_once __DIR__ . '/../layouts/footer.php'; ?>
 
 <script>
 $(document).ready(function() {

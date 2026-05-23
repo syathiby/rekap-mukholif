@@ -1,12 +1,12 @@
-<?php 
+﻿<?php 
 // 1. Panggil 'Otak' aplikasi dulu
-require_once __DIR__ . '/../init.php';
+require_once __DIR__ . '/../bootstrap/init.php';
 
 // 2. Jalankan 'SATPAM' buat ngejaga halaman
 guard('export_laporan'); 
 
 // 3. Kalau lolos, baru panggil Tampilan
-require_once __DIR__ . '/../header.php'; 
+require_once __DIR__ . '/../layouts/header.php'; 
 ?>
 
 <?php
@@ -177,4 +177,4 @@ if ($result_kamar && $result_kamar->num_rows > 0) {
 </body>
 </html>
 
-<?php require_once __DIR__ . '/../footer.php'; ?>
+<?php require_once __DIR__ . '/../layouts/footer.php'; ?>

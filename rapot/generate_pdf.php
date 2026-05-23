@@ -1,7 +1,7 @@
-<?php
+﻿<?php
 // File: rekap-mukholif/rapot/generate_pdf.php
 
-require_once __DIR__ . '/../init.php'; 
+require_once __DIR__ . '/../bootstrap/init.php'; 
 require_once __DIR__ . '/../vendor/autoload.php'; 
 require_once __DIR__ . '/helper.php'; 
 
@@ -86,7 +86,7 @@ $musyrif = [
     'nama_lengkap' => $rapot['nama_musyrif'] ?? 'User Dihapus'
 ];
 
-$logo_path = __DIR__ . '/../assets/Kop Syathiby.jpg';
+$logo_path = __DIR__ . '/../assets/img/Kop Syathiby.jpg';
 if (!file_exists($logo_path)) $logo_path = ''; 
 
 ob_start(); 
