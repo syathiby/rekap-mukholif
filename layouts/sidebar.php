@@ -17,6 +17,30 @@ if (!defined('BASE_URL')) {
 $project_path = parse_url(BASE_URL, PHP_URL_PATH);
 $req_path = str_replace($project_path, '', parse_url($_SERVER['REQUEST_URI'], PHP_URL_PATH));
 $req_path = '/' . ltrim($req_path, '/');
+
+// Cek izin input pelanggaran untuk link sidebar dinamis
+$violation_url = BASE_URL . '/pelanggaran';
+if (function_exists('has_permission')) {
+    $permissions_list = [
+        'pelanggaran_bahasa_input' => '/pelanggaran/bahasa/create.php',
+        'pelanggaran_diniyyah_input' => '/pelanggaran/diniyyah/create.php',
+        'pelanggaran_kesantrian_input' => '/pelanggaran/kesantrian/create.php',
+        'pelanggaran_pengabdian_input' => '/pelanggaran/pengabdian/create.php',
+        'pelanggaran_tahfidz_input' => '/pelanggaran/tahfidz/create.php',
+    ];
+    
+    if (!isset($_SESSION['role']) || $_SESSION['role'] !== 'admin') {
+        $allowed_paths = [];
+        foreach ($permissions_list as $perm => $path) {
+            if (has_permission($perm)) {
+                $allowed_paths[] = BASE_URL . $path;
+            }
+        }
+        if (count($allowed_paths) === 1) {
+            $violation_url = $allowed_paths[0];
+        }
+    }
+}
 ?>
 
 <ul class="nav flex-column">
@@ -45,7 +69,7 @@ $req_path = '/' . ltrim($req_path, '/');
     
     <?php if (has_permission(['pelanggaran_bahasa_input', 'pelanggaran_diniyyah_input', 'pelanggaran_kesantrian_input', 'pelanggaran_pengabdian_input', 'pelanggaran_tahfidz_input'])): ?>
     <li class="nav-item">
-        <a class="nav-link apply-color-hover-active color-indigo <?= strpos($req_path, '/pelanggaran') === 0 ? 'active' : '' ?>" href="<?= BASE_URL ?>/pelanggaran">
+        <a class="nav-link apply-color-hover-active color-indigo <?= strpos($req_path, '/pelanggaran') === 0 ? 'active' : '' ?>" href="<?= $violation_url ?>">
             <i class="fas fa-clipboard-list me-2"></i>Catatan Pelanggaran
         </a>
     </li>

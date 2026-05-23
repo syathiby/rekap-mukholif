@@ -1,8 +1,8 @@
-<?php
+﻿<?php
 // File: rekap-mukholif/rapot/bulk_delete.php
 
 // 1. Panggil 'Otak' aplikasi dulu
-require_once __DIR__ . '/../init.php';
+require_once __DIR__ . '/../bootstrap/init.php';
 
 // 2. Jalankan 'SATPAM' (Harus punya izin delete)
 guard('rapot_delete');

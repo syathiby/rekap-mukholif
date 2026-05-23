@@ -1,6 +1,6 @@
 <?php
-// Pastikan BASE_URL udah didefinisikan di config.php
-require_once __DIR__ . '/config.php';
+// Pastikan BASE_URL udah didefinisikan di config/app.php
+require_once __DIR__ . '/../config/app.php';
 ?>
 <!DOCTYPE html>
 <html lang="id">

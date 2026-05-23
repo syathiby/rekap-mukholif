@@ -1,15 +1,15 @@
-<?php
+﻿<?php
 // File: rekap-mukholif/rapot/bulk_processor.php
 // VERSI 2.0: Layout Responsif & Sentris
 
 // Panggil 'Otak' aplikasi cuma buat panggil header
-require_once __DIR__ . '/../init.php';
+require_once __DIR__ . '/../bootstrap/init.php';
 guard('rapot_cetak');
 
 // Kita panggil header.php tapi GAK panggil footer.php
 // biar bisa kita kontrol penuh halamannya
 $page_title = "Prosesor Bulk Rapot";
-$header_path = __DIR__ . '/../header.php';
+$header_path = __DIR__ . '/../layouts/header.php';
 
 // --- Magic buat ngambil CSS/JS dari header ---
 ob_start();

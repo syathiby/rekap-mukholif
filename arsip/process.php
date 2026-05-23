@@ -1,6 +1,6 @@
-<?php
+﻿<?php
 if (session_status() === PHP_SESSION_NONE) { session_start(); }
-require_once __DIR__ . '/../init.php';
+require_once __DIR__ . '/../bootstrap/init.php';
 
 if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
     die('Akses ditolak.');

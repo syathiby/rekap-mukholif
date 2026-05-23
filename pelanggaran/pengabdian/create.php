@@ -1,12 +1,12 @@
-<?php 
+﻿<?php 
 // 1. Panggil 'Otak' aplikasi dulu
-require_once __DIR__ . '/../../init.php';
+require_once __DIR__ . '/../../bootstrap/init.php';
 
 // 2. Jalankan 'SATPAM' buat ngejaga halaman
 guard('pelanggaran_pengabdian_input');   
 
 // 3. Kalau lolos, baru panggil Tampilan
-require_once __DIR__ . '/../../header.php';
+require_once __DIR__ . '/../../layouts/header.php';
 
 // =========================================================================
 // ✅ AMBIL DATA (PHP)
@@ -352,7 +352,7 @@ $kamarQuery = mysqli_query($conn, "
     </div>
 </div>
 
-<?php require_once __DIR__ . '/../../footer.php'; ?>
+<?php require_once __DIR__ . '/../../layouts/footer.php'; ?>
 
 <!-- Scripts -->
 <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>

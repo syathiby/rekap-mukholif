@@ -1,12 +1,12 @@
-<?php 
+﻿<?php 
 // 1. Panggil 'Otak' aplikasi dulu
-require_once __DIR__ . '/../init.php';
+require_once __DIR__ . '/../bootstrap/init.php';
 
 // 2. Jalankan 'SATPAM' buat ngejaga halaman
 guard('arsip_view'); 
 
 // 3. Kalau lolos, baru panggil Tampilan
-require_once __DIR__ . '/../header.php';
+require_once __DIR__ . '/../layouts/header.php';
 
 // 1. Ambil semua parameter dari URL
 $arsip_id = (int)($_GET['arsip_id'] ?? 0);
@@ -240,6 +240,6 @@ $total_pelanggaran = count($pelanggaran_list);
     </div>
 </div>
 
-<?php require_once __DIR__ . '/../footer.php'; ?>
+<?php require_once __DIR__ . '/../layouts/footer.php'; ?>
 </body>
 </html>

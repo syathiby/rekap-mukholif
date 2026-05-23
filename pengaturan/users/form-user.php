@@ -1,14 +1,14 @@
-<?php
+﻿<?php
 ob_start(); // Tahan semua output dulu, biar aman pas redirect
 
 // 1. Panggil 'Otak' aplikasi dulu
-require_once __DIR__ . '/../../init.php';
+require_once __DIR__ . '/../../bootstrap/init.php';
 
 // 2. Jalankan 'SATPAM' buat ngejaga halaman
 guard('user_manage'); 
 
 // 3. Kalau lolos, baru panggil Tampilan
-require_once __DIR__ . '/../../header.php';
+require_once __DIR__ . '/../../layouts/header.php';
 
 // --- LOGIKA PHP INI SUDAH BENAR DAN TIDAK DIUBAH ---
 $is_edit_mode = false;
@@ -45,7 +45,7 @@ if (isset($_GET['id']) && is_numeric($_GET['id'])) {
             (!isset($_SESSION['role']) || strtolower($_SESSION['role']) !== 'admin')
         ) {
             // Hapus pesan session, langsung tendang ke halaman akses ditolak
-            header("Location: " . BASE_URL . "/access_denied.php");
+            header("Location: " . BASE_URL . "/index.php");
             exit;
         }
 
@@ -364,6 +364,6 @@ if ($result_roles) {
 </html>
 
 <?php
-require_once __DIR__ . '/../../footer.php';
+require_once __DIR__ . '/../../layouts/footer.php';
 ob_end_flush(); // Kirim output yang tadi ditahan
 ?>

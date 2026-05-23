@@ -1,7 +1,7 @@
-<?php 
-require_once __DIR__ . '/../../init.php';
+﻿<?php 
+require_once __DIR__ . '/../../bootstrap/init.php';
 guard('jenis_reward_view'); 
-require_once __DIR__ . '/../../header.php';
+require_once __DIR__ . '/../../layouts/header.php';
 
 $can_create = has_permission('jenis_reward_create');
 $can_edit = has_permission('jenis_reward_edit');
@@ -291,7 +291,7 @@ if ($can_edit || $can_delete) $colspan++;
 
 <?php 
 mysqli_stmt_close($stmt);
-require_once __DIR__ . '/../../footer.php'; 
+require_once __DIR__ . '/../../layouts/footer.php'; 
 ?>
 
 <script>

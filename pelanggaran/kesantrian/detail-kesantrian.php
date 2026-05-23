@@ -1,8 +1,8 @@
-<?php
+﻿<?php
 // 1. Init & Guard
-require_once __DIR__ . '/../../init.php';
+require_once __DIR__ . '/../../bootstrap/init.php';
 guard('rekap_view_kesantrian');
-require_once __DIR__ . '/../../header.php';
+require_once __DIR__ . '/../../layouts/header.php';
 
 // 2. Tangkap Parameter
 $santri_id = $_GET['santri_id'] ?? null;
@@ -138,4 +138,4 @@ while ($row = $history->fetch_assoc()) {
     </div>
 </div>
 
-<?php require_once __DIR__ . '/../../footer.php'; ?>
+<?php require_once __DIR__ . '/../../layouts/footer.php'; ?>

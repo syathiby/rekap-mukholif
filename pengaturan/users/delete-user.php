@@ -1,6 +1,6 @@
-<?php
+﻿<?php
 if (session_status() === PHP_SESSION_NONE) { session_start(); }
-require_once __DIR__ . '/../../init.php';
+require_once __DIR__ . '/../../bootstrap/init.php';
 
 // Cuma yang punya izin boleh hapus
 guard('user_manage');
@@ -35,7 +35,7 @@ if (isset($_GET['id']) && is_numeric($_GET['id'])) {
             // Kalau rolenya 'admin', langsung tendang ke halaman akses ditolak
             $stmt_check->close();
             $conn->close();
-            header("Location: " . BASE_URL . "/access_denied.php");
+            header("Location: " . BASE_URL . "/index.php");
             exit;
         }
     }

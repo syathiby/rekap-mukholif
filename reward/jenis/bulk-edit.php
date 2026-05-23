@@ -1,5 +1,5 @@
-<?php
-require_once '../../init.php';
+﻿<?php
+require_once __DIR__ . '/../../bootstrap/init.php';
 guard('jenis_reward_edit'); 
 
 // Cek kalo gak ada data yang dipilih
@@ -8,7 +8,7 @@ if (!isset($_POST['ids']) || empty($_POST['ids'])) {
     exit;
 }
 
-require_once '../../header.php';
+require_once __DIR__ . '/../../layouts/header.php';
 
 $ids = implode(',', array_map('intval', $_POST['ids']));
 $query = "SELECT * FROM jenis_reward WHERE id IN ($ids)";
@@ -811,4 +811,4 @@ while($row = mysqli_fetch_assoc($result)) {
 </body>
 </html>
 
-<?php require_once '../../footer.php'; ?>
+<?php require_once __DIR__ . '/../../layouts/footer.php'; ?>

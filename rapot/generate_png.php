@@ -1,7 +1,7 @@
-<?php
+﻿<?php
 // File: rekap-mukholif/rapot/generate_png.php
 
-require_once __DIR__ . '/../init.php'; 
+require_once __DIR__ . '/../bootstrap/init.php'; 
 require_once __DIR__ . '/helper.php'; 
 
 guard('rapot_cetak');
@@ -85,8 +85,8 @@ $musyrif = [
     'nama_lengkap' => $rapot['nama_musyrif'] ?? 'User Dihapus'
 ];
 
-$logo_path = $base_url . '/assets/Kop Syathiby.jpg';
-$logo_file_path = __DIR__ . '/../assets/Kop Syathiby.jpg';
+$logo_path = $base_url . '/assets/img/Kop Syathiby.jpg';
+$logo_file_path = __DIR__ . '/../assets/img/Kop Syathiby.jpg';
 if (!file_exists($logo_file_path)) $logo_path = ''; 
 
 $nama_santri_clean = preg_replace("/[^a-zA-Z0-9 ]/", "", $santri['nama']);

@@ -1,7 +1,7 @@
-<?php
+﻿<?php
 // BAGIAN 1: LOGIKA RUANG MESIN (SEBELUM ADA TAMPILAN APAPUN)
 if (session_status() === PHP_SESSION_NONE) { session_start(); }
-require_once __DIR__ . '/../init.php';
+require_once __DIR__ . '/../bootstrap/init.php';
 guard('santri_create'); 
 
 // Logika proses form HANYA jika ada request POST
@@ -61,7 +61,7 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
 }
 
 // BAGIAN 2: PERSIAPAN TAMPILAN WAHANA
-require_once __DIR__ . '/../header.php';
+require_once __DIR__ . '/../layouts/header.php';
 ?>
 
 <style>
@@ -185,4 +185,4 @@ Luqman,12,3</pre>
     });
 </script>
 
-<?php require_once __DIR__ . '/../footer.php'; ?>
+<?php require_once __DIR__ . '/../layouts/footer.php'; ?>

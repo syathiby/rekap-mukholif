@@ -2,8 +2,10 @@
 if (session_status() === PHP_SESSION_NONE) {
     session_start();
 }
-require_once __DIR__ . '/../../init.php';
+require_once __DIR__ . '/../../bootstrap/init.php';
 guard('pelanggaran_tahfidz_input');
+
+$is_ajax = (!empty($_SERVER['HTTP_X_REQUESTED_WITH']) && strtolower($_SERVER['HTTP_X_REQUESTED_WITH']) === 'xmlhttprequest');
 
 if (isset($_POST['create_bulk_pelanggaran'])) {
     $jenis_pelanggaran_id = (int)$_POST['jenis_pelanggaran_id'];
@@ -13,6 +15,11 @@ if (isset($_POST['create_bulk_pelanggaran'])) {
 
     // Validasi Awal: Pastikan semua data penting ada
     if (empty($jenis_pelanggaran_id) || empty($tanggal) || empty($santri_ids) || !is_array($santri_ids)) {
+        if ($is_ajax) {
+            header('Content-Type: application/json');
+            echo json_encode(['status' => 'error', 'message' => 'Data tidak lengkap. Pilih jenis pelanggaran, tanggal, dan tambahkan minimal satu santri.']);
+            exit();
+        }
         $_SESSION['message'] = ['type' => 'danger', 'text' => 'Data tidak lengkap. Pilih jenis pelanggaran, tanggal, dan tambahkan minimal satu santri.'];
         header("Location: create.php");
         exit();
@@ -32,6 +39,11 @@ if (isset($_POST['create_bulk_pelanggaran'])) {
 
     // Jika jenis pelanggaran tidak ditemukan atau poinnya 0, kita bisa langsung skip proses update poin
     if (!$data_pelanggaran) {
+        if ($is_ajax) {
+            header('Content-Type: application/json');
+            echo json_encode(['status' => 'error', 'message' => 'Jenis pelanggaran tidak valid.']);
+            exit();
+        }
         $_SESSION['message'] = ['type' => 'danger', 'text' => 'Jenis pelanggaran tidak valid.'];
         header("Location: create.php");
         exit();
@@ -97,6 +109,14 @@ if (isset($_POST['create_bulk_pelanggaran'])) {
     if ($error_count > 0) {
         // Jika ada error, sesi pesan diisi dengan info kegagalan.
         // Rollback sudah dijalankan di dalam loop tadi.
+        if ($is_ajax) {
+            header('Content-Type: application/json');
+            echo json_encode([
+                'status' => 'error',
+                'message' => "Terjadi kesalahan! Proses dibatalkan. Gagal di santri ke-" . ($success_count + 1) . ". Error: " . $error_message
+            ]);
+            exit();
+        }
         $_SESSION['message'] = [
             'type' => 'danger',
             'text' => "Terjadi kesalahan! Proses dibatalkan. Gagal di santri ke-" . ($success_count + 1) . ". Error: " . $error_message
@@ -104,6 +124,14 @@ if (isset($_POST['create_bulk_pelanggaran'])) {
     } else {
         // Jika semua berhasil, commit transaksi untuk menyimpan permanen semua perubahan.
         mysqli_commit($conn);
+        if ($is_ajax) {
+            header('Content-Type: application/json');
+            echo json_encode([
+                'status' => 'success',
+                'message' => "Proses selesai. Berhasil mencatat $success_count pelanggaran dan memperbarui poin."
+            ]);
+            exit();
+        }
         $_SESSION['message'] = [
             'type' => 'success',
             'text' => "Proses selesai. Berhasil mencatat $success_count pelanggaran dan memperbarui poin."
@@ -115,5 +143,10 @@ if (isset($_POST['create_bulk_pelanggaran'])) {
 }
 
 // Redirect jika ada yang coba akses file ini langsung
+if ($is_ajax) {
+    header('Content-Type: application/json');
+    echo json_encode(['status' => 'error', 'message' => 'Akses langsung tidak diizinkan.']);
+    exit();
+}
 header("Location: create.php");
 exit();

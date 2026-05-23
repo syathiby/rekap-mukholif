@@ -1,7 +1,7 @@
-<?php
-require_once __DIR__ . '/../../init.php';
+﻿<?php
+require_once __DIR__ . '/../../bootstrap/init.php';
 guard('reward_history');
-require_once __DIR__ . '/../../header.php';
+require_once __DIR__ . '/../../layouts/header.php';
 
 // === FILTER ===
 $where_clauses = ["1=1"]; $params = []; $types = "";
@@ -278,5 +278,5 @@ $q_rewards = mysqli_query($conn, "SELECT DISTINCT jr.id, jr.nama_reward FROM daf
 
 <?php 
 mysqli_stmt_close($stmt);
-require_once __DIR__ . '/../../footer.php'; 
+require_once __DIR__ . '/../../layouts/footer.php'; 
 ?>

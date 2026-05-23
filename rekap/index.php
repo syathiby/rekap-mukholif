@@ -1,12 +1,12 @@
-<?php
+﻿<?php
 // 1. Panggil 'Otak' aplikasi dulu
-require_once __DIR__ . '/../init.php';
+require_once __DIR__ . '/../bootstrap/init.php';
 
 // 2. Jalankan 'SATPAM' buat ngejaga halaman
 guard(['rekap_view_statistik', 'rekap_view_per_kamar', 'rekap_view_santri', 'rekap_view_umum']); 
 
 // 3. Kalau lolos, baru panggil Tampilan
-require_once __DIR__ . '/../header.php'; 
+require_once __DIR__ . '/../layouts/header.php'; 
 ?>
 
 <!DOCTYPE html>
@@ -182,4 +182,4 @@ require_once __DIR__ . '/../header.php';
     </div>
 </div>
 
-<?php require_once __DIR__ . '/../footer.php'; ?>
+<?php require_once __DIR__ . '/../layouts/footer.php'; ?>

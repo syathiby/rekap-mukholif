@@ -1,12 +1,12 @@
-<?php 
+﻿<?php 
 // 1. Panggil 'Otak' aplikasi dulu
-require_once __DIR__ . '/../init.php';
+require_once __DIR__ . '/../bootstrap/init.php';
 
 // 2. Jalankan 'SATPAM' buat ngejaga halaman
 guard('arsip_export'); 
 
 // 3. Kalau lolos, baru panggil Tampilan
-require_once __DIR__ . '/../header.php';
+require_once __DIR__ . '/../layouts/header.php';
 
 // Ambil semua data arsip untuk ditampilkan di dropdown (versi MySQLi)
 $arsip_list = [];
@@ -78,5 +78,5 @@ if ($result) {
 
 <?php
 // Ganti path footer jika diperlukan
-require_once __DIR__ . '/../footer.php';
+require_once __DIR__ . '/../layouts/footer.php';
 ?>
