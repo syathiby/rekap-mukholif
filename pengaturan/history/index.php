@@ -1,22 +1,27 @@
-﻿<?php
+<?php
 // FILE: index.php
 if (session_status() === PHP_SESSION_NONE) {
     session_start();
 }
 require_once __DIR__ . '/../../bootstrap/init.php';
 guard('history_manage'); 
-require_once __DIR__ . '/../../layouts/header.php'; 
 
-$tanggal = $_GET['tanggal'] ?? date('Y-m-d');
-$bagian  = $_GET['bagian'] ?? '';
+// Ambil periode aktif sebagai default start_date
+$q_periode = mysqli_query($conn, "SELECT nilai FROM pengaturan WHERE nama = 'periode_aktif' LIMIT 1");
+$periode_aktif = (mysqli_num_rows($q_periode) > 0) ? mysqli_fetch_assoc($q_periode)['nilai'] : date('Y-m-d');
+
+$start_date = $_GET['start_date'] ?? $periode_aktif;
+$end_date   = $_GET['end_date'] ?? date('Y-m-d');
+$bagian     = $_GET['bagian'] ?? '';
+$search     = trim($_GET['search'] ?? '');
 
 // Link Log History bawa data filter
-$history_link = "history_view.php?tanggal=" . urlencode($tanggal) . "&bagian=" . urlencode($bagian);
+$history_link = "history_view.php?start_date=" . urlencode($start_date) . "&end_date=" . urlencode($end_date) . "&bagian=" . urlencode($bagian) . "&search=" . urlencode($search);
 
-$params = [];
-$types  = '';
-
-$query = "
+// 1. Fetch Pelanggaran Individu
+$params_ind = [$start_date, $end_date];
+$types_ind  = 'ss';
+$query_ind = "
     SELECT 
         p.id, 
         s.nama AS nama_santri, 
@@ -25,64 +30,256 @@ $query = "
         jp.nama_pelanggaran, 
         jp.poin, 
         jp.bagian,
-        p.tanggal
+        p.tanggal,
+        'individu' AS tipe
     FROM pelanggaran p
     JOIN santri s ON p.santri_id = s.id
     JOIN jenis_pelanggaran jp ON p.jenis_pelanggaran_id = jp.id
-    WHERE DATE(p.tanggal) = ?
+    WHERE DATE(p.tanggal) >= ? AND DATE(p.tanggal) <= ?
 ";
-$params[] = $tanggal;
-$types .= 's';
 
-if (!empty($bagian)) {
-    $query .= " AND jp.bagian = ?";
-    $params[] = $bagian;
-    $types .= 's';
+if (!empty($bagian) && strtolower($bagian) !== 'kebersihan') {
+    $query_ind .= " AND jp.bagian = ?";
+    $params_ind[] = $bagian;
+    $types_ind .= 's';
 }
-$query .= " ORDER BY p.tanggal DESC";
 
-$stmt = $conn->prepare($query);
-if ($stmt) {
-    if (!empty($params)) {
-        $stmt->bind_param($types, ...$params);
+if (!empty($search)) {
+    $search_param = "%" . $search . "%";
+    // UPDATE: Cari berdasarkan nama, kelas, kamar, dan jenis pelanggaran
+    $query_ind .= " AND (s.nama LIKE ? OR s.kelas LIKE ? OR s.kamar LIKE ? OR jp.nama_pelanggaran LIKE ?)";
+    $params_ind[] = $search_param;
+    $params_ind[] = $search_param;
+    $params_ind[] = $search_param;
+    $params_ind[] = $search_param;
+    $types_ind .= 'ssss';
+}
+
+$data_individu = [];
+// Jika filter yang dipilih khusus Kebersihan, jangan ambil data individu
+if (strtolower($bagian) !== 'kebersihan') {
+    $stmt_ind = $conn->prepare($query_ind);
+    if ($stmt_ind) {
+        $stmt_ind->bind_param($types_ind, ...$params_ind);
+        $stmt_ind->execute();
+        $res_ind = $stmt_ind->get_result();
+        $data_individu = $res_ind->fetch_all(MYSQLI_ASSOC);
     }
-    $stmt->execute();
-    $result = $stmt->get_result();
-} else {
-    die("Query Gagal: " . $conn->error);
 }
 
-$total_data = mysqli_num_rows($result);
-$bagian_result = mysqli_query($conn, "SELECT DISTINCT bagian FROM jenis_pelanggaran ORDER BY bagian ASC");
+// 2. Fetch Pelanggaran Kebersihan
+$params_keb = [$start_date, $end_date];
+$types_keb  = 'ss';
+$query_keb = "
+    SELECT 
+        pk.id,
+        'Kamar' AS nama_santri,
+        '-' AS kelas,
+        pk.kamar,
+        CONCAT('Kebersihan: ', IFNULL(pk.catatan, '')) AS nama_pelanggaran,
+        0 AS poin,
+        'pengabdian' AS bagian,
+        pk.tanggal,
+        'kebersihan' AS tipe
+    FROM pelanggaran_kebersihan pk
+    WHERE DATE(pk.tanggal) >= ? AND DATE(pk.tanggal) <= ?
+";
+
+$skip_kebersihan = (!empty($bagian) && strtolower($bagian) !== 'pengabdian' && strtolower($bagian) !== 'kebersihan');
+
+$data_kebersihan = [];
+if (!$skip_kebersihan) {
+    if (!empty($search)) {
+        $search_param = "%" . $search . "%";
+        // Untuk kebersihan, search di kamar dan catatan
+        $query_keb .= " AND (pk.kamar LIKE ? OR pk.catatan LIKE ?)";
+        $params_keb[] = $search_param;
+        $params_keb[] = $search_param;
+        $types_keb .= 'ss';
+    }
+
+    $stmt_keb = $conn->prepare($query_keb);
+    if ($stmt_keb) {
+        $stmt_keb->bind_param($types_keb, ...$params_keb);
+        $stmt_keb->execute();
+        $res_keb = $stmt_keb->get_result();
+        $data_kebersihan = $res_keb->fetch_all(MYSQLI_ASSOC);
+    }
+}
+
+// 3. Merge and Sort
+$all_data = array_merge($data_individu, $data_kebersihan);
+usort($all_data, function($a, $b) {
+    return strtotime($b['tanggal']) - strtotime($a['tanggal']);
+});
+
+$total_data = count($all_data);
+
+// ==============================================================================
+// FUNGSI RENDER ROWS UNTUK AJAX & INITIAL LOAD
+// ==============================================================================
+function render_table_rows($all_data, $start_date, $end_date, $bagian, $search) {
+    ob_start();
+    if (count($all_data) > 0): 
+        $no = 1; foreach($all_data as $row): ?>
+            <tr>
+                <td class="text-center text-muted fw-medium"><?= $no++ ?></td>
+                <td>
+                    <?php if ($row['tipe'] === 'kebersihan'): ?>
+                        <div class="fw-bold text-dark"><i class="fas fa-door-closed text-muted me-2"></i>Kamar <?= htmlspecialchars($row['kamar']) ?></div>
+                    <?php else: ?>
+                        <div class="fw-bold text-dark"><?= htmlspecialchars($row['nama_santri']) ?></div>
+                        <div class="small text-muted mt-1">
+                            <span class="badge badge-soft-secondary rounded-2 fw-normal px-2 py-1">Kls <?= $row['kelas'] ?></span>
+                            <span class="ms-1 fw-medium">Kmr <?= $row['kamar'] ?></span>
+                        </div>
+                    <?php endif; ?>
+                </td>
+                <td>
+                    <?php if ($row['tipe'] === 'kebersihan'): ?>
+                        <span class="text-dark fw-medium"><?= htmlspecialchars($row['nama_pelanggaran']) ?></span>
+                    <?php else: ?>
+                        <?= htmlspecialchars($row['nama_pelanggaran']) ?>
+                    <?php endif; ?>
+                </td>
+                <td class="text-center">
+                    <?php if ($row['tipe'] === 'kebersihan'): ?>
+                        <span class="text-muted small">-</span>
+                    <?php else: ?>
+                        <span class="badge badge-soft-danger rounded-pill px-3 py-2 fw-bold">
+                            <?= htmlspecialchars($row['poin']) ?>
+                        </span>
+                    <?php endif; ?>
+                </td>
+                <td>
+                    <div class="text-dark fw-medium"><?= date('d M Y', strtotime($row['tanggal'])) ?></div>
+                    <div class="text-muted small">
+                        <i class="far fa-clock me-1"></i><?= date('H:i', strtotime($row['tanggal'])) ?>
+                    </div>
+                </td>
+                <td>
+                    <?php if ($row['tipe'] === 'kebersihan'): ?>
+                        <span class="badge badge-soft-warning rounded-pill fw-medium px-3 py-2">
+                            <i class="fas fa-broom me-1"></i> Kebersihan
+                        </span>
+                    <?php else: ?>
+                        <span class="badge badge-soft-primary rounded-pill fw-medium px-3 py-2">
+                            <?= htmlspecialchars(ucwords(strtolower($row['bagian']))) ?>
+                        </span>
+                    <?php endif; ?>
+                </td>
+                <td class="text-center">
+                    <form action="process.php" method="POST" onsubmit="return confirmCancel(event, this)">
+                        <input type="hidden" name="id" value="<?= $row['id'] ?>">
+                        <input type="hidden" name="tipe" value="<?= $row['tipe'] ?>">
+                        
+                        <!-- Keep filter state for redirect -->
+                        <input type="hidden" name="start_date" value="<?= htmlspecialchars($start_date) ?>">
+                        <input type="hidden" name="end_date" value="<?= htmlspecialchars($end_date) ?>">
+                        <input type="hidden" name="bagian" value="<?= htmlspecialchars($bagian) ?>">
+                        <input type="hidden" name="search" value="<?= htmlspecialchars($search) ?>">
+                        
+                        <button type="submit" name="batalkan" class="btn btn-action-icon" title="Batalkan Pelanggaran">
+                            <i class="fas fa-times"></i>
+                        </button>
+                    </form>
+                </td>
+            </tr>
+        <?php endforeach; 
+    else: ?>
+        <tr>
+            <td colspan="7" class="text-center py-5">
+                <div class="text-muted opacity-50 d-flex flex-column align-items-center">
+                    <i class="fas fa-clipboard-check fa-4x mb-3 text-primary" style="opacity: 0.2;"></i>
+                    <h5 class="fw-bold mb-1">Papan Bersih!</h5>
+                    <p class="mb-0 small">Tidak ada data pelanggaran yang ditemukan.</p>
+                </div>
+            </td>
+        </tr>
+    <?php endif;
+    return ob_get_clean();
+}
+
+// Jika ini adalah request AJAX, hanya render HTML table body dan stats
+$is_ajax = isset($_SERVER['HTTP_X_REQUESTED_WITH']) && strtolower($_SERVER['HTTP_X_REQUESTED_WITH']) === 'xmlhttprequest';
+if ($is_ajax) {
+    header('Content-Type: application/json');
+    echo json_encode([
+        'html' => render_table_rows($all_data, $start_date, $end_date, $bagian, $search),
+        'total' => $total_data,
+        'history_link' => $history_link
+    ]);
+    exit;
+}
+
+// BUKAN AJAX (Load halaman utuh)
+$bagian_result = mysqli_query($conn, "SELECT DISTINCT bagian FROM jenis_pelanggaran WHERE bagian IS NOT NULL AND bagian != '' ORDER BY bagian ASC");
+require_once __DIR__ . '/../../layouts/header.php'; 
 ?>
 
 <style>
-    /* MODERN MINIMALIST STYLE */
-    body { background-color: #f8fafc; }
-    
-    .card-modern {
-        border: none;
-        border-radius: 16px;
-        box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05), 0 2px 4px -1px rgba(0, 0, 0, 0.03);
-        background: white;
+    :root {
+        --primary: #4f46e5;
+        --primary-light: #e0e7ff;
+        --secondary: #64748b;
+        --bg-color: #f1f5f9;
+        --card-bg: rgba(255, 255, 255, 0.95);
+        --danger: #ef4444;
+        --danger-light: #fee2e2;
+        --success: #10b981;
     }
 
-    .form-control, .form-select {
-        border-radius: 12px;
-        border: 1px solid #e2e8f0;
-        padding: 0.6rem 1rem;
-        font-size: 0.95rem;
-        transition: all 0.2s;
+    body { background-color: var(--bg-color); font-family: 'Inter', sans-serif; }
+    
+    .glass-card {
+        background: var(--card-bg);
+        backdrop-filter: blur(10px);
+        -webkit-backdrop-filter: blur(10px);
+        border: 1px solid rgba(255, 255, 255, 0.5);
+        border-radius: 1.2rem;
+        box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.05), 0 8px 10px -6px rgba(0, 0, 0, 0.01);
+        transition: transform 0.3s ease, box-shadow 0.3s ease;
+    }
+
+    .form-control, .form-select, .input-group-text {
+        border-radius: 10px;
+        border: 1px solid #cbd5e1;
+        padding: 0.75rem 1rem;
+        font-size: 0.9rem;
+        background-color: #f8fafc;
+        transition: all 0.3s ease;
     }
 
     .form-control:focus, .form-select:focus {
-        border-color: #6366f1;
-        box-shadow: 0 0 0 4px rgba(99, 102, 241, 0.1);
+        border-color: var(--primary);
+        box-shadow: 0 0 0 4px var(--primary-light);
+        background-color: white;
+    }
+    
+    .input-group-text {
+        background-color: #f8fafc;
+        color: var(--secondary);
     }
 
-    /* TABLE STYLING - CLEAN & RESPONSIVE SCROLL */
+    .btn-gradient {
+        background: linear-gradient(135deg, #6366f1, #4f46e5);
+        color: white;
+        border: none;
+        border-radius: 10px;
+        padding: 0.75rem 1.5rem;
+        font-weight: 600;
+        transition: all 0.3s;
+    }
+
+    .btn-gradient:hover {
+        background: linear-gradient(135deg, #4f46e5, #4338ca);
+        transform: translateY(-2px);
+        box-shadow: 0 4px 12px rgba(79, 70, 229, 0.3);
+        color: white;
+    }
+
     .table-responsive {
-        border-radius: 16px;
+        border-radius: 1.2rem;
         overflow-x: auto;
         -webkit-overflow-scrolling: touch;
     }
@@ -91,78 +288,118 @@ $bagian_result = mysqli_query($conn, "SELECT DISTINCT bagian FROM jenis_pelangga
 
     .table thead th {
         background-color: #f8fafc;
-        color: #64748b;
+        color: #475569;
         font-weight: 700;
         font-size: 0.75rem;
         text-transform: uppercase;
         letter-spacing: 0.05em;
-        padding: 1rem 1.25rem;
+        padding: 1.2rem 1.5rem;
         border-bottom: 2px solid #e2e8f0;
     }
 
+    .table tbody {
+        transition: opacity 0.2s ease;
+    }
+
     .table tbody td {
-        padding: 1rem 1.25rem;
+        padding: 1.2rem 1.5rem;
         vertical-align: middle;
         border-bottom: 1px solid #f1f5f9;
         color: #334155;
         font-size: 0.95rem;
+        transition: background-color 0.2s;
     }
 
-    .table tbody tr:last-child td { border-bottom: none; }
-    .table-hover tbody tr:hover { background-color: #f8fafc; }
+    .table tbody tr {
+        transition: all 0.2s ease;
+    }
 
-    /* Custom Badges */
-    .badge-soft-danger { background-color: #fef2f2; color: #ef4444; border: 1px solid #fee2e2; }
-    .badge-soft-primary { background-color: #eff6ff; color: #3b82f6; border: 1px solid #dbeafe; }
-    .badge-soft-secondary { background-color: #f1f5f9; color: #64748b; border: 1px solid #e2e8f0; }
+    .table tbody tr:hover { 
+        background-color: #f8fafc; 
+        transform: scale(1.002);
+    }
 
-    /* Tombol Aksi Minimalis */
+    .badge-soft-danger { background-color: var(--danger-light); color: var(--danger); border: 1px solid #fca5a5; }
+    .badge-soft-primary { background-color: var(--primary-light); color: var(--primary); border: 1px solid #a5b4fc; }
+    .badge-soft-secondary { background-color: #f1f5f9; color: var(--secondary); border: 1px solid #cbd5e1; }
+    .badge-soft-warning { background-color: #fef3c7; color: #d97706; border: 1px solid #fde68a; }
+
     .btn-action-icon {
-        width: 32px; height: 32px;
+        width: 36px; height: 36px;
         display: inline-flex; align-items: center; justify-content: center;
-        border-radius: 8px;
+        border-radius: 10px;
+        background-color: white;
+        border: 1px solid #e2e8f0;
+        color: var(--danger);
         transition: all 0.2s;
     }
-    .btn-action-icon:hover { background-color: #fee2e2; color: #dc2626; }
+    .btn-action-icon:hover { 
+        background-color: var(--danger); 
+        color: white; 
+        border-color: var(--danger);
+        transform: rotate(90deg);
+    }
+
+    .stat-box {
+        background: linear-gradient(135deg, #f8fafc, #f1f5f9);
+        border: 1px solid #e2e8f0;
+        border-radius: 12px;
+        padding: 1rem;
+        text-align: center;
+    }
 </style>
 
 <div class="container py-4">
     <div class="d-flex flex-column flex-md-row justify-content-between align-items-center mb-4 gap-3">
         <div>
-            <h4 class="fw-bold text-dark mb-1">Riwayat Pelanggaran</h4>
-            <p class="text-muted mb-0 small">Monitoring data pelanggaran santri harian.</p>
+            <h3 class="fw-bolder text-dark mb-1"><i class="fas fa-history text-primary me-2"></i>Riwayat Pelanggaran</h3>
+            <p class="text-muted mb-0">Kelola dan pantau seluruh data pelanggaran, termasuk pelanggaran kebersihan.</p>
         </div>
         <div>
-            <a href="<?= $history_link ?>" class="btn btn-white bg-white border text-danger fw-medium rounded-pill px-4 shadow-sm hover-shadow">
+            <a href="<?= $history_link ?>" id="btn-log-penghapusan" class="btn btn-white bg-white border text-danger fw-medium rounded-pill px-4 py-2 shadow-sm" style="transition: all 0.3s;" onmouseover="this.style.transform='translateY(-2px)'; this.style.boxShadow='0 4px 12px rgba(239,68,68,0.2)';" onmouseout="this.style.transform='none'; this.style.boxShadow='var(--bs-box-shadow-sm)';">
                 <i class="fas fa-trash-restore me-2"></i>Log Penghapusan
             </a>
         </div>
     </div>
 
-    <div class="card card-modern mb-4">
+    <div class="card glass-card mb-4">
         <div class="card-body p-4">
-            <form id="filterForm" method="GET">
+            <form id="filterForm" action="index.php" method="GET">
                 <div class="row g-3 align-items-end">
-                    <div class="col-md-5">
-                        <label class="form-label fw-bold text-secondary x-small mb-1">TANGGAL</label>
-                        <input type="date" id="tanggal" name="tanggal" value="<?= htmlspecialchars($tanggal) ?>" class="form-control">
+                    <div class="col-md-3">
+                        <label class="form-label fw-bold text-secondary small mb-1">CARI DATA</label>
+                        <div class="input-group">
+                            <span class="input-group-text border-end-0 bg-transparent"><i class="fas fa-search"></i></span>
+                            <input type="text" name="search" value="<?= htmlspecialchars($search) ?>" class="form-control border-start-0" placeholder="Nama, Kelas, Kamar, Pelanggaran..." id="searchInput">
+                        </div>
                     </div>
-                    <div class="col-md-5">
-                        <label class="form-label fw-bold text-secondary x-small mb-1">FILTER BAGIAN</label>
+                    <div class="col-md-2">
+                        <label class="form-label fw-bold text-secondary small mb-1">MULAI TANGGAL</label>
+                        <input type="date" id="start_date" name="start_date" value="<?= htmlspecialchars($start_date) ?>" class="form-control">
+                    </div>
+                    <div class="col-md-2">
+                        <label class="form-label fw-bold text-secondary small mb-1">SAMPAI TANGGAL</label>
+                        <input type="date" id="end_date" name="end_date" value="<?= htmlspecialchars($end_date) ?>" class="form-control">
+                    </div>
+                    <div class="col-md-3">
+                        <label class="form-label fw-bold text-secondary small mb-1">FILTER BAGIAN</label>
                         <select name="bagian" id="bagian" class="form-select">
                             <option value="">Semua Bagian</option>
+                            <!-- Opsi Khusus Kebersihan -->
+                            <option value="kebersihan" <?= (strtolower($bagian) == 'kebersihan') ? 'selected' : '' ?>>Kebersihan</option>
                             <?php mysqli_data_seek($bagian_result, 0); ?>
                             <?php while ($b = mysqli_fetch_assoc($bagian_result)): ?>
-                                <option value="<?= htmlspecialchars($b['bagian']) ?>" <?= ($bagian == $b['bagian']) ? 'selected' : '' ?>>
-                                    <?= htmlspecialchars(ucfirst($b['bagian'])) ?>
+                                <option value="<?= htmlspecialchars($b['bagian']) ?>" <?= (strtolower($bagian) == strtolower($b['bagian'])) ? 'selected' : '' ?>>
+                                    <!-- Rapihkan Fontnya: Huruf Awal Kapital (Camel/Title Case) -->
+                                    <?= htmlspecialchars(ucwords(strtolower($b['bagian']))) ?>
                                 </option>
                             <?php endwhile; ?>
                         </select>
                     </div>
-                    <div class="col-md-2 text-md-end">
-                        <div class="p-2 bg-light rounded-3 text-center border">
-                            <small class="d-block text-muted x-small">Total Data</small>
-                            <span class="fw-bold text-primary fs-5"><?= $total_data ?></span>
+                    <div class="col-md-2">
+                        <div class="stat-box shadow-sm">
+                            <small class="d-block text-muted small fw-bold">TOTAL DATA</small>
+                            <span class="fw-bolder text-primary fs-4" id="totalDataCount"><?= $total_data ?></span>
                         </div>
                     </div>
                 </div>
@@ -170,71 +407,22 @@ $bagian_result = mysqli_query($conn, "SELECT DISTINCT bagian FROM jenis_pelangga
         </div>
     </div>
 
-    <div class="card card-modern overflow-hidden">
+    <div class="card glass-card overflow-hidden">
         <div class="table-responsive">
-            <table class="table table-hover align-middle">
+            <table class="table align-middle" id="historyTable">
                 <thead>
                     <tr>
                         <th class="text-center" width="5%">No</th>
-                        <th>Nama Santri</th>
-                        <th>Pelanggaran</th>
+                        <th>Nama / Kamar</th>
+                        <th>Detail Pelanggaran</th>
                         <th class="text-center">Poin</th>
                         <th>Waktu</th>
-                        <th>Bagian</th>
+                        <th>Bagian / Tipe</th>
                         <th class="text-center">Aksi</th>
                     </tr>
                 </thead>
-                <tbody>
-                    <?php if ($result && mysqli_num_rows($result) > 0): ?>
-                        <?php $no = 1; while($row = mysqli_fetch_assoc($result)): ?>
-                            <tr>
-                                <td class="text-center text-muted"><?= $no++ ?></td>
-                                <td>
-                                    <div class="fw-bold text-dark"><?= htmlspecialchars($row['nama_santri']) ?></div>
-                                    <div class="small text-muted">
-                                        <span class="badge badge-soft-secondary rounded-1 fw-normal px-2 py-0">Kls <?= $row['kelas'] ?></span>
-                                        <span class="ms-1">Kmr <?= $row['kamar'] ?></span>
-                                    </div>
-                                </td>
-                                <td>
-                                    <?= htmlspecialchars($row['nama_pelanggaran']) ?>
-                                </td>
-                                <td class="text-center">
-                                    <span class="badge badge-soft-danger rounded-pill px-3">
-                                        <?= htmlspecialchars($row['poin']) ?>
-                                    </span>
-                                </td>
-                                <td class="text-muted small">
-                                    <i class="far fa-clock me-1"></i>
-                                    <?= date('H:i', strtotime($row['tanggal'])) ?>
-                                </td>
-                                <td>
-                                    <span class="badge badge-soft-primary rounded-pill fw-normal px-2">
-                                        <?= htmlspecialchars(ucfirst($row['bagian'])) ?>
-                                    </span>
-                                </td>
-                                <td class="text-center">
-                                    <form action="process.php" method="POST" onsubmit="return confirmCancel(event, this)">
-                                        <input type="hidden" name="id" value="<?= $row['id'] ?>">
-                                        <input type="hidden" name="tanggal" value="<?= htmlspecialchars($tanggal) ?>">
-                                        <input type="hidden" name="bagian" value="<?= htmlspecialchars($bagian) ?>">
-                                        <button type="submit" name="batalkan" class="btn btn-action-icon text-danger" title="Batalkan Pelanggaran">
-                                            <i class="fas fa-times"></i>
-                                        </button>
-                                    </form>
-                                </td>
-                            </tr>
-                        <?php endwhile; ?>
-                    <?php else: ?>
-                        <tr>
-                            <td colspan="7" class="text-center py-5">
-                                <div class="text-muted opacity-50">
-                                    <i class="fas fa-clipboard-check fa-3x mb-3"></i>
-                                    <p class="mb-0">Tidak ada data pelanggaran.</p>
-                                </div>
-                            </td>
-                        </tr>
-                    <?php endif; ?>
+                <tbody id="tableBody">
+                    <?= render_table_rows($all_data, $start_date, $end_date, $bagian, $search) ?>
                 </tbody>
             </table>
         </div>
@@ -243,33 +431,107 @@ $bagian_result = mysqli_query($conn, "SELECT DISTINCT bagian FROM jenis_pelangga
 
 <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
 <script>
-document.getElementById('tanggal').addEventListener('change', () => document.getElementById('filterForm').submit());
-document.getElementById('bagian').addEventListener('change', () => document.getElementById('filterForm').submit());
+document.addEventListener('DOMContentLoaded', function() {
+    const filterForm = document.getElementById('filterForm');
+    const tableBody = document.getElementById('tableBody');
+    const totalDataCount = document.getElementById('totalDataCount');
+    const btnLogPenghapusan = document.getElementById('btn-log-penghapusan');
 
+    // AJAX Load Data
+    function loadData() {
+        const formData = new FormData(filterForm);
+        const params = new URLSearchParams(formData);
+        
+        // Update URL via History API biar bisa dicopy-paste
+        const newUrl = window.location.pathname + '?' + params.toString();
+        window.history.replaceState({}, '', newUrl);
+
+        // Kasih efek loading (opacity)
+        tableBody.style.opacity = '0.3';
+        
+        fetch('index.php?' + params.toString(), {
+            headers: {
+                'X-Requested-With': 'XMLHttpRequest'
+            }
+        })
+        .then(response => response.json())
+        .then(data => {
+            tableBody.innerHTML = data.html;
+            totalDataCount.textContent = data.total;
+            btnLogPenghapusan.href = data.history_link;
+            tableBody.style.opacity = '1';
+        })
+        .catch(error => {
+            console.error('Error AJAX:', error);
+            tableBody.style.opacity = '1';
+        });
+    }
+
+    // Event Listeners buat Auto-Filter (Dropdown & Date)
+    document.getElementById('bagian').addEventListener('change', loadData);
+    document.getElementById('start_date').addEventListener('change', loadData);
+    document.getElementById('end_date').addEventListener('change', loadData);
+
+    // Debounce buat input Search biar nggak spam AJAX tiap ngetik
+    let timeout = null;
+    document.getElementById('searchInput').addEventListener('input', () => {
+        clearTimeout(timeout);
+        timeout = setTimeout(loadData, 400); // Tunggu 400ms setelah selesai ngetik
+    });
+
+    // Mencegah form tersubmit secara tradisional (refresh halaman)
+    filterForm.addEventListener('submit', (e) => {
+        e.preventDefault();
+        loadData();
+    });
+});
+
+// Fungsi SweetAlert untuk Konfirmasi Pembatalan
 function confirmCancel(e, form) {
     e.preventDefault();
     Swal.fire({
-        title: 'Batalkan?',
-        text: "Poin akan dikembalikan & data masuk log.",
+        title: 'Batalkan Pelanggaran?',
+        text: "Data akan dipindah ke log penghapusan, dan poin akan dikembalikan (jika ada).",
         icon: 'warning',
         showCancelButton: true,
         confirmButtonColor: '#ef4444',
         cancelButtonColor: '#94a3b8',
-        confirmButtonText: 'Ya, Batalkan',
+        confirmButtonText: '<i class="fas fa-check me-1"></i> Ya, Batalkan',
         cancelButtonText: 'Tutup',
-        customClass: { popup: 'rounded-4' }
+        customClass: { 
+            popup: 'rounded-4 border-0 shadow-lg',
+            confirmButton: 'rounded-pill px-4',
+            cancelButton: 'rounded-pill px-4'
+        }
     }).then((result) => {
         if (result.isConfirmed) form.submit();
     });
 }
 
+// Flash Messages
 <?php if (isset($_SESSION['pesan_sukses'])): ?>
-Swal.fire({ icon: 'success', title: 'Berhasil', text: '<?= addslashes($_SESSION['pesan_sukses']) ?>', timer: 2000, showConfirmButton: false, customClass: { popup: 'rounded-4' } });
+Swal.fire({ 
+    icon: 'success', 
+    title: 'Berhasil', 
+    text: '<?= addslashes($_SESSION['pesan_sukses']) ?>', 
+    timer: 2500, 
+    showConfirmButton: false, 
+    customClass: { popup: 'rounded-4' },
+    backdrop: `rgba(0,0,0,0.4)`
+});
 <?php unset($_SESSION['pesan_sukses']); ?>
 <?php endif; ?>
 
 <?php if (isset($_SESSION['pesan_error'])): ?>
-Swal.fire({ icon: 'error', title: 'Gagal', text: '<?= addslashes($_SESSION['pesan_error']) ?>', timer: 3000, showConfirmButton: false, customClass: { popup: 'rounded-4' } });
+Swal.fire({ 
+    icon: 'error', 
+    title: 'Gagal', 
+    text: '<?= addslashes($_SESSION['pesan_error']) ?>', 
+    timer: 3000, 
+    showConfirmButton: false, 
+    customClass: { popup: 'rounded-4' },
+    backdrop: `rgba(0,0,0,0.4)`
+});
 <?php unset($_SESSION['pesan_error']); ?>
 <?php endif; ?>
 </script>
