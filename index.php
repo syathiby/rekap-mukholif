@@ -280,7 +280,7 @@ $teladan_onclick = !$can_view_rekap_santri ? 'onclick="event.preventDefault(); r
                                         elseif (strpos($pel_nama, 'kebersihan') !== false) { $avatar_bg = '#f0fdfa'; $avatar_color = '#0d9488'; }
                                     ?>
                                         <div class="mobile-violation-card mb-3 p-3 border rounded shadow-sm bg-white">
-                                            <div class="mobile-violation-avatar rounded-circle d-flex align-items-center justify-content-center fw-bold" style="width: 45px; height: 45px; background-color: <?= $avatar_bg ?>; color: <?= $avatar_color ?>;">
+                                            <div class="mobile-violation-avatar rounded-circle d-flex align-items-center justify-content-center fw-bold" style="background-color: <?= $avatar_bg ?>; color: <?= $avatar_color ?>;">
                                                 <?= $initial ?>
                                             </div>
                                             <div class="mobile-violation-content flex-grow-1">
@@ -340,7 +340,7 @@ $teladan_onclick = !$can_view_rekap_santri ? 'onclick="event.preventDefault(); r
                                     <?php if(mysqli_num_rows($top_violators) > 0): ?>
                                         <?php while($violator = mysqli_fetch_assoc($top_violators)): ?>
                                             <div class="student-item d-flex align-items-center p-2 border rounded bg-light">
-                                                <div class="student-avatar top-violators rounded-circle text-white bg-danger d-flex align-items-center justify-content-center me-3 fw-bold" style="width: 45px; height: 45px;">
+                                                <div class="student-avatar top-violators rounded-circle text-white bg-danger d-flex align-items-center justify-content-center me-3 fw-bold">
                                                     <?= htmlspecialchars(substr($violator['nama'], 0, 1)) ?>
                                                 </div>
                                                 <div class="flex-grow-1">
@@ -367,7 +367,7 @@ $teladan_onclick = !$can_view_rekap_santri ? 'onclick="event.preventDefault(); r
                                     <?php if(mysqli_num_rows($best_students) > 0): ?>
                                         <?php while($student = mysqli_fetch_assoc($best_students)): ?>
                                             <div class="student-item d-flex align-items-center p-2 border rounded bg-light">
-                                                <div class="student-avatar best-students rounded-circle text-white bg-success d-flex align-items-center justify-content-center me-3 fw-bold" style="width: 45px; height: 45px;">
+                                                <div class="student-avatar best-students rounded-circle text-white bg-success d-flex align-items-center justify-content-center me-3 fw-bold">
                                                     <?= htmlspecialchars(substr($student['nama'], 0, 1)) ?>
                                                 </div>
                                                 <div class="flex-grow-1">

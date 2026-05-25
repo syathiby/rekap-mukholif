@@ -1,21 +1,24 @@
-﻿<?php
+<?php
 require_once __DIR__ . '/../../bootstrap/init.php'; // Load DB & Auth
 
 // --- 1. PROSES TAMBAH BARU ---
 if (isset($_POST['add_jenis'])) {
     guard('jenis_reward_create');
     
-    $nama = mysqli_real_escape_string($conn, $_POST['nama_reward']);
+    $nama = $_POST['nama_reward'];
     $poin = (int) $_POST['poin_reward'];
-    $desc = mysqli_real_escape_string($conn, $_POST['deskripsi']);
+    $desc = $_POST['deskripsi'];
 
-    $query = "INSERT INTO jenis_reward (nama_reward, poin_reward, deskripsi) VALUES ('$nama', '$poin', '$desc')";
+    $query = "INSERT INTO jenis_reward (nama_reward, poin_reward, deskripsi) VALUES (?, ?, ?)";
+    $stmt = mysqli_prepare($conn, $query);
+    mysqli_stmt_bind_param($stmt, "sis", $nama, $poin, $desc);
     
-    if (mysqli_query($conn, $query)) {
+    if (mysqli_stmt_execute($stmt)) {
         $_SESSION['message'] = ['type' => 'success', 'text' => 'Reward baru berhasil ditambahkan!'];
     } else {
         $_SESSION['message'] = ['type' => 'danger', 'text' => 'Gagal: ' . mysqli_error($conn)];
     }
+    mysqli_stmt_close($stmt);
     header("Location: index.php");
     exit;
 }
@@ -25,17 +28,20 @@ if (isset($_POST['edit_jenis'])) {
     guard('jenis_reward_edit');
 
     $id   = (int) $_POST['id'];
-    $nama = mysqli_real_escape_string($conn, $_POST['nama_reward']);
+    $nama = $_POST['nama_reward'];
     $poin = (int) $_POST['poin_reward'];
-    $desc = mysqli_real_escape_string($conn, $_POST['deskripsi']);
+    $desc = $_POST['deskripsi'];
 
-    $query = "UPDATE jenis_reward SET nama_reward='$nama', poin_reward='$poin', deskripsi='$desc' WHERE id=$id";
+    $query = "UPDATE jenis_reward SET nama_reward=?, poin_reward=?, deskripsi=? WHERE id=?";
+    $stmt = mysqli_prepare($conn, $query);
+    mysqli_stmt_bind_param($stmt, "sisi", $nama, $poin, $desc, $id);
 
-    if (mysqli_query($conn, $query)) {
+    if (mysqli_stmt_execute($stmt)) {
         $_SESSION['message'] = ['type' => 'success', 'text' => 'Data reward berhasil diperbarui.'];
     } else {
         $_SESSION['message'] = ['type' => 'danger', 'text' => 'Gagal update: ' . mysqli_error($conn)];
     }
+    mysqli_stmt_close($stmt);
     header("Location: index.php");
     exit;
 }
@@ -51,17 +57,21 @@ if (isset($_POST['bulk_update'])) {
     
     $success_count = 0;
 
+    $query = "UPDATE jenis_reward SET nama_reward=?, poin_reward=?, deskripsi=? WHERE id=?";
+    $stmt = mysqli_prepare($conn, $query);
+
     foreach ($ids as $id) {
         $id = (int) $id;
-        $nama = mysqli_real_escape_string($conn, $namas[$id]);
+        $nama = $namas[$id];
         $poin = (int) $poins[$id];
-        $desc = mysqli_real_escape_string($conn, $descs[$id]);
+        $desc = $descs[$id];
 
-        $query = "UPDATE jenis_reward SET nama_reward='$nama', poin_reward='$poin', deskripsi='$desc' WHERE id=$id";
-        if (mysqli_query($conn, $query)) {
+        mysqli_stmt_bind_param($stmt, "sisi", $nama, $poin, $desc, $id);
+        if (mysqli_stmt_execute($stmt)) {
             $success_count++;
         }
     }
+    mysqli_stmt_close($stmt);
 
     $_SESSION['message'] = ['type' => 'success', 'text' => "$success_count data reward berhasil diperbarui sekaligus."];
     header("Location: index.php");
@@ -76,6 +86,9 @@ if (isset($_POST['add_bulk'])) {
     $success_count = 0;
     $errors = [];
 
+    $query = "INSERT INTO jenis_reward (nama_reward, poin_reward, deskripsi) VALUES (?, ?, ?)";
+    $stmt = mysqli_prepare($conn, $query);
+
     foreach ($lines as $line) {
         $line = trim($line);
         if (empty($line)) continue;
@@ -83,22 +96,23 @@ if (isset($_POST['add_bulk'])) {
         // Pisahkan dengan koma (,)
         $parts = array_map('trim', explode(',', $line));
         
-        $nama = mysqli_real_escape_string($conn, $parts[0] ?? '');
+        $nama = $parts[0] ?? '';
         $poin = (int) ($parts[1] ?? 0);
-        $desc = mysqli_real_escape_string($conn, $parts[2] ?? '');
+        $desc = $parts[2] ?? '';
 
         if (empty($nama) || $poin <= 0) {
             $errors[] = "Baris tidak valid: '$line'";
             continue;
         }
 
-        $query = "INSERT INTO jenis_reward (nama_reward, poin_reward, deskripsi) VALUES ('$nama', '$poin', '$desc')";
-        if (mysqli_query($conn, $query)) {
+        mysqli_stmt_bind_param($stmt, "sis", $nama, $poin, $desc);
+        if (mysqli_stmt_execute($stmt)) {
             $success_count++;
         } else {
             $errors[] = "Gagal menyimpan: '$nama' - " . mysqli_error($conn);
         }
     }
+    mysqli_stmt_close($stmt);
 
     if (!empty($errors)) {
         $_SESSION['message'] = [
