@@ -43,92 +43,88 @@ if (function_exists('has_permission')) {
 }
 ?>
 
-<ul class="nav flex-column">
+<!-- Nav Menu (SyathibyFood Style) -->
+<div class="sb-nav">
 
-    <li class="nav-item">
-        <a class="nav-link apply-color-hover-active color-blue <?= ($req_path === '/' || strpos($req_path, '/index.php') !== false) ? 'active' : '' ?>" href="<?= BASE_URL ?>/index.php">
-            <i class="fas fa-home me-2"></i>Dashboard
-        </a>
-    </li>
-
-    <?php if (has_permission('santri_view')): ?>
-    <li class="nav-item">
-        <a class="nav-link apply-color-hover-active color-green <?= strpos($req_path, '/santri') === 0 ? 'active' : '' ?>" href="<?= BASE_URL ?>/santri">
-            <i class="fas fa-users me-2"></i>Data Santri
-        </a>
-    </li>
-    <?php endif; ?>
-
-    <?php if (has_permission(['jenis_pelanggaran_view', 'jenis_pelanggaran_create', 'jenis_pelanggaran_edit', 'jenis_pelanggaran_delete'])): ?>
-    <li class="nav-item">
-        <a class="nav-link apply-color-hover-active color-orange <?= strpos($req_path, '/jenis-pelanggaran') === 0 ? 'active' : '' ?>" href="<?= BASE_URL ?>/jenis-pelanggaran">
-            <i class="fas fa-exclamation-triangle me-2"></i>Jenis Pelanggaran
-        </a>
-    </li>
-    <?php endif; ?>
+    <div class="sb-section-label">MENU UTAMA</div>
     
+    <a href="<?= BASE_URL ?>/index.php" class="sb-link <?= ($req_path === '/' || strpos($req_path, '/index.php') !== false) ? 'active' : '' ?>">
+        <i class="fas fa-home"></i>
+        <span>Dashboard</span>
+    </a>
+
     <?php if (has_permission(['pelanggaran_bahasa_input', 'pelanggaran_diniyyah_input', 'pelanggaran_kesantrian_input', 'pelanggaran_pengabdian_input', 'pelanggaran_tahfidz_input'])): ?>
-    <li class="nav-item">
-        <a class="nav-link apply-color-hover-active color-indigo <?= strpos($req_path, '/pelanggaran') === 0 ? 'active' : '' ?>" href="<?= $violation_url ?>">
-            <i class="fas fa-clipboard-list me-2"></i>Catatan Pelanggaran
-        </a>
-    </li>
+    <a href="<?= $violation_url ?>" class="sb-link <?= strpos($req_path, '/pelanggaran') === 0 ? 'active' : '' ?>">
+        <i class="fas fa-clipboard-list" style="color:#f87171;"></i>
+        <span>Catatan Pelanggaran</span>
+    </a>
     <?php endif; ?>
 
     <?php if (has_permission(['jenis_reward_view', 'reward_input', 'reward_history'])): ?>
-    <li class="nav-item">
-        <a class="nav-link apply-color-hover-active color-orange <?= strpos($req_path, '/reward') === 0 ? 'active' : '' ?>" href="<?= BASE_URL ?>/reward">
-            <i class="fas fa-trophy me-2"></i>Reward & Prestasi
-        </a>
-    </li>
+    <a href="<?= BASE_URL ?>/reward" class="sb-link <?= strpos($req_path, '/reward') === 0 ? 'active' : '' ?>">
+        <i class="fas fa-trophy" style="color:#34d399;"></i>
+        <span>Reward & Prestasi</span>
+    </a>
     <?php endif; ?>
 
     <?php if (has_permission('eksekusi_manage')): ?>
-    <li class="nav-item">
-        <a class="nav-link apply-color-hover-active color-teal <?= strpos($req_path, '/eksekusi') === 0 ? 'active' : '' ?>" href="<?= BASE_URL ?>/eksekusi">
-            <i class="fas fa-broom me-2"></i>Eksekusi Kebersihan
-        </a>
-    </li>
-    <?php endif; ?>
-
-    <?php if (has_permission(['arsip_view', 'arsip_create', 'arsip_delete'])): ?>
-    <li class="nav-item">
-        <a class="nav-link apply-color-hover-active color-purple <?= strpos($current_uri, '/arsip') !== false ? 'active' : '' ?>" href="<?= BASE_URL ?>/arsip">
-            <i class="fas fa-archive me-2"></i>Arsip
-        </a>
-    </li>
+    <a href="<?= BASE_URL ?>/eksekusi" class="sb-link <?= strpos($req_path, '/eksekusi') === 0 ? 'active' : '' ?>">
+        <i class="fas fa-broom" style="color:#a78bfa;"></i>
+        <span>Eksekusi Kebersihan</span>
+    </a>
     <?php endif; ?>
 
     <?php if (has_permission(['rekap_view_umum', 'rekap_view_per_kamar', 'rekap_view_santri', 'rekap_view_statistik', 'rekap_view_tahfidz'])): ?>
-    <li class="nav-item">
-        <a class="nav-link apply-color-hover-active color-red <?= strpos($req_path, '/rekap') === 0 ? 'active' : '' ?>" href="<?= BASE_URL ?>/rekap">
-            <i class="fas fa-chart-bar me-2"></i>Rekap Pelanggaran
-        </a>
-    </li>
+    <a href="<?= BASE_URL ?>/rekap" class="sb-link <?= strpos($req_path, '/rekap') === 0 ? 'active' : '' ?>">
+        <i class="fas fa-chart-bar" style="color:#38bdf8;"></i>
+        <span>Rekap Pelanggaran</span>
+    </a>
     <?php endif; ?>
-
     
     <?php if (has_permission(['rapot_view', 'rapot_create', 'rapot_cetak', 'rapot_delete'])): ?>
-    <li class="nav-item">
-        <a class="nav-link apply-color-hover-active color-pink <?= strpos($req_path, '/rapot') === 0 ? 'active' : '' ?>" href="<?= BASE_URL ?>/rapot">
-            <i class="fas fa-file-invoice me-2"></i>Rapot Kepengasuhan
-        </a>
-    </li>
+    <a href="<?= BASE_URL ?>/rapot" class="sb-link <?= strpos($req_path, '/rapot') === 0 ? 'active' : '' ?>">
+        <i class="fas fa-file-invoice" style="color:#f472b6;"></i>
+        <span>Rapot Kepengasuhan</span>
+    </a>
     <?php endif; ?>
+
+    <div class="sb-section-label">MANAJEMEN</div>
+    
+    <?php if (has_permission('santri_view')): ?>
+    <a href="<?= BASE_URL ?>/santri" class="sb-link <?= strpos($req_path, '/santri') === 0 ? 'active' : '' ?>">
+        <i class="fas fa-users" style="color:#60a5fa;"></i>
+        <span>Data Santri</span>
+    </a>
+    <?php endif; ?>
+
+    <?php if (has_permission(['jenis_pelanggaran_view', 'jenis_pelanggaran_create', 'jenis_pelanggaran_edit', 'jenis_pelanggaran_delete'])): ?>
+    <a href="<?= BASE_URL ?>/jenis-pelanggaran" class="sb-link <?= strpos($req_path, '/jenis-pelanggaran') === 0 ? 'active' : '' ?>">
+        <i class="fas fa-exclamation-triangle" style="color:#fbbf24;"></i>
+        <span>Jenis Pelanggaran</span>
+    </a>
+    <?php endif; ?>
+    
+    <div class="sb-section-label">SISTEM</div>
+
+    <?php if (has_permission(['arsip_view', 'arsip_create', 'arsip_delete'])): ?>
+    <a href="<?= BASE_URL ?>/arsip" class="sb-link <?= strpos($current_uri, '/arsip') !== false ? 'active' : '' ?>">
+        <i class="fas fa-archive" style="color:#94a3b8;"></i>
+        <span>Arsip</span>
+    </a>
+    <?php endif; ?>
+
     <?php if (has_permission('export_laporan')): ?>
-    <li class="nav-item">
-        <a class="nav-link apply-color-hover-active color-cyan <?= strpos($req_path, '/export') === 0 ? 'active' : '' ?>" href="<?= BASE_URL ?>/export">
-            <i class="fas fa-file-excel me-2"></i>Export Data
-        </a>
-    </li>
+    <a href="<?= BASE_URL ?>/export" class="sb-link <?= strpos($req_path, '/export') === 0 ? 'active' : '' ?>">
+        <i class="fas fa-file-excel" style="color:#10b981;"></i>
+        <span>Export Data</span>
+    </a>
     <?php endif; ?>
     
     <?php if (has_permission(['user_manage', 'periode_aktif_manage', 'reset_poin_manage', 'izin_manage', 'history_manage'])): ?>
-    <li class="nav-item">
-        <a class="nav-link apply-color-hover-active color-gray <?= strpos($req_path, '/pengaturan') === 0 ? 'active' : '' ?>" href="<?= BASE_URL ?>/pengaturan">
-            <i class="fas fa-cog me-2"></i>Pengaturan
-        </a>
-    </li>
+    <a href="<?= BASE_URL ?>/pengaturan" class="sb-link <?= strpos($req_path, '/pengaturan') === 0 ? 'active' : '' ?>">
+        <i class="fas fa-cog"></i>
+        <span>Pengaturan</span>
+    </a>
     <?php endif; ?>
     
-</ul>
+</div>

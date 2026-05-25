@@ -1,4 +1,4 @@
-﻿<?php
+<?php
 if (session_status() === PHP_SESSION_NONE) {
     session_start();
 }
@@ -16,6 +16,9 @@ $santri_result = mysqli_query($conn, "SELECT id, nama, poin_aktif FROM santri WH
 require_once __DIR__ . '/../../layouts/header.php';
 ?>
 
+<!-- Library CSS -->
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/jqueryui/1.13.2/themes/base/jquery-ui.min.css">
+
 <style>
     @media (max-width: 576px) {
         .display-5 {
@@ -26,6 +29,27 @@ require_once __DIR__ . '/../../layouts/header.php';
             padding: 0.75rem 1rem;
             font-size: 1rem;
         }
+    }
+
+    /* -- UI Autocomplete Fix (Soft & Clean) -- */
+    .ui-autocomplete { 
+        z-index: 1050; 
+        max-height: 250px; 
+        overflow-y: auto; 
+        border-radius: 10px; 
+        border: 1px solid #eee;
+        box-shadow: 0 10px 30px rgba(0,0,0,0.08); /* Shadow halus */
+        padding: 5px;
+        background: #fff;
+    }
+    .ui-menu-item .ui-menu-item-wrapper.ui-state-active {
+        background: #f8f9fa !important; /* Abu muda soft */
+        color: #212529 !important;
+        border: none !important;
+        border-radius: 6px;
+    }
+    .ui-menu-item {
+        margin-bottom: 2px;
     }
 </style>
 
@@ -70,17 +94,37 @@ require_once __DIR__ . '/../../layouts/header.php';
                 <div class="card-body p-4 p-lg-5">
                     <form action="process.php" method="POST" id="resetForm">
                         
-                        <h4 class="mb-3">1. Reset Santri Tertentu</h4>
-                        <div class="mb-3">
-                            <label for="santri_id" class="form-label">Cari dan Pilih Santri</label>
-                            <select class="form-select" name="santri_id" id="santri_id">
-                                <option value="">-- Pilih Santri --</option>
-                                <?php mysqli_data_seek($santri_result, 0); while ($santri = mysqli_fetch_assoc($santri_result)): ?>
-                                <option value="<?= $santri['id'] ?>" data-nama="<?= htmlspecialchars($santri['nama']) ?>">
-                                    <?= htmlspecialchars($santri['nama']) ?> (Poin: <?= $santri['poin_aktif'] ?>)
-                                </option>
-                                <?php endwhile; ?>
-                            </select>
+                        <h4 class="mb-3">1. Reset Santri Terpilih</h4>
+                        <div class="mb-4">
+                            <label class="form-label">Cari Nama Santri</label>
+                            <div class="input-group">
+                                <span class="input-group-text bg-white border-end-0 text-muted ps-3"><i class="fas fa-search"></i></span>
+                                <input type="text" id="santri-search" class="form-control border-start-0 ps-2" placeholder="Ketik nama santri...">
+                            </div>
+                        </div>
+
+                        <!-- 4. Tabel Daftar -->
+                        <div class="table-responsive border rounded-3 mb-4">
+                            <table class="table table-hover mb-0" id="tabel-santri-reset">
+                                <thead class="table-light">
+                                    <tr>
+                                        <th class="ps-3">Nama Santri</th>
+                                        <th class="d-none d-md-table-cell">Kelas</th>
+                                        <th class="d-none d-md-table-cell">Kamar</th>
+                                        <th class="text-center" width="60"><i class="fas fa-trash-alt"></i></th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <!-- Data masuk via JS -->
+                                </tbody>
+                            </table>
+                            <!-- State Kosong -->
+                            <div id="empty-table-message" class="text-center py-5 text-muted">
+                                <div class="mb-2 opacity-25">
+                                    <i class="fas fa-user-plus fa-3x"></i>
+                                </div>
+                                <small>Belum ada santri ditambahkan.</small>
+                            </div>
                         </div>
                         <div class="mb-4">
                             <label for="keterangan_satu" class="form-label">Keterangan Reset</label>
@@ -88,7 +132,7 @@ require_once __DIR__ . '/../../layouts/header.php';
                         </div>
                         <div class="d-grid mb-5">
                             <button type="submit" name="reset_satu_santri" class="btn btn-primary rounded-pill fw-bold">
-                                <i class="fas fa-user-check me-2"></i>Reset Poin Santri Ini
+                                <i class="fas fa-users-cog me-2"></i>Reset Poin Santri Terpilih
                             </button>
                         </div>
 
@@ -131,14 +175,90 @@ require_once __DIR__ . '/../../layouts/header.php';
 include __DIR__ . '/../../layouts/footer.php';
 ?>
 
-<script>
-$(function() {
-    $('#santri_id').select2({
-        theme: 'bootstrap-5'
-    });
-});
+<!-- Scripts -->
+<script src="https://code.jquery.com/ui/1.13.2/jquery-ui.min.js"></script>
 
-document.addEventListener('DOMContentLoaded', function() {
+<script>
+$(document).ready(function() {
+    let selectedSantri = null;
+
+    function escapeHTML(str) {
+        if (str === null || typeof str === 'undefined') return '';
+        return $('<div>').text(str).html();
+    }
+
+    $("#santri-search").autocomplete({
+        source: "search_santri.php",
+        minLength: 2,
+        select: function(event, ui) {
+            selectedSantri = ui.item;
+            tambahSantri(); // Auto Add Trigger
+            $(this).val('');
+            return false;
+        }
+    }).autocomplete("instance")._renderItem = function(ul, item) {
+        return $("<li>")
+            .append(`
+                <div class='py-2 px-3 border-bottom'>
+                    <div class='fw-semibold text-dark'>${item.value}</div>
+                    <small class='text-muted'>Kelas: ${item.kelas} • Kamar: ${item.kamar} • Poin: ${item.poin}</small>
+                </div>
+            `)
+            .appendTo(ul);
+    };
+
+    function checkTableEmpty() {
+        if ($('#tabel-santri-reset tbody tr').length === 0) {
+            $('#empty-table-message').show();
+            $('#tabel-santri-reset').parent().addClass('d-none'); // Hide wrapper border
+        } else {
+            $('#empty-table-message').hide();
+            $('#tabel-santri-reset').parent().removeClass('d-none').show();
+        }
+    }
+    
+    // Global function
+    window.checkTableEmpty = checkTableEmpty;
+    checkTableEmpty(); // Init state
+
+    function tambahSantri() {
+        if (!selectedSantri) return;
+
+        if ($('#tabel-santri-reset').find('tr[data-id="' + selectedSantri.id + '"]').length > 0) {
+            alert('Santri ini sudah masuk daftar!');
+            return;
+        }
+
+        let namaSantri = escapeHTML(selectedSantri.value);
+        let kelasSantri = escapeHTML(selectedSantri.kelas);
+        let kamarSantri = escapeHTML(selectedSantri.kamar);
+        let poinSantri = escapeHTML(selectedSantri.poin);
+
+        let barisBaru = `
+            <tr data-id="${selectedSantri.id}">
+                <td class="ps-3">
+                    <div class="fw-bold text-dark">${namaSantri} <span class="badge bg-danger rounded-pill ms-2">${poinSantri} Poin</span></div>
+                    <!-- Badge Mobile -->
+                    <div class="d-block d-md-none mt-1">
+                        <span class="badge bg-light text-dark border me-1">Kelas: ${kelasSantri}</span>
+                        <span class="badge bg-light text-dark border">Kamar: ${kamarSantri}</span>
+                    </div>
+                    <input type="hidden" name="santri_id[]" value="${selectedSantri.id}">
+                </td>
+                <td class="d-none d-md-table-cell align-middle text-muted">${kelasSantri}</td>
+                <td class="d-none d-md-table-cell align-middle text-muted">${kamarSantri}</td>
+                <td class="text-center align-middle">
+                    <button type="button" class="btn btn-sm btn-link text-danger p-0" onclick="$(this).closest('tr').remove(); checkTableEmpty();" title="Hapus">
+                        <i class="fas fa-times-circle fa-lg"></i>
+                    </button>
+                </td>
+            </tr>
+        `;
+        $('#tabel-santri-reset tbody').append(barisBaru);
+        selectedSantri = null;
+        checkTableEmpty(); 
+    }
+
     const form = document.getElementById('resetForm');
     
     if(form) {
@@ -146,12 +266,13 @@ document.addEventListener('DOMContentLoaded', function() {
             const submitter = event.submitter;
             
             if (submitter.name === 'reset_satu_santri') {
-                const santriSelect = document.getElementById('santri_id');
+                const rowCount = $('#tabel-santri-reset tbody tr').length;
                 const keteranganSatu = document.getElementById('keterangan_satu');
                 
-                if (santriSelect.value === '') {
-                    alert('Silakan pilih santri terlebih dahulu!');
+                if (rowCount === 0) {
+                    alert('Silakan pilih setidaknya satu santri terlebih dahulu!');
                     event.preventDefault();
+                    $('#santri-search').focus();
                     return;
                 }
                 if (keteranganSatu.value.trim() === '') {
@@ -160,10 +281,7 @@ document.addEventListener('DOMContentLoaded', function() {
                     return;
                 }
                 
-                const selectedOption = santriSelect.options[santriSelect.selectedIndex];
-                const selectedSantriName = selectedOption ? selectedOption.dataset.nama : 'Santri';
-                
-                if (!confirm(`Anda yakin ingin me-reset poin untuk santri "${selectedSantriName}"?`)) {
+                if (!confirm(`Anda yakin ingin me-reset poin untuk ${rowCount} santri yang dipilih?`)) {
                     event.preventDefault();
                 }
             }

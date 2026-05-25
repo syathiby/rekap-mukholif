@@ -1,4 +1,4 @@
-﻿<?php
+<?php
 // 1. Panggil 'Otak' aplikasi dulu
 require_once __DIR__ . '/../bootstrap/init.php';
 
@@ -251,7 +251,7 @@ $result_pelanggaran = $stmt_pelanggaran->get_result();
 <div class="container">
     <div class="header-card">
         <h2><i class="fas fa-door-open"></i> Detail Kamar <?= $nama_kamar ?></h2>
-        <a href="per-kamar.php?tanggal_awal=<?= urlencode($tanggal_awal) ?>&tanggal_akhir=<?= urlencode($tanggal_akhir) ?>" class="btn-back"><i class="fas fa-arrow-left"></i> Kembali</a>
+        <a href="kebersihan.php?tanggal_awal=<?= urlencode($tanggal_awal) ?>&tanggal_akhir=<?= urlencode($tanggal_akhir) ?>" class="btn-back"><i class="fas fa-arrow-left"></i> Kembali</a>
     </div>
 
     <div class="info-card filter-info">

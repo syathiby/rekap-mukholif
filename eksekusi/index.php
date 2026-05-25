@@ -1,4 +1,4 @@
-﻿<?php 
+<?php 
 // 1. Panggil 'Otak' aplikasi dulu
 require_once __DIR__ . '/../bootstrap/init.php';
 
@@ -37,254 +37,100 @@ $pelanggaranQuery = mysqli_query($conn, "
 ");
 ?>
 
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Form Eksekusi Pelanggaran Kebersihan</title>
-    <!-- Font Awesome for icons -->
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    <!-- Animate.css for animations -->
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/animate.css/4.1.1/animate.min.css">
-    <link rel="stylesheet" href="/assets/table-responsive.css">
-    <style>
-        :root {
-            --primary-color: #5d69b3;
-            --secondary-color: #57c4b0;
-            --accent-color: #f5a623;
-            --light-color: #f8f9fa;
-            --dark-color: #343a40;
-            --success-color: #4caf50;
-            --info-color: #2196f3;
-            --warning-color: #ff9800;
-            --danger-color: #f44336;
-        }
-        
-        body {
-            background-color: #f5f7fa;
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-        }
-        .container {
-            background-color: white;
-            border-radius: 12px;
-            box-shadow: 0 4px 25px rgba(0,0,0,0.08);
-            padding: 30px;
-            margin-top: 30px;
-            margin-bottom: 30px;
-            animation: fadeIn 0.6s ease-out;
-            border: 1px solid rgba(0,0,0,0.05);
-        }
-        .table {
-            animation: slideInUp 0.6s ease-out;
-            border-radius: 8px;
-            overflow: hidden;
-        }
-        .table thead {
-            background: linear-gradient(135deg, var(--primary-color) 0%, var(--secondary-color) 100%);
-            color: white;
-        }
-        .table th {
-            border: none;
-            font-weight: 500;
-            letter-spacing: 0.5px;
-        }
-        .table-hover tbody tr:hover {
-            background-color: rgba(87, 196, 176, 0.08);
-        }
-        .btn-submit {
-            background: linear-gradient(135deg, var(--primary-color) 0%, var(--secondary-color) 100%);
-            border: none;
-            transition: all 0.3s ease;
-            border-radius: 8px;
-            font-weight: 500;
-            letter-spacing: 0.5px;
-            padding: 12px 24px;
-        }
-        .btn-submit:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 6px 12px rgba(93, 105, 179, 0.2);
-            background: linear-gradient(135deg, var(--secondary-color) 0%, var(--primary-color) 100%);
-        }
-        .form-control:focus {
-            border-color: var(--secondary-color);
-            box-shadow: 0 0 0 0.25rem rgba(87, 196, 176, 0.25);
-        }
-        .no-data {
-            animation: fadeIn 1s ease-out;
-            background-color: rgba(245, 166, 35, 0.05);
-        }
-        .icon-cell {
-            text-align: center;
-            font-size: 1.2rem;
-            color: var(--primary-color);
-        }
-        h4 {
-            color: var(--primary-color);
-            border-bottom: 2px solid rgba(93, 105, 179, 0.1);
-            padding-bottom: 12px;
-            margin-bottom: 25px;
-            position: relative;
-            font-weight: 600;
-        }
-        h4::after {
-            content: '';
-            position: absolute;
-            left: 0;
-            bottom: -2px;
-            width: 60px;
-            height: 3px;
-            background: linear-gradient(135deg, var(--primary-color) 0%, var(--secondary-color) 100%);
-            border-radius: 3px;
-        }
-        .input-group-text {
-            background-color: rgba(87, 196, 176, 0.1);
-            color: var(--secondary-color);
-            border: 1px solid rgba(87, 196, 176, 0.3);
-        }
-        .form-label {
-            color: var(--primary-color);
-            font-weight: 500;
-            margin-bottom: 8px;
-        }
-        .table td {
-            color: #555;
-            vertical-align: middle;
-        }
-        .table td:first-child {
-            color: var(--primary-color);
-            font-weight: 500;
-        }
-        .fa-door-closed {
-            color: var(--primary-color);
-        }
-        .fa-clock {
-            color: var(--secondary-color);
-        }
-        .fa-smile-beam {
-            color: var(--accent-color);
-            opacity: 0.7;
-        }
-
-        /* === Responsive Table for HP === */
-        .table-responsive {
-            width: 100%;
-            overflow-x: auto;
-            -webkit-overflow-scrolling: touch;
-        }
-
-        .table-responsive table {
-            min-width: 600px;
-        }
-
-        @media (max-width: 768px) {
-            table th,
-            table td {
-                white-space: nowrap;
-                font-size: 14px;
-                padding: 10px 8px;
-            }
-
-            .form-label {
-                font-size: 14px;
-            }
-
-            .input-group-text {
-                font-size: 14px;
-                padding: 8px 10px;
-            }
-
-            .form-control,
-            textarea {
-                font-size: 14px;
-            }
-
-            .btn-submit {
-                font-size: 14px;
-                padding: 10px 18px;
-            }
-        }
-    </style>
-</head>
-<body>
-<div class="container animate__animated animate__fadeIn">
-    <h4 class="mb-4">
-        <i class="fas fa-broom me-2" style="color: var(--secondary-color);"></i>Form Eksekusi Pelanggaran Kebersihan
-    </h4>
-
-    <form action="process.php" method="POST">
-        <div class="table-responsive">
-            <table class="table table-bordered table-hover animate__animated animate__slideInUp">
-                    <thead>
-                        <tr>
-                            <th>No</th>
-                            <th class="icon-cell"><i class="fas fa-check-circle"></i></th>
-                            <th><i class="fas fa-door-open me-2"></i>Kamar</th>
-                            <th><i class="fas fa-calendar-alt me-2"></i>Tanggal Pelanggaran</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                    <?php
-                    $no = 1;
-                    $adaData = false;
-                    while ($row = mysqli_fetch_assoc($pelanggaranQuery)):
-                        $adaData = true;
-                    ?>
-                        <tr class="animate__animated animate__fadeIn">
-                            <td><?= $no++ ?></td>
-                            <td class="icon-cell"><input type="checkbox" name="pelanggaran_id[]" value="<?= $row['pelanggaran_id'] ?>" class="form-check-input" style="cursor: pointer;"></td>
-                            <td><i class="fas fa-door-closed me-2"></i><?= htmlspecialchars($row['kamar']) ?></td>
-                            <td><i class="far fa-clock me-2"></i><?= date('d M Y H:i', strtotime($row['tanggal_pelanggaran'])) ?></td>
-                        </tr>
-                    <?php endwhile; ?>
-                    <?php if (!$adaData): ?>
-                        <tr class="no-data"><td colspan="4" class="text-center py-4" style="color: var(--accent-color);"><i class="far fa-smile-beam fa-2x mb-2"></i><br>Tidak ada pelanggaran yang bisa dieksekusi.</td></tr>
-                    <?php endif; ?>
-                    </tbody>
-            </table>
+<div class="dashboard-wrapper">
+    
+    <!-- Header Page yang Dilepas dari Card Utama -->
+    <div class="d-flex align-items-center mb-4 mt-2 px-1">
+        <div class="d-flex align-items-center justify-content-center rounded-circle me-3 shadow-sm" style="width: 56px; height: 56px; background: linear-gradient(135deg, #a78bfa, #8b5cf6); color: white;">
+            <i class="fas fa-broom fa-xl"></i>
         </div>
+        <div>
+            <h3 class="fw-bold mb-1 text-dark" style="letter-spacing: -0.5px;">Eksekusi Kebersihan</h3>
+            <p class="text-muted mb-0">Kelola dan catat eksekusi sanksi kamar secara kolektif</p>
+        </div>
+    </div>
 
-                <div class="mb-4 animate__animated animate__fadeIn">
-                    <label class="form-label"><i class="fas fa-gavel me-2" style="color: var(--accent-color);"></i>Jenis Hukuman:</label>
-                    <div class="input-group">
-                        <span class="input-group-text"><i class="fas fa-exclamation-circle"></i></span>
-                        <input type="text" name="jenis_hukuman" class="form-control" required>
+    <!-- Kotak Utama Konten -->
+    <div class="card shadow-sm border-0 rounded-4 overflow-hidden" style="background: linear-gradient(180deg, #ffffff 0%, #f8fafc 100%);">
+        <div class="card-body p-4">
+            <form action="process.php" method="POST">
+                
+                <h5 class="fw-bold mb-3"><i class="fas fa-list-check text-primary me-2"></i>Daftar Pelanggaran (Belum Dieksekusi)</h5>
+                
+                <div class="table-responsive mb-4">
+                    <table class="table table-hover align-middle" style="border-radius: 12px; overflow: hidden; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.05);">
+                        <thead style="background: linear-gradient(90deg, #8b5cf6, #6366f1); color: white;">
+                            <tr>
+                                <th width="5%" class="text-center border-0 py-3">No</th>
+                                <th width="5%" class="text-center border-0 py-3"><i class="fas fa-check-square"></i></th>
+                                <th class="border-0 py-3">Kamar</th>
+                                <th class="border-0 py-3">Tanggal Pelanggaran</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                        <?php
+                        $no = 1;
+                        $adaData = false;
+                        while ($row = mysqli_fetch_assoc($pelanggaranQuery)):
+                            $adaData = true;
+                        ?>
+                            <tr style="transition: all 0.2s;" onmouseover="this.style.backgroundColor='#f5f3ff'" onmouseout="this.style.backgroundColor='transparent'">
+                                <td class="text-center text-muted fw-medium"><?= $no++ ?></td>
+                                <td class="text-center">
+                                    <input type="checkbox" name="pelanggaran_id[]" value="<?= $row['pelanggaran_id'] ?>" class="form-check-input border-secondary" style="cursor: pointer; width: 1.25rem; height: 1.25rem;">
+                                </td>
+                                <td class="fw-bold text-dark"><i class="fas fa-door-closed text-primary me-2 opacity-75"></i><?= htmlspecialchars($row['kamar']) ?></td>
+                                <td>
+                                    <span class="badge bg-light text-secondary border px-2 py-1"><i class="far fa-clock me-1 text-warning"></i><?= date('d M Y H:i', strtotime($row['tanggal_pelanggaran'])) ?></span>
+                                </td>
+                            </tr>
+                        <?php endwhile; ?>
+                        <?php if (!$adaData): ?>
+                            <tr>
+                                <td colspan="4" class="text-center py-5 text-muted">
+                                    <i class="far fa-smile-beam fa-3x mb-3 text-success opacity-50"></i><br>
+                                    Semua pelanggaran kebersihan sudah dieksekusi.
+                                </td>
+                            </tr>
+                        <?php endif; ?>
+                        </tbody>
+                    </table>
+                </div>
+
+                <div class="row g-4 p-4 rounded-4" style="background: rgba(99, 102, 241, 0.04); border: 1px dashed rgba(99, 102, 241, 0.3);">
+                    <div class="col-md-4">
+                        <label class="form-label fw-bold text-primary mb-2" style="font-size:0.9rem;">Jenis Hukuman <span class="text-danger">*</span></label>
+                        <div class="input-group shadow-sm rounded-3 overflow-hidden">
+                            <span class="input-group-text bg-white border-end-0 text-primary"><i class="fas fa-gavel"></i></span>
+                            <input type="text" name="jenis_hukuman" class="form-control border-start-0 ps-0" required placeholder="Contoh: Membersihkan selokan">
+                        </div>
+                    </div>
+
+                    <div class="col-md-4">
+                        <label class="form-label fw-bold text-teal mb-2" style="font-size:0.9rem;">Tanggal Eksekusi <span class="text-danger">*</span></label>
+                        <div class="input-group shadow-sm rounded-3 overflow-hidden">
+                            <span class="input-group-text bg-white border-end-0 text-teal"><i class="far fa-calendar-check"></i></span>
+                            <input type="datetime-local" name="tanggal" class="form-control border-start-0 ps-0" value="<?= date('Y-m-d\TH:i') ?>" required>
+                        </div>
+                    </div>
+
+                    <div class="col-md-4">
+                        <label class="form-label fw-bold text-warning mb-2" style="font-size:0.9rem;">Catatan (Opsional)</label>
+                        <div class="input-group shadow-sm rounded-3 overflow-hidden">
+                            <span class="input-group-text bg-white border-end-0 text-warning"><i class="fas fa-sticky-note"></i></span>
+                            <input type="text" name="catatan" class="form-control border-start-0 ps-0" placeholder="Tambahan info...">
+                        </div>
                     </div>
                 </div>
 
-                <div class="mb-4 animate__animated animate__fadeIn">
-                    <label class="form-label"><i class="far fa-calendar-check me-2" style="color: var(--secondary-color);"></i>Tanggal Eksekusi:</label>
-                    <div class="input-group">
-                        <span class="input-group-text"><i class="fas fa-clock"></i></span>
-                        <input type="datetime-local" name="tanggal" class="form-control" value="<?= date('Y-m-d\TH:i') ?>" required>
-                    </div>
+                <div class="mt-4 d-flex justify-content-end">
+                    <button type="submit" class="btn btn-primary px-5 py-2 fw-bold rounded-pill shadow" style="background: linear-gradient(90deg, #6366f1, #8b5cf6); border: none;">
+                        <i class="fas fa-save me-2"></i>Simpan Eksekusi
+                    </button>
                 </div>
-
-                <div class="mb-4 animate__animated animate__fadeIn">
-                    <label class="form-label"><i class="fas fa-sticky-note me-2" style="color: var(--primary-color);"></i>Catatan (Opsional):</label>
-                    <div class="input-group">
-                        <span class="input-group-text"><i class="fas fa-pen"></i></span>
-                        <textarea name="catatan" class="form-control" rows="3" style="resize: none;"></textarea>
-                    </div>
-                </div>
-
-            <button type="submit" class="btn btn-submit btn-lg animate__animated animate__pulse animate__infinite animate__slower">
-                <i class="fas fa-save me-2"></i>Simpan Eksekusi
-            </button>
-    </form>
+            </form>
+        </div>
+    </div>
 </div>
 
 <?php include __DIR__ . '/../layouts/footer.php'; mysqli_close($conn); ?>
-
-<!-- Animation trigger script -->
-<script>
-    document.addEventListener('DOMContentLoaded', function() {
-        // Add animation class to each table row with delay
-        const rows = document.querySelectorAll('tbody tr');
-        rows.forEach((row, index) => {
-            row.style.animationDelay = `${index * 0.1}s`;
-        });
-    });
-</script>
-</body>
-</html>

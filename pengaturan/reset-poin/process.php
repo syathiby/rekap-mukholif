@@ -1,4 +1,4 @@
-﻿<?php
+<?php
 if (session_status() === PHP_SESSION_NONE) {
     session_start();
 }
@@ -57,22 +57,30 @@ function resetPoinSantri($conn, $id_santri, $keterangan, $di_reset_oleh) {
 
 $di_reset_oleh = $_SESSION['user_id'];
 
-// SKENARIO 1: RESET SATU SANTRI
+// SKENARIO 1: RESET BEBERAPA SANTRI (MULTI-SELECT)
 if (isset($_POST['reset_satu_santri'])) {
-    $id_santri = $_POST['santri_id'];
+    $id_santri_array = $_POST['santri_id']; // Sekarang ini berupa array
     $keterangan = trim($_POST['keterangan_satu']);
 
-    if (empty($id_santri) || empty($keterangan)) {
-        $_SESSION['message'] = ['type' => 'danger', 'text' => 'Santri dan keterangan harus diisi.'];
+    if (empty($id_santri_array) || !is_array($id_santri_array) || empty($keterangan)) {
+        $_SESSION['message'] = ['type' => 'danger', 'text' => 'Minimal satu santri dan keterangan harus diisi.'];
         header("Location: index.php");
         exit();
     }
 
     mysqli_begin_transaction($conn);
     try {
-        resetPoinSantri($conn, $id_santri, $keterangan, $di_reset_oleh);
+        $processed_count = 0;
+        foreach ($id_santri_array as $id_santri) {
+            // Pastikan ID valid
+            if (!empty($id_santri)) {
+                resetPoinSantri($conn, $id_santri, $keterangan, $di_reset_oleh);
+                $processed_count++;
+            }
+        }
+        
         mysqli_commit($conn);
-        $_SESSION['message'] = ['type' => 'success', 'text' => 'RESET BERHASIL! Poin dan riwayat pelanggaran non-permanen santri telah direset.'];
+        $_SESSION['message'] = ['type' => 'success', 'text' => "RESET BERHASIL! Sebanyak $processed_count santri telah direset poin dan riwayat pelanggaran non-permanennya."];
     } catch (Exception $e) {
         mysqli_rollback($conn);
         $_SESSION['message'] = ['type' => 'danger', 'text' => 'RESET GAGAL! Terjadi kesalahan: ' . $e->getMessage()];

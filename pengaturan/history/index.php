@@ -14,9 +14,12 @@ $start_date = $_GET['start_date'] ?? $periode_aktif;
 $end_date   = $_GET['end_date'] ?? date('Y-m-d');
 $bagian     = $_GET['bagian'] ?? '';
 $search     = trim($_GET['search'] ?? '');
+$kamar      = $_GET['kamar'] ?? '';
+$kelas      = $_GET['kelas'] ?? '';
+$jenis_pelanggaran = $_GET['jenis_pelanggaran'] ?? '';
 
 // Link Log History bawa data filter
-$history_link = "history_view.php?start_date=" . urlencode($start_date) . "&end_date=" . urlencode($end_date) . "&bagian=" . urlencode($bagian) . "&search=" . urlencode($search);
+$history_link = "history_view.php?start_date=" . urlencode($start_date) . "&end_date=" . urlencode($end_date) . "&bagian=" . urlencode($bagian) . "&search=" . urlencode($search) . "&kamar=" . urlencode($kamar) . "&kelas=" . urlencode($kelas) . "&jenis_pelanggaran=" . urlencode($jenis_pelanggaran);
 
 // 1. Fetch Pelanggaran Individu
 $params_ind = [$start_date, $end_date];
@@ -46,13 +49,28 @@ if (!empty($bagian) && strtolower($bagian) !== 'kebersihan') {
 
 if (!empty($search)) {
     $search_param = "%" . $search . "%";
-    // UPDATE: Cari berdasarkan nama, kelas, kamar, dan jenis pelanggaran
-    $query_ind .= " AND (s.nama LIKE ? OR s.kelas LIKE ? OR s.kamar LIKE ? OR jp.nama_pelanggaran LIKE ?)";
+    // UPDATE: Cari berdasarkan nama saja
+    $query_ind .= " AND s.nama LIKE ?";
     $params_ind[] = $search_param;
-    $params_ind[] = $search_param;
-    $params_ind[] = $search_param;
-    $params_ind[] = $search_param;
-    $types_ind .= 'ssss';
+    $types_ind .= 's';
+}
+
+if (!empty($kamar)) {
+    $query_ind .= " AND s.kamar = ?";
+    $params_ind[] = $kamar;
+    $types_ind .= 's';
+}
+
+if (!empty($kelas)) {
+    $query_ind .= " AND s.kelas = ?";
+    $params_ind[] = $kelas;
+    $types_ind .= 's';
+}
+
+if (!empty($jenis_pelanggaran)) {
+    $query_ind .= " AND p.jenis_pelanggaran_id = ?";
+    $params_ind[] = $jenis_pelanggaran;
+    $types_ind .= 'i';
 }
 
 $data_individu = [];
@@ -85,17 +103,14 @@ $query_keb = "
     WHERE DATE(pk.tanggal) >= ? AND DATE(pk.tanggal) <= ?
 ";
 
-$skip_kebersihan = (!empty($bagian) && strtolower($bagian) !== 'pengabdian' && strtolower($bagian) !== 'kebersihan');
+$skip_kebersihan = (!empty($bagian) && strtolower($bagian) !== 'pengabdian' && strtolower($bagian) !== 'kebersihan') || (!empty($kelas)) || (!empty($jenis_pelanggaran)) || (!empty($search));
 
 $data_kebersihan = [];
 if (!$skip_kebersihan) {
-    if (!empty($search)) {
-        $search_param = "%" . $search . "%";
-        // Untuk kebersihan, search di kamar dan catatan
-        $query_keb .= " AND (pk.kamar LIKE ? OR pk.catatan LIKE ?)";
-        $params_keb[] = $search_param;
-        $params_keb[] = $search_param;
-        $types_keb .= 'ss';
+    if (!empty($kamar)) {
+        $query_keb .= " AND pk.kamar = ?";
+        $params_keb[] = $kamar;
+        $types_keb .= 's';
     }
 
     $stmt_keb = $conn->prepare($query_keb);
@@ -118,7 +133,7 @@ $total_data = count($all_data);
 // ==============================================================================
 // FUNGSI RENDER ROWS UNTUK AJAX & INITIAL LOAD
 // ==============================================================================
-function render_table_rows($all_data, $start_date, $end_date, $bagian, $search) {
+function render_table_rows($all_data, $start_date, $end_date, $bagian, $search, $kamar, $kelas, $jenis_pelanggaran) {
     ob_start();
     if (count($all_data) > 0): 
         $no = 1; foreach($all_data as $row): ?>
@@ -178,6 +193,9 @@ function render_table_rows($all_data, $start_date, $end_date, $bagian, $search) 
                         <input type="hidden" name="end_date" value="<?= htmlspecialchars($end_date) ?>">
                         <input type="hidden" name="bagian" value="<?= htmlspecialchars($bagian) ?>">
                         <input type="hidden" name="search" value="<?= htmlspecialchars($search) ?>">
+                        <input type="hidden" name="kamar" value="<?= htmlspecialchars($kamar) ?>">
+                        <input type="hidden" name="kelas" value="<?= htmlspecialchars($kelas) ?>">
+                        <input type="hidden" name="jenis_pelanggaran" value="<?= htmlspecialchars($jenis_pelanggaran) ?>">
                         
                         <button type="submit" name="batalkan" class="btn btn-action-icon" title="Batalkan Pelanggaran">
                             <i class="fas fa-times"></i>
@@ -205,7 +223,7 @@ $is_ajax = isset($_SERVER['HTTP_X_REQUESTED_WITH']) && strtolower($_SERVER['HTTP
 if ($is_ajax) {
     header('Content-Type: application/json');
     echo json_encode([
-        'html' => render_table_rows($all_data, $start_date, $end_date, $bagian, $search),
+        'html' => render_table_rows($all_data, $start_date, $end_date, $bagian, $search, $kamar, $kelas, $jenis_pelanggaran),
         'total' => $total_data,
         'history_link' => $history_link
     ]);
@@ -214,7 +232,11 @@ if ($is_ajax) {
 
 // BUKAN AJAX (Load halaman utuh)
 $bagian_result = mysqli_query($conn, "SELECT DISTINCT bagian FROM jenis_pelanggaran WHERE bagian IS NOT NULL AND bagian != '' ORDER BY bagian ASC");
-require_once __DIR__ . '/../../layouts/header.php'; 
+$kamar_result = mysqli_query($conn, "SELECT DISTINCT kamar FROM santri WHERE kamar IS NOT NULL AND kamar != '' ORDER BY kamar ASC");
+$kelas_result = mysqli_query($conn, "SELECT DISTINCT kelas FROM santri WHERE kelas IS NOT NULL AND kelas != '' ORDER BY kelas ASC");
+$jp_result = mysqli_query($conn, "SELECT DISTINCT jp.id, jp.nama_pelanggaran FROM pelanggaran p JOIN jenis_pelanggaran jp ON p.jenis_pelanggaran_id = jp.id ORDER BY jp.nama_pelanggaran ASC");
+
+require_once __DIR__ . '/../../layouts/header.php';
 ?>
 
 <style>
@@ -365,19 +387,19 @@ require_once __DIR__ . '/../../layouts/header.php';
     <div class="card glass-card mb-4">
         <div class="card-body p-4">
             <form id="filterForm" action="index.php" method="GET">
-                <div class="row g-3 align-items-end">
+                <div class="row g-3 align-items-end mb-3">
                     <div class="col-md-3">
                         <label class="form-label fw-bold text-secondary small mb-1">CARI DATA</label>
                         <div class="input-group">
                             <span class="input-group-text border-end-0 bg-transparent"><i class="fas fa-search"></i></span>
-                            <input type="text" name="search" value="<?= htmlspecialchars($search) ?>" class="form-control border-start-0" placeholder="Nama, Kelas, Kamar, Pelanggaran..." id="searchInput">
+                            <input type="text" name="search" value="<?= htmlspecialchars($search) ?>" class="form-control border-start-0" placeholder="Nama Santri..." id="searchInput">
                         </div>
                     </div>
-                    <div class="col-md-2">
+                    <div class="col-md-3">
                         <label class="form-label fw-bold text-secondary small mb-1">MULAI TANGGAL</label>
                         <input type="date" id="start_date" name="start_date" value="<?= htmlspecialchars($start_date) ?>" class="form-control">
                     </div>
-                    <div class="col-md-2">
+                    <div class="col-md-3">
                         <label class="form-label fw-bold text-secondary small mb-1">SAMPAI TANGGAL</label>
                         <input type="date" id="end_date" name="end_date" value="<?= htmlspecialchars($end_date) ?>" class="form-control">
                     </div>
@@ -396,8 +418,44 @@ require_once __DIR__ . '/../../layouts/header.php';
                             <?php endwhile; ?>
                         </select>
                     </div>
+                </div>
+
+                <div class="row g-3 align-items-end">
+                    <div class="col-md-3">
+                        <label class="form-label fw-bold text-secondary small mb-1">FILTER KAMAR</label>
+                        <select name="kamar" id="kamar" class="form-select">
+                            <option value="">Semua Kamar</option>
+                            <?php while ($kmr = mysqli_fetch_assoc($kamar_result)): ?>
+                                <option value="<?= htmlspecialchars($kmr['kamar']) ?>" <?= ($kamar == $kmr['kamar']) ? 'selected' : '' ?>>
+                                    Kamar <?= htmlspecialchars($kmr['kamar']) ?>
+                                </option>
+                            <?php endwhile; ?>
+                        </select>
+                    </div>
+                    <div class="col-md-3">
+                        <label class="form-label fw-bold text-secondary small mb-1">FILTER KELAS</label>
+                        <select name="kelas" id="kelas" class="form-select">
+                            <option value="">Semua Kelas</option>
+                            <?php while ($kls = mysqli_fetch_assoc($kelas_result)): ?>
+                                <option value="<?= htmlspecialchars($kls['kelas']) ?>" <?= ($kelas == $kls['kelas']) ? 'selected' : '' ?>>
+                                    Kelas <?= htmlspecialchars($kls['kelas']) ?>
+                                </option>
+                            <?php endwhile; ?>
+                        </select>
+                    </div>
+                    <div class="col-md-4">
+                        <label class="form-label fw-bold text-secondary small mb-1">FILTER JENIS PELANGGARAN</label>
+                        <select name="jenis_pelanggaran" id="jenis_pelanggaran" class="form-select">
+                            <option value="">Semua Jenis Pelanggaran</option>
+                            <?php while ($jp = mysqli_fetch_assoc($jp_result)): ?>
+                                <option value="<?= htmlspecialchars($jp['id']) ?>" <?= ($jenis_pelanggaran == $jp['id']) ? 'selected' : '' ?>>
+                                    <?= htmlspecialchars($jp['nama_pelanggaran']) ?>
+                                </option>
+                            <?php endwhile; ?>
+                        </select>
+                    </div>
                     <div class="col-md-2">
-                        <div class="stat-box shadow-sm">
+                        <div class="stat-box shadow-sm h-100 d-flex flex-column justify-content-center">
                             <small class="d-block text-muted small fw-bold">TOTAL DATA</small>
                             <span class="fw-bolder text-primary fs-4" id="totalDataCount"><?= $total_data ?></span>
                         </div>
@@ -422,7 +480,7 @@ require_once __DIR__ . '/../../layouts/header.php';
                     </tr>
                 </thead>
                 <tbody id="tableBody">
-                    <?= render_table_rows($all_data, $start_date, $end_date, $bagian, $search) ?>
+                    <?= render_table_rows($all_data, $start_date, $end_date, $bagian, $search, $kamar, $kelas, $jenis_pelanggaran) ?>
                 </tbody>
             </table>
         </div>
@@ -471,6 +529,9 @@ document.addEventListener('DOMContentLoaded', function() {
     document.getElementById('bagian').addEventListener('change', loadData);
     document.getElementById('start_date').addEventListener('change', loadData);
     document.getElementById('end_date').addEventListener('change', loadData);
+    document.getElementById('kamar').addEventListener('change', loadData);
+    document.getElementById('kelas').addEventListener('change', loadData);
+    document.getElementById('jenis_pelanggaran').addEventListener('change', loadData);
 
     // Debounce buat input Search biar nggak spam AJAX tiap ngetik
     let timeout = null;

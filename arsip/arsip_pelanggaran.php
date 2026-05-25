@@ -1,4 +1,4 @@
-﻿<?php
+<?php
 // 1. Panggil 'Otak' aplikasi dulu
 require_once __DIR__ . '/../bootstrap/init.php';
 
@@ -204,7 +204,7 @@ $data_rekap = $stmt_data->get_result();
                                     </span>
                                 </td>
                                 <td class="text-center">
-                                    <a href="detail-pelanggaran.php?arsip_id=<?= $arsip_id ?>&santri_id=<?= $row['santri_id'] ?>&<?= $filter_params ?>" class="btn btn-sm btn-detail rounded-pill px-3">
+                                    <a href="detail_keterlambatan.php?arsip_id=<?= $arsip_id ?>&santri_id=<?= $row['santri_id'] ?>&<?= $filter_params ?>" class="btn btn-sm btn-detail rounded-pill px-3">
                                         <i class="fas fa-info-circle me-1"></i> Detail
                                     </a>
                                 </td>

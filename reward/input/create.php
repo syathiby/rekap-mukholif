@@ -1,4 +1,4 @@
-﻿<?php 
+<?php 
 require_once __DIR__ . '/../../bootstrap/init.php';
 guard('reward_input');  
 require_once __DIR__ . '/../../layouts/header.php'; 
@@ -15,136 +15,75 @@ $jenis_reward_result = $stmt->get_result();
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/jqueryui/1.13.2/themes/base/jquery-ui.min.css">
 
 <style>
-    /* === VARIABLES === */
     :root {
         --primary: #198754;       
         --primary-dark: #145e3c;
-        --step-line: #e9ecef;
-        --bg-body: #f4f6f9;
-        --text-dark: #2c3e50;
-        --text-muted: #6c757d;
+        --bg-body: #f8fafc;
+        --text-dark: #1e293b;
+        --text-muted: #64748b;
+        --card-border: rgba(0,0,0,0.05);
     }
 
-    body { background-color: var(--bg-body); }
+    body { background-color: var(--bg-body); font-family: 'Inter', sans-serif; }
 
-    /* === MAIN CARD === */
-    .card-reward {
-        border: none;
-        border-radius: 16px;
-        box-shadow: 0 10px 30px rgba(0,0,0,0.05);
-        background: #fff;
-        position: relative;
-        overflow: visible !important; /* PENTING: Biar dropdown gak kepotong */
+    /* === CARD STYLES === */
+    .pro-card {
+        background: #ffffff;
+        border: 1px solid var(--card-border);
+        border-radius: 1.2rem;
+        box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05), 0 2px 4px -1px rgba(0, 0, 0, 0.03);
+        transition: box-shadow 0.3s ease;
     }
-
-    .card-header-green {
-        background: var(--primary);
-        color: white;
-        padding: 25px 30px;
-        border-top-left-radius: 16px;
-        border-top-right-radius: 16px;
-        position: relative;
+    .pro-card:hover {
+        box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.08), 0 4px 6px -2px rgba(0, 0, 0, 0.04);
     }
-
-    .date-badge {
-        background: rgba(255,255,255,0.15);
-        backdrop-filter: blur(5px);
-        color: #fff;
-        padding: 8px 16px;
-        border-radius: 50px;
-        font-weight: 600;
-        font-size: 0.85rem;
-        display: inline-flex;
-        align-items: center;
-        gap: 8px;
-        border: 1px solid rgba(255,255,255,0.2);
+    .pro-card-header {
+        background: transparent;
+        border-bottom: 1px solid #f1f5f9;
+        padding: 1.5rem 1.5rem 1rem 1.5rem;
     }
-
-    /* === VERTICAL STEPPER FIX === */
-    .step-container {
-        padding: 10px 0 0 10px;
+    .pro-card-body {
+        padding: 1.5rem;
     }
-
-    .step-item {
-        display: flex;
-        position: relative;
-        padding-bottom: 2.5rem;
-    }
-    
-    /* Hapus padding bottom untuk step terakhir biar rapi */
-    .step-item:last-child {
-        padding-bottom: 0;
-    }
-
-    /* Garis Vertikal */
-    .step-item:not(:last-child)::before {
-        content: '';
-        position: absolute;
-        left: 15px; 
-        top: 40px;
-        bottom: 0;
-        width: 2px;
-        background-color: var(--step-line);
-        z-index: 0;
-    }
-
-    .step-number {
-        flex-shrink: 0;
-        width: 32px;
-        height: 32px;
-        background-color: #d1e7dd; 
-        color: var(--primary);
-        border-radius: 50%;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        font-weight: 800;
-        font-size: 0.9rem;
-        margin-right: 20px;
-        z-index: 2;
-        position: relative;
-        box-shadow: 0 0 0 5px #fff; /* Border putih biar garis ketutup rapi */
-    }
-
-    .step-content {
-        flex-grow: 1;
-        padding-top: 2px;
-        min-width: 0; /* Fix overflow di flex item */
-    }
-
-    .step-title {
-        font-weight: 700;
-        color: var(--text-dark);
-        font-size: 1.05rem;
-        margin-bottom: 4px;
-    }
-
-    .step-desc {
-        color: var(--text-muted);
-        font-size: 0.85rem;
-        margin-bottom: 12px;
-        line-height: 1.4;
+    .pro-card-footer {
+        background: #ffffff;
+        border-top: 1px solid #f1f5f9;
+        padding: 1.5rem;
+        border-bottom-left-radius: 1.2rem;
+        border-bottom-right-radius: 1.2rem;
     }
 
     /* === FORM INPUTS === */
-    .form-control-lg-custom {
-        padding: 12px 16px;
-        border-radius: 12px;
-        border: 1px solid #dee2e6;
+    .form-control-custom {
+        padding: 0.75rem 1rem;
+        border-radius: 0.75rem;
+        border: 1px solid #cbd5e1;
         font-size: 0.95rem;
+        background-color: #f8fafc;
         transition: all 0.2s;
         width: 100%;
+        color: var(--text-dark);
     }
-    .form-control-lg-custom:focus {
+    .form-control-custom:focus {
         border-color: var(--primary);
-        box-shadow: 0 0 0 4px rgba(25, 135, 84, 0.1);
+        background-color: #ffffff;
+        box-shadow: 0 0 0 4px rgba(25, 135, 84, 0.15);
+        outline: none;
+    }
+    .form-label-custom {
+        font-weight: 700;
+        font-size: 0.75rem;
+        text-transform: uppercase;
+        letter-spacing: 0.05em;
+        color: var(--text-muted);
+        margin-bottom: 0.5rem;
     }
 
     /* === AUTOCOMPLETE DROPDOWN === */
     .ui-autocomplete {
-        border-radius: 12px;
-        box-shadow: 0 15px 35px rgba(0,0,0,0.1), 0 5px 15px rgba(0,0,0,0.05);
-        border: 1px solid #f0f0f0;
+        border-radius: 0.75rem;
+        box-shadow: 0 10px 25px rgba(0,0,0,0.1);
+        border: 1px solid #e2e8f0;
         padding: 0;
         max-height: 300px;
         overflow-y: auto;
@@ -152,197 +91,239 @@ $jenis_reward_result = $stmt->get_result();
         z-index: 9999 !important;
         background: #fff;
     }
-
     .ui-menu-item-wrapper {
-        padding: 12px 16px;
-        border-bottom: 1px solid #f8f9fa;
+        padding: 0.8rem 1.2rem;
+        border-bottom: 1px solid #f1f5f9;
         display: flex;
         justify-content: space-between;
         align-items: center;
-        transition: 0.2s;
+        transition: background-color 0.2s;
         cursor: pointer;
     }
-
     .ui-menu-item-wrapper:hover, .ui-state-active {
-        background: #f8f9fa !important;
+        background: #f8fafc !important;
         color: inherit !important;
         border: none;
         margin: 0;
     }
 
     /* Poin Stars */
-    .star-green { color: #198754; font-weight: 700; font-size: 0.85rem; }
-    .star-red { color: #e74c3c; font-weight: 700; font-size: 0.85rem; }
+    .star-green { color: #10b981; font-weight: 600; font-size: 0.85rem; background: #ecfdf5; padding: 4px 8px; border-radius: 6px; }
+    .star-red { color: #ef4444; font-weight: 600; font-size: 0.85rem; background: #fef2f2; padding: 4px 8px; border-radius: 6px; }
 
-    /* === TABLE & EMPTY STATE === */
-    .table-custom-wrapper {
-        border: 1px solid #f0f0f0;
-        border-radius: 12px;
+    /* === TABLE === */
+    .table-responsive-custom {
+        border-radius: 0.75rem;
+        border: 1px solid #e2e8f0;
         overflow: hidden;
     }
-    
-    .table-custom { width: 100%; margin: 0; }
-    .table-custom th { background: #fcfcfc; text-transform: uppercase; font-size: 0.75rem; color: #888; padding: 15px; font-weight: 700; border-bottom: 1px solid #f0f0f0; }
-    .table-custom td { padding: 15px; vertical-align: middle; border-bottom: 1px solid #f9f9f9; }
-    .table-custom tr:last-child td { border-bottom: none; }
-
-    .empty-box {
-        background: #fcfcfc;
-        border: 2px dashed #dee2e6;
-        border-radius: 12px;
-        padding: 30px 20px;
-        text-align: center;
+    .table > :not(caption) > * > * {
+        padding: 1rem 1.2rem;
+        border-bottom-color: #f1f5f9;
     }
-
-    /* === BUTTON === */
-    .btn-save {
-        background-color: var(--primary);
-        border: none;
-        border-radius: 12px;
-        padding: 16px;
+    .table thead th {
+        background-color: #f8fafc;
+        color: var(--text-muted);
+        font-size: 0.75rem;
         font-weight: 700;
-        font-size: 1rem;
-        letter-spacing: 0.5px;
-        box-shadow: 0 4px 15px rgba(25, 135, 84, 0.3);
-        transition: transform 0.2s, box-shadow 0.2s;
-        width: 100%;
-        margin-top: 20px;
+        text-transform: uppercase;
+        letter-spacing: 0.05em;
+        border-bottom: 1px solid #e2e8f0;
     }
-    .btn-save:hover { 
-        background-color: var(--primary-dark); 
-        transform: translateY(-2px);
-        box-shadow: 0 6px 20px rgba(25, 135, 84, 0.4);
+    .table tbody tr { transition: background-color 0.2s; }
+    .table tbody tr:hover { background-color: #f8fafc; }
+
+    /* === EMPTY STATE === */
+    .empty-state {
+        text-align: center;
+        padding: 4rem 2rem;
+        background-color: #f8fafc;
+        border-radius: 0.75rem;
+        border: 2px dashed #cbd5e1;
     }
 
-    /* Mobile Fix */
-    @media (max-width: 768px) {
-        .card-header-green { padding: 20px; }
-        .step-number { margin-right: 15px; }
-        .ui-menu-item-wrapper { flex-direction: column; align-items: flex-start; gap: 5px; }
-        
-        .mobile-hide { display: none; }
-        .table-custom td { font-size: 0.9rem; }
+    /* === BUTTONS === */
+    .btn-save {
+        background: linear-gradient(135deg, #10b981, #059669);
+        color: white;
+        border: none;
+        border-radius: 0.75rem;
+        padding: 1rem;
+        font-weight: 700;
+        font-size: 1.05rem;
+        box-shadow: 0 4px 12px rgba(16, 185, 129, 0.3);
+        transition: all 0.3s;
+        width: 100%;
     }
+    .btn-save:hover {
+        background: linear-gradient(135deg, #059669, #047857);
+        transform: translateY(-2px);
+        box-shadow: 0 6px 16px rgba(16, 185, 129, 0.4);
+        color: white;
+    }
+    .btn-back {
+        background: #ffffff;
+        border: 1px solid #cbd5e1;
+        color: var(--text-dark);
+        border-radius: 50px;
+        font-weight: 600;
+        padding: 0.5rem 1.25rem;
+        transition: all 0.2s;
+    }
+    .btn-back:hover {
+        background: #f1f5f9;
+        border-color: #94a3b8;
+        color: var(--primary);
+    }
+    
+    /* Select2 customizations */
+    .select2-container--bootstrap-5 .select2-selection {
+        border-radius: 0.75rem !important;
+        border: 1px solid #cbd5e1 !important;
+        background-color: #f8fafc !important;
+        padding: 0.3rem 0.5rem;
+    }
+    .select2-container--bootstrap-5 .select2-selection:focus,
+    .select2-container--bootstrap-5.select2-container--focus .select2-selection {
+        border-color: var(--primary) !important;
+        background-color: #ffffff !important;
+        box-shadow: 0 0 0 4px rgba(25, 135, 84, 0.15) !important;
+    }
+
 </style>
 
-<div class="content-wrapper" style="padding: 20px;">
-    <div class="container-fluid p-0" style="max-width: 650px; margin: 0 auto;">
-        
-        <div class="card card-reward">
-            
-            <!-- HEADER -->
-            <div class="card-header-green">
-                <div class="d-flex justify-content-between align-items-center">
-                    <div>
-                        <h4 class="fw-bold mb-1" style="font-size: 1.3rem;"><i class="fas fa-gift me-2"></i>Input Reward</h4>
-                        <p class="mb-0 opacity-75 small" style="font-weight: 500;">Apresiasi untuk santri berprestasi</p>
+<div class="container-fluid py-4 px-4">
+    <!-- Header Page -->
+    <div class="d-flex flex-column flex-md-row justify-content-between align-items-center mb-4 gap-3">
+        <div>
+            <h3 class="fw-bolder text-dark mb-1"><i class="fas fa-gift text-success me-2"></i>Input Reward Santri</h3>
+            <p class="text-muted mb-0">Catat pemberian apresiasi untuk santri berprestasi.</p>
+        </div>
+        <a href="../history/index.php" class="btn-back shadow-sm text-decoration-none">
+            <i class="fas fa-history me-1"></i> Riwayat Reward
+        </a>
+    </div>
+
+    <!-- Alert -->
+    <?php if (isset($_SESSION['message'])): ?>
+        <div class="alert alert-<?php echo $_SESSION['message']['type']; ?> alert-dismissible fade show border-0 shadow-sm mb-4 rounded-3 d-flex align-items-center">
+            <i class="<?php echo ($_SESSION['message']['type'] == 'success') ? 'fas fa-check-circle text-success' : 'fas fa-exclamation-circle text-danger'; ?> fs-4 me-3"></i>
+            <div><?php echo $_SESSION['message']['text']; ?></div>
+            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+        </div>
+        <?php unset($_SESSION['message']); ?>
+    <?php endif; ?>
+
+    <form action="process.php" method="POST" id="form-reward">
+        <div class="row g-4">
+            <!-- LEFT COLUMN: Config & Search -->
+            <div class="col-lg-4 d-flex flex-column gap-4">
+                
+                <!-- CARD 1: PENGATURAN -->
+                <div class="pro-card">
+                    <div class="pro-card-header d-flex align-items-center">
+                        <div class="bg-success bg-opacity-10 text-success rounded-circle d-flex align-items-center justify-content-center me-3" style="width: 36px; height: 36px;">
+                            <i class="fas fa-cog"></i>
+                        </div>
+                        <h6 class="fw-bold text-dark mb-0">1. Pengaturan Reward</h6>
                     </div>
-                    <a href="../history/index.php" class="btn btn-sm btn-light text-success fw-bold px-3 shadow-sm" style="border-radius: 8px;">
-                        <i class="fas fa-history me-1"></i> Riwayat
-                    </a>
+                    <div class="pro-card-body">
+                        <div class="mb-4">
+                            <label class="form-label-custom">JENIS REWARD</label>
+                            <select name="jenis_reward_id" id="jenis_reward_id" class="form-select" required>
+                                <option value="">Cari jenis reward...</option>
+                                <?php
+                                if ($jenis_reward_result && $jenis_reward_result->num_rows > 0) {
+                                    $jenis_reward_result->data_seek(0); 
+                                    while ($row = $jenis_reward_result->fetch_assoc()) {
+                                        echo '<option value="' . $row['id'] . '">' . htmlspecialchars($row['nama_reward']) . ' (Kurangi ' . $row['poin_reward'] . ' Poin)</option>';
+                                    }
+                                }
+                                ?>
+                            </select>
+                        </div>
+                        
+                        <div>
+                            <label class="form-label-custom">TANGGAL PENCATATAN</label>
+                            <div class="input-group">
+                                <span class="input-group-text bg-white border-end-0 text-muted" style="border-radius: 0.75rem 0 0 0.75rem; border-color: #cbd5e1;"><i class="far fa-calendar-alt"></i></span>
+                                <input type="datetime-local" name="tanggal" class="form-control-custom border-start-0 ps-0" style="border-radius: 0 0.75rem 0.75rem 0;" value="<?= date('Y-m-d\TH:i'); ?>" required>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- CARD 2: CARI SANTRI -->
+                <div class="pro-card">
+                    <div class="pro-card-header d-flex align-items-center">
+                        <div class="bg-primary bg-opacity-10 text-primary rounded-circle d-flex align-items-center justify-content-center me-3" style="width: 36px; height: 36px;">
+                            <i class="fas fa-search"></i>
+                        </div>
+                        <h6 class="fw-bold text-dark mb-0">2. Cari Santri</h6>
+                    </div>
+                    <div class="pro-card-body">
+                        <p class="text-muted small mb-3">Ketik nama santri untuk menambahkan ke dalam daftar penerima reward.</p>
+                        <div class="position-relative">
+                            <i class="fas fa-search position-absolute text-muted" style="top: 14px; left: 16px; z-index: 5;"></i>
+                            <input type="text" id="santri-search" class="form-control-custom ps-5" placeholder="Ketik minimal 2 huruf...">
+                        </div>
+                    </div>
+                </div>
+
+            </div>
+
+            <!-- RIGHT COLUMN: Table Data -->
+            <div class="col-lg-8">
+                <div class="pro-card h-100 d-flex flex-column">
+                    <div class="pro-card-header d-flex justify-content-between align-items-center">
+                        <div class="d-flex align-items-center">
+                            <div class="bg-info bg-opacity-10 text-info rounded-circle d-flex align-items-center justify-content-center me-3" style="width: 36px; height: 36px;">
+                                <i class="fas fa-users"></i>
+                            </div>
+                            <h6 class="fw-bold text-dark mb-0">3. Daftar Penerima Reward</h6>
+                        </div>
+                        <button type="button" class="btn btn-sm btn-outline-danger fw-bold rounded-pill px-3 py-1" onclick="clearAll()" id="btn-clear-all" style="display:none; font-size: 0.8rem;">
+                            <i class="fas fa-trash-alt me-1"></i> Hapus Semua
+                        </button>
+                    </div>
+                    
+                    <div class="pro-card-body d-flex flex-column flex-grow-1 p-4" style="min-height: 400px;">
+                        
+                        <!-- Tabel Data -->
+                        <div class="table-responsive-custom mb-0" id="table-container" style="display:none; flex-grow: 1;">
+                            <table class="table table-borderless m-0 align-middle" id="tabel-santri-reward">
+                                <thead>
+                                    <tr>
+                                        <th class="ps-4">NAMA SANTRI</th>
+                                        <th class="text-end d-none d-md-table-cell">STATUS POIN</th>
+                                        <th class="text-center pe-4" width="80">AKSI</th>
+                                    </tr>
+                                </thead>
+                                <tbody></tbody>
+                            </table>
+                        </div>
+
+                        <!-- Empty State -->
+                        <div id="empty-state" class="empty-state d-flex flex-column align-items-center justify-content-center flex-grow-1">
+                            <div class="bg-light rounded-circle d-flex align-items-center justify-content-center mb-3" style="width: 80px; height: 80px;">
+                                <i class="fas fa-user-graduate fa-2x text-muted opacity-50"></i>
+                            </div>
+                            <h6 class="fw-bold text-dark mb-2">Belum Ada Santri</h6>
+                            <p class="text-muted small mb-0" style="max-width: 250px;">Gunakan kolom pencarian di sebelah kiri untuk memilih santri penerima reward.</p>
+                        </div>
+
+                    </div>
+
+                    <div class="pro-card-footer mt-auto">
+                        <button type="submit" name="add_reward_bulk" class="btn-save">
+                            <i class="fas fa-check-circle me-2"></i> SIMPAN REWARD SEKARANG
+                        </button>
+                    </div>
                 </div>
             </div>
 
-            <div class="card-body p-4">
-                
-                <!-- Alert -->
-                <?php if (isset($_SESSION['message'])): ?>
-                    <div class="alert alert-<?php echo $_SESSION['message']['type']; ?> alert-dismissible fade show border-0 shadow-sm mb-4 rounded-3">
-                        <div class="d-flex align-items-center">
-                            <i class="<?php echo ($_SESSION['message']['type'] == 'success') ? 'fas fa-check-circle' : 'fas fa-exclamation-circle'; ?> me-2"></i>
-                            <div><?php echo $_SESSION['message']['text']; ?></div>
-                        </div>
-                        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
-                    </div>
-                    <?php unset($_SESSION['message']); ?>
-                <?php endif; ?>
-
-                <form action="process.php" method="POST" id="form-reward">
-                    <div class="step-container">
-                        
-                        <!-- STEP 1 -->
-                        <div class="step-item">
-                            <div class="step-number">1</div>
-                            <div class="step-content">
-                                <div class="step-title">Pilih Apresiasi</div>
-                                <div class="step-desc">Tentukan jenis reward dan tanggal pencatatan.</div>
-                                
-                                <select name="jenis_reward_id" id="jenis_reward_id" class="form-control mb-2" required>
-                                    <option value="">Cari jenis reward...</option>
-                                    <?php
-                                    if ($jenis_reward_result && $jenis_reward_result->num_rows > 0) {
-                                        $jenis_reward_result->data_seek(0); 
-                                        while ($row = $jenis_reward_result->fetch_assoc()) {
-                                            echo '<option value="' . $row['id'] . '">' . htmlspecialchars($row['nama_reward']) . ' (Kurangi ' . $row['poin_reward'] . ' Poin)</option>';
-                                        }
-                                    }
-                                    ?>
-                                </select>
-                                
-                                <div class="input-group mt-2">
-                                    <span class="input-group-text bg-white border-end-0 text-muted"><i class="far fa-calendar-alt"></i></span>
-                                    <input type="datetime-local" name="tanggal" class="form-control form-control-lg-custom border-start-0 ps-0" value="<?= date('Y-m-d\TH:i'); ?>" required>
-                                </div>
-                            </div>
-                        </div>
-
-                        <!-- STEP 2 -->
-                        <div class="step-item">
-                            <div class="step-number">2</div>
-                            <div class="step-content">
-                                <div class="step-title">Cari Santri</div>
-                                <div class="step-desc">Ketik nama santri untuk menambahkan ke daftar.</div>
-                                
-                                <div class="position-relative">
-                                    <i class="fas fa-search position-absolute text-muted" style="top: 14px; left: 15px; z-index: 5;"></i>
-                                    <input type="text" id="santri-search" class="form-control form-control-lg-custom" style="padding-left: 45px;" placeholder="Ketik nama santri...">
-                                </div>
-                            </div>
-                        </div>
-
-                        <!-- STEP 3 -->
-                        <div class="step-item">
-                            <div class="step-number">3</div>
-                            <div class="step-content w-100">
-                                <div class="d-flex justify-content-between align-items-center mb-2">
-                                    <div class="step-title mb-0">Daftar Penerima</div>
-                                    <button type="button" class="btn btn-sm text-danger fw-bold text-decoration-none" onclick="clearAll()" id="btn-clear-all" style="display:none;">Hapus Semua</button>
-                                </div>
-
-                                <!-- Tabel Data -->
-                                <div class="table-custom-wrapper mb-0" id="table-container" style="display:none;">
-                                    <table class="table table-custom table-borderless mb-0" id="tabel-santri-reward">
-                                        <thead>
-                                            <tr>
-                                                <th>Nama Santri</th>
-                                                <th class="text-end mobile-hide">Sisa Poin</th>
-                                                <th class="text-center" width="40"></th>
-                                            </tr>
-                                        </thead>
-                                        <tbody></tbody>
-                                    </table>
-                                </div>
-
-                                <!-- Empty State -->
-                                <div id="empty-state" class="empty-box">
-                                    <img src="https://cdn-icons-png.flaticon.com/512/7486/7486754.png" width="50" class="mb-3 opacity-25" style="filter: grayscale(100%);">
-                                    <p class="text-muted fw-bold mb-0 small">Belum ada santri dipilih</p>
-                                </div>
-                            </div>
-                        </div>
-
-                    </div> <!-- End Step Container -->
-
-                    <button type="submit" name="add_reward_bulk" class="btn-save">
-                        <i class="fas fa-check-circle me-2"></i> SIMPAN DATA
-                    </button>
-
-                </form>
-
-            </div>
-        </div>
-        
-    </div>
+        </div> <!-- End Row -->
+    </form>
 </div>
 
 <?php require_once __DIR__ . '/../../layouts/footer.php'; ?>
@@ -366,11 +347,11 @@ $(document).ready(function() {
         theme: "bootstrap-5",
         dropdownParent: $('#jenis_reward_id').parent(),
         width: '100%',
-        selectionCssClass: 'py-2 ps-2'
+        placeholder: "Cari jenis reward..."
     });
 
     // ==========================================
-    // ✅ AUTOCOMPLETE SETUP
+    // AUTOCOMPLETE SETUP
     // ==========================================
     $("#santri-search").autocomplete({
         source: "search_santri.php",
@@ -386,21 +367,18 @@ $(document).ready(function() {
         let poin = parseInt(item.poin);
         let starHtml = '';
         
-        // Logika Tampilan Dropdown
         if (poin > 0) {
-            // Merah (Ada Pelanggaran)
-            starHtml = `<span class="star-red"><i class="fas fa-exclamation-circle"></i> ${poin} Poin</span>`;
+            starHtml = `<span class="star-red"><i class="fas fa-exclamation-circle me-1"></i> ${poin} Poin</span>`;
         } else {
-            // Hijau (Bersih)
-            starHtml = `<span class="star-green"><i class="fas fa-star"></i> 0 Poin</span>`;
+            starHtml = `<span class="star-green"><i class="fas fa-star text-warning me-1"></i> Bersih (0)</span>`;
         }
 
         return $("<li>")
             .append(`
                 <div class="ui-menu-item-wrapper">
                     <div>
-                        <div class="fw-bold text-dark" style="font-size: 0.9rem;">${item.value}</div>
-                        <div class="text-muted small mt-1"><i class="fas fa-id-card me-1"></i>Kls ${item.kelas}</div>
+                        <div class="fw-bold text-dark" style="font-size: 0.95rem;">${item.value}</div>
+                        <div class="text-muted small mt-1"><i class="fas fa-id-card me-1 opacity-75"></i>Kelas ${item.kelas}</div>
                     </div>
                     <div>${starHtml}</div>
                 </div>
@@ -409,22 +387,22 @@ $(document).ready(function() {
     };
 
     // ==========================================
-    // ✅ TABLE LOGIC
+    // TABLE LOGIC
     // ==========================================
     function checkTableState() {
         if ($('#tabel-santri-reward tbody tr').length === 0) {
             $('#table-container').hide();
             $('#btn-clear-all').hide();
-            $('#empty-state').show();
+            $('#empty-state').removeClass('d-none').addClass('d-flex');
         } else {
             $('#table-container').show();
             $('#btn-clear-all').show();
-            $('#empty-state').hide();
+            $('#empty-state').removeClass('d-flex').addClass('d-none');
         }
     }
     
     window.clearAll = function() {
-        if(confirm('Hapus semua daftar?')) { 
+        if(confirm('Hapus semua daftar penerima?')) { 
             $('#tabel-santri-reward tbody').empty(); 
             checkTableState(); 
         }
@@ -439,28 +417,35 @@ $(document).ready(function() {
         let nama = escapeHTML(selectedSantri.value);
         let poin = parseInt(selectedSantri.poin);
         
-        // Tampilan Poin di Tabel
         let displayPoin = '';
         let mobilePoin = '';
 
         if (poin > 0) {
-             displayPoin = `<span class="badge bg-danger bg-opacity-10 text-danger fw-bold">${poin} Poin (Pelanggaran)</span>`;
-             mobilePoin = `<span class="text-danger small fw-bold mt-1 d-block"><i class="fas fa-exclamation-circle"></i> Sisa: ${poin}</span>`;
+             displayPoin = `<span class="badge bg-danger bg-opacity-10 text-danger border border-danger border-opacity-25 px-3 py-2 rounded-pill"><i class="fas fa-exclamation-circle me-1"></i> ${poin} Poin</span>`;
+             mobilePoin = `<span class="text-danger small fw-bold mt-2 d-block d-md-none"><i class="fas fa-exclamation-circle"></i> ${poin} Poin</span>`;
         } else {
-             displayPoin = `<span class="badge bg-success bg-opacity-10 text-success fw-bold">Bersih (0 Poin)</span>`;
-             mobilePoin = `<span class="text-success small fw-bold mt-1 d-block"><i class="fas fa-check-circle"></i> Bersih</span>`;
+             displayPoin = `<span class="badge bg-success bg-opacity-10 text-success border border-success border-opacity-25 px-3 py-2 rounded-pill"><i class="fas fa-star text-warning me-1"></i> Bersih (0)</span>`;
+             mobilePoin = `<span class="text-success small fw-bold mt-2 d-block d-md-none"><i class="fas fa-star text-warning"></i> Bersih</span>`;
         }
 
         let row = `
             <tr data-id="${selectedSantri.id}">
-                <td>
-                    <div class="fw-bold text-dark" style="font-size: 0.95rem;">${nama}</div>
-                    <div class="d-md-none">${mobilePoin}</div> <!-- Info poin di HP -->
+                <td class="ps-4">
+                    <div class="d-flex align-items-center">
+                        <div class="bg-light rounded-circle d-flex align-items-center justify-content-center me-3 d-none d-sm-flex" style="width: 40px; height: 40px;">
+                            <i class="fas fa-user text-secondary"></i>
+                        </div>
+                        <div>
+                            <div class="fw-bold text-dark" style="font-size: 0.95rem;">${nama}</div>
+                            <div class="text-muted small mt-1"><i class="fas fa-id-card me-1 opacity-75"></i>Kelas ${selectedSantri.kelas}</div>
+                            ${mobilePoin}
+                        </div>
+                    </div>
                     <input type="hidden" name="santri_ids[]" value="${selectedSantri.id}">
                 </td>
-                <td class="text-end align-middle mobile-hide">${displayPoin}</td>
-                <td class="text-center align-middle">
-                    <button type="button" class="btn btn-link text-muted hover-danger p-0" onclick="$(this).closest('tr').remove(); checkTableState();">
+                <td class="text-end align-middle d-none d-md-table-cell">${displayPoin}</td>
+                <td class="text-center align-middle pe-4">
+                    <button type="button" class="btn btn-sm btn-light text-danger rounded-circle shadow-sm" style="width: 32px; height: 32px;" onclick="$(this).closest('tr').remove(); checkTableState();" title="Hapus">
                         <i class="fas fa-times"></i>
                     </button>
                 </td>
@@ -472,8 +457,8 @@ $(document).ready(function() {
     }
 
     $("#form-reward").on('submit', function(e) {
-        if (!$("#jenis_reward_id").val()) { e.preventDefault(); alert("Pilih jenis reward dulu!"); return; }
-        if ($('#tabel-santri-reward tbody tr').length === 0) { e.preventDefault(); alert("Belum ada santri dipilih."); $('#santri-search').focus(); return; }
+        if (!$("#jenis_reward_id").val()) { e.preventDefault(); alert("Pilih jenis reward terlebih dahulu!"); return; }
+        if ($('#tabel-santri-reward tbody tr').length === 0) { e.preventDefault(); alert("Daftar santri masih kosong. Tambahkan minimal satu santri."); $('#santri-search').focus(); return; }
     });
 });
 </script>

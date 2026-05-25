@@ -1,4 +1,4 @@
-﻿<?php
+<?php
 // 1. Panggil 'Otak' aplikasi dulu
 require_once __DIR__ . '/../bootstrap/init.php';
 
@@ -234,7 +234,7 @@ while($row = $query_chart->fetch_assoc()){
                                     elseif ($no == 2) $peringkat_display = '<i class="fas fa-trophy" style="color: var(--silver);"></i> 2';
                                     elseif ($no == 3) $peringkat_display = '<i class="fas fa-trophy" style="color: var(--bronze);"></i> 3';
                                     
-                                    $detail_link = "detail-pelanggaran.php?id={$row['id']}"
+                                    $detail_link = "detail_keterlambatan.php?id={$row['id']}"
                                                  . "&start_date=" . htmlspecialchars($start_date)
                                                  . "&end_date=" . htmlspecialchars($end_date)
                                                  . "&kamar=" . urlencode($filter_kamar ?? '')

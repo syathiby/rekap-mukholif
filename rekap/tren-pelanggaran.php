@@ -1,4 +1,4 @@
-﻿<?php 
+<?php 
 // 1. Panggil 'Otak' aplikasi
 require_once __DIR__ . '/../bootstrap/init.php';
 
@@ -195,26 +195,28 @@ mysqli_stmt_close($stmt_feed);
 require_once __DIR__ . '/../layouts/header.php';
 ?>
 
-<div class="container mt-4 mb-5">
+<div class="container-fluid py-4 px-4">
 
-    <div class="card shadow-sm mb-4" style="background: linear-gradient(135deg, #34495e, #2c3e50); color: white;">
-        <div class="card-body p-4 d-flex justify-content-between align-items-center flex-wrap">
-            <div>
-                <h3 class="mb-1"><i class="fas fa-chart-line me-2"></i>Tren Pelanggaran Terkini</h3>
-                <h5 class="mb-0 fw-normal text-light"><?= $judul_rentang ?></h5>
-            </div>
-            <i class="fas fa-chart-pie fa-3x text-white-50 d-none d-sm-block"></i>
+    <!-- Header Page -->
+    <div class="d-flex flex-column flex-md-row justify-content-between align-items-center mb-4 gap-3">
+        <div>
+            <h3 class="fw-bolder text-dark mb-1"><i class="fas fa-chart-line text-primary me-2"></i>Tren Pelanggaran Terkini</h3>
+            <p class="text-muted mb-0"><?= $judul_rentang ?></p>
+        </div>
+        <div class="bg-primary bg-opacity-10 text-primary p-3 rounded-circle d-none d-md-flex align-items-center justify-content-center" style="width: 50px; height: 50px;">
+            <i class="fas fa-chart-pie fs-4"></i>
         </div>
     </div>
 
     <form method="GET" action="" id="filterForm">
 
-        <div class="card shadow-sm mb-4">
-            <div class="card-body">
-                <div class="row g-3 align-items-end">
+        <!-- Filter Card -->
+        <div class="card border-0 shadow-sm rounded-4 mb-4">
+            <div class="card-body p-4">
+                <div class="row g-4 align-items-end">
                     
                     <div class="col-md-5 col-lg-4">
-                        <label for="rentang" class="form-label fw-bold">Rentang Waktu (Global)</label>
+                        <label for="rentang" class="form-label fw-bold text-secondary small mb-2">RENTANG WAKTU (GLOBAL)</label>
                         <select name="rentang" id="rentang" class="form-select">
                             <option value="3_hari" <?= ($rentang == '3_hari') ? 'selected' : '' ?>>3 Hari Terakhir</option>
                             <option value="7_hari" <?= ($rentang == '7_hari') ? 'selected' : '' ?>>7 Hari Terakhir</option>
@@ -226,41 +228,42 @@ require_once __DIR__ . '/../layouts/header.php';
                     <div class="col-md-7 col-lg-5" id="customDateWrapper" style="display: <?= ($rentang == 'custom') ? 'block' : 'none' ?>;">
                         <div class="row g-2">
                             <div class="col-6">
-                                <label for="mulai" class="form-label">Mulai Tgl</label>
-                                <input type="date" name="mulai" id="mulai" class="form-control" value="<?= htmlspecialchars($tanggal_mulai_input) ?>">
+                        <label for="mulai" class="form-label fw-bold text-secondary small mb-2">MULAI TGL</label>
+                                <input type="date" name="mulai" id="mulai" class="form-control" style="border-radius: 0.5rem;" value="<?= htmlspecialchars($tanggal_mulai_input) ?>">
                             </div>
                             <div class="col-6">
-                                <label for="selesai" class="form-label">Sampai Tgl</label>
-                                <input type="date" name="selesai" id="selesai" class="form-control" value="<?= htmlspecialchars($tanggal_selesai_input) ?>">
+                                <label for="selesai" class="form-label fw-bold text-secondary small mb-2">SAMPAI TGL</label>
+                                <input type="date" name="selesai" id="selesai" class="form-control" style="border-radius: 0.5rem;" value="<?= htmlspecialchars($tanggal_selesai_input) ?>">
                             </div>
                         </div>
                     </div>
                     
                     <div class="col-md-12 col-lg-3 d-grid">
-                        <button type="submit" class="btn btn-primary"><i class="fas fa-filter me-1"></i> Terapkan Filter</button>
+                        <button type="submit" class="btn btn-primary fw-bold" style="border-radius: 0.5rem; padding: 0.6rem;"><i class="fas fa-filter me-2"></i> TERAPKAN FILTER</button>
                     </div>
                 </div>
             </div>
         </div>
 
-        <div class="card shadow-sm mb-4">
-            <div class="card-header bg-white border-0 py-3">
-                <h5 class="mb-0 fw-bold"><i class="fas fa-calendar-day me-2 text-primary"></i>Tren Pelanggaran Harian</h5>
+        <!-- Tren Harian Chart -->
+        <div class="card border-0 shadow-sm rounded-4 mb-4">
+            <div class="card-header bg-white border-0 pt-4 pb-2 px-4">
+                <h6 class="mb-0 fw-bold text-dark"><i class="fas fa-calendar-day me-2 text-primary"></i>Tren Pelanggaran Harian</h6>
             </div>
-            <div class="card-body">
-                <div style="position: relative; height: 300px;">
+            <div class="card-body px-4 pb-4 pt-2">
+                <div style="position: relative; height: 320px;">
                     <canvas id="trenHarianChart"></canvas>
                 </div>
             </div>
         </div>
 
-        <div class="row">
-            <div class="col-lg-7 mb-4">
-                <div class="card shadow-sm h-100">
-                    <div class="card-header bg-white border-0 py-3">
-                        <h5 class="mb-0 fw-bold"><i class="fas fa-star me-2 text-warning"></i>Top 5 Pelanggaran</h5>
+        <div class="row g-4 mb-4">
+            <div class="col-lg-7">
+                <div class="card border-0 shadow-sm rounded-4 h-100">
+                    <div class="card-header bg-white border-0 pt-4 pb-2 px-4">
+                        <h6 class="mb-0 fw-bold text-dark"><i class="fas fa-star me-2 text-warning"></i>Top 5 Pelanggaran</h6>
                     </div>
-                    <div class="card-body d-flex align-items-center">
+                    <div class="card-body p-4 d-flex align-items-center">
                         <div style="position: relative; height: 350px; width: 100%;">
                             <canvas id="topPelanggaranChart"></canvas>
                         </div>
@@ -268,12 +271,12 @@ require_once __DIR__ . '/../layouts/header.php';
                 </div>
             </div>
 
-            <div class="col-lg-5 mb-4">
-                <div class="card shadow-sm h-100">
-                    <div class="card-header bg-white border-0 py-3">
-                        <h5 class="mb-0 fw-bold"><i class="fas fa-puzzle-piece me-2 text-info"></i>Komposisi Per Bagian</h5>
+            <div class="col-lg-5">
+                <div class="card border-0 shadow-sm rounded-4 h-100">
+                    <div class="card-header bg-white border-0 pt-4 pb-2 px-4">
+                        <h6 class="mb-0 fw-bold text-dark"><i class="fas fa-puzzle-piece me-2 text-info"></i>Komposisi Per Bagian</h6>
                     </div>
-                    <div class="card-body d-flex align-items-center">
+                    <div class="card-body p-4 d-flex align-items-center">
                         <div style="position: relative; height: 350px; width: 100%;">
                             <canvas id="bagianChart"></canvas>
                         </div>
@@ -282,17 +285,17 @@ require_once __DIR__ . '/../layouts/header.php';
             </div>
         </div>
 
-        <div class="card shadow-sm">
-            <div class="card-header bg-white border-0 py-3">
-                <h5 class="mb-0 fw-bold"><i class="fas fa-history me-2 text-secondary"></i>Feed Pelanggaran</h5>
+        <div class="card border-0 shadow-sm rounded-4 mb-5">
+            <div class="card-header bg-white border-0 pt-4 pb-3 px-4">
+                <h6 class="mb-0 fw-bold text-dark"><i class="fas fa-history me-2 text-secondary"></i>Feed Pelanggaran Terkini</h6>
             </div>
             
-            <div class="card-body p-3 bg-light border-bottom">
-                <h6 class="mb-2 fw-bold text-muted">Filter Spesifik Feed</h6>
-                <div class="row g-2">
+            <div class="card-body px-4 py-3 bg-light border-bottom border-top">
+                <h6 class="mb-3 fw-bold text-secondary small">FILTER SPESIFIK FEED</h6>
+                <div class="row g-3">
                     <div class="col-md-6">
-                        <label for="bagian" class="form-label">Bagian</label>
-                        <select name="bagian" id="bagian" class="form-select form-select-sm">
+                        <label for="bagian" class="form-label fw-bold text-muted" style="font-size: 0.8rem;">BAGIAN</label>
+                        <select name="bagian" id="bagian" class="form-select form-select-sm shadow-sm" style="border-radius: 0.5rem; padding: 0.5rem;">
                             <option value="">-- Semua Bagian --</option>
                             <?php mysqli_data_seek($bagian_list_result, 0); ?>
                             <?php while ($bagian_row = mysqli_fetch_assoc($bagian_list_result)) : ?>
@@ -303,8 +306,8 @@ require_once __DIR__ . '/../layouts/header.php';
                         </select>
                     </div>
                     <div class="col-md-6">
-                        <label for="kategori" class="form-label">Kategori</label>
-                        <select name="kategori" id="kategori" class="form-select form-select-sm">
+                        <label for="kategori" class="form-label fw-bold text-muted" style="font-size: 0.8rem;">KATEGORI</label>
+                        <select name="kategori" id="kategori" class="form-select form-select-sm shadow-sm" style="border-radius: 0.5rem; padding: 0.5rem;">
                             <option value="">-- Semua Kategori --</option>
                             <option value="Ringan" <?= ($filter_kategori == 'Ringan') ? 'selected' : '' ?>>Ringan</option>
                             <option value="Sedang" <?= ($filter_kategori == 'Sedang') ? 'selected' : '' ?>>Sedang</option>
