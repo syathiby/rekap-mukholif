@@ -1,4 +1,4 @@
-﻿<?php
+<?php
 // 1. Panggil 'Otak' aplikasi dulu
 require_once __DIR__ . '/../bootstrap/init.php';
 
@@ -294,7 +294,7 @@ $query = $stmt->get_result();
                                 </td>
                                 <td class="text-center">
                                     <?php
-                                    $detail_link = "detail.php?id={$row['id']}&start_date=$start_date&end_date=$end_date"
+                                    $detail_link = "detail_pelanggaran.php?id={$row['id']}&start_date=$start_date&end_date=$end_date"
                                         . "&kamar=" . urlencode($filter_kamar ?? '')
                                         . "&kelas=" . urlencode($filter_kelas ?? '')
                                         . "&jenis_pelanggaran=" . urlencode($filter_jp ?? '')

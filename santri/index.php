@@ -161,54 +161,68 @@ mysqli_stmt_close($stmt_count);
 ?>
 
 <style>
-    /* CSS tidak ada perubahan, tetap sama */
     :root {
-        --primary-color: #3498db;
-        --secondary-color: #2c3e50;
-        --accent-color: #e74c3c;
+        --primary: #4f46e5;      /* Indigo 600 */
+        --primary-hover: #4338ca; /* Indigo 700 */
+        --bg-body: #f8fafc;       /* Slate 50 */
+        --bg-card: #ffffff;
+        --text-main: #0f172a;     /* Slate 900 */
+        --text-muted: #64748b;    /* Slate 500 */
+        --border: #e2e8f0;        /* Slate 200 */
     }
+    
     .page-title-card {
-        background: linear-gradient(135deg, var(--secondary-color), var(--primary-color));
-        color: white;
-        border-radius: 8px;
-        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+        background: var(--bg-card);
+        color: var(--text-main);
+        border-radius: 1rem;
+        box-shadow: 0 1px 3px 0 rgb(0 0 0 / 0.1), 0 1px 2px -1px rgb(0 0 0 / 0.1);
+        border: 1px solid var(--border);
     }
     .filter-card {
-        background-color: #fff;
-        border-radius: 8px;
-        box-shadow: 0 2px 10px rgba(0, 0, 0, 0.05);
+        background-color: var(--bg-card);
+        border-radius: 1rem;
+        box-shadow: 0 1px 3px 0 rgb(0 0 0 / 0.1), 0 1px 2px -1px rgb(0 0 0 / 0.1);
+        border: 1px solid var(--border);
     }
     .table-container {
-        background-color: white;
-        border-radius: 8px;
-        box-shadow: 0 2px 10px rgba(0, 0, 0, 0.05);
+        background-color: var(--bg-card);
+        border-radius: 1rem;
+        box-shadow: 0 1px 3px 0 rgb(0 0 0 / 0.1), 0 1px 2px -1px rgb(0 0 0 / 0.1);
+        border: 1px solid var(--border);
         overflow: hidden;
     }
     .table thead {
-        background-color: var(--secondary-color);
-        color: white;
+        background-color: #f1f5f9; /* Slate 100 */
+        color: var(--text-muted);
+        font-weight: 600;
+        text-transform: uppercase;
+        font-size: 0.8rem;
+        letter-spacing: 0.05em;
+    }
+    .table th {
+        border-bottom-width: 1px;
     }
     .action-cell {
         width: 120px;
     }
     .btn-info-circle {
-        width: 30px;
-        height: 30px;
+        width: 32px;
+        height: 32px;
         padding: 0;
         border-radius: 50%;
         display: inline-flex;
         align-items: center;
         justify-content: center;
-        line-height: 1;
         font-size: 0.9rem;
-        background-color: rgba(255, 255, 255, 0.2);
-        color: white;
-        border: 1px solid rgba(255, 255, 255, 0.5);
-        transition: background-color 0.2s;
+        background-color: #f1f5f9;
+        color: var(--primary);
+        border: 1px solid var(--border);
+        transition: all 0.2s;
     }
     .btn-info-circle:hover {
-        background-color: rgba(255, 255, 255, 0.3);
-        color: white;
+        background-color: #e2e8f0;
+        color: var(--primary-hover);
+        transform: scale(1.05);
     }
     #infoModal .modal-body {
         max-height: 60vh;
@@ -218,7 +232,10 @@ mysqli_stmt_close($stmt_count);
     /* Perbaikan layout tombol bulk */
     .card-action-bulk {
         padding: 1rem;
-        background-color: #fff;
+        background-color: var(--bg-card);
+        border-radius: 1rem;
+        border: 1px solid var(--border);
+        box-shadow: 0 1px 3px 0 rgb(0 0 0 / 0.1);
     }
 
     @media (max-width: 768px) {
@@ -254,21 +271,23 @@ mysqli_stmt_close($stmt_count);
     }
 </style>
 
-<div class="container mt-4 mb-5">
-    <div class="page-title-card p-3 p-md-4 mb-4">
-        <div class="d-flex flex-column flex-md-row justify-content-md-between align-items-md-center">
-            <div class="d-flex align-items-center mb-2 mb-md-0">
-                <h2 class="mb-0 me-2"><i class="fas fa-users me-2"></i>Data Santri</h2>
-                <button type="button" class="btn btn-info-circle" data-bs-toggle="modal" data-bs-target="#infoModal" title="Informasi Penting">
-                    <i class="fas fa-info"></i>
+<div class="container-fluid py-4 px-4">
+    <!-- Header Page -->
+    <div class="d-flex flex-column flex-md-row justify-content-between align-items-md-center mb-4 gap-3">
+        <div>
+            <h3 class="fw-bolder text-dark mb-1">
+                <i class="fas fa-users text-primary me-2"></i>Data Santri
+                <button type="button" class="btn btn-sm btn-link text-info p-0 ms-2" data-bs-toggle="modal" data-bs-target="#infoModal" title="Informasi Penting">
+                    <i class="fas fa-info-circle fs-5"></i>
                 </button>
-            </div>
-            <div>
-                <span class="badge bg-light text-dark fs-6">
-                    <i class="fas fa-database me-1"></i>
-                    <?php echo $total . " Santri"; ?>
-                </span>
-            </div>
+            </h3>
+            <p class="text-muted mb-0">Kelola data santri secara terpusat</p>
+        </div>
+        <div class="d-flex align-items-center">
+            <span class="badge bg-white border text-dark fs-6 px-3 py-2 rounded-pill shadow-sm">
+                <i class="fas fa-database me-1 text-primary"></i>
+                <?php echo number_format($total) . " Santri"; ?>
+            </span>
         </div>
     </div>
     
@@ -371,18 +390,18 @@ mysqli_stmt_close($stmt_count);
                             <td>
                                 <div class="d-flex align-items-center">
                                     <div class="avatar me-3">
-                                        <div class="rounded-circle text-white d-flex align-items-center justify-content-center" 
-                                             style="background-color: #<?= substr(md5($row['id']), 0, 6) ?>;">
+                                        <div class="rounded-circle text-white d-flex align-items-center justify-content-center shadow-sm" 
+                                             style="background-color: #<?= substr(md5($row['id']), 0, 6) ?>; width: 40px; height: 40px; font-weight: 600;">
                                             <?= strtoupper(substr($row['nama'], 0, 1)) ?>
                                         </div>
                                     </div>
                                     <div>
-                                        <strong><?= htmlspecialchars($row['nama']) ?></strong>
-                                        <div class="text-muted small">ID: <?= $row['id'] ?></div>
+                                        <strong class="text-dark"><?= htmlspecialchars($row['nama']) ?></strong>
+                                        <div class="text-muted" style="font-size: 0.8rem;">ID: <?= $row['id'] ?></div>
                                     </div>
                                 </div>
                             </td>
-                            <td class="align-middle"><span class="badge bg-info text-dark"><?= htmlspecialchars($row['kelas']) ?></span></td>
+                            <td class="align-middle"><span class="badge bg-primary bg-opacity-10 text-primary px-2 py-1 rounded-pill"><?= htmlspecialchars($row['kelas']) ?></span></td>
                             <td class="align-middle">
                                 <span class="badge bg-light text-dark">
                                     <i class="fas fa-door-open me-1"></i>

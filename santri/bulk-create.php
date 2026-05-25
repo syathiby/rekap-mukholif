@@ -1,4 +1,4 @@
-﻿<?php
+<?php
 // BAGIAN 1: LOGIKA RUANG MESIN (SEBELUM ADA TAMPILAN APAPUN)
 if (session_status() === PHP_SESSION_NONE) { session_start(); }
 require_once __DIR__ . '/../bootstrap/init.php';
@@ -133,8 +133,8 @@ require_once __DIR__ . '/../layouts/header.php';
 
 <div class="container container-bulk-create mt-4 mb-5">
     <div class="page-title-card text-center">
-        <h2><i class="fas fa-users-cog me-2"></i> Bulk Input Santri</h2>
-        <p class="mb-0">Tambahkan banyak santri sekaligus menggunakan format CSV sederhana</p>
+        <h2 class="text-white"><i class="fas fa-users-cog me-2 text-white"></i> Bulk Input Santri</h2>
+        <p class="mb-0 text-white">Tambahkan banyak santri sekaligus menggunakan format CSV sederhana</p>
     </div>
 
     <div class="form-container">

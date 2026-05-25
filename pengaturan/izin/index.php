@@ -1,4 +1,4 @@
-﻿<?php 
+<?php 
 // 1. Panggil 'Otak' aplikasi dulu
 require_once __DIR__ . '/../../bootstrap/init.php';
 
@@ -47,258 +47,143 @@ if ($selectedUserId) {
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Pengaturan Izin Akses</title>
+    <!-- Font Awesome -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+    <!-- Select2 CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/css/select2.min.css" rel="stylesheet" />
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/select2-bootstrap-5-theme@1.3.0/dist/select2-bootstrap-5-theme.min.css" />
     <style>
-        :root {
-            --primary-color: #fd7e14; /* Warna oranye yang khas buat izin */
-            --text-dark: #1e293b;
-            --text-light: #64748b;
-            --border-color: #e2e8f0;
-            --card-bg: #ffffff;
-            --form-bg: #f8fafc;
-        }
-        .permission-container {
-            max-width: 1100px;
-            margin: 0 auto;
-            padding: 1rem;
-        }
-        .page-header {
-            text-align: left;
-            margin-bottom: 2.5rem;
-            padding-bottom: 1.5rem;
-            border-bottom: 1px solid var(--border-color);
-        }
-        .page-header h1 {
-            font-size: 2rem;
-            font-weight: 700;
-            color: var(--text-dark);
-            display: flex;
-            align-items: center;
-            gap: 0.75rem;
-        }
-        .page-header h1 i {
-            color: var(--primary-color);
-        }
-        .page-header p {
-            font-size: 1rem;
-            color: var(--text-light);
-            margin-top: 0.5rem;
-        }
-        .user-select-form {
-            background-color: var(--form-bg);
-            border: 1px solid var(--border-color);
-            padding: 1.5rem;
-            border-radius: 0.75rem;
-            margin-bottom: 2.5rem;
-        }
-        .user-select-form .form-select {
-            font-weight: 500;
-        }
-        .permission-grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
-            gap: 1.5rem;
-        }
-        .permission-group-card {
-            background-color: var(--card-bg);
-            border: 1px solid var(--border-color);
-            border-radius: 0.75rem;
-            overflow: hidden; /* Biar header cardnya rapi */
-        }
-        .permission-group-header {
-            padding: 1rem 1.25rem;
-            background-color: var(--form-bg);
-            border-bottom: 1px solid var(--border-color);
-            font-size: 1.1rem;
-            font-weight: 600;
-            color: var(--text-dark);
-            display: flex;
-            align-items: center;
-            gap: 0.75rem;
-        }
-        .permission-group-body {
-            padding: 1.25rem;
-        }
-        
-        /* ✅✅✅ INI DIA PERBAIKANNYA ✅✅✅ */
-        .permission-item {
-            display: flex; /* 1. Jadikan Flexbox */
-            align-items: flex-start; /* 2. Semua item rata atas */
-            gap: 0.75rem; /* 3. Kasih jarak antara tombol & teks */
-            margin-bottom: 1rem;
-        }
-        .permission-item .form-check-input {
-            flex-shrink: 0; /* Biar tombolnya gak menciut */
-            margin-top: 0.2em; /* Sedikit turunin biar pas sama baris pertama teks */
-        }
-        .permission-item:last-child {
-            margin-bottom: 0;
-        }
-        /* ✅✅✅ SELESAI ✅✅✅ */
-
-        .form-check-label {
-            font-weight: 500;
-            cursor: pointer;
-        }
-        .form-check-label small {
-            font-weight: 400;
-        }
-        .form-switch .form-check-input {
-            cursor: pointer;
-            width: 3em;
-            height: 1.5em;
-        }
-        .form-switch .form-check-input:checked {
-            background-color: var(--primary-color);
-            border-color: var(--primary-color);
-        }
-        .save-button-wrapper {
-            position: sticky;
-            bottom: 1rem;
-            display: flex;
-            justify-content: flex-end;
-            margin-top: 2rem;
-            z-index: 10; /* Biar tombol di atas konten lain */
-        }
-        .btn-save {
-            background-color: var(--primary-color);
-            border-color: var(--primary-color);
-            font-weight: 600;
-            padding: 0.75rem 1.5rem;
-            border-radius: 0.5rem;
-            box-shadow: 0 4px 12px rgba(253, 126, 20, 0.3);
-            transition: all 0.2s ease-in-out;
-            color: white;
-        }
-        .btn-save:hover {
-            background-color: #e67012;
-            border-color: #e67012;
-            transform: translateY(-2px);
-            color: white;
-        }
-        .placeholder-text {
-            text-align: center;
-            padding: 3rem;
-            background-color: var(--form-bg);
-            border-radius: 0.75rem;
-            border: 2px dashed var(--border-color);
-        }
-        .placeholder-text i {
-            font-size: 3rem;
-            color: var(--border-color);
-            margin-bottom: 1rem;
-        }
-
-        @media (max-width: 767.98px) {
-            .permission-container {
-                padding: 0.75rem;
-            }
-            .page-header h1 {
-                font-size: 1.6rem;
-            }
-            .page-header p {
-                font-size: 0.9rem;
-            }
-            .permission-grid {
-                grid-template-columns: 1fr;
-            }
-            .save-button-wrapper {
-                position: sticky;
-                bottom: 0;
-                left: 0;
-                width: 100%;
-                background: linear-gradient(to top, white 70%, transparent); 
-                padding: 1rem 0.75rem;
-                margin: 1.5rem -0.75rem -0.75rem -0.75rem;
-                border-top: 1px solid var(--border-color);
-                justify-content: center;
-            }
-            .btn-save {
-                width: 100%;
-                font-size: 1.1rem;
-            }
+        .form-check-input:checked {
+            background-color: #f97316;
+            border-color: #f97316;
         }
     </style>
 </head>
 <body>
-    <div class="permission-container">
-        <div class="page-header">
-            <h1><i class="fas fa-ticket-alt"></i>Loket Pengaturan Izin</h1>
-            <p>Pilih user, lalu atur hak akses atau "tiket" yang mereka miliki untuk setiap fitur.</p>
+    <div class="dashboard-wrapper container-fluid px-0 px-md-2 mt-2 mb-5">
+        
+        <!-- Header Page yang Dilepas dari Card Utama -->
+        <div class="d-flex align-items-center mb-4 px-1">
+            <div class="d-flex align-items-center justify-content-center rounded-circle me-3 shadow-sm flex-shrink-0" style="width: 56px; height: 56px; background: linear-gradient(135deg, #f97316, #fb923c); color: white;">
+                <i class="fas fa-ticket-alt fa-xl"></i>
+            </div>
+            <div>
+                <h3 class="fw-bold mb-1 text-dark" style="letter-spacing: -0.5px; font-size: 1.5rem;">Loket Pengaturan Izin</h3>
+                <p class="text-muted mb-0" style="font-size: 0.95rem;">Atur "tiket" atau hak akses setiap pengguna secara fleksibel dan mendetail.</p>
+            </div>
         </div>
 
         <?php if (isset($_SESSION['success_message'])): ?>
-            <div class="alert alert-success"><?= $_SESSION['success_message'] ?></div>
+            <div class="alert alert-success d-flex align-items-center shadow-sm rounded-3 mb-4">
+                <i class="fas fa-check-circle fa-lg me-3"></i>
+                <div><?= $_SESSION['success_message'] ?></div>
+            </div>
             <?php unset($_SESSION['success_message']); ?>
         <?php endif; ?>
         <?php if (isset($_SESSION['error_message'])): ?>
-            <div class="alert alert-danger"><?= $_SESSION['error_message'] ?></div>
+            <div class="alert alert-danger d-flex align-items-center shadow-sm rounded-3 mb-4">
+                <i class="fas fa-exclamation-triangle fa-lg me-3"></i>
+                <div><?= $_SESSION['error_message'] ?></div>
+            </div>
             <?php unset($_SESSION['error_message']); ?>
         <?php endif; ?>
 
-        <div class="user-select-form">
-            <form method="GET">
-                <div class="input-group">
-                    <label class="input-group-text fw-bold" for="user_id"><i class="fas fa-user-shield me-2"></i>Pilih User:</label>
-                    <select class="form-select" name="user_id" id="user_id" onchange="this.form.submit()">
-                        <option value="">-- Pilih User untuk Diatur --</option>
-                        <?php mysqli_data_seek($usersResult, 0); while($user = $usersResult->fetch_assoc()): ?>
-                            <option value="<?= $user['id'] ?>" <?= ($selectedUserId == $user['id']) ? 'selected' : '' ?>>
-                                <?= htmlspecialchars($user['nama_lengkap']) ?> (<?= htmlspecialchars($user['username']) ?>)
-                            </option>
-                        <?php endwhile; ?>
-                    </select>
-                </div>
-            </form>
+        <!-- Form Pilih User -->
+        <div class="card shadow-sm border-0 rounded-4 mb-4" style="background: linear-gradient(180deg, #ffffff, #f8fafc);">
+            <div class="card-body p-4">
+                <form method="GET">
+                    <label class="form-label fw-bold text-dark mb-3"><i class="fas fa-user-shield me-2 text-warning"></i>Pilih Akun Pengguna</label>
+                    <div class="shadow-sm rounded-3">
+                        <select class="form-select form-select-lg" name="user_id" id="user_id" onchange="this.form.submit()" style="cursor:pointer;">
+                            <option value="">-- Pilih username pengguna --</option>
+                            <?php mysqli_data_seek($usersResult, 0); while($user = $usersResult->fetch_assoc()): ?>
+                                <option value="<?= $user['id'] ?>" <?= ($selectedUserId == $user['id']) ? 'selected' : '' ?>>
+                                    <?= htmlspecialchars($user['nama_lengkap']) ?> (@<?= htmlspecialchars($user['username']) ?>)
+                                </option>
+                            <?php endwhile; ?>
+                        </select>
+                    </div>
+                </form>
+            </div>
         </div>
-        
+
         <?php if ($selectedUserId && !empty($permissions)): ?>
             <form action="process.php" method="POST">
                 <input type="hidden" name="user_id" value="<?= $selectedUserId ?>">
                 
-                <h4 class="mb-3">Atur Izin untuk: <strong class="text-primary"><?= htmlspecialchars($selectedUserName) ?></strong></h4>
-                
-                <div class="permission-grid">
+                <div class="d-flex align-items-center mb-4 mt-5 px-2">
+                    <div class="d-flex align-items-center justify-content-center rounded-circle me-3 shadow-sm flex-shrink-0" style="width: 44px; height: 44px; background: rgba(249, 115, 22, 0.1); color: #f97316;">
+                        <i class="fas fa-user-lock"></i>
+                    </div>
+                    <h5 class="fw-bold mb-0" style="line-height: 1.4;">Izin Akses untuk: <span class="text-dark border-bottom border-warning border-2 pb-1 d-inline-block"><?= htmlspecialchars($selectedUserName) ?></span></h5>
+                </div>
+
+                <div class="row g-4 px-1">
                     <?php foreach ($permissions as $grup => $items): ?>
-                        <div class="permission-group-card">
-                            <div class="permission-group-header">
-                                <i class="fas fa-folder-open"></i><?= htmlspecialchars($grup) ?>
-                            </div>
-                            <div class="permission-group-body">
-                                <?php foreach ($items as $perm): ?>
-                                    <!-- ✅ STRUKTUR HTML-NYA SEDIKIT DIUBAH BIAR LEBIH GAMPANG DI-STYLE -->
-                                    <div class="permission-item form-check form-switch">
-                                        <input class="form-check-input" type="checkbox" name="permissions[]" value="<?= $perm['id'] ?>" id="perm_<?= $perm['id'] ?>"
-                                            <?= in_array($perm['id'], $userPermissions) ? 'checked' : '' ?>>
-                                        <label class="form-check-label" for="perm_<?= $perm['id'] ?>">
-                                            <?= htmlspecialchars($perm['deskripsi']) ?>
-                                            <small class="text-muted d-block">(Kode: <?= htmlspecialchars($perm['nama_izin']) ?>)</small>
-                                        </label>
+                        <div class="col-xl-4 col-lg-6">
+                            <div class="card shadow-sm border-0 rounded-4 h-100" style="position: relative; overflow: hidden;">
+                                <!-- Garis Gradasi di atas kartu -->
+                                <div style="position:absolute; top:0; left:0; width:100%; height:4px; background: linear-gradient(90deg, #f97316, #fb923c);"></div>
+                                <div class="card-header bg-white border-bottom-0 pt-4 pb-2">
+                                    <h5 class="fw-bold text-dark mb-0"><i class="fas fa-folder-open text-warning me-2 opacity-75"></i><?= htmlspecialchars($grup) ?></h5>
+                                </div>
+                                <div class="card-body pt-2">
+                                    <div class="d-flex flex-column gap-2">
+                                        <?php foreach ($items as $perm): ?>
+                                            <div class="d-flex align-items-start p-2 rounded-3" style="transition: all 0.2s;" onmouseover="this.style.backgroundColor='#f8fafc'" onmouseout="this.style.backgroundColor='transparent'">
+                                                <div class="form-check form-switch me-3 mt-1">
+                                                    <input class="form-check-input shadow-sm" type="checkbox" role="switch" name="permissions[]" value="<?= $perm['id'] ?>" id="perm_<?= $perm['id'] ?>" <?= in_array($perm['id'], $userPermissions) ? 'checked' : '' ?> style="width: 2.5rem; height: 1.25rem; cursor: pointer;">
+                                                </div>
+                                                <label class="form-check-label mb-0" for="perm_<?= $perm['id'] ?>" style="cursor: pointer; width: 100%;">
+                                                    <div class="fw-bold text-dark" style="font-size: 0.95rem; line-height: 1.2;"><?= htmlspecialchars($perm['deskripsi']) ?></div>
+                                                    <div class="text-muted small mt-1" style="font-size: 0.75rem; font-family: monospace; background:#f1f5f9; padding: 2px 6px; border-radius: 4px; display: inline-block;">Code: <?= htmlspecialchars($perm['nama_izin']) ?></div>
+                                                </label>
+                                            </div>
+                                        <?php endforeach; ?>
                                     </div>
-                                <?php endforeach; ?>
+                                </div>
                             </div>
                         </div>
                     <?php endforeach; ?>
                 </div>
 
-                <div class="save-button-wrapper">
-                    <button type="submit" class="btn btn-primary btn-lg btn-save">
-                        <i class="fas fa-save me-2"></i>Simpan Perubahan
-                    </button>
+                <!-- Sticky Floating Save Button -->
+                <div class="position-sticky bottom-0 start-0 w-100 py-3 mt-5" style="background: linear-gradient(0deg, rgba(255,255,255,0.95) 40%, rgba(255,255,255,0) 100%); z-index: 100; backdrop-filter: blur(2px);">
+                    <div class="d-flex justify-content-center px-1">
+                        <button type="submit" class="btn btn-primary btn-lg rounded-pill px-5 shadow-sm fw-bold" style="background: linear-gradient(90deg, #f97316, #ea580c); border: none; transition: transform 0.2s;" onmouseover="this.style.transform='translateY(-2px)'" onmouseout="this.style.transform='none'">
+                            <i class="fas fa-save me-2"></i>Simpan Perubahan Izin
+                        </button>
+                    </div>
                 </div>
             </form>
         <?php elseif ($selectedUserId): ?>
-            <div class="placeholder-text">
-                <i class="fas fa-exclamation-circle"></i>
-                <p class="h5 text-muted">Tidak ada data izin (tiket) yang tersedia untuk diatur.</p>
+            <div class="card shadow-sm border-0 rounded-4 p-5 text-center my-5">
+                <i class="fas fa-box-open fa-4x text-muted mb-3 opacity-25"></i>
+                <h4 class="fw-bold text-dark">Tiket Kosong</h4>
+                <p class="text-muted">Sistem belum memiliki referensi tiket izin yang bisa diatur.</p>
             </div>
         <?php else: ?>
-            <div class="placeholder-text">
-                <i class="fas fa-mouse-pointer"></i>
-                <p class="h5 text-muted">Pilih seorang user dari daftar di atas untuk mulai mengatur izin aksesnya.</p>
+            <div class="card shadow-sm border-0 rounded-4 p-5 text-center my-5" style="background: linear-gradient(180deg, #ffffff, #f8fafc);">
+                <div class="d-inline-flex align-items-center justify-content-center rounded-circle mb-4 bg-white shadow-sm mx-auto" style="width: 90px; height: 90px;">
+                    <i class="fas fa-hand-pointer fa-3x text-warning opacity-75"></i>
+                </div>
+                <h4 class="fw-bold text-dark mb-2">Pilih Pengguna Dahulu</h4>
+                <p class="text-muted" style="max-width: 500px; margin: 0 auto;">Pilih seorang pengguna dari kotak pencarian di atas untuk mulai mengatur "tiket" perizinan akses mereka ke berbagai menu di sistem ini.</p>
             </div>
         <?php endif; ?>
     </div>
+    
+    <!-- Select2 JS -->
+    <script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
+    <script>
+        $(document).ready(function() {
+            $('#user_id').select2({
+                theme: 'bootstrap-5',
+                width: '100%',
+                placeholder: "-- Ketik nama atau username pengguna --"
+            });
+        });
+    </script>
 </body>
 </html>
 

@@ -23,9 +23,10 @@ require_once __DIR__ . '/helpers.php';
 // Protokol 5: Siapin data-data umum
 date_default_timezone_set('Asia/Jakarta');
 
-// Protokol 6: Cek auto-logout setelah login 1 jam (3600 detik) demi keamanan
+// Protokol 6: Cek auto-logout setelah tidak ada aktivitas (inactivity timeout) selama 12 jam (43200 detik)
 if (isset($_SESSION['user_id']) && isset($_SESSION['login_time'])) {
-    if (time() - $_SESSION['login_time'] > 3600) {
+    // Jika waktu sekarang dikurangi waktu aktivitas terakhir lebih besar dari 12 jam, paksa logout
+    if (time() - $_SESSION['login_time'] > 43200) {
         $_SESSION = array();
         if (session_status() === PHP_SESSION_ACTIVE) {
             session_destroy();
@@ -33,4 +34,8 @@ if (isset($_SESSION['user_id']) && isset($_SESSION['login_time'])) {
         header("Location: " . BASE_URL . "/login.php?timeout=1");
         exit();
     }
+    
+    // PERBAIKAN: Selalu perbarui (reset) timer setiap kali user memuat halaman baru, 
+    // sehingga user tidak akan tiba-tiba ter-logout asalkan mereka masih aktif.
+    $_SESSION['login_time'] = time();
 }

@@ -1,4 +1,4 @@
-﻿<?php
+<?php
 // 1. Panggil 'Otak' aplikasi dulu
 require_once __DIR__ . '/../bootstrap/init.php';
 
@@ -11,7 +11,7 @@ require_once __DIR__ . '/../layouts/header.php';
 // Ambil parameter dari URL
 $santri_id = $_GET['id'] ?? null;
 if (!$santri_id) {
-    die("❌ Santri tidak ditemukan");
+    die("? Santri tidak ditemukan");
 }
 $start_date = $_GET['start_date'] ?? null;
 $end_date   = $_GET['end_date']   ?? null;
@@ -22,10 +22,10 @@ $stmt_santri->bind_param("i", $santri_id);
 $stmt_santri->execute();
 $santri = $stmt_santri->get_result()->fetch_assoc();
 if (!$santri) {
-    die("❌ Data santri tidak ada");
+    die("? Data santri tidak ada");
 }
 
-// ✅ REVISI: Fungsi baru untuk mendeteksi kategori, ikon, dan warnanya
+// ? REVISI: Fungsi baru untuk mendeteksi kategori, ikon, dan warnanya
 function getDetailKategoriWaktu($datetime, $nama_pelanggaran)
 {
     // Default
@@ -114,7 +114,7 @@ body {
     padding: 0 15px;
 }
 
-/* ✅ REVISI: Header responsif */
+/* ? REVISI: Header responsif */
 .page-header {
     display: flex;
     justify-content: space-between;
@@ -159,7 +159,7 @@ body {
 .santri-info-card h3 { margin: 0; font-size: 1.5rem; font-weight: 600; }
 .santri-info-card p { margin: 0.25rem 0 0; opacity: 0.8; }
 
-/* ✅ REVISI: Filter Card responsif */
+/* ? REVISI: Filter Card responsif */
 .filter-card {
     background-color: var(--card-bg);
     padding: 1rem;
@@ -208,7 +208,7 @@ body {
     box-shadow: 0 4px 6px -1px rgba(0,0,0,0.1), 0 2px 4px -2px rgba(0,0,0,0.1);
 }
 
-/* ✅ REVISI: Ikon tanpa background, tapi dari background abu-abu muda */
+/* ? REVISI: Ikon tanpa background, tapi dari background abu-abu muda */
 .item-icon {
     flex-shrink: 0;
     width: 50px;
@@ -253,7 +253,7 @@ body {
 <div class="container">
     <header class="page-header">
         <h1 class="page-title">Detail Pelanggaran</h1>
-        <a href="santri-pelanggar.php?start_date=<?= htmlspecialchars($start_date ?? '') ?>&end_date=<?= htmlspecialchars($end_date ?? '') ?>" class="btn-back">
+        <a href="keterlambatan.php?start_date=<?= htmlspecialchars($start_date ?? '') ?>&end_date=<?= htmlspecialchars($end_date ?? '') ?>" class="btn-back">
             <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" viewBox="0 0 16 16"><path fill-rule="evenodd" d="M15 8a.5.5 0 0 0-.5-.5H2.707l3.147-3.146a.5.5 0 1 0-.708-.708l-4 4a.5.5 0 0 0 0 .708l4 4a.5.5 0 0 0 .708-.708L2.707 8.5H14.5A.5.5 0 0 0 15 8z"/></svg>
             <span>Kembali</span>
         </a>
@@ -282,7 +282,7 @@ body {
         <?php
         if ($q_pelanggaran->num_rows === 0) {
             echo "<div class='no-data'>
-                    <div class='icon'>🎉</div>
+                    <div class='icon'>??</div>
                     <p>Alhamdulillah, tidak ada riwayat<br>pelanggaran sholat atau KBM.</p>
                   </div>";
         } else {
@@ -336,7 +336,7 @@ document.addEventListener('DOMContentLoaded', function() {
              if (!listContainer.querySelector('.temp-no-data')) {
                 const tempNoData = document.createElement('div');
                 tempNoData.className = 'no-data temp-no-data';
-                tempNoData.innerHTML = `<div class='icon'>🧐</div><p>Tidak ada pelanggaran untuk<br>kategori waktu yang dipilih.</p>`;
+                tempNoData.innerHTML = `<div class='icon'>??</div><p>Tidak ada pelanggaran untuk<br>kategori waktu yang dipilih.</p>`;
                 listContainer.appendChild(tempNoData);
              }
         } else {

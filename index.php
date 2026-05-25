@@ -151,64 +151,115 @@ $teladan_style = !$can_view_rekap_santri ? 'style="cursor: not-allowed; opacity:
 $teladan_onclick = !$can_view_rekap_santri ? 'onclick="event.preventDefault(); return false;"' : '';
 
 ?>
-<div class="dashboard-wrapper">
-        <header class="dashboard-header mb-4">
-            <div class="header-shield-bg"><i class="fas fa-shield-alt"></i></div>
-            <h1><i class="fas fa-chart-pie"></i> Aplikasi Kepengasuhan Santri</h1>
-            <p class="subtitle">Pantau dan kelola data pelanggaran santri dengan mudah</p>
-        </header>
-
-        <form method="GET" class="filter-form d-flex flex-wrap align-items-end gap-3 mb-4 p-3 bg-white border rounded shadow-sm" style="border-radius: 1rem !important;">
-            <div class="flex-grow-1" style="min-width: 200px;">
-                <label for="start_date" class="fw-medium mb-2 text-secondary"><i class="fas fa-calendar-day"></i> Dari Tanggal:</label>
-                <input type="date" name="start_date" id="start_date" class="form-control" value="<?= htmlspecialchars($_GET['start_date'] ?? '') ?>">
-            </div>
-            <div class="flex-grow-1" style="min-width: 200px;">
-                <label for="end_date" class="fw-medium mb-2 text-secondary"><i class="fas fa-calendar-week"></i> Sampai Tanggal:</label>
-                <input type="date" name="end_date" id="end_date" class="form-control" value="<?= htmlspecialchars($_GET['end_date'] ?? '') ?>">
-            </div>
-            <div class="mt-2 mt-sm-0 w-100 w-sm-auto text-end">
-                <button type="submit" class="btn btn-primary px-4 py-2 w-100"><i class="fas fa-filter"></i> Filter Data</button>
-            </div>
-        </form>
+    <!-- Banner utama dihapus, form filter dirapikan -->
+    <div class="dashboard-wrapper">
         
-        <div class="stats-grid mb-4">
+        <div class="row g-4 mb-4">
             <!-- Card 1: Total Santri -->
-            <a <?= $santri_href ?> class="stat-card santri text-decoration-none" <?= $santri_style ?> <?= $santri_onclick ?>>
-                <div class="stat-icon"><i class="fas fa-user-graduate"></i></div>
-                <h3>Total Santri</h3>
-                <div class="stat-value"><?= number_format($stats['santri'] ?? 0) ?></div>
-                <p class="stat-description">Santri terdaftar</p>
-            </a>
+            <div class="col-xl-3 col-md-6">
+                <div class="card h-100 shadow-sm border-0 rounded-4 overflow-hidden position-relative" style="background: linear-gradient(145deg, #ffffff, #f8fafc);">
+                    <div class="card-body p-4">
+                        <div class="d-flex justify-content-between align-items-start mb-2">
+                            <div>
+                                <h6 class="text-muted fw-semibold mb-1">Total Santri</h6>
+                                <h3 class="fw-bold mb-0 text-dark" style="font-size: 2.2rem; letter-spacing:-0.5px;"><?= number_format($stats['santri'] ?? 0) ?></h3>
+                            </div>
+                            <div class="d-flex align-items-center justify-content-center rounded-3" style="width: 48px; height: 48px; background: rgba(16, 185, 129, 0.1); color: #10b981;">
+                                <i class="fas fa-user-graduate fa-lg"></i>
+                            </div>
+                        </div>
+                        <div class="text-muted small mt-2 d-flex justify-content-between align-items-center">
+                            <span>Santri aktif terdaftar</span>
+                            <?php if ($can_view_santri): ?>
+                                <a href="santri/index.php" class="text-success text-decoration-none fw-semibold stretched-link" style="font-size:0.8rem;">Lihat <i class="fas fa-arrow-right ms-1"></i></a>
+                            <?php else: ?>
+                                <i class="fas fa-lock opacity-50"></i>
+                            <?php endif; ?>
+                        </div>
+                    </div>
+                </div>
+            </div>
             
             <!-- Card 2: Jenis Pelanggaran -->
-            <a <?= $jp_href ?> class="stat-card pelanggaran text-decoration-none" <?= $jp_style ?> <?= $jp_onclick ?>>
-                <div class="stat-icon"><i class="fas fa-clipboard-check"></i></div>
-                <h3>Jenis Pelanggaran</h3>
-                <div class="stat-value"><?= number_format($stats['jenis_pelanggaran'] ?? 0) ?></div>
-                <p class="stat-description">Kategori pelanggaran</p>
-            </a>
+            <div class="col-xl-3 col-md-6">
+                <div class="card h-100 shadow-sm border-0 rounded-4 overflow-hidden position-relative" style="background: linear-gradient(145deg, #ffffff, #fffbeb);">
+                    <div class="card-body p-4">
+                        <div class="d-flex justify-content-between align-items-start mb-2">
+                            <div>
+                                <h6 class="text-muted fw-semibold mb-1">Kategori Aturan</h6>
+                                <h3 class="fw-bold mb-0 text-dark" style="font-size: 2.2rem; letter-spacing:-0.5px;"><?= number_format($stats['jenis_pelanggaran'] ?? 0) ?></h3>
+                            </div>
+                            <div class="d-flex align-items-center justify-content-center rounded-3" style="width: 48px; height: 48px; background: rgba(245, 158, 11, 0.1); color: #f59e0b;">
+                                <i class="fas fa-clipboard-list fa-lg"></i>
+                            </div>
+                        </div>
+                        <div class="text-muted small mt-2 d-flex justify-content-between align-items-center">
+                            <span>Macam-macam aturan</span>
+                            <?php if ($can_view_jp): ?>
+                                <a href="jenis-pelanggaran/index.php" class="text-warning text-decoration-none fw-semibold stretched-link" style="font-size:0.8rem;">Kelola <i class="fas fa-arrow-right ms-1"></i></a>
+                            <?php else: ?>
+                                <i class="fas fa-lock opacity-50"></i>
+                            <?php endif; ?>
+                        </div>
+                    </div>
+                </div>
+            </div>
             
             <!-- Card 3: Total Pelanggaran -->
-            <a <?= $chart_href ?> class="stat-card violations text-decoration-none" <?= $chart_style ?> <?= $chart_onclick ?>>
-                <div class="stat-icon"><i class="fas fa-exclamation-circle"></i></div>
-                <h3>Total Pelanggaran</h3>
-                <div class="stat-value"><?= number_format($stats['total_pelanggaran'] ?? 0) ?></div>
-                <p class="stat-description">Pelanggaran tercatat</p>
-                <?php if(!empty($frequent_violation)): ?>
-                    <div class="additional-info mt-auto">
-                        <i class="fas fa-fire" style="color: var(--warning);"></i> Paling sering: <?= htmlspecialchars($frequent_violation['nama_pelanggaran']) ?>
+            <div class="col-xl-3 col-md-6">
+                <div class="card h-100 shadow-sm border-0 rounded-4 overflow-hidden position-relative" style="background: linear-gradient(145deg, #ffffff, #fef2f2);">
+                    <div class="card-body p-4">
+                        <div class="d-flex justify-content-between align-items-start mb-2">
+                            <div>
+                                <h6 class="text-muted fw-semibold mb-1">Pelanggaran Tercatat</h6>
+                                <h3 class="fw-bold mb-0 text-dark" style="font-size: 2.2rem; letter-spacing:-0.5px;"><?= number_format($stats['total_pelanggaran'] ?? 0) ?></h3>
+                            </div>
+                            <div class="d-flex align-items-center justify-content-center rounded-3" style="width: 48px; height: 48px; background: rgba(239, 68, 68, 0.1); color: #ef4444;">
+                                <i class="fas fa-exclamation-circle fa-lg"></i>
+                            </div>
+                        </div>
+                        
+                        <div class="text-muted small mt-2 d-flex justify-content-between align-items-end">
+                            <div>
+                                Total kasus tercatat
+                                <?php if(!empty($frequent_violation)): ?>
+                                    <br><span class="text-danger fw-medium d-inline-block mt-1" style="font-size: 0.75rem;"><i class="fas fa-fire me-1"></i>Sering: <?= htmlspecialchars($frequent_violation['nama_pelanggaran']) ?></span>
+                                <?php endif; ?>
+                            </div>
+                            <?php if ($can_view_chart): ?>
+                                <a href="rekap/chart.php" class="text-danger text-decoration-none fw-semibold stretched-link" style="font-size:0.8rem;">Statistik <i class="fas fa-arrow-right ms-1"></i></a>
+                            <?php else: ?>
+                                <i class="fas fa-lock opacity-50 mb-1"></i>
+                            <?php endif; ?>
+                        </div>
                     </div>
-                <?php endif; ?>
-            </a>
+                </div>
+            </div>
             
             <!-- Card 4: Santri Teladan -->
-            <a <?= $teladan_href ?> class="stat-card clean text-decoration-none" <?= $teladan_style ?> <?= $teladan_onclick ?>>
-                <div class="stat-icon"><i class="fas fa-award"></i></div>
-                <h3>Santri Teladan</h3>
-                <div class="stat-value"><?= number_format($stats['santri_tanpa_pelanggaran'] ?? 0) ?></div>
-                <p class="stat-description">Tanpa pelanggaran</p>
-            </a>
+            <div class="col-xl-3 col-md-6">
+                <div class="card h-100 shadow-sm border-0 rounded-4 overflow-hidden position-relative" style="background: linear-gradient(145deg, #ffffff, #f0fdf4);">
+                    <div class="card-body p-4">
+                        <div class="d-flex justify-content-between align-items-start mb-2">
+                            <div>
+                                <h6 class="text-muted fw-semibold mb-1">Santri Prestasi</h6>
+                                <h3 class="fw-bold mb-0 text-dark" style="font-size: 2.2rem; letter-spacing:-0.5px;"><?= number_format($stats['santri_tanpa_pelanggaran'] ?? 0) ?></h3>
+                            </div>
+                            <div class="d-flex align-items-center justify-content-center rounded-3" style="width: 48px; height: 48px; background: rgba(59, 130, 246, 0.1); color: #3b82f6;">
+                                <i class="fas fa-award fa-lg"></i>
+                            </div>
+                        </div>
+                        <div class="text-muted small mt-2 d-flex justify-content-between align-items-center">
+                            <span>Tanpa catatan kasus</span>
+                            <?php if ($can_view_rekap_santri): ?>
+                                <a href="rekap/santri-teladan.php" class="text-primary text-decoration-none fw-semibold stretched-link" style="font-size:0.8rem;">Daftar <i class="fas fa-arrow-right ms-1"></i></a>
+                            <?php else: ?>
+                                <i class="fas fa-lock opacity-50"></i>
+                            <?php endif; ?>
+                        </div>
+                    </div>
+                </div>
+            </div>
         </div>
 
         <div class="row g-4 mb-4">
@@ -333,7 +384,7 @@ $teladan_onclick = !$can_view_rekap_santri ? 'onclick="event.preventDefault(); r
                         <div class="tab-content" id="studentTabsContent">
                             <div class="tab-pane fade show active" id="violators-panel" role="tabpanel">
                                 <?php if ($can_view_rekap_santri): ?>
-                                    <div class="text-end mb-3"><a href="rekap/santri-pelanggar.php" class="text-primary text-decoration-none small fw-medium">Lihat semua <i class="fas fa-arrow-right"></i></a></div>
+                                    <div class="text-end mb-3"><a href="rekap/keterlambatan.php" class="text-primary text-decoration-none small fw-medium">Lihat semua <i class="fas fa-arrow-right"></i></a></div>
                                 <?php endif; ?>
                                 
                                 <div class="student-list d-flex flex-column gap-3">

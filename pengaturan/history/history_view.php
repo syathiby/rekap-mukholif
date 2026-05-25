@@ -12,8 +12,11 @@ $start_date = $_GET['start_date'] ?? date('Y-m-d');
 $end_date   = $_GET['end_date'] ?? date('Y-m-d');
 $bagian     = $_GET['bagian'] ?? '';
 $search     = trim($_GET['search'] ?? '');
+$kamar      = $_GET['kamar'] ?? '';
+$kelas      = $_GET['kelas'] ?? '';
+$jenis_pelanggaran = $_GET['jenis_pelanggaran'] ?? '';
 
-$back_link = "index.php?start_date=" . urlencode($start_date) . "&end_date=" . urlencode($end_date) . "&bagian=" . urlencode($bagian) . "&search=" . urlencode($search);
+$back_link = "index.php?start_date=" . urlencode($start_date) . "&end_date=" . urlencode($end_date) . "&bagian=" . urlencode($bagian) . "&search=" . urlencode($search) . "&kamar=" . urlencode($kamar) . "&kelas=" . urlencode($kelas) . "&jenis_pelanggaran=" . urlencode($jenis_pelanggaran);
 
 // 1. Fetch Log Pelanggaran Individu
 $query_ind = "

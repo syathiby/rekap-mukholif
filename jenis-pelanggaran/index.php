@@ -64,31 +64,43 @@ if ($can_edit || $can_delete) $colspan++; // Tambah 1 untuk Aksi
 ?>
 
 <style>
-    /* CSS tidak ada perubahan */
+<style>
     :root {
-        --primary-color: #3498db;
-        --secondary-color: #2c3e50;
+        --primary: #4f46e5;      /* Indigo 600 */
+        --primary-hover: #4338ca; /* Indigo 700 */
+        --bg-body: #f8fafc;       /* Slate 50 */
+        --bg-card: #ffffff;
+        --text-main: #0f172a;     /* Slate 900 */
+        --text-muted: #64748b;    /* Slate 500 */
+        --border: #e2e8f0;        /* Slate 200 */
     }
     .page-title-card {
-        background: linear-gradient(135deg, var(--secondary-color), var(--primary-color));
-        color: white;
-        padding: 1.5rem;
-        border-radius: 8px;
+        background: var(--bg-card);
+        color: var(--text-main);
+        padding: 1.5rem 2rem;
+        border-radius: 1rem;
         margin-bottom: 1.5rem;
-        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+        box-shadow: 0 1px 3px 0 rgb(0 0 0 / 0.1), 0 1px 2px -1px rgb(0 0 0 / 0.1);
+        border: 1px solid var(--border);
     }
     .filter-card, .table-container {
-        background-color: #fff;
+        background-color: var(--bg-card);
         padding: 1.5rem;
-        border-radius: 8px;
+        border-radius: 1rem;
         margin-bottom: 1.5rem;
-        box-shadow: 0 2px 10px rgba(0, 0, 0, 0.05);
+        box-shadow: 0 1px 3px 0 rgb(0 0 0 / 0.1), 0 1px 2px -1px rgb(0 0 0 / 0.1);
+        border: 1px solid var(--border);
     }
     .table-container { padding: 0; overflow: hidden; }
     .table thead {
-        background-color: var(--secondary-color);
-        color: white;
+        background-color: #f1f5f9; /* Slate 100 */
+        color: var(--text-muted);
+        font-weight: 600;
+        text-transform: uppercase;
+        font-size: 0.8rem;
+        letter-spacing: 0.05em;
     }
+    .table th { border-bottom-width: 1px; }
     .badge.bg-info { background-color: #0dcaf0 !important; }
     .badge.bg-warning { background-color: #ffc107 !important; }
     .badge.bg-danger { background-color: #dc3545 !important; }
@@ -96,7 +108,10 @@ if ($can_edit || $can_delete) $colspan++; // Tambah 1 untuk Aksi
     
     .card-action-bulk {
         padding: 1rem;
-        background-color: #fff;
+        background-color: var(--bg-card);
+        border-radius: 1rem;
+        box-shadow: 0 1px 3px 0 rgb(0 0 0 / 0.1);
+        border: 1px solid var(--border);
     }
 
     @media (max-width: 767px) {
@@ -138,12 +153,16 @@ if ($can_edit || $can_delete) $colspan++; // Tambah 1 untuk Aksi
     }
 </style>
 
-<div class="container mt-4 mb-5">
-    <div class="page-title-card d-flex justify-content-between align-items-center">
-        <h3 class="mb-0"><i class="fas fa-exclamation-triangle me-2"></i>Data Jenis Pelanggaran</h3>
+<div class="container-fluid py-4 px-4">
+    <!-- Header Page -->
+    <div class="d-flex flex-column flex-md-row justify-content-between align-items-md-center mb-4 gap-3">
+        <div>
+            <h3 class="fw-bolder text-dark mb-1"><i class="fas fa-exclamation-triangle text-primary me-2"></i>Data Jenis Pelanggaran</h3>
+            <p class="text-muted mb-0">Daftar klasifikasi pelanggaran dan poin</p>
+        </div>
         <?php if ($can_create): ?>
-            <div class="btn-group">
-                <a href="create.php" class="btn btn-success"><i class="fas fa-plus-circle me-1"></i> Tambah Baru</a>
+            <div class="d-flex align-items-center">
+                <a href="create.php" class="btn btn-primary shadow-sm rounded-pill px-4"><i class="fas fa-plus-circle me-2"></i> Tambah Baru</a>
             </div>
         <?php endif; ?>
     </div>

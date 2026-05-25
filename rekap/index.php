@@ -1,4 +1,4 @@
-﻿<?php
+<?php
 // 1. Panggil 'Otak' aplikasi dulu
 require_once __DIR__ . '/../bootstrap/init.php';
 
@@ -7,176 +7,156 @@ guard(['rekap_view_statistik', 'rekap_view_per_kamar', 'rekap_view_santri', 'rek
 
 // 3. Kalau lolos, baru panggil Tampilan
 require_once __DIR__ . '/../layouts/header.php'; 
-?>
+?><style>
+    :root {
+        --primary: #4f46e5;
+        --primary-hover: #4338ca;
+        --bg-body: #f8fafc;
+        --bg-card: #ffffff;
+        --text-main: #0f172a;
+        --text-muted: #64748b;
+        --border: #e2e8f0;
+    }
+    
+    .hover-up {
+        transition: transform 0.2s ease, box-shadow 0.2s ease;
+        border: 1px solid var(--border) !important;
+        border-radius: 1rem;
+        background: var(--bg-card);
+    }
+    .hover-up:hover { 
+        transform: translateY(-3px); 
+        box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05) !important;
+    }
+    
+    .icon-container {
+        width: 50px;
+        height: 50px;
+        border-radius: 1rem;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+    }
+</style>
 
-<!DOCTYPE html>
-<html lang="id">
-<head>
-    <meta charset="UTF-8">
-    <title>Menu Rekap Pelanggaran</title>
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
-    <style>
-        :root {
-            --primary: #4361ee; --secondary: #3f37c9; --accent: #4895ef;
-            --light: #f8f9fa; --dark: #212529; --success: #198754;
-            --danger: #dc3545; --warning: #ffc107;
-            --info: #0dcaf0; 
-            --purple: #6f42c1;
-        }
-        
-        body {
-            font-family: 'Poppins', sans-serif;
-            background: linear-gradient(135deg, #f5f7fa 0%, #e4e8f0 100%);
-            min-height: 100vh;
-        }
-        
-        .container {
-            padding: 40px;
-            max-width: 700px;
-            animation: fadeIn 0.8s ease-out;
-        }
-        
-        .header-box {
-            background: white; padding: 25px; border-radius: 15px;
-            box-shadow: 0 10px 20px rgba(0,0,0,0.08); margin-bottom: 30px;
-            border-left: 5px solid var(--primary);
-            transition: transform 0.3s ease, box-shadow 0.3s ease;
-        }
-        
-        .header-box:hover {
-            transform: translateY(-5px);
-            box-shadow: 0 15px 30px rgba(0,0,0,0.12);
-        }
-        
-        h2 {
-            font-weight: 600; color: var(--primary); margin: 0;
-            font-size: 28px;
-        }
-        
-        .btn-menu {
-            padding: 18px 25px; border-radius: 12px; font-weight: 500;
-            font-size: 18px; text-align: left; border: none;
-            box-shadow: 0 4px 8px rgba(0,0,0,0.1);
-            transition: all 0.3s ease; position: relative;
-            overflow: hidden; display: flex; align-items: center; gap: 15px;
-        }
-        
-        .btn-menu:hover {
-            transform: translateY(-3px);
-            box-shadow: 0 8px 15px rgba(0,0,0,0.15);
-        } 
-        
-        .btn-menu i {
-            font-size: 24px; width: 40px; height: 40px;
-            display: flex; align-items: center; justify-content: center;
-            background: rgba(255,255,255,0.2); border-radius: 50%;
-        }
-        
-        .d-grid { gap: 20px; }
-        
-        .btn-primary { background-color: var(--primary); }
-        .btn-warning { background-color: var(--warning); color: var(--dark); }
-        .btn-danger { background-color: var(--danger); }
-        .btn-success { background-color: var(--success); }
-        .btn-info { background-color: var(--info); color: white; }
-        .btn-purple { background-color: var(--purple); }
-        /* ✅ PERUBAHAN: Ganti style .btn-dark jadi .btn-accent */
-        .btn-accent { background-color: var(--accent); }
-
-        /* Paksa warna background tetap sama saat di-hover */
-        .btn-primary:hover { background-color: var(--primary); }
-        .btn-warning:hover { background-color: var(--warning); color: var(--dark); }
-        .btn-danger:hover { background-color: var(--danger); }
-        .btn-success:hover { background-color: var(--success); }
-        .btn-info:hover { background-color: var(--info); color: white; }
-        .btn-purple:hover { background-color: var(--purple); }
-        /* ✅ PERUBAHAN: Ganti hover state untuk .btn-accent */
-        .btn-accent:hover { background-color: var(--accent); }
-        
-        @keyframes fadeIn {
-            from { opacity: 0; transform: translateY(20px); }
-            to { opacity: 1; transform: translateY(0); }
-        }
-        
-        @keyframes buttonEntrance {
-            from { opacity: 0; transform: scale(0.9); }
-            to { opacity: 1; transform: scale(1); }
-        }
-        
-        .btn-menu {
-            animation: buttonEntrance 0.5s ease-out;
-            animation-fill-mode: both;
-        }
-        
-        /* Animasi berurutan untuk setiap tombol */
-        .btn-menu:nth-child(1) { animation-delay: 0.1s; }
-        .btn-menu:nth-child(2) { animation-delay: 0.2s; }
-        .btn-menu:nth-child(3) { animation-delay: 0.3s; }
-        .btn-menu:nth-child(4) { animation-delay: 0.4s; }
-        .btn-menu:nth-child(5) { animation-delay: 0.5s; }
-        .btn-menu:nth-child(6) { animation-delay: 0.6s; }
-        .btn-menu:nth-child(7) { animation-delay: 0.7s; }
-        
-    </style>
-</head>
-<body>
-<div class="container text-center">
-    <div class="header-box">
-        <h2><i class="fas fa-chart-pie"></i> Menu Rekap Pelanggaran</h2>
+<div class="container-fluid py-4 px-4">
+    <!-- Header Page -->
+    <div class="d-flex flex-column align-items-center justify-content-center text-center mb-5 gap-2">
+        <h3 class="fw-bolder text-dark mb-0"><i class="fas fa-chart-pie text-primary me-2"></i>Menu Rekap Pelanggaran</h3>
+        <p class="text-muted mb-0">Akses seluruh laporan dan statistik pelanggaran santri</p>
     </div>
 
-    <div class="d-grid">
-
+    <div class="row g-4">
         <?php if (has_permission('rekap_view_umum')): ?>
-        <a href="umum.php" class="btn btn-purple btn-menu text-white">
-            <i class="fas fa-list-alt"></i>
-            <span>Rekap Pelanggaran Umum</span>
-        </a>
+        <div class="col-md-6 col-lg-4">
+            <a href="umum.php" class="text-decoration-none">
+                <div class="card h-100 hover-up p-4 d-flex flex-row align-items-center gap-3 border-start border-4 border-primary">
+                    <div class="icon-container text-primary flex-shrink-0" style="background-color: rgba(79, 70, 229, 0.1);">
+                        <i class="fas fa-list-alt fs-4"></i>
+                    </div>
+                    <div>
+                        <h6 class="text-dark fw-bold mb-1">Pelanggaran Umum</h6>
+                        <p class="text-muted small mb-0">Laporan rekapitulasi pelanggaran secara umum</p>
+                    </div>
+                </div>
+            </a>
+        </div>
         <?php endif; ?>
 
         <?php if (has_permission('rekap_view_santri')): ?>
-        <a href="santri-pelanggar.php" class="btn btn-primary btn-menu text-white">
-            <i class="fas fa-user-graduate"></i>
-            <span>Rekap Keterlambatan Santri</span>
-        </a>
+        <div class="col-md-6 col-lg-4">
+            <a href="keterlambatan.php" class="text-decoration-none">
+                <div class="card h-100 hover-up p-4 d-flex flex-row align-items-center gap-3 border-start border-4 border-info">
+                    <div class="icon-container text-info flex-shrink-0" style="background-color: rgba(13, 202, 240, 0.1);">
+                        <i class="fas fa-user-graduate fs-4"></i>
+                    </div>
+                    <div>
+                        <h6 class="text-dark fw-bold mb-1">Keterlambatan Santri</h6>
+                        <p class="text-muted small mb-0">Laporan akumulasi poin dan denda keterlambatan</p>
+                    </div>
+                </div>
+            </a>
+        </div>
         <?php endif; ?>
 
         <?php if (has_permission('rekap_view_per_kamar')): ?>
-        <a href="per-kamar.php" class="btn btn-warning btn-menu text-dark">
-            <i class="fas fa-home"></i>
-            <span>Rekap Mukholif Kamar</span>
-        </a>
+        <div class="col-md-6 col-lg-4">
+            <a href="kebersihan.php" class="text-decoration-none">
+                <div class="card h-100 hover-up p-4 d-flex flex-row align-items-center gap-3 border-start border-4 border-warning">
+                    <div class="icon-container text-warning flex-shrink-0" style="background-color: rgba(255, 193, 7, 0.15);">
+                        <i class="fas fa-home fs-4"></i>
+                    </div>
+                    <div>
+                        <h6 class="text-dark fw-bold mb-1">Kebersihan Kamar</h6>
+                        <p class="text-muted small mb-0">Laporan inspeksi kebersihan asrama dan kamar</p>
+                    </div>
+                </div>
+            </a>
+        </div>
         <?php endif; ?>
 
         <?php if (has_permission('rekap_view_bahasa')): ?>
-        <a href="../pelanggaran/bahasa/rekap.php" class="btn btn-danger btn-menu text-white">
-            <i class="fas fa-language"></i>
-            <span>Rekap Pelanggaran Bahasa</span>
-        </a>
+        <div class="col-md-6 col-lg-4">
+            <a href="../pelanggaran/bahasa/rekap.php" class="text-decoration-none">
+                <div class="card h-100 hover-up p-4 d-flex flex-row align-items-center gap-3 border-start border-4 border-danger">
+                    <div class="icon-container text-danger flex-shrink-0" style="background-color: rgba(220, 53, 69, 0.1);">
+                        <i class="fas fa-language fs-4"></i>
+                    </div>
+                    <div>
+                        <h6 class="text-dark fw-bold mb-1">Pelanggaran Bahasa</h6>
+                        <p class="text-muted small mb-0">Rekapitulasi data denda kedisiplinan bahasa</p>
+                    </div>
+                </div>
+            </a>
+        </div>
         <?php endif; ?>
 
         <?php if (has_permission('rekap_view_diniyyah')): ?>
-        <a href="../pelanggaran/diniyyah/rekap.php" class="btn btn-success btn-menu text-white">
-            <i class="fas fa-book-quran"></i>
-            <span>Rekap Pelanggaran Diniyyah</span>
-        </a>
+        <div class="col-md-6 col-lg-4">
+            <a href="../pelanggaran/diniyyah/rekap.php" class="text-decoration-none">
+                <div class="card h-100 hover-up p-4 d-flex flex-row align-items-center gap-3 border-start border-4 border-success">
+                    <div class="icon-container text-success flex-shrink-0" style="background-color: rgba(25, 135, 84, 0.1);">
+                        <i class="fas fa-book-quran fs-4"></i>
+                    </div>
+                    <div>
+                        <h6 class="text-dark fw-bold mb-1">Pelanggaran Diniyyah</h6>
+                        <p class="text-muted small mb-0">Laporan pelanggaran program pendidikan Diniyyah</p>
+                    </div>
+                </div>
+            </a>
+        </div>
         <?php endif; ?>
         
         <?php if (has_permission('rekap_view_tahfidz')): ?>
-        <a href="../pelanggaran/tahfidz/rekap.php" class="btn btn-accent btn-menu text-white">
-            <i class="fas fa-book-open"></i>
-            <span>Rekap Pelanggaran Tahfidz</span>
-        </a>
+        <div class="col-md-6 col-lg-4">
+            <a href="../pelanggaran/tahfidz/rekap.php" class="text-decoration-none">
+                <div class="card h-100 hover-up p-4 d-flex flex-row align-items-center gap-3 border-start border-4" style="border-left-color: #0891b2 !important;">
+                    <div class="icon-container flex-shrink-0" style="color: #0891b2; background-color: rgba(8, 145, 178, 0.1);">
+                        <i class="fas fa-book-open fs-4"></i>
+                    </div>
+                    <div>
+                        <h6 class="text-dark fw-bold mb-1">Pelanggaran Tahfidz</h6>
+                        <p class="text-muted small mb-0">Laporan pelanggaran halaqoh tahfidz Qur'an</p>
+                    </div>
+                </div>
+            </a>
+        </div>
         <?php endif; ?>
 
         <?php if (has_permission('rekap_view_statistik')): ?>
-        <a href="chart.php" class="btn btn-info btn-menu text-white">
-            <i class="fas fa-chart-line"></i>
-            <span>Grafik Statistik</span>
-        </a>
+        <div class="col-md-6 col-lg-4">
+            <a href="chart.php" class="text-decoration-none">
+                <div class="card h-100 hover-up p-4 d-flex flex-row align-items-center gap-3 border-start border-4" style="border-left-color: #8b5cf6 !important;">
+                    <div class="icon-container flex-shrink-0" style="color: #8b5cf6; background-color: rgba(139, 92, 246, 0.1);">
+                        <i class="fas fa-chart-line fs-4"></i>
+                    </div>
+                    <div>
+                        <h6 class="text-dark fw-bold mb-1">Grafik Statistik</h6>
+                        <p class="text-muted small mb-0">Visualisasi data dan tren analitik pelanggaran</p>
+                    </div>
+                </div>
+            </a>
+        </div>
         <?php endif; ?>
 
     </div>

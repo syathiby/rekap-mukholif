@@ -31,81 +31,141 @@ $logo_version = file_exists($logo_server_path)
     <link rel="stylesheet" href="<?= BASE_URL ?>/assets/css/style.css?v=<?= time() ?>">
 </head>
 <body>
-    <!-- Sidebar untuk Desktop -->
-    <nav class="sidebar d-none d-lg-block shadow-sm">
+    <style>
+    /* SyathibyFood Mobile Overlay */
+    #sidebarOverlay {
+        display: none;
+        position: fixed;
+        inset: 0;
+        background: rgba(0,0,0,0.5);
+        z-index: 1039;
+        backdrop-filter: blur(2px);
+        opacity: 0;
+        transition: opacity 0.25s ease;
+    }
+    #sidebarOverlay.visible { opacity: 1; }
+    </style>
+
+    <!-- Overlay backdrop untuk menutup sidebar di mobile -->
+    <div id="sidebarOverlay" onclick="closeSidebarMobile()"></div>
+
+    <!-- Unified Sidebar -->
+    <nav id="sidebar">
+        <!-- Mobile Close Button -->
+        <button class="d-md-none btn btn-sm text-white position-absolute end-0 top-0 me-2"
+                id="sidebarCloseBtn"
+                style="margin-top: calc(1rem + env(safe-area-inset-top, 0px)); background: rgba(255,255,255,0.1); border: none; border-radius: 50%; width: 32px; height: 32px; display: flex; align-items: center; justify-content: center; z-index: 1050;"
+                onclick="closeSidebarMobile()">
+            <i class="fas fa-times"></i>
+        </button>
+
+        <!-- Brand -->
+        <a href="<?= BASE_URL ?>/index.php" class="sb-brand">
+            <div class="sb-brand-icon"><i class="fas fa-shield-alt"></i></div>
+            <div class="sb-brand-name">Asuh<span>Track</span></div>
+        </a>
+
+        <!-- Nav -->
         <?php include __DIR__ . '/sidebar.php'; ?>
+
+        <!-- Footer -->
+        <div class="sb-footer">
+
+            <a href="<?= BASE_URL ?>/logout.php" class="sb-link" style="margin-bottom:6px; background:rgba(239,68,68,0.08); border-color:rgba(239,68,68,0.12);">
+                <i class="fas fa-sign-out-alt" style="color:#f87171;"></i>
+                <span style="color:#f87171;">Logout</span>
+            </a>
+            <div class="sb-footer-info overflow-hidden">
+                <div class="sb-avatar" style="background: #7c3aed;">
+                    <i class="fas fa-user-shield"></i>
+                </div>
+                <div class="overflow-hidden">
+                    <div class="sb-user-name text-truncate"><?= htmlspecialchars($_SESSION['nama_lengkap'] ?? 'Pengguna') ?></div>
+                    <div class="sb-user-role text-truncate" style="color:#94a3b8;"><?= htmlspecialchars(ucfirst($_SESSION['role'] ?? 'Admin')) ?></div>
+                </div>
+            </div>
+        </div>
     </nav>
 
-    <!-- Sidebar untuk Mobile (Offcanvas) -->
-    <div class="offcanvas offcanvas-start" tabindex="-1" id="sidebarOffcanvas">
-        <div class="offcanvas-header border-bottom">
-            <h5 class="offcanvas-title fw-bold" style="color: #25396f;">Menu Navigasi</h5>
-            <button type="button" class="btn-close" data-bs-dismiss="offcanvas"></button>
-        </div>
-        <div class="offcanvas-body">
-            <!-- Wrapper untuk menu yang bisa di-scroll -->
-            <div class="sidebar-menu-wrapper">
-                <?php include __DIR__ . '/sidebar.php'; ?>
-            </div>
-            
-            <!-- Info User & Logout di Offcanvas -->
-            <div class="offcanvas-user-info">
-                <div class="d-flex align-items-center mb-3">
-                    <div class="user-avatar me-3">
-                        <span><?= htmlspecialchars(substr($_SESSION['nama_lengkap'] ?? 'P', 0, 1)) ?></span>
-                    </div>
-                    <div class="user-details">
-                        <span class="user-name"><?= htmlspecialchars($_SESSION['nama_lengkap'] ?? 'Pengguna') ?></span>
-                        <span class="user-role text-muted ms-1"> <?= htmlspecialchars(ucfirst($_SESSION['role'] ?? 'Role')) ?> </span>
-                    </div>
-                </div>
-                <!-- REVISI: Path logout jadi dinamis pake BASE_URL -->
-                <a class="btn btn-sm d-flex align-items-center justify-content-center rounded-pill px-3 py-2 btn-logout w-100" href="<?= BASE_URL ?>/logout.php">
-                    <i class="fas fa-sign-out-alt me-2"></i>Keluar
-                </a>
-            </div>
-        </div>
-    </div>
 
     <!-- Konten Utama (Kanan) -->
     <main class="main-content">
-        <!-- Header yang nempel di atas -->
-        <header class="header sticky-lg-top mb-4 shadow-sm rounded">
-            <nav class="navbar h-100">
-                <div class="container-fluid d-flex align-items-center justify-content-between">
-                    <!-- Kiri: Burger (Mobile) & Logo (Semua Tampilan) -->
+        <!-- Header Minimalis ala SyathibyFood -->
+        <header class="header sticky-top bg-white mb-4" style="border-bottom: 1px solid var(--border-color); z-index: 1020;">
+            <nav class="navbar h-100 px-lg-4 px-3 py-2">
+                <div class="container-fluid d-flex align-items-center justify-content-between p-0">
+                    <!-- Kiri: Burger (Mobile) & Page Title (Desktop) -->
                     <div class="d-flex align-items-center">
-                        <button class="btn btn-light d-lg-none me-3" type="button" data-bs-toggle="offcanvas" data-bs-target="#sidebarOffcanvas">
+                        <button class="btn btn-light d-lg-none me-3" type="button" onclick="openSidebarMobile()">
                             <i class="fas fa-bars"></i>
                         </button>
-                        <div class="d-flex align-items-center">
-                            <!-- REVISI: Path logo jadi dinamis + otomatis cache bust -->
+                        
+                        <!-- Logo Mobile Only -->
+                        <div class="d-flex align-items-center d-lg-none">
                             <img src="<?= BASE_URL ?>/assets/img/logo.png?v=<?= $logo_version ?>" alt="Logo" class="header-logo me-2">
-                            <span class="fw-bold app-name align-middle" style="color: #25396f;">AsuhTrack</span>
+                            <span class="fw-bold app-name align-middle text-dark">AsuhTrack</span>
+                        </div>
+
+                        <!-- Title Desktop Only -->
+                        <div class="d-none d-lg-flex flex-column">
+                            <h5 class="mb-0 fw-bold text-dark" style="font-size: 1.15rem;">
+                                <?php 
+                                $page_title = 'Dashboard';
+                                if (strpos($req_path, '/santri') === 0) $page_title = 'Data Santri';
+                                elseif (strpos($req_path, '/jenis-pelanggaran') === 0) $page_title = 'Jenis Pelanggaran';
+                                elseif (strpos($req_path, '/pelanggaran') === 0) $page_title = 'Catatan Pelanggaran';
+                                elseif (strpos($req_path, '/reward') === 0) $page_title = 'Reward & Prestasi';
+                                elseif (strpos($req_path, '/eksekusi') === 0) $page_title = 'Eksekusi Kebersihan';
+                                elseif (strpos($req_path, '/arsip') === 0) $page_title = 'Arsip';
+                                elseif (strpos($req_path, '/rekap') === 0) $page_title = 'Rekap Pelanggaran';
+                                elseif (strpos($req_path, '/rapot') === 0) $page_title = 'Rapot Kepengasuhan';
+                                elseif (strpos($req_path, '/export') === 0) $page_title = 'Export Data';
+                                elseif (strpos($req_path, '/pengaturan') === 0) $page_title = 'Pengaturan';
+                                echo $page_title;
+                                ?>
+                            </h5>
+                            <span class="text-muted" style="font-size: 0.8rem;">Sistem Informasi Kepengasuhan Santri</span>
                         </div>
                     </div>
                     
-                    <!-- Kanan Header (Desktop) -->
-                    <div class="d-none d-lg-flex align-items-center">
-                        <div class="user-info d-flex align-items-center">
-                            <div class="user-details text-end me-3">
-                                <span class="user-name"><?= htmlspecialchars($_SESSION['nama_lengkap'] ?? 'Pengguna') ?></span>
-                                <span class="user-role text-muted ms-1"> <?= htmlspecialchars(ucfirst($_SESSION['role'] ?? 'Role')) ?> </span>
-                            </div>
-                            <div class="user-avatar">
-                                <span><?= htmlspecialchars(substr($_SESSION['nama_lengkap'] ?? 'P', 0, 1)) ?></span>
-                            </div>
+                    <!-- Kanan: Date & Role Badges (Desktop Only) -->
+                    <div class="d-none d-lg-flex align-items-center gap-2">
+                        <div class="badge bg-white text-secondary border px-3 py-2 rounded-3 fw-medium d-flex align-items-center">
+                            <i class="far fa-calendar-alt me-2 text-muted"></i>
+                            <?= date('d M Y') ?>
                         </div>
-                        <div class="vr mx-3"></div>
-                        <!-- REVISI: Path logout jadi dinamis pake BASE_URL -->
-                        <a class="btn btn-sm d-flex align-items-center rounded-pill px-3 py-2 btn-logout" href="<?= BASE_URL ?>/logout.php" title="Logout">
-                            <i class="fas fa-sign-out-alt"></i>
-                            <span class="ms-2 d-none d-xl-inline">Keluar</span>
-                        </a>
+                        <div class="badge bg-primary text-white border px-3 py-2 rounded-3 fw-medium d-flex align-items-center">
+                            <i class="fas fa-user-shield me-2"></i>
+                            <?= htmlspecialchars(ucfirst($_SESSION['role'] ?? 'Admin')) ?>
+                        </div>
                     </div>
                 </div>
             </nav>
         </header>
+
+<script>
+function openSidebarMobile() {
+    var side = document.getElementById('sidebar');
+    var overlay = document.getElementById('sidebarOverlay');
+    if(side) side.classList.add('toggled');
+    if(overlay) {
+        overlay.style.display = 'block';
+        requestAnimationFrame(() => overlay.classList.add('visible'));
+    }
+    document.body.style.overflow = 'hidden';
+}
+
+function closeSidebarMobile() {
+    var side = document.getElementById('sidebar');
+    var overlay = document.getElementById('sidebarOverlay');
+    if(side) side.classList.remove('toggled');
+    if(overlay) {
+        overlay.classList.remove('visible');
+        setTimeout(() => { overlay.style.display = 'none'; }, 250);
+    }
+    document.body.style.overflow = '';
+}
+</script>
 
         <!-- ✅ LOGIKA NOTIFIKASI GANDA -->
         <?php
