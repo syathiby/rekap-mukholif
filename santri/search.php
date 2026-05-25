@@ -1,25 +1,24 @@
-﻿<?php
+<?php
 // 1. Panggil 'Otak' aplikasi dulu
 require_once __DIR__ . '/../bootstrap/init.php';
 
 // 2. Jalankan 'SATPAM' buat ngejaga halaman
 guard('santri_view');  
 
-// 3. Kalau lolos, baru panggil Tampilan
-require_once __DIR__ . '/../layouts/header.php';
-?>
-
-<?php
 header('Content-Type: application/json');
 
-$term = isset($_GET['term']) ? mysqli_real_escape_string($conn, $_GET['term']) : '';
+$term = isset($_GET['term']) ? $_GET['term'] : '';
+$search_term = "%" . $term . "%";
 
 $query = "SELECT id, nama, kelas, kamar FROM santri 
-          WHERE nama LIKE '%$term%' 
+          WHERE nama LIKE ? 
           ORDER BY nama 
           LIMIT 10";
 
-$result = mysqli_query($conn, $query);
+$stmt = mysqli_prepare($conn, $query);
+mysqli_stmt_bind_param($stmt, "s", $search_term);
+mysqli_stmt_execute($stmt);
+$result = mysqli_stmt_get_result($stmt);
 
 $santri = [];
 while ($row = mysqli_fetch_assoc($result)) {

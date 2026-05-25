@@ -372,7 +372,7 @@ mysqli_stmt_close($stmt_count);
                                 <div class="d-flex align-items-center">
                                     <div class="avatar me-3">
                                         <div class="rounded-circle text-white d-flex align-items-center justify-content-center" 
-                                             style="width: 38px; height: 38px; background-color: #<?= substr(md5($row['id']), 0, 6) ?>; font-weight: 500;">
+                                             style="background-color: #<?= substr(md5($row['id']), 0, 6) ?>;">
                                             <?= strtoupper(substr($row['nama'], 0, 1)) ?>
                                         </div>
                                     </div>
