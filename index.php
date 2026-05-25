@@ -151,224 +151,242 @@ $teladan_style = !$can_view_rekap_santri ? 'style="cursor: not-allowed; opacity:
 $teladan_onclick = !$can_view_rekap_santri ? 'onclick="event.preventDefault(); return false;"' : '';
 
 ?>
-<!DOCTYPE html>
-<html lang="id">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Dashboard - Aplikasi Pendataan Mukholif</title>
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
-    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
-
-</head>
-<body>
-    <div class="container">
-        <header class="dashboard-header">
+<div class="dashboard-wrapper">
+        <header class="dashboard-header mb-4">
             <div class="header-shield-bg"><i class="fas fa-shield-alt"></i></div>
             <h1><i class="fas fa-chart-pie"></i> Aplikasi Kepengasuhan Santri</h1>
             <p class="subtitle">Pantau dan kelola data pelanggaran santri dengan mudah</p>
         </header>
-        
-        <div class="content-section">
-            <div class="section-header">
-                <h2 class="section-title"><i class="fas fa-history"></i> Pelanggaran Terkini</h2>
-                <?php if ($can_view_pel_terkini): // Izin: rekap_view_statistik ?>
-                    <a href="rekap/tren-pelanggaran.php" class="view-all-link">Lihat semua <i class="fas fa-chevron-right"></i></a>
-                <?php endif; ?>
-            </div>
-            <!-- Tampilan Desktop: Tabel dalam kartu -->
-            <div class="recent-violations d-none d-lg-block">
-                <table class="violation-table">
-                    <thead>
-                        <tr>
-                            <th style="width: 5%;">No</th>
-                            <th style="width: 20%;">Nama Santri</th>
-                            <th style="width: 10%;">Kamar</th>
-                            <th style="width: 35%;">Pelanggaran</th>
-                            <th style="width: 15%;">Waktu</th>
-                            <th style="width: 15%;">Pencatat</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        <?php if(mysqli_num_rows($recent_violations) > 0): ?>
-                            <?php $no = 1; while($violation = mysqli_fetch_assoc($recent_violations)): $time_ago = time_elapsed_string($violation['tanggal']); ?>
-                                <tr>
-                                    <td><?= $no++ ?></td>
-                                    <td><?= htmlspecialchars($violation['nama']) ?></td>
-                                    <td><?= htmlspecialchars($violation['kamar']) ?></td>
-                                    <td><?= htmlspecialchars($violation['nama_pelanggaran']) ?></td>
-                                    <td class="violation-time">
-                                        <?= date('d M Y H:i', strtotime($violation['tanggal'])) ?>
-                                        <span class="time-ago"><?= $time_ago ?></span>
-                                    </td>
-                                    <td><?= htmlspecialchars($violation['pencatat'] ?? 'N/A') ?></td>
-                                </tr>
-                            <?php endwhile; ?>
-                        <?php else: ?>
-                            <tr><td colspan="6" class="empty-state"><i class="fas fa-check-circle"></i><p>Alhamdulillah, tidak ada pelanggaran baru-baru ini.</p></td></tr>
-                        <?php endif; ?>
-                    </tbody>
-                </table>
-            </div>
 
-            <!-- Tampilan Mobile: List Kartu Modern -->
-            <?php if(mysqli_num_rows($recent_violations) > 0): ?>
-                <?php mysqli_data_seek($recent_violations, 0); // Reset pointer ?>
-                <div class="mobile-violations-list d-lg-none mb-4">
-                    <?php while($violation = mysqli_fetch_assoc($recent_violations)): 
-                        $time_ago = time_elapsed_string($violation['tanggal']);
-                        $initial = htmlspecialchars(substr($violation['nama'] ?? 'S', 0, 1));
-                        
-                        // Soft colors based on category
-                        $avatar_bg = '#f1f5f9';
-                        $avatar_color = '#475569';
-                        $pel_nama = strtolower($violation['nama_pelanggaran'] ?? '');
-                        if (strpos($pel_nama, 'bahasa') !== false) {
-                            $avatar_bg = '#eef2ff';
-                            $avatar_color = '#4f46e5';
-                        } elseif (strpos($pel_nama, 'diniyyah') !== false) {
-                            $avatar_bg = '#ecfdf5';
-                            $avatar_color = '#10b981';
-                        } elseif (strpos($pel_nama, 'tahfidz') !== false) {
-                            $avatar_bg = '#fff1f2';
-                            $avatar_color = '#f43f5e';
-                        } elseif (strpos($pel_nama, 'kebersihan') !== false) {
-                            $avatar_bg = '#f0fdfa';
-                            $avatar_color = '#0d9488';
-                        }
-                    ?>
-                        <div class="mobile-violation-card">
-                            <div class="mobile-violation-avatar" style="background-color: <?= $avatar_bg ?>; color: <?= $avatar_color ?>;">
-                                <?= $initial ?>
-                            </div>
-                            <div class="mobile-violation-content">
-                                <div class="mobile-violation-header">
-                                    <div class="mobile-violation-name"><?= htmlspecialchars($violation['nama'] ?? 'Penghuni Kamar') ?></div>
-                                    <div class="mobile-violation-time"><?= $time_ago ?></div>
-                                </div>
-                                <div class="mobile-violation-title">
-                                    <?= htmlspecialchars($violation['nama_pelanggaran'] ?? '') ?>
-                                </div>
-                                <div class="mobile-violation-meta">
-                                    <span><i class="fas fa-home"></i> Kamar <?= htmlspecialchars($violation['kamar'] ?? '') ?></span>
-                                    <span><i class="fas fa-user-edit"></i> <?= htmlspecialchars($violation['pencatat'] ?? 'N/A') ?></span>
-                                </div>
-                            </div>
-                        </div>
-                    <?php endwhile; ?>
-                </div>
-            <?php else: ?>
-                <div class="empty-state d-lg-none mb-4" style="background: white; border-radius: 14px; padding: 2rem; border: 1px solid var(--border-color); text-align: center;">
-                    <i class="fas fa-check-circle text-success" style="font-size: 2.5rem; margin-bottom: 0.5rem;"></i>
-                    <p class="text-muted text-sm mb-0">Alhamdulillah, tidak ada pelanggaran baru-baru ini.</p>
-                </div>
-            <?php endif; ?>
-        </div>
+        <form method="GET" class="filter-form d-flex flex-wrap align-items-end gap-3 mb-4 p-3 bg-white border rounded shadow-sm" style="border-radius: 1rem !important;">
+            <div class="flex-grow-1" style="min-width: 200px;">
+                <label for="start_date" class="fw-medium mb-2 text-secondary"><i class="fas fa-calendar-day"></i> Dari Tanggal:</label>
+                <input type="date" name="start_date" id="start_date" class="form-control" value="<?= htmlspecialchars($_GET['start_date'] ?? '') ?>">
+            </div>
+            <div class="flex-grow-1" style="min-width: 200px;">
+                <label for="end_date" class="fw-medium mb-2 text-secondary"><i class="fas fa-calendar-week"></i> Sampai Tanggal:</label>
+                <input type="date" name="end_date" id="end_date" class="form-control" value="<?= htmlspecialchars($_GET['end_date'] ?? '') ?>">
+            </div>
+            <div class="mt-2 mt-sm-0 w-100 w-sm-auto text-end">
+                <button type="submit" class="btn btn-primary px-4 py-2 w-100"><i class="fas fa-filter"></i> Filter Data</button>
+            </div>
+        </form>
         
-        <div class="stats-grid">
-            <!-- Card 1: Total Santri (Izin: santri_view) -->
-            <a <?= $santri_href ?> class="stat-card santri" <?= $santri_style ?> <?= $santri_onclick ?>>
+        <div class="stats-grid mb-4">
+            <!-- Card 1: Total Santri -->
+            <a <?= $santri_href ?> class="stat-card santri text-decoration-none" <?= $santri_style ?> <?= $santri_onclick ?>>
                 <div class="stat-icon"><i class="fas fa-user-graduate"></i></div>
                 <h3>Total Santri</h3>
                 <div class="stat-value"><?= number_format($stats['santri'] ?? 0) ?></div>
                 <p class="stat-description">Santri terdaftar</p>
             </a>
             
-            <!-- Card 2: Jenis Pelanggaran (Izin: jenis_pelanggaran_view) -->
-            <a <?= $jp_href ?> class="stat-card pelanggaran" <?= $jp_style ?> <?= $jp_onclick ?>>
+            <!-- Card 2: Jenis Pelanggaran -->
+            <a <?= $jp_href ?> class="stat-card pelanggaran text-decoration-none" <?= $jp_style ?> <?= $jp_onclick ?>>
                 <div class="stat-icon"><i class="fas fa-clipboard-check"></i></div>
                 <h3>Jenis Pelanggaran</h3>
                 <div class="stat-value"><?= number_format($stats['jenis_pelanggaran'] ?? 0) ?></div>
                 <p class="stat-description">Kategori pelanggaran</p>
             </a>
             
-            <!-- Card 3: Total Pelanggaran (Izin: rekap_view_statistik) -->
-            <a <?= $chart_href ?> class="stat-card violations" <?= $chart_style ?> <?= $chart_onclick ?>>
+            <!-- Card 3: Total Pelanggaran -->
+            <a <?= $chart_href ?> class="stat-card violations text-decoration-none" <?= $chart_style ?> <?= $chart_onclick ?>>
                 <div class="stat-icon"><i class="fas fa-exclamation-circle"></i></div>
                 <h3>Total Pelanggaran</h3>
                 <div class="stat-value"><?= number_format($stats['total_pelanggaran'] ?? 0) ?></div>
                 <p class="stat-description">Pelanggaran tercatat</p>
                 <?php if(!empty($frequent_violation)): ?>
-                    <div class="additional-info">
+                    <div class="additional-info mt-auto">
                         <i class="fas fa-fire" style="color: var(--warning);"></i> Paling sering: <?= htmlspecialchars($frequent_violation['nama_pelanggaran']) ?>
                     </div>
                 <?php endif; ?>
             </a>
             
-            <!-- Card 4: Santri Teladan (Izin: rekap_view_santri) -->
-            <a <?= $teladan_href ?> class="stat-card clean" <?= $teladan_style ?> <?= $teladan_onclick ?>>
+            <!-- Card 4: Santri Teladan -->
+            <a <?= $teladan_href ?> class="stat-card clean text-decoration-none" <?= $teladan_style ?> <?= $teladan_onclick ?>>
                 <div class="stat-icon"><i class="fas fa-award"></i></div>
                 <h3>Santri Teladan</h3>
                 <div class="stat-value"><?= number_format($stats['santri_tanpa_pelanggaran'] ?? 0) ?></div>
                 <p class="stat-description">Tanpa pelanggaran</p>
             </a>
         </div>
-        
-        <form method="GET" class="filter-form">
-            <div>
-                <label for="start_date"><i class="fas fa-calendar-day"></i> Dari Tanggal:</label>
-                <input type="date" name="start_date" id="start_date" value="<?= htmlspecialchars($_GET['start_date'] ?? '') ?>">
-            </div>
-            <div>
-                <label for="end_date"><i class="fas fa-calendar-week"></i> Sampai Tanggal:</label>
-                <input type="date" name="end_date" id="end_date" value="<?= htmlspecialchars($_GET['end_date'] ?? '') ?>">
-            </div>
-            <div style="align-self: flex-end;">
-                <button type="submit"><i class="fas fa-filter"></i> Filter</button>
-            </div>
-        </form>
-        
-        <div class="content-section">
-            <div class="section-header">
-                <h2 class="section-title"><i class="fas fa-star"></i> Sorotan Santri</h2>
-            </div>
-            <div class="student-list">
-                <div class="student-list-card">
-                    <div class="list-header">
-                        <h3 class="list-title"><i class="fas fa-exclamation-triangle" style="color: var(--danger)"></i> Top Pelanggar Hirosah</h3>
-                        <?php if ($can_view_rekap_santri): // Izin: rekap_view_santri ?>
-                            <a href="rekap/santri-pelanggar.php" class="view-all-link">Lihat semua <i class="fas fa-chevron-right"></i></a>
+
+        <div class="row g-4 mb-4">
+            <div class="col-xl-8 col-lg-7">
+                <!-- Pelanggaran Terkini -->
+                <div class="card-premium h-100">
+                    <div class="card-header-premium">
+                        <h2 class="card-title"><i class="fas fa-history text-primary"></i> Pelanggaran Terkini</h2>
+                        <?php if ($can_view_pel_terkini): ?>
+                            <a href="rekap/tren-pelanggaran.php" class="btn btn-sm btn-light border">Lihat semua <i class="fas fa-chevron-right ms-1"></i></a>
                         <?php endif; ?>
                     </div>
-                    <?php if(mysqli_num_rows($top_violators) > 0): ?>
-                        <?php while($violator = mysqli_fetch_assoc($top_violators)): ?>
-                            <div class="student-item">
-                                <div class="student-avatar top-violators"><?= htmlspecialchars(substr($violator['nama'], 0, 1)) ?></div>
-                                <div class="student-info">
-                                    <div class="student-name"><?= htmlspecialchars($violator['nama']) ?></div>
-                                    <div class="student-details"><span><i class="fas fa-home"></i> Kamar <?= htmlspecialchars($violator['kamar']) ?></span></div>
+                    
+                    <div class="p-0">
+                        <div class="table-responsive d-none d-md-block">
+                            <table class="table-premium w-100 mb-0">
+                                <thead>
+                                    <tr>
+                                        <th style="width: 5%;">No</th>
+                                        <th style="width: 25%;">Nama Santri</th>
+                                        <th style="width: 30%;">Pelanggaran</th>
+                                        <th style="width: 20%;">Waktu</th>
+                                        <th style="width: 20%;">Pencatat</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <?php if(mysqli_num_rows($recent_violations) > 0): ?>
+                                        <?php $no = 1; while($violation = mysqli_fetch_assoc($recent_violations)): $time_ago = time_elapsed_string($violation['tanggal']); ?>
+                                            <tr>
+                                                <td><?= $no++ ?></td>
+                                                <td>
+                                                    <div class="fw-medium text-dark"><?= htmlspecialchars($violation['nama']) ?></div>
+                                                    <div class="text-muted small"><i class="fas fa-home"></i> Km. <?= htmlspecialchars($violation['kamar']) ?></div>
+                                                </td>
+                                                <td>
+                                                    <span class="badge bg-light text-dark border text-wrap text-start">
+                                                        <?= htmlspecialchars($violation['nama_pelanggaran']) ?>
+                                                    </span>
+                                                </td>
+                                                <td>
+                                                    <div class="text-dark small"><?= date('d M Y H:i', strtotime($violation['tanggal'])) ?></div>
+                                                    <div class="text-muted text-xs"><?= $time_ago ?></div>
+                                                </td>
+                                                <td><span class="text-muted small"><i class="fas fa-user-edit"></i> <?= htmlspecialchars($violation['pencatat'] ?? 'N/A') ?></span></td>
+                                            </tr>
+                                        <?php endwhile; ?>
+                                    <?php else: ?>
+                                        <tr><td colspan="5" class="text-center py-5 text-muted"><i class="fas fa-check-circle fs-2 text-success mb-2 d-block"></i> Alhamdulillah, tidak ada pelanggaran baru-baru ini.</td></tr>
+                                    <?php endif; ?>
+                                </tbody>
+                            </table>
+                        </div>
+
+                        <!-- Mobile Cards -->
+                        <div class="d-md-none p-3">
+                            <?php if(mysqli_num_rows($recent_violations) > 0): ?>
+                                <?php mysqli_data_seek($recent_violations, 0); // Reset pointer ?>
+                                <div class="mobile-violations-list">
+                                    <?php while($violation = mysqli_fetch_assoc($recent_violations)): 
+                                        $time_ago = time_elapsed_string($violation['tanggal']);
+                                        $initial = htmlspecialchars(substr($violation['nama'] ?? 'S', 0, 1));
+                                        
+                                        $avatar_bg = '#f1f5f9';
+                                        $avatar_color = '#475569';
+                                        $pel_nama = strtolower($violation['nama_pelanggaran'] ?? '');
+                                        if (strpos($pel_nama, 'bahasa') !== false) { $avatar_bg = '#eef2ff'; $avatar_color = '#4f46e5'; }
+                                        elseif (strpos($pel_nama, 'diniyyah') !== false) { $avatar_bg = '#ecfdf5'; $avatar_color = '#10b981'; }
+                                        elseif (strpos($pel_nama, 'tahfidz') !== false) { $avatar_bg = '#fff1f2'; $avatar_color = '#f43f5e'; }
+                                        elseif (strpos($pel_nama, 'kebersihan') !== false) { $avatar_bg = '#f0fdfa'; $avatar_color = '#0d9488'; }
+                                    ?>
+                                        <div class="mobile-violation-card mb-3 p-3 border rounded shadow-sm bg-white">
+                                            <div class="mobile-violation-avatar rounded-circle d-flex align-items-center justify-content-center fw-bold" style="width: 45px; height: 45px; background-color: <?= $avatar_bg ?>; color: <?= $avatar_color ?>;">
+                                                <?= $initial ?>
+                                            </div>
+                                            <div class="mobile-violation-content flex-grow-1">
+                                                <div class="d-flex justify-content-between align-items-start mb-1">
+                                                    <div class="fw-bold text-dark text-break pe-2"><?= htmlspecialchars($violation['nama'] ?? 'Penghuni Kamar') ?></div>
+                                                    <div class="text-muted text-xs text-end flex-shrink-0"><?= $time_ago ?></div>
+                                                </div>
+                                                <div class="mobile-violation-title fw-medium text-danger mb-2">
+                                                    <?= htmlspecialchars($violation['nama_pelanggaran'] ?? '') ?>
+                                                </div>
+                                                <div class="d-flex flex-wrap gap-3 text-muted small">
+                                                    <span><i class="fas fa-home"></i> Km. <?= htmlspecialchars($violation['kamar'] ?? '') ?></span>
+                                                    <span><i class="fas fa-user-edit"></i> <?= htmlspecialchars($violation['pencatat'] ?? 'N/A') ?></span>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    <?php endwhile; ?>
                                 </div>
-                                <div class="violation-count"><?= $violator['total'] ?></div>
-                            </div>
-                        <?php endwhile; ?>
-                    <?php else: ?>
-                        <div class="empty-state"><i class="fas fa-info-circle"></i><p>Tidak ada data pelanggar</p></div>
-                    <?php endif; ?>
+                            <?php else: ?>
+                                <div class="text-center py-4 text-muted border rounded bg-light">
+                                    <i class="fas fa-check-circle text-success fs-1 mb-2"></i>
+                                    <p class="mb-0">Alhamdulillah, tidak ada pelanggaran baru-baru ini.</p>
+                                </div>
+                            <?php endif; ?>
+                        </div>
+                    </div>
                 </div>
-                <div class="student-list-card">
-                    <div class="list-header">
-                        <h3 class="list-title"><i class="fas fa-medal" style="color: var(--success)"></i> Daftar Santri Teladan</h3>
-                        <?php if ($can_view_rekap_santri): // Izin: rekap_view_santri ?>
-                            <a href="rekap/santri-teladan.php" class="view-all-link">Lihat semua <i class="fas fa-chevron-right"></i></a>
-                        <?php endif; ?>
+            </div>
+
+            <div class="col-xl-4 col-lg-5">
+                <!-- Sorotan Santri -->
+                <div class="card-premium h-100">
+                    <div class="card-header-premium">
+                        <h2 class="card-title"><i class="fas fa-star text-warning"></i> Sorotan Santri</h2>
                     </div>
-                    <?php if(mysqli_num_rows($best_students) > 0): ?>
-                        <?php while($student = mysqli_fetch_assoc($best_students)): ?>
-                            <div class="student-item">
-                                <div class="student-avatar best-students"><?= htmlspecialchars(substr($student['nama'], 0, 1)) ?></div>
-                                <div class="student-info">
-                                    <div class="student-name"><?= htmlspecialchars($student['nama']) ?></div>
-                                    <div class="student-details">
-                                        <span><i class="fas fa-home"></i> Kamar <?= htmlspecialchars($student['kamar']) ?></span>
-                                        <span><i class="fas fa-graduation-cap"></i> <?= htmlspecialchars($student['kelas']) ?></span>
-                                    </div>
+                    <div class="card-body p-3">
+                        <ul class="nav nav-pills custom-student-tabs w-100 mb-3" id="studentTabs" role="tablist">
+                            <li class="nav-item" role="presentation">
+                                <button class="nav-link active w-100" id="violators-tab" data-bs-toggle="tab" data-bs-target="#violators-panel" type="button" role="tab">
+                                    <i class="fas fa-exclamation-triangle"></i> Top Pelanggar
+                                </button>
+                            </li>
+                            <li class="nav-item" role="presentation">
+                                <button class="nav-link w-100" id="teladan-tab" data-bs-toggle="tab" data-bs-target="#teladan-panel" type="button" role="tab">
+                                    <i class="fas fa-medal"></i> Santri Teladan
+                                </button>
+                            </li>
+                        </ul>
+
+                        <div class="tab-content" id="studentTabsContent">
+                            <div class="tab-pane fade show active" id="violators-panel" role="tabpanel">
+                                <?php if ($can_view_rekap_santri): ?>
+                                    <div class="text-end mb-3"><a href="rekap/santri-pelanggar.php" class="text-primary text-decoration-none small fw-medium">Lihat semua <i class="fas fa-arrow-right"></i></a></div>
+                                <?php endif; ?>
+                                
+                                <div class="student-list d-flex flex-column gap-3">
+                                    <?php if(mysqli_num_rows($top_violators) > 0): ?>
+                                        <?php while($violator = mysqli_fetch_assoc($top_violators)): ?>
+                                            <div class="student-item d-flex align-items-center p-2 border rounded bg-light">
+                                                <div class="student-avatar top-violators rounded-circle text-white bg-danger d-flex align-items-center justify-content-center me-3 fw-bold" style="width: 45px; height: 45px;">
+                                                    <?= htmlspecialchars(substr($violator['nama'], 0, 1)) ?>
+                                                </div>
+                                                <div class="flex-grow-1">
+                                                    <div class="fw-bold text-dark"><?= htmlspecialchars($violator['nama']) ?></div>
+                                                    <div class="text-muted small"><span><i class="fas fa-home"></i> Km. <?= htmlspecialchars($violator['kamar']) ?></span></div>
+                                                </div>
+                                                <div class="violation-count badge bg-danger text-white rounded-pill px-3 py-2 fs-6">
+                                                    <?= $violator['total'] ?>
+                                                </div>
+                                            </div>
+                                        <?php endwhile; ?>
+                                    <?php else: ?>
+                                        <div class="text-center text-muted py-4"><i class="fas fa-info-circle fs-2 mb-2"></i><p>Tidak ada data pelanggar</p></div>
+                                    <?php endif; ?>
                                 </div>
-                                <div class="violation-count zero"><i class="fas fa-check"></i></div>
                             </div>
-                        <?php endwhile; ?>
-                    <?php else: ?>
-                        <div class="empty-state"><i class="fas fa-info-circle"></i><p>Belum ada santri tanpa pelanggaran</p></div>
-                    <?php endif; ?>
+                            
+                            <div class="tab-pane fade" id="teladan-panel" role="tabpanel">
+                                <?php if ($can_view_rekap_santri): ?>
+                                    <div class="text-end mb-3"><a href="rekap/santri-teladan.php" class="text-primary text-decoration-none small fw-medium">Lihat semua <i class="fas fa-arrow-right"></i></a></div>
+                                <?php endif; ?>
+                                
+                                <div class="student-list d-flex flex-column gap-3">
+                                    <?php if(mysqli_num_rows($best_students) > 0): ?>
+                                        <?php while($student = mysqli_fetch_assoc($best_students)): ?>
+                                            <div class="student-item d-flex align-items-center p-2 border rounded bg-light">
+                                                <div class="student-avatar best-students rounded-circle text-white bg-success d-flex align-items-center justify-content-center me-3 fw-bold" style="width: 45px; height: 45px;">
+                                                    <?= htmlspecialchars(substr($student['nama'], 0, 1)) ?>
+                                                </div>
+                                                <div class="flex-grow-1">
+                                                    <div class="fw-bold text-dark"><?= htmlspecialchars($student['nama']) ?></div>
+                                                    <div class="text-muted small">
+                                                        <span class="me-2"><i class="fas fa-home"></i> Km. <?= htmlspecialchars($student['kamar']) ?></span>
+                                                        <span><i class="fas fa-graduation-cap"></i> <?= htmlspecialchars($student['kelas']) ?></span>
+                                                    </div>
+                                                </div>
+                                                <div class="violation-count zero text-success fs-5"><i class="fas fa-check-circle"></i></div>
+                                            </div>
+                                        <?php endwhile; ?>
+                                    <?php else: ?>
+                                        <div class="text-center text-muted py-4"><i class="fas fa-info-circle fs-2 mb-2"></i><p>Belum ada santri tanpa pelanggaran</p></div>
+                                    <?php endif; ?>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
                 </div>
             </div>
         </div>
@@ -391,5 +409,3 @@ $teladan_onclick = !$can_view_rekap_santri ? 'onclick="event.preventDefault(); r
         return $string ? implode(', ', $string) . ' yang lalu' : 'baru saja';
     }
     ?>
-</body>
-</html>
