@@ -70,7 +70,7 @@ $logo_version = file_exists($logo_server_path)
     <!-- Konten Utama (Kanan) -->
     <main class="main-content">
         <!-- Header yang nempel di atas -->
-        <header class="header sticky-top mb-4 shadow-sm rounded">
+        <header class="header sticky-lg-top mb-4 shadow-sm rounded">
             <nav class="navbar h-100">
                 <div class="container-fluid d-flex align-items-center justify-content-between">
                     <!-- Kiri: Burger (Mobile) & Logo (Semua Tampilan) -->

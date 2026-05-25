@@ -525,6 +525,18 @@ a {
     border-color: transparent;
 }
 
+.stat-card .additional-info {
+    font-size: 0.75rem;
+    color: var(--text-secondary);
+    margin-top: 0.75rem;
+    border-top: 1px dashed var(--border-color);
+    padding-top: 0.5rem;
+    display: flex;
+    align-items: center;
+    gap: 0.25rem;
+    word-break: break-word;
+}
+
 .stat-icon {
     width: 50px;
     height: 50px;
@@ -846,6 +858,38 @@ a {
     gap: 1.5rem;
 }
 
+/* Custom student switcher tabs for mobile */
+.custom-student-tabs {
+    background: #e2e8f0;
+    padding: 0.25rem;
+    border-radius: 0.75rem;
+    display: flex;
+    border: none;
+}
+
+.custom-student-tabs .nav-item {
+    flex: 1;
+}
+
+.custom-student-tabs .nav-link {
+    width: 100%;
+    text-align: center;
+    border-radius: 0.5rem;
+    padding: 0.5rem 1rem;
+    color: var(--text-secondary);
+    font-weight: 500;
+    font-size: 0.875rem;
+    transition: all 0.2s ease;
+    border: none;
+    background: none;
+}
+
+.custom-student-tabs .nav-link.active {
+    background: white !important;
+    color: var(--primary) !important;
+    box-shadow: var(--shadow-sm);
+}
+
 .student-list-card {
     background: white;
     border-radius: 1rem;
@@ -978,9 +1022,26 @@ a {
     border: 1px solid var(--border-color);
 }
 
+.filter-form label {
+    display: block;
+    margin-bottom: 0.5rem;
+    font-weight: 600;
+    font-size: 0.85rem;
+    color: var(--text-primary);
+}
+
+.filter-form input[type="date"] {
+    width: 100%;
+    display: block;
+}
+
 .filter-form div {
     flex: 1;
     min-width: 200px;
+}
+
+.filter-form-submit {
+    align-self: flex-end;
 }
 
 .filter-form button {
@@ -1003,8 +1064,8 @@ a {
 /* Responsive Adjustments */
 @media (max-width: 768px) {
     .main-content .container {
-        padding-left: 0;
-        padding-right: 0;
+        padding-left: 0.75rem;
+        padding-right: 0.75rem;
     }
 
     .dashboard-header {
@@ -1085,6 +1146,11 @@ a {
     }
 
     .filter-form button {
+        width: 100%;
+    }
+
+    .filter-form-submit {
+        align-self: stretch;
         width: 100%;
     }
 }
@@ -1355,25 +1421,48 @@ a {
     transform: scale(0.85);
 }
 
-/* --- 2. Floating Action Button (FAB) --- */
-.fab-btn {
+/* --- 2. Floating Action Button (FAB & Speed Dial) --- */
+.fab-container {
     position: fixed;
     bottom: 80px;
     right: 20px;
+    z-index: 1029;
+    display: none; /* Hidden by default (desktop) */
+    flex-direction: column;
+    align-items: flex-end;
+}
+
+.fab-btn {
     width: 56px;
     height: 56px;
     border-radius: 50%;
     background: linear-gradient(135deg, var(--primary) 0%, var(--primary-hover) 100%);
     color: white !important;
-    display: none; /* Hidden by default (desktop) */
+    display: flex;
     align-items: center;
     justify-content: center;
     font-size: 1.5rem;
     box-shadow: 0 4px 14px rgba(79, 70, 229, 0.3);
-    z-index: 1029;
     border: none;
     text-decoration: none;
     transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+    cursor: pointer;
+}
+
+.fab-btn.single-fab {
+    position: fixed;
+    bottom: 80px;
+    right: 20px;
+    z-index: 1029;
+    display: none;
+}
+
+.fab-btn i {
+    transition: transform 0.3s ease;
+}
+
+.fab-btn.active i {
+    transform: rotate(45deg);
 }
 
 .fab-btn:active {
@@ -1381,12 +1470,68 @@ a {
     box-shadow: 0 2px 6px rgba(79, 70, 229, 0.2);
 }
 
+.fab-menu {
+    position: absolute;
+    bottom: 70px;
+    right: 0;
+    display: flex;
+    flex-direction: column;
+    align-items: flex-end;
+    gap: 12px;
+    opacity: 0;
+    visibility: hidden;
+    transform: translateY(20px);
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    pointer-events: none;
+}
+
+.fab-menu.active {
+    opacity: 1;
+    visibility: visible;
+    transform: translateY(0);
+    pointer-events: auto;
+}
+
+.fab-item {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    text-decoration: none;
+    color: var(--text-primary);
+    transition: transform 0.2s ease;
+}
+
+.fab-item:active {
+    transform: scale(0.95);
+}
+
+.fab-label {
+    background: white;
+    padding: 6px 12px;
+    border-radius: 8px;
+    font-size: 0.85rem;
+    font-weight: 500;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+    white-space: nowrap;
+}
+
+.fab-icon {
+    width: 45px;
+    height: 45px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.1rem;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.15);
+}
+
 /* Show bottom nav & FAB only on mobile/tablet viewports */
 @media (max-width: 991.98px) {
     .bottom-nav {
         display: flex;
     }
-    .fab-btn {
+    .fab-container, .fab-btn.single-fab {
         display: flex;
     }
     /* Add padding to body/main-content so content doesn't get covered by bottom nav */

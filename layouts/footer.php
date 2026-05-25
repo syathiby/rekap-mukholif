@@ -8,8 +8,12 @@ $req_path = '/' . ltrim($req_path, '/');
 
 // Cek izin untuk menu bottom nav
 $can_input_violation = false;
+$can_input_reward = false;
 $violation_url = BASE_URL . '/pelanggaran';
+$reward_url = BASE_URL . '/reward/input/create.php';
+
 if (function_exists('has_permission')) {
+    $can_input_reward = has_permission('reward_input');
     $can_input_violation = has_permission([
         'pelanggaran_bahasa_input', 
         'pelanggaran_diniyyah_input', 
@@ -87,9 +91,32 @@ if (function_exists('has_permission')) {
 </nav>
 
 <!-- --- Floating Action Button (Mobile Only) --- -->
-<?php if ($can_input_violation): ?>
-    <a href="<?= $violation_url ?>" class="fab-btn" title="Catat Pelanggaran">
+<?php if ($can_input_violation && $can_input_reward): ?>
+    <!-- Speed Dial (Keduanya) -->
+    <div class="fab-container">
+        <button class="fab-btn" id="fabToggle" title="Tambah Data">
+            <i class="fas fa-plus"></i>
+        </button>
+        <div class="fab-menu" id="fabMenu">
+            <a href="<?= $reward_url ?>" class="fab-item" title="Tambah Reward">
+                <span class="fab-label">Reward</span>
+                <div class="fab-icon bg-success text-white"><i class="fas fa-trophy"></i></div>
+            </a>
+            <a href="<?= $violation_url ?>" class="fab-item" title="Catat Pelanggaran">
+                <span class="fab-label">Pelanggaran</span>
+                <div class="fab-icon bg-danger text-white"><i class="fas fa-exclamation-triangle"></i></div>
+            </a>
+        </div>
+    </div>
+<?php elseif ($can_input_violation): ?>
+    <!-- Hanya Pelanggaran -->
+    <a href="<?= $violation_url ?>" class="fab-btn single-fab" title="Catat Pelanggaran">
         <i class="fas fa-plus"></i>
+    </a>
+<?php elseif ($can_input_reward): ?>
+    <!-- Hanya Reward -->
+    <a href="<?= $reward_url ?>" class="fab-btn single-fab" title="Tambah Reward" style="background: linear-gradient(135deg, var(--success) 0%, #047857 100%);">
+        <i class="fas fa-trophy"></i>
     </a>
 <?php endif; ?>
 
@@ -99,27 +126,6 @@ if (function_exists('has_permission')) {
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 
 <script>
-    // --- SPA DOMContentLoaded & Load Event Shim ---
-    (function() {
-        const originalAddEventListener = document.addEventListener;
-        document.addEventListener = function(type, listener, options) {
-            if (type === 'DOMContentLoaded' && document.readyState !== 'loading') {
-                setTimeout(listener, 1);
-            } else {
-                originalAddEventListener.call(document, type, listener, options);
-            }
-        };
-
-        const originalWindowAddEventListener = window.addEventListener;
-        window.addEventListener = function(type, listener, options) {
-            if ((type === 'DOMContentLoaded' || type === 'load') && document.readyState === 'complete') {
-                setTimeout(listener, 1);
-            } else {
-                originalWindowAddEventListener.call(window, type, listener, options);
-            }
-        };
-    })();
-
     function updateLiveTime() {
         const timeEl = document.getElementById('live-time');
         if (timeEl) {
@@ -132,224 +138,25 @@ if (function_exists('has_permission')) {
         updateLiveTime();
     }
 
-    // --- PJAX SPA ROUTER & LOADER ENGINE ---
-    $(document).ready(function() {
-        // Dynamically insert progress bar if not exists
-        if (!$('#pjax-progress-bar').length) {
-            $('body').append('<div id="pjax-progress-bar"></div>');
-        }
-
-        // Track loaded external script URLs to prevent duplicate loads
-        const loadedScriptUrls = new Set();
-        $('script[src]').each(function() {
-            try {
-                const absUrl = new URL(this.src, window.location.href).href;
-                loadedScriptUrls.add(absUrl);
-            } catch (e) {}
+    // FAB Speed Dial Toggle Logic
+    const fabToggle = document.getElementById('fabToggle');
+    const fabMenu = document.getElementById('fabMenu');
+    
+    if (fabToggle && fabMenu) {
+        fabToggle.addEventListener('click', function(e) {
+            e.stopPropagation();
+            fabMenu.classList.toggle('active');
+            fabToggle.classList.toggle('active');
         });
 
-        // Helper to check if script is a core library to prevent reloading it
-        function isCoreLibrary(src) {
-            if (!src) return false;
-            src = src.toLowerCase();
-            if (src.includes('jquery') && !src.includes('jquery-ui') && !src.includes('jquery.ui')) {
-                return true;
+        // Close menu when clicking outside
+        document.addEventListener('click', function(e) {
+            if (fabMenu.classList.contains('active') && !fabMenu.contains(e.target) && e.target !== fabToggle) {
+                fabMenu.classList.remove('active');
+                fabToggle.classList.remove('active');
             }
-            if (src.includes('bootstrap') || src.includes('select2') || src.includes('chart.js')) {
-                return true;
-            }
-            return false;
-        }
-
-        // Intercept clicks on links
-        $(document).on('click', 'a', function(e) {
-            const href = $(this).attr('href');
-            if (!href) return;
-
-            // Skip hash, javascript, external links, downloads, and target="_blank"
-            if (href.startsWith('#') || 
-                href.startsWith('javascript:') || 
-                href.startsWith('mailto:') || 
-                href.startsWith('tel:') || 
-                $(this).attr('target') === '_blank' || 
-                $(this).hasClass('no-pjax') || 
-                $(this).closest('.no-pjax').length > 0) {
-                return;
-            }
-
-            try {
-                const url = new URL(this.href, window.location.origin);
-                if (url.origin !== window.location.origin) return;
-
-                const path = url.pathname;
-                if (path.endsWith('.pdf') || path.endsWith('.zip') || path.endsWith('.xlsx') || path.indexOf('download.php') !== -1 || path.indexOf('logout.php') !== -1) {
-                    return;
-                }
-            } catch (err) {
-                return;
-            }
-
-            e.preventDefault();
-            loadPage(this.href);
         });
-
-        // Handle back/forward navigation
-        window.addEventListener('popstate', function() {
-            loadPage(window.location.href, false);
-        });
-
-        function loadPage(url, push = true) {
-            const bar = $('#pjax-progress-bar');
-            bar.addClass('loading').css('width', '10%');
-
-            let width = 10;
-            const progressInterval = setInterval(function() {
-                if (width < 90) {
-                    width += (90 - width) * 0.15;
-                    bar.css('width', width + '%');
-                }
-            }, 150);
-
-            // Fade out current main content slightly to hide swap and signal loading
-            $('main.main-content').animate({ opacity: 0.3 }, 150);
-
-            $.ajax({
-                url: url,
-                method: 'GET',
-                success: function(response) {
-                    clearInterval(progressInterval);
-                    bar.css('width', '100%');
-
-                    const parser = new DOMParser();
-                    const doc = parser.parseFromString(response, 'text/html');
-
-                    const newMain = doc.querySelector('main.main-content');
-                    if (!newMain) {
-                        window.location.href = url;
-                        return;
-                    }
-
-                    // Update Title
-                    const newTitle = doc.querySelector('title') ? doc.querySelector('title').innerText : '';
-                    if (newTitle) {
-                        document.title = newTitle;
-                    }
-
-                    // Swap Content (remains faded at 0.3 opacity)
-                    $('main.main-content').html(newMain.innerHTML);
-
-                    // Update active nav links
-                    const newNav = doc.querySelector('.bottom-nav');
-                    if (newNav) {
-                        $('.bottom-nav').html(newNav.innerHTML);
-                    }
-                    const newSidebar = doc.querySelector('.sidebar');
-                    if (newSidebar) {
-                        $('.sidebar').html(newSidebar.innerHTML);
-                    }
-                    const newOffcanvasBody = doc.querySelector('#sidebarOffcanvas .offcanvas-body');
-                    if (newOffcanvasBody) {
-                        $('#sidebarOffcanvas .offcanvas-body').html(newOffcanvasBody.innerHTML);
-                    }
-
-                    // Update FAB button dynamically
-                    const newFab = doc.querySelector('.fab-btn');
-                    $('.fab-btn').remove();
-                    if (newFab) {
-                        $('body').append(newFab.outerHTML);
-                    }
-
-                    if (push) {
-                        window.history.pushState(null, newTitle, url);
-                    }
-
-                    window.scrollTo(0, 0);
-
-                    // Hide Offcanvas if open
-                    const offcanvasEl = document.getElementById('sidebarOffcanvas');
-                    if (offcanvasEl) {
-                        const bsOffcanvas = bootstrap.Offcanvas.getInstance(offcanvasEl);
-                        if (bsOffcanvas) {
-                            bsOffcanvas.hide();
-                        }
-                    }
-
-                    // Extract and execute script tags sequentially to prevent race conditions
-                    const scripts = Array.from(doc.querySelectorAll('script'));
-                    let scriptIndex = 0;
-                    
-                    function executeNextScript() {
-                        if (scriptIndex >= scripts.length) {
-                            // Reinitialize components after all scripts have loaded
-                            if (document.getElementById('live-time')) {
-                                updateLiveTime();
-                            }
-                            // Fade the content back in smoothly now that all elements/scripts are initialized
-                            $('main.main-content').animate({ opacity: 1 }, 200);
-                            return;
-                        }
-                        
-                        const script = scripts[scriptIndex++];
-                        const src = script.getAttribute('src');
-                        
-                        if (isCoreLibrary(src)) {
-                            executeNextScript();
-                            return;
-                        }
-                        
-                        if (src) {
-                            try {
-                                const absUrl = new URL(src, window.location.href).href;
-                                if (loadedScriptUrls.has(absUrl)) {
-                                    executeNextScript();
-                                    return;
-                                }
-                                loadedScriptUrls.add(absUrl);
-                                
-                                const newScript = document.createElement('script');
-                                newScript.src = absUrl;
-                                newScript.onload = function() {
-                                    executeNextScript();
-                                };
-                                newScript.onerror = function() {
-                                    executeNextScript();
-                                };
-                                document.body.appendChild(newScript);
-                            } catch (e) {
-                                executeNextScript();
-                            }
-                        } else {
-                            // Skip the PJAX engine script itself to prevent infinite listener accumulation and lag
-                            if (script.textContent.includes('PJAX SPA ROUTER') || script.textContent.includes('SPA DOMContentLoaded')) {
-                                executeNextScript();
-                                return;
-                            }
-                            
-                            // Inline script
-                            const newScript = document.createElement('script');
-                            newScript.textContent = script.textContent;
-                            document.body.appendChild(newScript);
-                            newScript.remove();
-                            executeNextScript();
-                        }
-                    }
-                    
-                    executeNextScript();
-                },
-                error: function() {
-                    clearInterval(progressInterval);
-                    bar.css('width', '100%');
-                    window.location.href = url;
-                },
-                complete: function() {
-                    setTimeout(function() {
-                        bar.removeClass('loading').css('width', '0%');
-                    }, 250);
-                }
-            });
-        }
-    });
+    }
 </script>
-
 </body>
 </html>
