@@ -229,7 +229,6 @@ mysqli_stmt_close($stmt_count);
         overflow-y: auto;
     }
     
-    /* Perbaikan layout tombol bulk */
     .card-action-bulk {
         padding: 1rem;
         background-color: var(--bg-card);
@@ -244,29 +243,6 @@ mysqli_stmt_close($stmt_count);
             display: grid;
             grid-template-columns: 1fr auto;
             gap: 0.5rem;
-        }
-    }
-    
-    /* === CSS TAMBAHAN UNTUK STACKING TOMBOL DI HP === */
-    @media (max-width: 767px) { /* Target 'md' breakpoint */
-        .card-action-bulk > div {
-            /* Container utama: justify-between */
-            flex-direction: column;
-            align-items: stretch !important;
-            gap: 1rem;
-        }
-        .card-action-bulk .d-flex.gap-2 {
-            /* Grup 1 (Tambah) & Grup 2 (Edit/Hapus) */
-            flex-direction: column;
-            align-items: stretch !important;
-            width: 100%;
-        }
-        .card-action-bulk .btn-group {
-            /* Grup khusus Edit/Hapus */
-            display: flex;
-        }
-        .card-action-bulk .btn-group .btn {
-            flex-grow: 1; /* Biar tombol Edit/Hapus sama rata */
         }
     }
 </style>
@@ -311,40 +287,33 @@ mysqli_stmt_close($stmt_count);
 
     <form method="POST" action="" id="bulkDeleteForm">
         <div class="card shadow-sm mb-3 card-action-bulk">
-            <div class="d-flex flex-wrap justify-content-between align-items-center gap-2">
-                
-                <div class="d-flex flex-wrap gap-2">
+            <div class="row g-2 align-items-center">
+                <!-- Group Kiri: Tambah & Bulk Input -->
+                <div class="col-12 col-md-auto d-flex gap-2 flex-grow-1">
                     <?php if ($can_create): ?>
-                        <a href="create.php" class="btn btn-success">
-                            <i class="fas fa-user-plus me-1"></i> 
-                            <span>Tambah Santri</span>
+                        <a href="create.php" class="btn btn-success flex-grow-1 flex-md-grow-0 fw-medium">
+                            <i class="fas fa-user-plus me-1"></i> Tambah Santri
                         </a>
-                        <a href="bulk-create.php" class="btn btn-info">
-                            <i class="fas fa-file-import me-1"></i> 
-                            <span>Bulk Input</span>
+                        <a href="bulk-create.php" class="btn btn-info text-white flex-grow-1 flex-md-grow-0 fw-medium">
+                            <i class="fas fa-file-import me-1"></i> Bulk Input
                         </a>
                     <?php endif; ?>
                 </div>
 
-                <div class="d-flex flex-wrap justify-content-end align-items-center gap-2">
-                    <div class="btn-group" role="group">
-                        <?php if ($can_edit): ?>
-                            <a href="bulk-edit.php" class="btn btn-warning" id="bulkEditBtn">
-                                <i class="fas fa-pen-to-square me-1"></i> 
-                                <span>Bulk Edit</span>
-                            </a>
-                        <?php endif; ?>
-                        <?php if ($can_delete): ?>
-                            <button type="submit" class="btn btn-danger" id="bulkDeleteBtn" disabled form="bulkDeleteForm">
-                                <i class="fas fa-user-minus me-1"></i> 
-                                <span>Hapus Terpilih</span>
-                            </button>
-                        <?php endif; ?>
-                    </div>
-                    <div id="selected-count-info" class="d-none">
-                        </div>
+                <!-- Group Kanan: Bulk Edit & Hapus -->
+                <div class="col-12 col-md-auto d-flex gap-2 justify-content-md-end align-items-center">
+                    <div id="selected-count-info" class="d-none me-2"></div>
+                    <?php if ($can_edit): ?>
+                        <a href="bulk-edit.php" class="btn btn-warning flex-grow-1 flex-md-grow-0 fw-medium text-dark" id="bulkEditBtn">
+                            <i class="fas fa-pen-to-square me-1"></i> Bulk Edit
+                        </a>
+                    <?php endif; ?>
+                    <?php if ($can_delete): ?>
+                        <button type="submit" class="btn btn-danger flex-grow-1 flex-md-grow-0 fw-medium" id="bulkDeleteBtn" disabled form="bulkDeleteForm">
+                            <i class="fas fa-user-minus me-1"></i> Hapus Terpilih
+                        </button>
+                    <?php endif; ?>
                 </div>
-
             </div>
         </div>
 

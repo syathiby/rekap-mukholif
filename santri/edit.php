@@ -1,4 +1,4 @@
-﻿<?php
+<?php
 // BAGIAN 1: LOGIKA RUANG MESIN (SEBELUM ADA TAMPILAN APAPUN)
 if (session_status() === PHP_SESSION_NONE) { session_start(); }
 require_once __DIR__ . '/../bootstrap/init.php';
@@ -90,94 +90,85 @@ if (!$row) {
 // KARENA SUDAH DIPINDAH KE ATAS
 ?>
 
-<!DOCTYPE html>
-<html lang="id">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Edit Data Santri | Pesantren</title>
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    <style>
-        :root {
-            --primary-color: #3498db;
-            --secondary-color: #2c3e50;
-            --warning-color: #f39c12;
-        }
-        body { background-color: #f8f9fa; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; }
-        .edit-container { max-width: 600px; margin: 2rem auto; background-color: white; border-radius: 10px; box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1); overflow: hidden; }
-        .edit-header { background: linear-gradient(135deg, var(--secondary-color), var(--warning-color)); color: white; padding: 1.5rem; margin-bottom: 1.5rem; }
-        .edit-body { padding: 0 2rem 2rem; }
-        .form-label { font-weight: 500; color: var(--secondary-color); }
-        .form-control { border-radius: 5px; padding: 10px 15px; border: 1px solid #ddd; transition: all 0.3s; }
-        .form-control:focus { border-color: var(--warning-color); box-shadow: 0 0 0 0.25rem rgba(243, 156, 18, 0.25); }
-        .btn-update { background-color: var(--warning-color); border-color: var(--warning-color); color: white; padding: 10px 25px; font-weight: 500; transition: all 0.3s; }
-        .btn-update:hover { background-color: #e67e22; transform: translateY(-2px); box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1); }
-        .input-icon { position: relative; }
-        .input-icon i { position: absolute; left: 15px; top: 50%; transform: translateY(-50%); color: var(--warning-color); }
-        .input-icon input { padding-left: 40px; }
-        /* Sembunyikan panah di input number */
-        input[type=number]::-webkit-inner-spin-button, 
-        input[type=number]::-webkit-outer-spin-button { 
-            -webkit-appearance: none; margin: 0; 
-        }
-        input[type=number] { -moz-appearance: textfield; }
-    </style>
-</head>
-<body>
-    <div class="edit-container">
-        <div class="edit-header text-center">
-            <h2><i class="fas fa-user-edit me-2"></i>Edit Data Santri</h2>
-            <p class="mb-0">ID Santri: <?= $id ?></p>
-        </div>
-        
-        <div class="edit-body">
-            <?php if (isset($_SESSION['operation_result']) && !$_SESSION['operation_result']['success']): ?>
-                <div class="alert alert-danger alert-dismissible fade show">
-                    <?= htmlspecialchars($_SESSION['operation_result']['message']) ?>
-                    <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+<div class="container-fluid py-4">
+    <div class="row justify-content-center">
+        <div class="col-12 col-md-8 col-lg-6">
+            <div class="card shadow-sm border-0" style="border-radius: 1rem;">
+                <div class="card-header bg-white border-bottom p-4" style="border-radius: 1rem 1rem 0 0;">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <div class="d-flex align-items-center">
+                            <div class="bg-warning bg-opacity-10 text-warning rounded-circle d-flex align-items-center justify-content-center me-3" style="width: 48px; height: 48px;">
+                                <i class="fas fa-user-edit fs-5"></i>
+                            </div>
+                            <div>
+                                <h5 class="mb-1 fw-bold text-dark">Edit Data Santri</h5>
+                                <p class="mb-0 text-muted small">Perbarui informasi santri ini.</p>
+                            </div>
+                        </div>
+                        <span class="badge bg-light text-secondary border">ID: <?= $id ?></span>
+                    </div>
                 </div>
-                <?php unset($_SESSION['operation_result']); ?>
-            <?php endif; ?>
+                
+                <div class="card-body p-4 p-md-5">
+                    <?php if (isset($_SESSION['operation_result']) && !$_SESSION['operation_result']['success']): ?>
+                        <div class="alert alert-danger d-flex align-items-center mb-4" style="border-radius: 0.75rem; border: none; background: #fee2e2; color: #991b1b; font-weight: 500;">
+                            <i class="fas fa-exclamation-circle me-2"></i>
+                            <div>
+                                <?= htmlspecialchars($_SESSION['operation_result']['message']) ?>
+                            </div>
+                            <button type="button" class="btn-close ms-auto" data-bs-dismiss="alert" aria-label="Close"></button>
+                        </div>
+                        <?php unset($_SESSION['operation_result']); ?>
+                    <?php endif; ?>
 
-            <form method="post" id="editForm">
-                <div class="mb-4 input-icon">
-                    <label for="nama" class="form-label">Nama Lengkap</label>
-                    <i class="fas fa-user"></i>
-                    <input type="text" id="nama" name="nama" class="form-control" 
-                           value="<?= htmlspecialchars($row['nama']) ?>" required>
+                    <form method="post" id="editForm">
+                        <div class="mb-4">
+                            <label for="nama" class="form-label fw-medium text-secondary">Nama Lengkap</label>
+                            <div class="input-group-modern">
+                                <i class="fas fa-user"></i>
+                                <input type="text" id="nama" name="nama" class="form-control input-modern" 
+                                       value="<?= htmlspecialchars($row['nama']) ?>" required>
+                            </div>
+                        </div>
+                        
+                        <div class="mb-4">
+                            <label for="kelas" class="form-label fw-medium text-secondary">Kelas</label>
+                            <div class="input-group-modern">
+                                <i class="fas fa-graduation-cap"></i>
+                                <input type="number" id="kelas" name="kelas" class="form-control input-modern" 
+                                       value="<?= htmlspecialchars($row['kelas']) ?>" required min="1">
+                            </div>
+                            <div class="form-text small text-muted mt-2">Cukup masukkan angkanya saja (misal: 7, 8, 9).</div>
+                        </div>
+                        
+                        <div class="mb-4">
+                            <label for="kamar" class="form-label fw-medium text-secondary">Nomor Kamar</label>
+                            <div class="input-group-modern">
+                                <i class="fas fa-door-open"></i>
+                                <input type="number" id="kamar" name="kamar" class="form-control input-modern" 
+                                       value="<?= htmlspecialchars($row['kamar']) ?>" required min="1">
+                            </div>
+                            <div class="form-text small text-muted mt-2">Boleh diisi 1 digit (6) atau 2 digit (06).</div>
+                        </div>
+                        
+                        <hr class="my-4 border-light">
+
+                        <div class="d-flex justify-content-between gap-2">
+                            <a href="index.php" class="btn btn-light fw-medium px-4">
+                                <i class="fas fa-arrow-left me-2"></i>Kembali
+                            </a>
+                            <button type="submit" class="btn btn-warning text-dark fw-medium px-4">
+                                <i class="fas fa-save me-2"></i>Simpan Perubahan
+                            </button>
+                        </div>
+                    </form>
                 </div>
-                
-                <div class="mb-4 input-icon">
-                    <label for="kelas" class="form-label">Kelas</label>
-                    <i class="fas fa-graduation-cap"></i>
-                    <!-- PERUBAHAN DI SINI -->
-                    <input type="number" id="kelas" name="kelas" class="form-control" 
-                           value="<?= htmlspecialchars($row['kelas']) ?>" required min="1">
-                    <div class="form-text">Cukup masukkan angkanya saja (misal: 7, 8, 9).</div>
-                </div>
-                
-                <div class="mb-4 input-icon">
-                    <label for="kamar" class="form-label">Nomor Kamar</label>
-                    <i class="fas fa-door-open"></i>
-                    <!-- DAN DI SINI -->
-                    <input type="number" id="kamar" name="kamar" class="form-control" 
-                           value="<?= htmlspecialchars($row['kamar']) ?>" required min="1">
-                    <div class="form-text">Boleh diisi 1 digit (6) atau 2 digit (06).</div>
-                </div>
-                
-                <div class="d-flex justify-content-between pt-3">
-                    <a href="index.php" class="btn btn-secondary">
-                        <i class="fas fa-arrow-left me-2"></i>Kembali
-                    </a>
-                    <button type="submit" class="btn btn-update">
-                        <i class="fas fa-save me-2"></i>Simpan Perubahan
-                    </button>
-                </div>
-            </form>
+            </div>
         </div>
     </div>
-    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
-</body>
-</html>
-<?php ob_end_flush(); ?>
+</div>
+
+<?php 
+require_once __DIR__ . '/../layouts/footer.php'; 
+ob_end_flush(); 
+?>

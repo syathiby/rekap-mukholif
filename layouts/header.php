@@ -1,34 +1,106 @@
 <?php
-// AMBIL VERSI LOGO OTOMATIS (CACHE BUSTING)
-// Path ini harus nunjuk ke file di server, BUKAN URL.
-// Kita asumsi /assets/img/logo.png ada di folder assets/img/
-// Kalau project lu di subfolder (misal: htdocs/aplikasi-santri), ganti path-nya jadi:
-// $logo_server_path = $_SERVER['DOCUMENT_ROOT'] . '/aplikasi-santri/assets/img/logo.png';
-$logo_server_path = $_SERVER['DOCUMENT_ROOT'] . '/assets/img/logo.png';
-$logo_version = file_exists($logo_server_path)
-    ? filemtime($logo_server_path)
-    : '1'; // Fallback jika file tidak ditemukan
+// ─── CACHE BUSTING UNTUK ASET GAMBAR ───────────────────────────────
+$_img_base = $_SERVER['DOCUMENT_ROOT'];
+// Coba path dengan subfolder dulu, fallback ke root
+$_favicon_path = file_exists($_img_base . '/rekap-mukholif/assets/img/logo_favicon.png')
+    ? $_img_base . '/rekap-mukholif/assets/img/logo_favicon.png'
+    : $_img_base . '/assets/img/logo_favicon.png';
+$_appicon_path = file_exists($_img_base . '/rekap-mukholif/assets/img/logo_aplikasi.png')
+    ? $_img_base . '/rekap-mukholif/assets/img/logo_aplikasi.png'
+    : $_img_base . '/assets/img/logo_aplikasi.png';
+
+$favicon_v  = file_exists($_favicon_path) ? filemtime($_favicon_path) : '1';
+$appicon_v  = file_exists($_appicon_path) ? filemtime($_appicon_path) : '1';
+$style_v    = time(); // selalu fresh
 ?>
 <!DOCTYPE html>
 <html lang="id">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <!-- viewport-fit=cover penting untuk iPhone X+ (notch & safe area) -->
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
     <title>AsuhTrack</title>
-    
-    <!-- Aset & Font -->
-    <!-- REVISI: Path favicon jadi dinamis + otomatis cache bust -->
-    <link rel="icon" type="image/png" sizes="64x64" href="<?= BASE_URL ?>/assets/img/logo.png?v=<?= $logo_version ?>">
+
+    <!-- ═══════════════════════════════════════════════════
+         PWA — MANIFEST
+    ═══════════════════════════════════════════════════ -->
+    <link rel="manifest" href="<?= BASE_URL ?>/manifest.json">
+
+    <!-- ═══════════════════════════════════════════════════
+         PWA — FAVICON (logo_favicon.png)
+    ═══════════════════════════════════════════════════ -->
+    <link rel="icon" type="image/png" sizes="16x16"  href="<?= BASE_URL ?>/assets/img/logo_favicon.png?v=<?= $favicon_v ?>">
+    <link rel="icon" type="image/png" sizes="32x32"  href="<?= BASE_URL ?>/assets/img/logo_favicon.png?v=<?= $favicon_v ?>">
+    <link rel="icon" type="image/png" sizes="48x48"  href="<?= BASE_URL ?>/assets/img/logo_favicon.png?v=<?= $favicon_v ?>">
+    <link rel="icon" type="image/png" sizes="96x96"  href="<?= BASE_URL ?>/assets/img/logo_favicon.png?v=<?= $favicon_v ?>">
+    <link rel="shortcut icon" type="image/png"       href="<?= BASE_URL ?>/assets/img/logo_favicon.png?v=<?= $favicon_v ?>">
+
+    <!-- ═══════════════════════════════════════════════════
+         PWA — APPLE / iOS (logo_aplikasi.png sebagai home screen icon)
+         Wajib untuk iOS Safari agar icon bagus saat "Add to Home Screen"
+    ═══════════════════════════════════════════════════ -->
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="apple-mobile-web-app-title" content="AsuhTrack">
+    <link rel="apple-touch-icon"              href="<?= BASE_URL ?>/assets/img/logo_aplikasi.png?v=<?= $appicon_v ?>">
+    <link rel="apple-touch-icon" sizes="120x120" href="<?= BASE_URL ?>/assets/img/logo_aplikasi.png?v=<?= $appicon_v ?>">
+    <link rel="apple-touch-icon" sizes="152x152" href="<?= BASE_URL ?>/assets/img/logo_aplikasi.png?v=<?= $appicon_v ?>">
+    <link rel="apple-touch-icon" sizes="167x167" href="<?= BASE_URL ?>/assets/img/logo_aplikasi.png?v=<?= $appicon_v ?>">
+    <link rel="apple-touch-icon" sizes="180x180" href="<?= BASE_URL ?>/assets/img/logo_aplikasi.png?v=<?= $appicon_v ?>">
+
+    <!-- ═══════════════════════════════════════════════════
+         PWA — THEME & GENERAL META
+    ═══════════════════════════════════════════════════ -->
+    <meta name="theme-color" content="#16a34a">
+    <meta name="msapplication-TileColor" content="#16a34a">
+    <meta name="msapplication-TileImage" content="<?= BASE_URL ?>/assets/img/logo_aplikasi.png?v=<?= $appicon_v ?>">
+    <meta name="msapplication-config" content="none">
+    <meta name="mobile-web-app-capable" content="yes">
+    <meta name="application-name" content="AsuhTrack">
+    <meta name="description" content="Sistem informasi kepengasuhan santri — catat pelanggaran, reward, dan rekap secara digital.">
+
+    <!-- ═══════════════════════════════════════════════════
+         ASET & FONT
+    ═══════════════════════════════════════════════════ -->
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css">
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700&display=swap" rel="stylesheet">
-    <link href="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/css/select2.min.css" rel="stylesheet" />
-    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/select2-bootstrap-5-theme@1.3.0/dist/select2-bootstrap-5-theme.min.css" />
-    
-    <!-- Custom Style (Centralized) -->
-    <link rel="stylesheet" href="<?= BASE_URL ?>/assets/css/style.css?v=<?= time() ?>">
+    <link href="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/css/select2.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/select2-bootstrap-5-theme@1.3.0/dist/select2-bootstrap-5-theme.min.css">
+
+    <!-- Custom Style -->
+    <link rel="stylesheet" href="<?= BASE_URL ?>/assets/css/style.css?v=<?= $style_v ?>">
+
+    <!-- ═══════════════════════════════════════════════════
+         PWA — SERVICE WORKER REGISTRATION
+         Ditempatkan di <head> agar SW terdaftar secepat mungkin
+    ═══════════════════════════════════════════════════ -->
+    <script>
+    if ('serviceWorker' in navigator) {
+        window.addEventListener('load', function() {
+            navigator.serviceWorker
+                .register('<?= BASE_URL ?>/sw.js', { scope: '<?= BASE_URL ?>/' })
+                .then(function(reg) {
+                    // SW berhasil terdaftar — cek update
+                    reg.addEventListener('updatefound', function() {
+                        var newWorker = reg.installing;
+                        newWorker.addEventListener('statechange', function() {
+                            if (newWorker.state === 'installed' && navigator.serviceWorker.controller) {
+                                // Versi baru tersedia — refresh otomatis
+                                newWorker.postMessage({ type: 'SKIP_WAITING' });
+                                window.location.reload();
+                            }
+                        });
+                    });
+                })
+                .catch(function(err) {
+                    console.warn('[PWA] Service Worker gagal terdaftar:', err);
+                });
+        });
+    }
+    </script>
 </head>
 <body>
     <style>
@@ -94,20 +166,14 @@ $logo_version = file_exists($logo_server_path)
         <header class="header sticky-top bg-white mb-4" style="border-bottom: 1px solid var(--border-color); z-index: 1020;">
             <nav class="navbar h-100 px-lg-4 px-3 py-2">
                 <div class="container-fluid d-flex align-items-center justify-content-between p-0">
-                    <!-- Kiri: Burger (Mobile) & Page Title (Desktop) -->
+                    <!-- Kiri: Burger (Mobile) & Page Title (Mobile & Desktop) -->
                     <div class="d-flex align-items-center">
                         <button class="btn btn-light d-lg-none me-3" type="button" onclick="openSidebarMobile()">
                             <i class="fas fa-bars"></i>
                         </button>
                         
-                        <!-- Logo Mobile Only -->
-                        <div class="d-flex align-items-center d-lg-none">
-                            <img src="<?= BASE_URL ?>/assets/img/logo.png?v=<?= $logo_version ?>" alt="Logo" class="header-logo me-2">
-                            <span class="fw-bold app-name align-middle text-dark">AsuhTrack</span>
-                        </div>
-
-                        <!-- Title Desktop Only -->
-                        <div class="d-none d-lg-flex flex-column">
+                        <!-- Title -->
+                        <div class="d-flex flex-column">
                             <h5 class="mb-0 fw-bold text-dark" style="font-size: 1.15rem;">
                                 <?php 
                                 $page_title = 'Dashboard';
@@ -124,7 +190,7 @@ $logo_version = file_exists($logo_server_path)
                                 echo $page_title;
                                 ?>
                             </h5>
-                            <span class="text-muted" style="font-size: 0.8rem;">Sistem Informasi Kepengasuhan Santri</span>
+                            <span class="text-muted d-none d-sm-block" style="font-size: 0.8rem;">Sistem Informasi Kepengasuhan Santri</span>
                         </div>
                     </div>
                     
