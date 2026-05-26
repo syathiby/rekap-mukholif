@@ -1,194 +1,174 @@
-================================================================================
-STRUKTUR FOLDER & BERKAS AKTIF
-APLIKASI ASUGHTRACK (REKAP PELANGGARAN & REWARD SANTRI)
-================================================================================
-Dokumentasi struktur folder terstruktur setelah refaktorisasi. Semua file 
-konfigurasi, inisialisasi, layout, dan aset telah dipindahkan ke folder khusus 
-agar manajemen kode lebih rapi, modular, dan aman.
-================================================================================
+DOKUMENTASI STRUKTUR FOLDER DAN FILE APLIKASI
+======================================================
+Dokumen ini adalah panduan lengkap untuk memahami apa saja isi dari setiap folder dan file pada aplikasi AsuhTrack / Rekap Mukholif ini. 
+Sangat cocok dipelajari oleh developer penerus atau yang mengembangkan aplikasi ini menggunakan bantuan AI.
 
-/rekap-mukholif/                        (Direktori Utama Project)
-│
-├── .env                                - Konfigurasi environment (DB, credentials)
-├── .gitignore                          - Daftar file/folder yang diabaikan Git
-├── README.md                           - Dokumentasi instalasi dan panduan awal
-├── composer.json                       - Dependensi PHP (Dotenv, FPDF, dll.)
-├── composer.lock                       - Kunci versi dependensi
-├── index.php                           - Dashboard utama & Halaman Ringkasan (Lobi Utama)
-├── login.php                           - Halaman Autentikasi Pengguna
-├── logout.php                          - Logika Keluar Sistem
-├── struktur.txt                        - File dokumentasi ini (file ini)
-│
-├── config/                             (Folder Konfigurasi Global)
-│   ├── app.php                         - Konfigurasi Base URL dinamis & nama aplikasi
-│   ├── database.php                    - Inisialisasi koneksi database MySQL & memuat `.env`
-│   └── auth.php                        - Logika Autentikasi (guard, has_permission, logout)
-│
-├── bootstrap/                          (Folder Inisialisasi & Core Logic)
-│   ├── init.php                        - Bootstrapping: session, timezone, autoloader, config
-│   ├── helpers.php                     - Fungsi pembantu global (format tanggal, alert flash)
-│   └── access_denied.php               - Halaman tampilan jika akses ditolak (HTTP 403)
-│
-├── layouts/                            (Folder Tampilan / Layout Bersama)
-│   ├── header.php                      - Struktur atas halaman, menu mobile offcanvas, & CSS
-│   ├── footer.php                      - Struktur bawah halaman & script JS bootstrap/select2
-│   └── sidebar.php                     - Menu navigasi samping dinamis berbasis hak akses
-│
-├── assets/                             (Folder Aset Statis)
-│   ├── css/
-│   │   └── style.css                   - Stylesheet utama aplikasi (custom design)
-│   └── img/
-│       ├── logo.png                    - Logo utama aplikasi AsuhTrack
-│       └── Kop Syathiby.jpg            - Kop surat resmi untuk PDF Rapot
-│
-├── arsip/                              (Modul Pengarsipan Pelanggaran Periode Lalu)
-│   ├── index.php                       - Halaman utama daftar arsip
-│   ├── create.php                      - Form pembuatan arsip baru
-│   ├── view.php                        - Tampilan detail data arsip
-│   ├── process.php                     - Logika pemrosesan arsip
-│   ├── arsip_kebersihan.php            - Data arsip kebersihan
-│   ├── arsip_pelanggaran.php           - Data arsip pelanggaran umum
-│   ├── arsip_santri.php                - Data arsip profil santri
-│   ├── detail-kamar.php                - Detail arsip kamar
-│   ├── detail-pelanggaran.php          - Detail arsip pelanggaran
-│   ├── export_arsip.php                - Form ekspor arsip
-│   └── process_export_arsip.php        - Logika penulisan file ekspor arsip
-│
-├── eksekusi/                           (Modul Sanksi Kebersihan)
-│   ├── index.php                       - Halaman pemantauan & input sanksi kebersihan
-│   └── process.php                     - Logika penyelesaian sanksi kebersihan
-│
-├── export/                             (Modul Ekspor Data Aktif)
-│   ├── index.php                       - Menu pilihan ekspor data ke Excel
-│   └── process-export.php              - Logika pembuatan file Excel (PhpSpreadsheet)
-│
-├── jenis-pelanggaran/                  (Modul CRUD Kategori & Poin Pelanggaran)
-│   ├── index.php                       - Daftar jenis pelanggaran & poin
-│   ├── create.php                      - Tambah jenis pelanggaran
-│   ├── edit.php                        - Ubah data pelanggaran
-│   ├── delete.php                      - Hapus kategori pelanggaran
-│   ├── bulk-edit.php                   - Edit poin massal per divisi
-│   └── process.php                     - Logika pemrosesan CRUD
-│
-├── pelanggaran/                        (Modul Pencatatan Pelanggaran per Bidang)
-│   ├── index.php                       - Menu utama/portal input pelanggaran
-│   ├── bahasa/                         - Divisi Bahasa (Input, detail, rekap, search)
-│   │   ├── create.php
-│   │   ├── detail-bahasa.php
-│   │   ├── process.php
-│   │   ├── rekap.php
-│   │   └── search_santri.php
-│   ├── diniyyah/                       - Divisi Diniyyah (ibadah/akademik)
-│   │   ├── create.php
-│   │   ├── detail-diniyyah.php
-│   │   ├── process.php
-│   │   ├── rekap.php
-│   │   └── search_santri.php
-│   ├── kesantrian/                     - Divisi Kesantrian (ketertiban umum)
-│   │   ├── create.php
-│   │   ├── detail-kesantrian.php
-│   │   ├── process.php
-│   │   ├── rekap.php
-│   │   └── search_santri.php
-│   ├── pengabdian/                     - Divisi Pengabdian (khidmah santri)
-│   │   ├── create.php
-│   │   ├── process.php
-│   │   └── search_santri.php
-│   └── tahfidz/                        - Divisi Tahfidz Al-Qur'an
-│       ├── create.php
-│       ├── detail-tahfidz.php
-│       ├── process.php
-│       ├── rekap.php
-│       └── search_santri.php
-│
-├── pengaturan/                         (Modul Konfigurasi Sistem & Manajemen User)
-│   ├── index.php                       - Dashboard menu pengaturan
-│   ├── history/                        - Riwayat aktivitas log sistem
-│   │   ├── index.php
-│   │   ├── history_view.php
-│   │   └── process.php
-│   ├── izin/                           - Hak akses (Permission Matrix)
-│   │   ├── index.php
-│   │   └── process.php
-│   ├── periode-aktif/                  - Pengaturan batas periode aktif database
-│   │   ├── index.php
-│   │   └── process.php
-│   ├── reset-poin/                     - Pengosongan poin santri berkala
-│   │   ├── index.php
-│   │   └── process.php
-│   └── users/                          - CRUD Akun Pengguna / Ustadz
-│       ├── index.php
-│       ├── form-user.php
-│       ├── delete-user.php
-│       └── process-user.php
-│
-├── rapot/                              (Modul Cetak Laporan Perkembangan Santri)
-│   ├── index.php                       - Daftar pencetakan rapot
-│   ├── create.php                      - Form pembuatan rapot baru
-│   ├── delete.php                      - Hapus rapot
-│   ├── bulk_delete.php                 - Hapus rapot massal
-│   ├── bulk_processor.php              - Pembuat rapot otomatis massal
-│   ├── process.php                     - Logika penyimpanan rapot
-│   ├── view.php                        - Pratinjau rapot di web
-│   ├── helper.php                      - Logika kalkulasi nilai/peringkat
-│   ├── generate_catatan.php            - Auto-generator saran kepengasuhan
-│   ├── generate_pdf.php                - Pembuatan file PDF rapot (FPDF)
-│   ├── generate_png.php                - Rendering gambar rapot untuk share WA
-│   ├── get_pelanggaran_santri.php      - Fetch data pelanggaran via AJAX
-│   ├── get_reward_santri.php           - Fetch data reward via AJAX
-│   └── template_rapot.php              - Desain struktur layout cetak
-│
-├── rekap/                              (Modul Analisis Data & Statistik Visual)
-│   ├── index.php                       - Menu utama statistik
-│   ├── chart.php                       - Grafik tren pelanggaran (Chart.js)
-│   ├── umum.php                        - Rekapitulasi pelanggaran umum
-│   ├── tren-pelanggaran.php            - Laporan perkembangan harian
-│   ├── per-kamar.php                   - Statistik pelanggaran berbasis asrama
-│   ├── detail-kamar.php                - Detail pelanggaran kamar tertentu
-│   ├── detail-pelanggaran.php          - Rincian jenis pelanggaran tertentu
-│   ├── detail.php                      - Detail lengkap riwayat santri
-│   ├── santri-pelanggar.php            - Daftar mukholif dengan poin terbanyak
-│   ├── santri-teladan.php              - Daftar santri berprestasi (poin bersih)
-│   └── get_harian_data.php             - JSON Endpoint untuk data grafik
-│
-├── reward/                             (Modul Manajemen Penghargaan & Prestasi)
-│   ├── index.php                       - Portal menu reward
-│   ├── history/                        - Riwayat penerimaan reward santri
-│   │   └── index.php
-│   ├── input/                          - Input penerima prestasi
-│   │   ├── create.php
-│   │   ├── edit.php
-│   │   ├── delete.php
-│   │   ├── process.php
-│   │   └── search_santri.php
-│   └── jenis/                          - CRUD daftar reward resmi & poin plus
-│       ├── index.php
-│       ├── create.php
-│       ├── edit.php
-│       ├── delete.php
-│       ├── bulk-edit.php
-│       ├── bulk-delete.php
-│       └── process.php
-│
-└── santri/                             (Modul Manajemen Profil Santri)
-    ├── index.php                       - Database induk & daftar seluruh santri
-    ├── create.php                      - Form tambah santri
-    ├── edit.php                        - Form ubah profil santri
-    ├── delete.php                      - Hapus data santri
-    ├── bulk-create.php                 - Import data santri dari file Excel/CSV
-    ├── bulk-edit.php                   - Kenaikan kelas atau mutasi massal
-    ├── bulk-delete.php                 - Penghapusan massal
-    └── search.php                      - Autocomplete endpoint santri
-
-================================================================================
-DOKUMENTASI KONEKSI & STRUKTUR ALIRAN HALAMAN
-================================================================================
-1. Setiap halaman logic memanggil `/bootstrap/init.php` sebagai entry-point.
-2. `init.php` memanggil `/config/app.php` (BASE_URL), `/config/database.php` ($conn),
-   `/config/auth.php` (guard(), has_permission()), dan `/bootstrap/helpers.php`.
-3. Hak Akses (Permissions) didefinisikan dalam database pada tabel `permissions`
-   dan diperiksa menggunakan fungsi `guard('nama_izin')` atau `has_permission()`.
-4. Semua aset web diakses via BASE_URL:
-   - CSS: `<?= BASE_URL ?>/assets/css/style.css`
-   - Logo: `<?= BASE_URL ?>/assets/img/logo.png`
-================================================================================
+C:\laragon\www\rekap-mukholif
++--- arsip                             => [FOLDER] Fitur untuk mengelola dan melihat data lama (arsip) yang sudah lewat periodenya.
+|   +--- arsip_kebersihan.php          => Halaman untuk melihat data arsip khusus pelanggaran kebersihan.
+|   +--- arsip_pelanggaran.php         => Halaman untuk melihat data arsip pelanggaran umum.
+|   +--- arsip_santri.php              => Halaman untuk melihat data arsip santri secara umum.
+|   +--- create.php                    => Script (logika) untuk membuat atau memasukkan data ke dalam tabel arsip.
+|   +--- detail-kamar.php              => Melihat rincian riwayat arsip per kamar.
+|   +--- detail_keterlambatan.php      => Melihat riwayat data keterlambatan santri dari periode-periode lalu.
+|   +--- export_arsip.php              => Fitur untuk mengunduh/export data arsip menjadi file Excel.
+|   +--- index.php                     => Halaman utama (dashboard) untuk masuk ke berbagai menu arsip.
+|   +--- process.php                   => File yang memproses aksi (simpan, ubah, hapus) yang terjadi di dalam fitur arsip.
+|   +--- process_export_arsip.php      => Script di balik layar yang bekerja menyusun sel-sel data jadi file Excel untuk arsip.
+|   \--- view.php                      => Halaman untuk menampilkan rincian dari satu data arsip spesifik.
++--- assets                            => [FOLDER] Tempat menyimpan file pendukung tampilan (UI/UX) website.
+|   +--- css                           => [FOLDER] Khusus untuk file penata gaya halaman web (Style).
+|   |   \--- style.css                 => File CSS utama yang mengatur warna, ukuran, animasi, dan posisi tombol di layar.
+|   +--- img                           => [FOLDER] Khusus untuk menyimpan gambar statis yang dipakai di website.
+|   |   +--- Kop Syathiby.jpg          => Gambar kop surat lembaga, biasa dipakai untuk dokumen cetak/PDF/Excel.
+|   |   +--- logo_aplikasi.png         => Gambar logo besar utama untuk aplikasi web ini.
+|   |   \--- logo_favicon.png          => Logo ikon kecil yang muncul di tab atas browser.
+|   \--- Thumbs.db                     => (Abaikan saja) File sisa bawaan Windows yang menyimpan cache thumbnail gambar.
++--- bootstrap                         => [FOLDER] Folder "Starter". Berisi file-file krusial yang dipanggil pertama kali sebelum aplikasi jalan.
+|   +--- access_denied.php             => Halaman "Stop! Akses Ditolak" yang muncul jika user tidak punya wewenang membuka suatu halaman.
+|   +--- helpers.php                   => Kumpulan fungsi bantuan (alat serbaguna) kecil yang bisa dipanggil di mana saja (misal: fungsi pengubah tanggal, rupiah).
+|   \--- init.php                      => File inisialisasi utama (Penyala Mesin). File ini dipanggil setiap kali membuka halaman apa pun, tugasnya menghubungkan ke database dan mengecek keamanan/session.
++--- config                            => [FOLDER] Tempat berkumpulnya file pengaturan sistem dasar.
+|   +--- app.php                       => Pengaturan variabel aplikasi secara umum (seperti nama web, zona waktu).
+|   +--- auth.php                      => Aturan dan logika pengaturan login serta keamanan user.
+|   \--- database.php                  => "Kunci Gembok" Koneksi ke database MySQL. Kalau mau ganti username/password database, ubah di sini.
++--- eksekusi                          => [FOLDER] Modul khusus mengurus tindak lanjut/hukuman/eksekusi bagi santri yang melanggar.
+|   +--- index.php                     => Halaman depan untuk daftar eksekusi tindakan kedisiplinan.
+|   \--- process.php                   => Script tak terlihat yang memproses ubah status hukuman santri di database.
++--- export                            => [FOLDER] Mesin pencetak laporan (Exporting System) ke format Excel.
+|   +--- index.php                     => Tampilan antarmuka untuk memilih filter tanggal/kamar sebelum menekan tombol unduh Excel.
+|   +--- process-export.php            => Otak utama yang menarik data dari database, lalu memformatnya jadi file Excel siap unduh.
+|   \--- template-export.php           => Kelas khusus pengatur kecantikan Excel (warna kop, huruf tebal, tabel, warna sel). *Jangan ubah logika file ini kalau tidak terpaksa, agar gaya desain Excel tetap terjaga*.
++--- jenis-pelanggaran                 => [FOLDER] Manajemen "Katalog" atau "Daftar Harga Poin" jenis-jenis pelanggaran pesantren.
+|   +--- bulk-edit.php                 => Tampilan fitur untuk mengubah banyak data pelanggaran dalam satu klik (Bulk).
+|   +--- create.php                    => Form untuk menambahkan jenis pelanggaran baru (misal: "Telat Ngaji", Poin: 5).
+|   +--- delete.php                    => Tombol logika untuk menghapus jenis pelanggaran tertentu.
+|   +--- edit.php                      => Form untuk merevisi nama atau mengubah besaran poin pelanggaran.
+|   +--- index.php                     => Halaman tabel daftar lengkap semua jenis pelanggaran.
+|   \--- process.php                   => Otak yang memproses klik Simpan/Hapus dari halaman-halaman di folder ini.
++--- layouts                           => [FOLDER] Potongan-potongan (Snippet) kerangka HTML/Desain agar tampilan seragam dan gampang di-update.
+|   +--- footer.php                    => Potongan bagian paling bawah website (copyright, pemanggilan script javascript).
+|   +--- header.php                    => Potongan bagian paling atas website (judul browser, file CSS, meta tag).
+|   \--- sidebar.php                   => Potongan menu navigasi samping kiri yang diklik user untuk pindah halaman.
++--- pelanggaran                       => [FOLDER] Modul Inti: Pencatatan pelanggaran per individu santri. Dipisah jadi sub-folder agar rapi.
+|   +--- bahasa                        => [FOLDER] Input untuk pelanggaran wilayah kebahasaan (Kosa kata, dll).
+|   |   +--- create.php                => Form input santri melanggar aturan bahasa.
+|   |   +--- detail-bahasa.php         => Melihat detail riwayat pelanggaran bahasanya.
+|   |   +--- process.php               => Logika simpannya ke database server.
+|   |   +--- rekap.php                 => Tampilan tabel rekapitulasi untuk bagian bahasa.
+|   |   \--- search_santri.php         => Logika cari (search) nama santri secara live.
+|   +--- diniyyah                      => [FOLDER] Input untuk pelanggaran area ibadah/diniyyah (Sholat, ngaji, dll).
+|   |   +--- create.php                => Form input.
+|   |   +--- detail-diniyyah.php       => Halaman detail khusus bagian diniyyah.
+|   |   +--- process.php               => Proses ke database.
+|   |   +--- rekap.php                 => Tabel rekap diniyyah.
+|   |   \--- search_santri.php         => Logika search santri live.
+|   +--- kesantrian                    => [FOLDER] Input untuk pelanggaran umum asrama dan kedisiplinan hidup.
+|   |   +--- create.php                => Form input.
+|   |   +--- detail-kesantrian.php     => Halaman detail riwayat asrama.
+|   |   +--- process.php               => Proses data asrama.
+|   |   +--- rekap.php                 => Tabel rekap data kedisiplinan.
+|   |   \--- search_santri.php         => Live search nama santrinya.
+|   +--- pengabdian                    => [FOLDER] Pelanggaran khusus untuk para ust/santri kelas pengabdian.
+|   |   +--- create.php                => Form input.
+|   |   +--- process.php               => Proses ke database.
+|   |   \--- search_santri.php         => Live search.
+|   +--- tahfidz                       => [FOLDER] Input untuk masalah capaian hafalan Al-Qur'an (Tahfidz).
+|   |   +--- create.php                => Form input.
+|   |   +--- detail-tahfidz.php        => Halaman detail riwayat tahfidz.
+|   |   +--- process.php               => Proses input data tahfidz.
+|   |   +--- rekap.php                 => Tampilan rekap bagian tahfidz.
+|   |   \--- search_santri.php         => Live search santri tahfidz.
+|   \--- index.php                     => Halaman dashboard/menu depan dari keseluruhan modul pelanggaran (Akses cepat).
++--- pengaturan                        => [FOLDER] Menu Khusus Admin/Super Administrator untuk "Setting" isi daleman sistem.
+|   +--- history                       => [FOLDER] Log aktivitas. Mencatat siapa saja yang ngedit/hapus/nambah data apa.
+|   |   +--- history_view.php          => Halaman buat memantau semua jejak digital user.
+|   |   +--- index.php                 => Tampilan tabel dasar riwayat.
+|   |   \--- process.php               => Skrip untuk membersihkan/mengelola data riwayat tersebut.
+|   +--- izin                          => [FOLDER] Role-Based Access Control (RBAC). Ngatur akses: Misal ustadz tahfidz gabisa buka menu kesantrian.
+|   |   +--- index.php                 => Tabel centang-centang buat mengatur menu mana aja yang bisa dibuka peran (role) tertentu.
+|   |   \--- process.php               => Proses nyimpen centangan itu ke database.
+|   +--- periode-aktif                 => [FOLDER] Sangat penting! Mengatur tahun ajaran / semester apa yang sedang berjalan sekarang.
+|   |   +--- index.php                 => Tampilan form ubah periode.
+|   |   \--- process.php               => Skrip untuk menggeser periode, yang mana efeknya mem-filter poin santri hanya yang di periode ini.
+|   +--- reset-poin                    => [FOLDER] Fitur dewa (hanya untuk kondisi darurat atau hadiah khusus) meng-nol-kan poin pelanggaran seseorang.
+|   |   +--- index.php                 => Form ketik nama yang mau direset poinnya.
+|   |   +--- process.php               => Skrip pemotong poin di database.
+|   |   \--- search_santri.php         => Cari santri.
+|   +--- users                         => [FOLDER] Mengelola akun-akun orang yang bisa masuk ke aplikasi (Ustadz, Musyrif, Admin).
+|   |   +--- delete-user.php           => Skrip blokir/hapus akun.
+|   |   +--- form-user.php             => Form registrasi / edit password akun staf.
+|   |   +--- index.php                 => Tabel daftar semua admin yang ada di sistem.
+|   |   \--- process-user.php          => Proses simpan data akun tersebut ke server dengan password di-enkripsi (di-hash).
+|   \--- index.php                     => Pintu masuk ke menu Pengaturan.
++--- rapot                             => [FOLDER] Fitur keren: Sistem Cetak Lembar Rapor Evaluasi Akhir Santri secara dinamis (Cetak PDF / Gambar / Kertas).
+|   +--- bulk_delete.php               => Skrip hapus ribuan dokumen rapor sekaligus biar server ga penuh.
+|   +--- bulk_processor.php            => Generator massal. Bisa nyuruh sistem bikin ratusan rapor otomatis buat se-asrama.
+|   +--- create.php                    => Tombol untuk bikin satu file rapor baru untuk santri spesifik.
+|   +--- delete.php                    => Hapus 1 rapor santri.
+|   +--- generate_catatan.php          => Algoritma cerdas yang bikin teks "Catatan Wali Asrama" otomatis (Pujian/Nasihat) merujuk pada poin si anak.
+|   +--- generate_pdf.php              => Converter yang mengambil data dari web dan melukisnya menjadi file PDF rapi.
+|   +--- generate_png.php              => Fitur praktis pengubah lembar rapor jadi format Foto (.PNG) supaya mudah di-share ke WhatsApp orangtua.
+|   +--- get_pelanggaran_santri.php    => File penyedot data: Ngambil list pelanggaran sang anak buat disisipkan di kolom rapor.
+|   +--- get_reward_santri.php         => File penyedot data: Ngambil deretan prestasi membanggakan sang anak untuk mejeng di rapor.
+|   +--- helper.php                    => Berisi kode rumus matematika perhitungan/konversi nilai yang dipakai khusus di modul rapor.
+|   +--- index.php                     => Halaman tabel manajemen daftar rapor yang sudah pernah dicetak.
+|   +--- process.php                   => Pusat kendali simpan dan cetak data ke database rapor.
+|   +--- template_rapot.php            => Desain Layout (Kop, Tata letak, Tanda tangan). Ini adalah 'Kanvas' kerangka Rapornya.
+|   \--- view.php                      => Halaman pratinjau (Preview) untuk mengintip rapor sebelum ditekan cetak.
++--- rekap                             => [FOLDER] Modul Laporan & Dashboard Analitik Bergrafik (Data Visualization). Sangat berguna buat Rapat Pimpinan!
+|   +--- chart.php                     => Modul yang menyajikan diagram batang/pie tentang kondisi pesantren terkini.
+|   +--- detail-kamar.php              => Lihat "Kamar Paling Bandel" vs "Kamar Paling Taat". Rekap poin di-kalkulasi per kamar.
+|   +--- detail_keterlambatan.php      => Analisis spesifik tentang kebiasaan lambat santri di berbagai kegiatan.
+|   +--- detail_pelanggaran.php        => List detil catatan per baris kasus semua jenis.
+|   +--- detail_umum.php               => Rekap keseluruhan dalam bentuk ringkasan list.
+|   +--- get_harian_data.php           => API tersembunyi yang ngirim data perhari buat animasi grafik (Chart.js / AJAX).
+|   +--- index.php                     => Beranda / Ruang Kendali Laporan Analitik.
+|   +--- kebersihan.php                => Analisa nilai dan poin pelanggaran piket/kebersihan per kamar.
+|   +--- keterlambatan.php             => Peringkat klasemen santri dengan hobi terlambat terbanyak.
+|   +--- pelanggaran_umum.php          => Kalkulasi semua bidang pelanggaran.
+|   +--- santri-teladan.php            => Menyoroti santri-santri yang paling minim / nol pelanggaran sebagai bentuk kebanggaan.
+|   +--- tren-pelanggaran.php          => Melacak pergerakan grafik (Apakah bulan ini kasus hp naik? Kasus bahasa turun?).
+|   \--- umum.php                      => Tampilan tabel-tabel konklusif ringkas.
++--- reward                            => [FOLDER] Modul sebaliknya dari pelanggaran, yaitu "Poin Plus" atau Hadiah Prestasi.
+|   +--- history                       => [FOLDER] Tempat meninjau masa lalu pencatatan prestasi.
+|   |   \--- index.php                 => Tabel yang menampikan "Si A dapet poin tambahan kapan dan karena apa".
+|   +--- input                         => [FOLDER] Tempat mencatat kebaikan santri.
+|   |   +--- create.php                => Form input (Misal: "Fulan menyetor 5 juz" -> +50 Poin).
+|   |   +--- delete.php                => Skrip pembatalan poin plus.
+|   |   +--- edit.php                  => Skrip revisi keterangan.
+|   |   +--- process.php               => Logika nambahin poin secara server.
+|   |   \--- search_santri.php         => Cari nama santri berprestasi dengan cepat.
+|   +--- jenis                         => [FOLDER] Manajemen "Katalog Penghargaan".
+|   |   +--- bulk-delete.php           => Hapus masal.
+|   |   +--- bulk-edit.php             => Ubah poin masal.
+|   |   +--- create.php                => Daftar baru: "Menang lomba tahfidz nasional", Poin plus: 150.
+|   |   +--- delete.php                => Hapus jenis katalog.
+|   |   +--- edit.php                  => Revisi judul katalog.
+|   |   +--- index.php                 => Halaman tabel semua kategori apresiasi / poin plus yang ada.
+|   |   \--- process.php               => Otak di balik layar pengatur katalog ini.
+|   \--- index.php                     => Beranda utama buat fitur Apresiasi Poin Positif.
++--- santri                            => [FOLDER] Master Data (Pusat Basis Data). Tempat mengatur data identitas semua santri yang menetap.
+|   +--- bulk-create.php               => Alat bantu untuk nambah santri baru secara rombongan (Biar nggak pegel ngetik satu-satu).
+|   +--- bulk-delete.php               => Hapus data santri beramai-ramai (Biasanya waktu kelulusan angkatan).
+|   +--- bulk-edit.php                 => Fitur "Naik Kelas" masal atau ganti asrama masal.
+|   +--- create.php                    => Form tambah satu santri baru pindahan atau santri telat masuk.
+|   +--- delete.php                    => Keluarkan 1 santri dari sistem.
+|   +--- edit.php                      => Ubah kelas, asrama, atau ejaan nama yang salah.
+|   +--- index.php                     => Pangkalan utama melihat tabel 1000+ data santri lengkap dengan sistem Paginasi.
+|   \--- search.php                    => Mesin pencari instan (Live Search via Javascript/AJAX) tanpa reload halaman.
++--- .env                              => (PENTING) File "Top Secret". Isinya variabel rahasia seperti Password Database, alamat URL website asli. JANGAN PERNAH di-upload ke internet/Github terbuka!
++--- .gitignore                        => Petunjuk buat aplikasi "Git": file apa aja yang dilarang disinkronisasi ke server (Misalnya file password .env atau file sisa-sisa Windows).
++--- composer.json                     => Daftar keranjang belanja berisi komponen "Library PHP" tambahan dari pihak luar (seperti library PHPSpreadsheet pembuat Excel).
++--- composer.lock                     => Catatan "Kuitansi Belanja" yang mengunci versi persis setiap aplikasi pihak luar biar web kita tidak gampang error kalo ada library yang update tiba-tiba.
++--- composer.phar                     => Program kecil portable buat menginstall daftar belanja composer.json tanpa pusing install dari internet langsung.
++--- create_log_kebersihan.php         => Skrip khusus operasional di balik layar (Mungkin dipakai cron job) untuk mencatat skor evaluasi piket mingguan.
++--- describe.php                      => Skrip khusus developer buat membedah isi kolom database (debugging). Bisa dihapus jika web sudah benar-benar dirilis komersil.
++--- index.php                         => "Pintu Gerbang Utama". Cek tiket (Session). Kalau sudah login disuruh masuk dashboard, kalau belum ya dilempar ke login.php.
++--- login.php                         => Halaman selamat datang / pengisian Username & Password.
++--- logout.php                        => Skrip penghapus identitas user di browser (Session Destroy) agar orang lain di komputer yang sama tidak bisa baca datanya.
++--- manifest.json                     => File identitas supaya website ini bisa "di-install" menjadi aplikasi di Home Screen HP Android/iPhone layaknya aplikasi asli. (Progressive Web App).
++--- offline.php                       => Halaman "Dinosaurus" / Peringatan tidak ada internet yang akan otomatis nongol di HP user jika mereka pakai aplikasi ini saat HP sedang Airplane Mode.
++--- README.md                         => File teks perkenalan buat developer. Isinya langkah instalasi kalau ada programmer baru bergabung mengembangkan ini via Github.
++--- struktur.txt                      => Ya, ini adalah file kamus panduan yang sedang Anda baca sekarang!
+\--- sw.js                             => Service Worker. Trik gaib javascript berjalan di belakang layar. Fungsinya men-cache/menyimpan halaman web di memori HP agar saat dibuka lagi rasanya lebih ngebut.
