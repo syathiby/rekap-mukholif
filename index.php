@@ -125,7 +125,7 @@ $best_students = mysqli_query($conn, "
 
 // Izin Sesuai Arahan Baru:
 $can_view_pel_terkini = has_permission('rekap_view_statistik'); // Tombol "Lihat semua" Pelanggaran Terkini
-$can_view_rekap_santri = has_permission('rekap_view_santri');   // Tombol "Lihat semua" Top Pelanggar & Santri Teladan
+$can_view_rekap_santri = has_permission('rekap_keterlambatan');   // Tombol "Lihat semua" Top Pelanggar & Santri Teladan
 
 // Card 1: Total Santri
 $can_view_santri = has_permission('santri_view');
@@ -145,8 +145,8 @@ $chart_href = $can_view_chart ? 'href="rekap/chart.php"' : 'href="#"';
 $chart_style = !$can_view_chart ? 'style="cursor: not-allowed; opacity: 0.7;"' : '';
 $chart_onclick = !$can_view_chart ? 'onclick="event.preventDefault(); return false;"' : '';
 
-// Card 4: Santri Teladan (Izin: rekap_view_santri)
-$teladan_href = $can_view_rekap_santri ? 'href="rekap/santri-teladan.php"' : 'href="#"';
+// Card 4: Santri Teladan (Izin: rekap_keterlambatan)
+$teladan_href = $can_view_rekap_santri ? 'href="rekap/santri_teladan.php"' : 'href="#"';
 $teladan_style = !$can_view_rekap_santri ? 'style="cursor: not-allowed; opacity: 0.7;"' : '';
 $teladan_onclick = !$can_view_rekap_santri ? 'onclick="event.preventDefault(); return false;"' : '';
 
@@ -252,7 +252,7 @@ $teladan_onclick = !$can_view_rekap_santri ? 'onclick="event.preventDefault(); r
                         <div class="text-muted small mt-2 d-flex justify-content-between align-items-center">
                             <span>Tanpa catatan kasus</span>
                             <?php if ($can_view_rekap_santri): ?>
-                                <a href="rekap/santri-teladan.php" class="text-primary text-decoration-none fw-semibold stretched-link" style="font-size:0.8rem;">Daftar <i class="fas fa-arrow-right ms-1"></i></a>
+                                <a href="rekap/santri_teladan.php" class="text-primary text-decoration-none fw-semibold stretched-link" style="font-size:0.8rem;">Daftar <i class="fas fa-arrow-right ms-1"></i></a>
                             <?php else: ?>
                                 <i class="fas fa-lock opacity-50"></i>
                             <?php endif; ?>
@@ -269,7 +269,7 @@ $teladan_onclick = !$can_view_rekap_santri ? 'onclick="event.preventDefault(); r
                     <div class="card-header-premium">
                         <h2 class="card-title"><i class="fas fa-history text-primary"></i> Pelanggaran Terkini</h2>
                         <?php if ($can_view_pel_terkini): ?>
-                            <a href="rekap/tren-pelanggaran.php" class="btn btn-sm btn-light border">Lihat semua <i class="fas fa-chevron-right ms-1"></i></a>
+                            <a href="rekap/tren_pelanggaran.php" class="btn btn-sm btn-light border">Lihat semua <i class="fas fa-chevron-right ms-1"></i></a>
                         <?php endif; ?>
                     </div>
                     
@@ -411,7 +411,7 @@ $teladan_onclick = !$can_view_rekap_santri ? 'onclick="event.preventDefault(); r
                             
                             <div class="tab-pane fade" id="teladan-panel" role="tabpanel">
                                 <?php if ($can_view_rekap_santri): ?>
-                                    <div class="text-end mb-3"><a href="rekap/santri-teladan.php" class="text-primary text-decoration-none small fw-medium">Lihat semua <i class="fas fa-arrow-right"></i></a></div>
+                                    <div class="text-end mb-3"><a href="rekap/santri_teladan.php" class="text-primary text-decoration-none small fw-medium">Lihat semua <i class="fas fa-arrow-right"></i></a></div>
                                 <?php endif; ?>
                                 
                                 <div class="student-list d-flex flex-column gap-3">

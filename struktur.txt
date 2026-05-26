@@ -9,7 +9,7 @@ C:\laragon\www\rekap-mukholif
 |   +--- arsip_pelanggaran.php         => Halaman untuk melihat data arsip pelanggaran umum.
 |   +--- arsip_santri.php              => Halaman untuk melihat data arsip santri secara umum.
 |   +--- create.php                    => Script (logika) untuk membuat atau memasukkan data ke dalam tabel arsip.
-|   +--- detail-kamar.php              => Melihat rincian riwayat arsip per kamar.
+|   +--- detail_kebersihan.php              => Melihat rincian riwayat arsip per kamar.
 |   +--- detail_keterlambatan.php      => Melihat riwayat data keterlambatan santri dari periode-periode lalu.
 |   +--- export_arsip.php              => Fitur untuk mengunduh/export data arsip menjadi file Excel.
 |   +--- index.php                     => Halaman utama (dashboard) untuk masuk ke berbagai menu arsip.
@@ -118,7 +118,7 @@ C:\laragon\www\rekap-mukholif
 |   \--- view.php                      => Halaman pratinjau (Preview) untuk mengintip rapor sebelum ditekan cetak.
 +--- rekap                             => [FOLDER] Modul Laporan & Dashboard Analitik Bergrafik (Data Visualization). Sangat berguna buat Rapat Pimpinan!
 |   +--- chart.php                     => Modul yang menyajikan diagram batang/pie tentang kondisi pesantren terkini.
-|   +--- detail-kamar.php              => Lihat "Kamar Paling Bandel" vs "Kamar Paling Taat". Rekap poin di-kalkulasi per kamar.
+|   +--- detail_kebersihan.php              => Lihat "Kamar Paling Bandel" vs "Kamar Paling Taat". Rekap poin di-kalkulasi per kamar.
 |   +--- detail_keterlambatan.php      => Analisis spesifik tentang kebiasaan lambat santri di berbagai kegiatan.
 |   +--- detail_pelanggaran.php        => List detil catatan per baris kasus semua jenis.
 |   +--- detail_umum.php               => Rekap keseluruhan dalam bentuk ringkasan list.
@@ -127,8 +127,8 @@ C:\laragon\www\rekap-mukholif
 |   +--- kebersihan.php                => Analisa nilai dan poin pelanggaran piket/kebersihan per kamar.
 |   +--- keterlambatan.php             => Peringkat klasemen santri dengan hobi terlambat terbanyak.
 |   +--- pelanggaran_umum.php          => Kalkulasi semua bidang pelanggaran.
-|   +--- santri-teladan.php            => Menyoroti santri-santri yang paling minim / nol pelanggaran sebagai bentuk kebanggaan.
-|   +--- tren-pelanggaran.php          => Melacak pergerakan grafik (Apakah bulan ini kasus hp naik? Kasus bahasa turun?).
+|   +--- santri_teladan.php            => Menyoroti santri-santri yang paling minim / nol pelanggaran sebagai bentuk kebanggaan.
+|   +--- tren_pelanggaran.php          => Melacak pergerakan grafik (Apakah bulan ini kasus hp naik? Kasus bahasa turun?).
 |   \--- umum.php                      => Tampilan tabel-tabel konklusif ringkas.
 +--- reward                            => [FOLDER] Modul sebaliknya dari pelanggaran, yaitu "Poin Plus" atau Hadiah Prestasi.
 |   +--- history                       => [FOLDER] Tempat meninjau masa lalu pencatatan prestasi.

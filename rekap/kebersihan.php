@@ -1,9 +1,9 @@
-﻿<?php
+<?php
 // 1. Panggil 'Otak' aplikasi dulu
 require_once __DIR__ . '/../bootstrap/init.php';
 
 // 2. Jalankan 'SATPAM' buat ngejaga halaman
-guard('rekap_view_per_kamar');
+guard('rekap_kebersihan');
 
 // 3. Kalau lolos, baru panggil Tampilan
 require_once __DIR__ . '/../layouts/header.php'; 
@@ -352,7 +352,7 @@ if (!$result) die("Query Error: " . $stmt->error);
                         echo "<td><span class='pelanggaran-count $count_class'>{$row['total_pelanggaran']}</span></td>";
 
                         // <!-- **INI BAGIAN PENTINGNYA** Menambahkan parameter tanggal ke link -->
-                        $link_detail = "detail-kamar.php?kamar=" . urlencode($row['kamar']) . "&tanggal_awal=" . urlencode($tanggal_awal) . "&tanggal_akhir=" . urlencode($tanggal_akhir);
+                        $link_detail = "detail_kebersihan.php?kamar=" . urlencode($row['kamar']) . "&tanggal_awal=" . urlencode($tanggal_awal) . "&tanggal_akhir=" . urlencode($tanggal_akhir);
                         echo "<td><a href='" . $link_detail . "' class='btn-detail'><i class='fas fa-info-circle'></i> Detail</a></td>";
                         
                         echo "</tr>";

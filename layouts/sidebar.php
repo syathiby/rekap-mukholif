@@ -74,7 +74,7 @@ if (function_exists('has_permission')) {
     </a>
     <?php endif; ?>
 
-    <?php if (has_permission(['rekap_view_umum', 'rekap_view_per_kamar', 'rekap_view_santri', 'rekap_view_statistik', 'rekap_view_tahfidz'])): ?>
+    <?php if (has_permission(['rekap_pelanggaran_umum', 'rekap_detail_santri', 'rekap_kebersihan', 'rekap_keterlambatan', 'rekap_view_statistik', 'rekap_view_tahfidz'])): ?>
     <a href="<?= BASE_URL ?>/rekap" class="sb-link <?= strpos($req_path, '/rekap') === 0 ? 'active' : '' ?>">
         <i class="fas fa-chart-bar" style="color:#38bdf8;"></i>
         <span>Rekap Pelanggaran</span>
@@ -88,7 +88,9 @@ if (function_exists('has_permission')) {
     </a>
     <?php endif; ?>
 
+    <?php if (has_permission(['santri_view', 'jenis_pelanggaran_view', 'jenis_pelanggaran_create', 'jenis_pelanggaran_edit', 'jenis_pelanggaran_delete'])): ?>
     <div class="sb-section-label">MANAJEMEN</div>
+    <?php endif; ?>
     
     <?php if (has_permission('santri_view')): ?>
     <a href="<?= BASE_URL ?>/santri" class="sb-link <?= strpos($req_path, '/santri') === 0 ? 'active' : '' ?>">
@@ -104,7 +106,9 @@ if (function_exists('has_permission')) {
     </a>
     <?php endif; ?>
     
+    <?php if (has_permission(['arsip_view', 'arsip_create', 'arsip_delete', 'export_laporan', 'user_manage', 'periode_aktif_manage', 'reset_poin_manage', 'izin_manage', 'history_manage'])): ?>
     <div class="sb-section-label">SISTEM</div>
+    <?php endif; ?>
 
     <?php if (has_permission(['arsip_view', 'arsip_create', 'arsip_delete'])): ?>
     <a href="<?= BASE_URL ?>/arsip" class="sb-link <?= strpos($req_path, '/arsip') === 0 ? 'active' : '' ?>">
