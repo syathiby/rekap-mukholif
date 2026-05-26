@@ -1,4 +1,4 @@
-﻿<?php
+<?php
 // 1. Panggil 'Otak' aplikasi dulu
 require_once __DIR__ . '/../../bootstrap/init.php';
 
@@ -266,7 +266,7 @@ if ($result) {
                                         <?php endif; ?>
                                         
                                         <?php if (strtolower($user['role']) != 'admin') : ?>
-                                            <a href="delete-user.php?id=<?= $user['id'] ?>" class="btn-delete" title="Hapus User" onclick="return confirm('Yakin mau hapus user <?= htmlspecialchars($user['username']) ?>? Tindakan ini tidak bisa dibatalkan!');">
+                                            <a href="delete-user.php?id=<?= $user['id'] ?>" class="btn-delete" title="Hapus User" onclick="confirmSubmit(event, this, 'Hapus User', 'Yakin mau hapus user <?= htmlspecialchars($user['username']) ?>? Tindakan ini tidak bisa dibatalkan!');">
                                                 <i class="fas fa-trash-alt"></i>
                                             </a>
                                         <?php endif; ?>

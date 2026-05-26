@@ -262,6 +262,30 @@ require_once __DIR__ . '/../../layouts/header.php';
     </div>
 </div>
 
+<!-- Modal Konfirmasi Restore -->
+<div class="modal fade" id="confirmRestoreModal" tabindex="-1" aria-labelledby="confirmRestoreModalLabel" aria-hidden="true">
+  <div class="modal-dialog modal-dialog-centered">
+    <div class="modal-content border-0 shadow-lg">
+      <div class="modal-header bg-danger text-white border-0">
+        <h5 class="modal-title fw-bold" id="confirmRestoreModalLabel"><i class="fas fa-exclamation-triangle me-2"></i> PERINGATAN BAHAYA!</h5>
+        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+      </div>
+      <div class="modal-body p-4">
+        <p class="text-dark mb-3" style="font-size: 0.95rem; line-height: 1.6;">Proses restore akan menghapus <strong>SELURUH data yang ada saat ini</strong> dan menggantinya secara total dengan data dari file backup.</p>
+        <div class="p-3 bg-danger bg-opacity-10 rounded border border-danger border-opacity-25">
+            <p class="text-danger fw-bold mb-0" style="font-size: 0.9rem;"><i class="fas fa-exclamation-circle me-1"></i> Tindakan ini tidak dapat dibatalkan. Apakah Anda benar-benar yakin ingin melanjutkan?</p>
+        </div>
+      </div>
+      <div class="modal-footer border-0 pt-0 pb-4 px-4 d-flex justify-content-end gap-2">
+        <button type="button" class="btn btn-light px-4 py-2 text-secondary fw-bold shadow-sm" data-bs-dismiss="modal">Batal</button>
+        <button type="button" class="btn btn-danger px-4 py-2 fw-bold shadow-sm" id="confirmRestoreBtn">
+            <i class="fas fa-check me-2"></i>Ya, Lanjutkan Restore
+        </button>
+      </div>
+    </div>
+  </div>
+</div>
+
 <script>
     const sizeGz = <?= $size_gz ?>;
     const sizeSql = <?= $size_mb ?>;
@@ -304,15 +328,25 @@ require_once __DIR__ . '/../../layouts/header.php';
             }
         });
 
+        // Trigger modal instead of native confirm
         importForm.addEventListener('submit', function(e) {
-            if (!confirm('PERINGATAN BAHAYA!\n\nProses restore akan menghapus SELURUH data yang ada saat ini dan menggantinya dengan data dari file backup.\n\nApakah Anda benar-benar yakin ingin melanjutkan?')) {
-                e.preventDefault();
-            } else {
-                const btn = document.getElementById('btnRestore');
-                btn.innerHTML = '<i class="fas fa-spinner fa-spin me-2"></i> Memproses...';
-                btn.style.opacity = '0.7';
-                btn.style.pointerEvents = 'none';
-            }
+            e.preventDefault();
+            const modal = new bootstrap.Modal(document.getElementById('confirmRestoreModal'));
+            modal.show();
+        });
+        
+        // Handle actual submit from modal
+        document.getElementById('confirmRestoreBtn').addEventListener('click', function() {
+            const btn = document.getElementById('btnRestore');
+            btn.innerHTML = '<i class="fas fa-spinner fa-spin me-2"></i> Memproses...';
+            btn.style.opacity = '0.7';
+            btn.style.pointerEvents = 'none';
+            
+            const modalBtn = document.getElementById('confirmRestoreBtn');
+            modalBtn.innerHTML = '<i class="fas fa-spinner fa-spin me-2"></i> Memproses...';
+            modalBtn.classList.add('disabled');
+            
+            importForm.submit();
         });
     });
 </script>

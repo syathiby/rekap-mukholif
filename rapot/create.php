@@ -1,4 +1,4 @@
-﻿<?php
+<?php
 // File: rekap-mukholif/rapot/create.php
 // VERSI FINAL TERPADU + AUTO CEK POIN & REWARD
 
@@ -411,7 +411,7 @@ $(document).ready(function() {
             btn.html('<i class="fas fa-magic"></i> Buat Catatan Otomatis').prop('disabled', false);
             checkFormValidity();
         }).fail(function(xhr, status, error) {
-            alert('Gagal membuat catatan otomatis. Cek koneksi atau hubungi admin.');
+            showAlert('Gagal membuat catatan otomatis. Cek koneksi atau hubungi admin.', 'error');
             console.error('Error:', xhr.responseText);
             btn.html('<i class="fas fa-magic"></i> Buat Catatan Otomatis').prop('disabled', false);
         });

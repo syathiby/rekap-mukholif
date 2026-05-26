@@ -128,8 +128,75 @@ if (function_exists('has_permission')) {
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
 
 <script>
+    // Fungsi Global untuk Konfirmasi Aksi (Hapus, dll) menggunakan SweetAlert2
+    function confirmSubmit(event, element, titleText, textMessage) {
+        event.preventDefault();
+        
+        let formToSubmit = null;
+        if (element.tagName.toLowerCase() === 'form') {
+            formToSubmit = element;
+        } else if (element.closest('form')) {
+            formToSubmit = element.closest('form');
+        }
+        
+        Swal.fire({
+            title: titleText || 'Apakah Anda Yakin?',
+            text: textMessage || "Tindakan ini tidak dapat dibatalkan!",
+            icon: 'warning',
+            showCancelButton: true,
+            confirmButtonColor: '#d33',
+            cancelButtonColor: '#6c757d',
+            confirmButtonText: 'Ya, Lanjutkan!',
+            cancelButtonText: 'Batal',
+            reverseButtons: true
+        }).then((result) => {
+            if (result.isConfirmed) {
+                if (formToSubmit) {
+                    formToSubmit.submit();
+                } else {
+                    if (element.href) window.location.href = element.href;
+                }
+            }
+        });
+    }
+
+    // Fungsi Global untuk Alert Pengganti native alert()
+    function showAlert(textMessage, iconType = 'info') {
+        let titleText = 'Informasi';
+        if (iconType === 'error') titleText = 'Oops...';
+        else if (iconType === 'success') titleText = 'Berhasil!';
+        else if (iconType === 'warning') titleText = 'Peringatan!';
+
+        Swal.fire({
+            title: titleText,
+            text: textMessage,
+            icon: iconType,
+            confirmButtonColor: '#4f46e5'
+        });
+    }
+
+    // Fungsi Global untuk Toast
+    function showToast(textMessage, iconType = 'success') {
+        const Toast = Swal.mixin({
+            toast: true,
+            position: 'top-end',
+            showConfirmButton: false,
+            timer: 4000,
+            timerProgressBar: true,
+            didOpen: (toast) => {
+                toast.onmouseenter = Swal.stopTimer;
+                toast.onmouseleave = Swal.resumeTimer;
+            }
+        });
+        Toast.fire({
+            icon: iconType,
+            title: textMessage
+        });
+    }
+
     function updateLiveTime() {
         const timeEl = document.getElementById('live-time');
         if (timeEl) {
@@ -161,6 +228,14 @@ if (function_exists('has_permission')) {
             }
         });
     }
+
+    // Global Fix: Mencegah error accessibility 'aria-hidden' di DevTools Chrome
+    // saat menutup modal Bootstrap dan elemen di dalamnya masih memiliki fokus.
+    document.addEventListener('hidden.bs.modal', function () {
+        if (document.activeElement && document.activeElement !== document.body) {
+            document.activeElement.blur();
+        }
+    });
 </script>
 </body>
 </html>

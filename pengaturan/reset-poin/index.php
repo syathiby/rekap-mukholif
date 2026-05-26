@@ -225,7 +225,7 @@ $(document).ready(function() {
         if (!selectedSantri) return;
 
         if ($('#tabel-santri-reset').find('tr[data-id="' + selectedSantri.id + '"]').length > 0) {
-            alert('Santri ini sudah masuk daftar!');
+            showAlert('Santri ini sudah masuk daftar!', 'warning');
             return;
         }
 
@@ -263,48 +263,73 @@ $(document).ready(function() {
     
     if(form) {
         form.addEventListener('submit', function(event) {
+            event.preventDefault(); // Mencegah submit langsung
             const submitter = event.submitter;
+            const submitName = submitter.name;
+            const submitValue = submitter.value || "1";
             
-            if (submitter.name === 'reset_satu_santri') {
+            if (submitName === 'reset_satu_santri') {
                 const rowCount = $('#tabel-santri-reset tbody tr').length;
                 const keteranganSatu = document.getElementById('keterangan_satu');
                 
                 if (rowCount === 0) {
-                    alert('Silakan pilih setidaknya satu santri terlebih dahulu!');
-                    event.preventDefault();
+                    showAlert('Silakan pilih setidaknya satu santri terlebih dahulu!', 'warning');
                     $('#santri-search').focus();
                     return;
                 }
                 if (keteranganSatu.value.trim() === '') {
-                    alert('Keterangan untuk reset santri tidak boleh kosong!');
-                    event.preventDefault();
+                    showAlert('Keterangan untuk reset santri tidak boleh kosong!', 'warning');
+                    keteranganSatu.focus();
                     return;
                 }
                 
-                if (!confirm(`Anda yakin ingin me-reset poin untuk ${rowCount} santri yang dipilih?`)) {
-                    event.preventDefault();
-                }
+                Swal.fire({
+                    title: 'Konfirmasi Reset',
+                    text: `Anda yakin ingin me-reset poin untuk ${rowCount} santri yang dipilih?`,
+                    icon: 'warning',
+                    showCancelButton: true,
+                    confirmButtonColor: '#d33',
+                    cancelButtonColor: '#6c757d',
+                    confirmButtonText: 'Ya, Reset!'
+                }).then((result) => {
+                    if (result.isConfirmed) {
+                        let input = document.createElement('input');
+                        input.type = 'hidden';
+                        input.name = submitName;
+                        input.value = submitValue;
+                        form.appendChild(input);
+                        form.submit();
+                    }
+                });
             }
             
-            if (submitter.name === 'reset_semua_poin') {
+            if (submitName === 'reset_semua_poin') {
                 const keteranganSemua = document.getElementById('keterangan_semua');
 
                 if (keteranganSemua.value.trim() === '') {
-                    alert('Keterangan untuk reset massal tidak boleh kosong!');
-                    event.preventDefault();
+                    showAlert('Keterangan untuk reset massal tidak boleh kosong!', 'warning');
+                    keteranganSemua.focus();
                     return;
                 }
                 
-                const firstConfirm = confirm('PERINGATAN! Anda akan me-reset SEMUA poin santri. Lanjutkan?');
-                if (!firstConfirm) {
-                    event.preventDefault();
-                    return;
-                }
-                
-                const secondConfirm = confirm('TINDAKAN INI FINAL DAN TIDAK DAPAT DIURUNGKAN. Apakah Anda 100% yakin?');
-                if (!secondConfirm) {
-                    event.preventDefault();
-                }
+                Swal.fire({
+                    title: 'PERINGATAN KERAS!',
+                    text: 'Anda akan me-reset SEMUA poin santri. Tindakan ini final dan tidak dapat diurungkan. Apakah Anda 100% yakin?',
+                    icon: 'error',
+                    showCancelButton: true,
+                    confirmButtonColor: '#d33',
+                    cancelButtonColor: '#6c757d',
+                    confirmButtonText: 'YA, SAYA YAKIN RESET SEMUA!'
+                }).then((result) => {
+                    if(result.isConfirmed) {
+                        let input = document.createElement('input');
+                        input.type = 'hidden';
+                        input.name = submitName;
+                        input.value = submitValue;
+                        form.appendChild(input);
+                        form.submit();
+                    }
+                });
             }
         });
     }

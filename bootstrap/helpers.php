@@ -16,7 +16,7 @@
  * Ini akan menentukan warna notifikasinya.
  * @param string $message Isi pesan yang ingin ditampilkan.
  */
-function set_flash_message($type, $message)
+function set_flash_message($message, $type = 'success')
 {
     $_SESSION['flash_message'] = [
         'type'    => $type,
@@ -31,37 +31,67 @@ function set_flash_message($type, $message)
  */
 function display_flash_message()
 {
+    $has_message = false;
+    $type = '';
+    $message = '';
+
     if (isset($_SESSION['flash_message'])) {
         $type    = $_SESSION['flash_message']['type'];
         $message = $_SESSION['flash_message']['message'];
-
-        // Hapus pesan dari session agar tidak muncul lagi saat refresh.
         unset($_SESSION['flash_message']);
+        $has_message = true;
+    } elseif (isset($_SESSION['message'])) {
+        // Tangkap juga format $_SESSION['message'] yang lama
+        $type    = $_SESSION['message']['type'];
+        $message = isset($_SESSION['message']['text']) ? $_SESSION['message']['text'] : (isset($_SESSION['message']['message']) ? $_SESSION['message']['message'] : '');
+        unset($_SESSION['message']);
+        if (!empty($message)) {
+            $has_message = true;
+        }
+    }
 
-        // Siapkan ikon berdasarkan tipe notifikasi untuk tampilan lebih ciamik.
-        $icon = '';
-        switch ($type) {
-            case 'success':
-                $icon = '<i class="fas fa-check-circle me-2"></i>';
-                break;
-            case 'danger':
-                $icon = '<i class="fas fa-times-circle me-2"></i>';
-                break;
-            case 'warning':
-                $icon = '<i class="fas fa-exclamation-triangle me-2"></i>';
-                break;
-            case 'info':
-                $icon = '<i class="fas fa-info-circle me-2"></i>';
-                break;
+    if ($has_message) {
+        $swal_icon = $type;
+        if ($type === 'danger') {
+            $swal_icon = 'error';
         }
 
-        // Tampilkan HTML notifikasi menggunakan komponen Alert dari Bootstrap 5.
-        // alert-dismissible dan fade show memberikan efek animasi dan tombol close.
+        // Tentukan judul berdasarkan ikon (EYD yang baik)
+        $title = 'Informasi';
+        if ($swal_icon === 'success') {
+            $title = 'Berhasil!';
+        } elseif ($swal_icon === 'error') {
+            $title = 'Oops...';
+        } elseif ($swal_icon === 'warning') {
+            $title = 'Peringatan!';
+        }
+        
+        $message_js = addslashes($message);
+        $title_js = addslashes($title);
+
         echo "
-        <div class='alert alert-{$type} alert-dismissible fade show' role='alert'>
-            {$icon} {$message}
-            <button type='button' class='btn-close' data-bs-dismiss='alert' aria-label='Close'></button>
-        </div>
+        <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            if (typeof Swal !== 'undefined') {
+                const Toast = Swal.mixin({
+                    toast: true,
+                    position: 'top-end',
+                    showConfirmButton: false,
+                    timer: 4000,
+                    timerProgressBar: true,
+                    didOpen: (toast) => {
+                        toast.onmouseenter = Swal.stopTimer;
+                        toast.onmouseleave = Swal.resumeTimer;
+                    }
+                });
+                Toast.fire({
+                    icon: '{$swal_icon}',
+                    title: '{$title_js}',
+                    text: '{$message_js}'
+                });
+            }
+        });
+        </script>
         ";
     }
 }

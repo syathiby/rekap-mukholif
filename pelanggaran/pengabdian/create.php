@@ -570,10 +570,20 @@ $(document).ready(function() {
     }
     
     window.clearAll = function() {
-        if(confirm('Hapus semua santri dari daftar?')) { 
-            $('#tabel-santri-pelanggar tbody').empty(); 
-            checkTableState(); 
-        }
+        Swal.fire({
+            title: 'Hapus Semua?',
+            text: 'Hapus semua santri dari daftar?',
+            icon: 'warning',
+            showCancelButton: true,
+            confirmButtonColor: '#d33',
+            cancelButtonColor: '#6c757d',
+            confirmButtonText: 'Ya, Hapus'
+        }).then((result) => {
+            if (result.isConfirmed) {
+                $('#tabel-santri-pelanggar tbody').empty(); 
+                checkTableState(); 
+            }
+        });
     }
     
     window.checkTableState = checkTableState;
@@ -582,7 +592,7 @@ $(document).ready(function() {
     function tambahSantri() {
         if (!selectedSantri) return;
         if ($('#tabel-santri-pelanggar').find('tr[data-id="' + selectedSantri.id + '"]').length > 0) {
-            alert('Santri ini sudah ada di daftar.'); return;
+            Swal.fire('Informasi', 'Santri ini sudah ada di daftar.', 'warning'); return;
         }
 
         let nama = escapeHTML(selectedSantri.value);
@@ -619,13 +629,13 @@ $(document).ready(function() {
     $("#form-individu").on('submit', function(e) {
         if (!$("#jenis_pelanggaran_id").val()) {
             e.preventDefault();
-            alert("Pilih jenis pelanggaran terlebih dahulu.");
+            Swal.fire('Peringatan', 'Pilih jenis pelanggaran terlebih dahulu.', 'warning');
             $('#jenis_pelanggaran_id').select2('open');
             return;
         }
         if ($('#tabel-santri-pelanggar tbody tr').length === 0) {
             e.preventDefault();
-            alert('Belum ada santri yang ditambahkan.');
+            Swal.fire('Peringatan', 'Belum ada santri yang ditambahkan.', 'warning');
             $('#santri-search').focus();
             return;
         }
@@ -668,7 +678,7 @@ $(document).ready(function() {
     
     $('#form-kamar').submit(function(e) {
         if ($('input[name="kamar[]"]:checked').length === 0) {
-            alert('Pilih minimal satu kamar terlebih dahulu.');
+            Swal.fire('Peringatan', 'Pilih minimal satu kamar terlebih dahulu.', 'warning');
             e.preventDefault();
         }
     });

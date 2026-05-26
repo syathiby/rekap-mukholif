@@ -408,16 +408,26 @@ $(document).ready(function() {
     }
     
     window.clearAll = function() {
-        if(confirm('Hapus semua daftar penerima?')) { 
-            $('#tabel-santri-reward tbody').empty(); 
-            checkTableState(); 
-        }
+        Swal.fire({
+            title: 'Hapus Semua?',
+            text: 'Hapus semua daftar penerima?',
+            icon: 'warning',
+            showCancelButton: true,
+            confirmButtonColor: '#d33',
+            cancelButtonColor: '#6c757d',
+            confirmButtonText: 'Ya, Hapus'
+        }).then((result) => {
+            if (result.isConfirmed) {
+                $('#tabel-santri-reward tbody').empty(); 
+                checkTableState(); 
+            }
+        });
     }
 
     function tambahSantri() {
         if (!selectedSantri) return;
         if ($('#tabel-santri-reward').find('tr[data-id="' + selectedSantri.id + '"]').length > 0) {
-            alert('Santri ini sudah ada di daftar.'); return;
+            showAlert('Santri ini sudah ada di daftar.', 'warning'); return;
         }
 
         let nama = escapeHTML(selectedSantri.value);
@@ -463,8 +473,8 @@ $(document).ready(function() {
     }
 
     $("#form-reward").on('submit', function(e) {
-        if (!$("#jenis_reward_id").val()) { e.preventDefault(); alert("Pilih jenis reward terlebih dahulu!"); return; }
-        if ($('#tabel-santri-reward tbody tr').length === 0) { e.preventDefault(); alert("Daftar santri masih kosong. Tambahkan minimal satu santri."); $('#santri-search').focus(); return; }
+        if (!$("#jenis_reward_id").val()) { e.preventDefault(); showAlert("Pilih jenis reward terlebih dahulu!", "warning"); return; }
+        if ($('#tabel-santri-reward tbody tr').length === 0) { e.preventDefault(); showAlert("Daftar santri masih kosong. Tambahkan minimal satu santri.", "warning"); $('#santri-search').focus(); return; }
     });
 });
 </script>
