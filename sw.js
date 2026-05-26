@@ -4,18 +4,15 @@
  * Versi cache: naikkan angka ini setiap kali ada perubahan besar
  */
 
-const CACHE_VERSION = 'asuhtrack-v1';
+const CACHE_VERSION = 'asuhtrack-v2';
 const STATIC_CACHE  = `${CACHE_VERSION}-static`;
 const DYNAMIC_CACHE = `${CACHE_VERSION}-dynamic`;
 
-// Subfolder aplikasi — disesuaikan dengan konfigurasi server
-const APP_SCOPE = '/rekap-mukholif';
-
 // Aset penting yang wajib di-cache saat instalasi SW
 const STATIC_ASSETS = [
-  `${APP_SCOPE}/offline.php`,
-  `${APP_SCOPE}/assets/img/logo_aplikasi.png`,
-  `${APP_SCOPE}/assets/img/logo_favicon.png`,
+  './offline.php',
+  './assets/img/logo_aplikasi.png',
+  './assets/img/logo_favicon.png',
 ];
 
 // ─────────────────────────────────────────────
@@ -161,8 +158,7 @@ async function networkFirst(request) {
       return cached;
     }
 
-    // Tidak ada di cache juga — tampilkan halaman offline
-    const offlinePage = await caches.match(`${APP_SCOPE}/offline.php`);
+    const offlinePage = await caches.match('./offline.php');
     if (offlinePage) return offlinePage;
 
     // Last resort

@@ -163,11 +163,10 @@
             btn.disabled = true;
             statusEl.textContent = 'Mencoba menghubungkan...';
 
-            // Coba fetch halaman utama
-            fetch('/rekap-mukholif/index.php', { method: 'HEAD', cache: 'no-store' })
+            fetch('./index.php', { method: 'HEAD', cache: 'no-store' })
                 .then(() => {
                     statusEl.textContent = 'Koneksi berhasil! Mengalihkan...';
-                    window.location.href = '/rekap-mukholif/index.php';
+                    window.location.href = './index.php';
                 })
                 .catch(() => {
                     retryCount++;
@@ -182,7 +181,7 @@
             document.getElementById('status-text').textContent = 'Koneksi terdeteksi! Mengalihkan...';
             document.querySelector('.dot').style.background = '#4ade80';
             setTimeout(() => {
-                window.location.href = '/rekap-mukholif/index.php';
+                window.location.href = './index.php';
             }, 800);
         });
 
