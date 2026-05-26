@@ -1,4 +1,4 @@
-﻿<?php 
+<?php 
 require_once __DIR__ . '/../../bootstrap/init.php';
 guard('jenis_reward_view'); 
 require_once __DIR__ . '/../../layouts/header.php';
@@ -274,7 +274,7 @@ if ($can_edit || $can_delete) $colspan++;
                                                 <li><a class="dropdown-item small" href="edit.php?id=<?= $row['id'] ?>"><i class="fas fa-pen text-warning me-2"></i>Edit</a></li>
                                             <?php endif; ?>
                                             <?php if ($can_delete): ?>
-                                                <li><a class="dropdown-item small text-danger" href="delete.php?id=<?= $row['id'] ?>" onclick="return confirm('Yakin hapus?')"><i class="fas fa-trash me-2"></i>Hapus</a></li>
+                                                <li><a class="dropdown-item small text-danger" href="delete.php?id=<?= $row['id'] ?>" onclick="confirmSubmit(event, this, 'Konfirmasi Hapus', 'Yakin hapus?');"><i class="fas fa-trash me-2"></i>Hapus</a></li>
                                             <?php endif; ?>
                                         </ul>
                                     </div>
@@ -334,10 +334,20 @@ document.addEventListener('DOMContentLoaded', function() {
     // Handle Delete
     if(btnDelete) {
         btnDelete.addEventListener('click', function() {
-            if(confirm('Hapus data terpilih?')) {
-                bulkForm.action = 'bulk-delete.php';
-                bulkForm.submit();
-            }
+            Swal.fire({
+                title: 'Konfirmasi Hapus',
+                text: 'Hapus data terpilih?',
+                icon: 'warning',
+                showCancelButton: true,
+                confirmButtonColor: '#d33',
+                cancelButtonColor: '#6c757d',
+                confirmButtonText: 'Ya, Hapus!'
+            }).then((result) => {
+                if(result.isConfirmed) {
+                    bulkForm.action = 'bulk-delete.php';
+                    bulkForm.submit();
+                }
+            });
         });
     }
 });

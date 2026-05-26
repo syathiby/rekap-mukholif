@@ -404,10 +404,20 @@ $(document).ready(function() {
     }
     
     window.clearAll = function() {
-        if(confirm('Hapus semua santri dari daftar?')) { 
-            $('#tabel-santri-pelanggar tbody').empty(); 
-            checkTableState(); 
-        }
+        Swal.fire({
+            title: 'Hapus Semua?',
+            text: 'Hapus semua santri dari daftar?',
+            icon: 'warning',
+            showCancelButton: true,
+            confirmButtonColor: '#d33',
+            cancelButtonColor: '#6c757d',
+            confirmButtonText: 'Ya, Hapus'
+        }).then((result) => {
+            if (result.isConfirmed) {
+                $('#tabel-santri-pelanggar tbody').empty(); 
+                checkTableState(); 
+            }
+        });
     }
     
     window.checkTableState = checkTableState;
@@ -416,7 +426,7 @@ $(document).ready(function() {
     function tambahSantri() {
         if (!selectedSantri) return;
         if ($('#tabel-santri-pelanggar').find('tr[data-id="' + selectedSantri.id + '"]').length > 0) {
-            alert('Santri ini sudah ada di daftar.'); return;
+            showAlert('Santri ini sudah ada di daftar.', 'warning'); return;
         }
 
         let nama = escapeHTML(selectedSantri.value);
@@ -454,12 +464,12 @@ $(document).ready(function() {
         e.preventDefault(); 
 
         if (!$("#jenis_pelanggaran_id").val()) {
-            alert("Pilih jenis pelanggaran terlebih dahulu.");
+            showAlert("Pilih jenis pelanggaran terlebih dahulu.", "warning");
             $('#jenis_pelanggaran_id').select2('open');
             return;
         }
         if ($('#tabel-santri-pelanggar tbody tr').length === 0) {
-            alert('Belum ada santri yang ditambahkan.');
+            showAlert('Belum ada santri yang ditambahkan.', 'warning');
             $('#santri-search').focus();
             return;
         }
@@ -477,17 +487,17 @@ $(document).ready(function() {
             dataType: 'json',
             success: function(response) {
                 if (response.status === 'success') {
-                    alert(response.message);
+                    showAlert(response.message, 'success');
                     $('#tabel-santri-pelanggar tbody').empty();
                     checkTableState();
                     $('#jenis_pelanggaran_id').val('').trigger('change');
                     $('#santri-search').val('');
                 } else {
-                    alert("❌ Error: " + response.message);
+                    showAlert("❌ Error: " + response.message, 'error');
                 }
             },
             error: function(xhr, status, error) {
-                alert("❌ Gagal mengirim data. Terjadi kesalahan jaringan.");
+                showAlert("❌ Gagal mengirim data. Terjadi kesalahan jaringan.", 'error');
                 console.error(error);
             },
             complete: function() {

@@ -179,7 +179,7 @@ Luqman,12,3</pre>
         const textarea = document.getElementById('list_santri');
         if (textarea.value.trim() === '') {
             e.preventDefault();
-            alert('Silakan masukkan data santri terlebih dahulu!');
+            showAlert('Silakan masukkan data santri terlebih dahulu!', 'warning');
             textarea.focus();
         }
     });

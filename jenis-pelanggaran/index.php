@@ -470,7 +470,7 @@ document.addEventListener('DOMContentLoaded', function() {
                  bulkActionForm.action = 'bulk-edit.php';
                  bulkActionForm.submit();
             } else {
-                alert('Pilih minimal satu data untuk diedit.');
+                showAlert('Pilih minimal satu data untuk diedit.', 'warning');
             }
         });
     }
