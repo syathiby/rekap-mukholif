@@ -86,7 +86,7 @@ if (function_exists('has_permission')) {
     </div>
     <?php endif; ?>
     <div class="bottom-nav-item">
-        <button class="bottom-nav-link" type="button" data-bs-toggle="offcanvas" data-bs-target="#sidebarOffcanvas">
+        <button class="bottom-nav-link" type="button" onclick="openSidebarMobile()">
             <i class="fas fa-bars"></i>
             <span>Lainnya</span>
         </button>

@@ -1,9 +1,6 @@
 <?php
-// Pastikan session sudah aktif sebelum file ini dipanggil.
-if (session_status() === PHP_SESSION_NONE) {
-    // Ini cuma buat jaga-jaga, harusnya session udah start di header.
-    session_start();
-}
+// auth.php — Fungsi keamanan: guard(), has_permission(), logout()
+// SESSION dijamin sudah aktif oleh bootstrap/init.php sebelum file ini dipanggil.
 
 /**
  * =================================================================

@@ -1,8 +1,6 @@
 <?php
-// Pastikan session sudah aktif sebelum file ini dipanggil.
-if (session_status() === PHP_SESSION_NONE) {
-    session_start();
-}
+// helpers.php — Fungsi serbaguna: flash message, format data, dll.
+// SESSION dijamin sudah aktif oleh bootstrap/init.php sebelum file ini dipanggil.
 
 /**
  * =================================================================

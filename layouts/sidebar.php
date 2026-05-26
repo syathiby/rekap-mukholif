@@ -48,7 +48,7 @@ if (function_exists('has_permission')) {
 
     <div class="sb-section-label">MENU UTAMA</div>
     
-    <a href="<?= BASE_URL ?>/index.php" class="sb-link <?= ($req_path === '/' || strpos($req_path, '/index.php') !== false) ? 'active' : '' ?>">
+    <a href="<?= BASE_URL ?>/index.php" class="sb-link <?= ($req_path === '/' || $req_path === '/index.php' || $req_path === '') ? 'active' : '' ?>">
         <i class="fas fa-home"></i>
         <span>Dashboard</span>
     </a>
@@ -107,7 +107,7 @@ if (function_exists('has_permission')) {
     <div class="sb-section-label">SISTEM</div>
 
     <?php if (has_permission(['arsip_view', 'arsip_create', 'arsip_delete'])): ?>
-    <a href="<?= BASE_URL ?>/arsip" class="sb-link <?= strpos($current_uri, '/arsip') !== false ? 'active' : '' ?>">
+    <a href="<?= BASE_URL ?>/arsip" class="sb-link <?= strpos($req_path, '/arsip') === 0 ? 'active' : '' ?>">
         <i class="fas fa-archive" style="color:#94a3b8;"></i>
         <span>Arsip</span>
     </a>
