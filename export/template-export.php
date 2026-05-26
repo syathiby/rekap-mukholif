@@ -115,7 +115,7 @@ class ExcelTemplate {
         $palette = self::getThemePalette($themeType);
 
         // Rekam kolom tertinggi SEBELUM insert baris baru
-        $highestColumn      = $sheet->getHighestColumn();
+        $highestColumn = $sheet->getHighestColumn();
         $originalHighestRow = $sheet->getHighestRow();
 
         // Sisipkan baris header di atas data asli
@@ -265,11 +265,14 @@ class ExcelTemplate {
             $sheet->setCellValue('B' . $r, $row[1]);
             $sheet->getStyle('B' . $r)->applyFromArray($valueStyle);
 
-            // Kolom kanan — gunakan kolom ke-4 dan ke-5 jika tersedia
-            $sheet->setCellValue('D' . $r, '  ' . $row[2] . ':');
-            $sheet->getStyle('D' . $r)->applyFromArray($labelStyle);
-            $sheet->setCellValue('E' . $r, $row[3]);
-            $sheet->getStyle('E' . $r)->applyFromArray($valueStyle);
+            // Kolom kanan — sesuaikan secara dinamis agar pas jika kolom lebih sedikit
+            $rightLabelCol = ($lastCol === 'D' || $lastCol === 'C') ? 'C' : 'D';
+            $rightValueCol = ($lastCol === 'D' || $lastCol === 'C') ? 'D' : 'E';
+
+            $sheet->setCellValue($rightLabelCol . $r, '  ' . $row[2] . ':');
+            $sheet->getStyle($rightLabelCol . $r)->applyFromArray($labelStyle);
+            $sheet->setCellValue($rightValueCol . $r, $row[3]);
+            $sheet->getStyle($rightValueCol . $r)->applyFromArray($valueStyle);
 
             $sheet->getRowDimension($r)->setRowHeight(16);
         }
