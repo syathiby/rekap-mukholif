@@ -64,14 +64,90 @@ if (isset($_POST['export'])) {
     }
 
 
-    // ── SHEET 1: DETAIL PELANGGARAN UMUM ────────────────────────────────────────
-    $sheetDetail = $spreadsheet->getActiveSheet();
+    // ── SHEET 1: DETAIL SANTRI ──────────────────────────────────────────────────
+    $sheetSantri = $spreadsheet->getActiveSheet();
+    $sheetSantri->setTitle('Detail Santri');
+
+    $sheetSantri->fromArray(
+        ['No', 'Nama Santri', 'Kelas', 'Kamar', 'Jumlah Pelanggaran', 'Total Poin Pelanggaran', 'Total Poin Reward', 'Poin Aktif'],
+        NULL, 'A1'
+    );
+    $sheetSantri->setAutoFilter('A1:H1');
+
+    $sqlSantri = "SELECT s.id, s.nama, s.kelas, s.kamar, s.poin_aktif,
+                         COUNT(p.id)    AS jumlah_pelanggaran,
+                         SUM(jp.poin)  AS total_poin_pelanggaran,
+                         (SELECT COALESCE(SUM(jr.poin_reward), 0)
+                          FROM daftar_reward dr
+                          JOIN jenis_reward jr ON dr.jenis_reward_id = jr.id
+                          WHERE dr.santri_id = s.id AND DATE(dr.tanggal) BETWEEN ? AND ?) AS total_poin_reward
+                  FROM pelanggaran p
+                  JOIN santri s          ON p.santri_id           = s.id
+                  JOIN jenis_pelanggaran jp ON p.jenis_pelanggaran_id = jp.id
+                  WHERE DATE(p.tanggal) BETWEEN ? AND ?
+                    AND jp.bagian <> 'Pengabdian'"
+                . $kamarClause
+                . " GROUP BY s.id, s.nama, s.kelas, s.kamar, s.poin_aktif
+                  ORDER BY total_poin_pelanggaran DESC";
+
+    $stmtSantri = $conn->prepare($sqlSantri);
+    
+    $paramsSantri = [$tanggal_mulai, $tanggal_selesai, $tanggal_mulai, $tanggal_selesai];
+    $typesSantri  = "ssss";
+    if ($kamar !== 'semua') {
+        $paramsSantri[] = $kamar;
+        $typesSantri   .= "s";
+    }
+    $stmtSantri->bind_param($typesSantri, ...$paramsSantri);
+    $stmtSantri->execute();
+    $resultSantri = $stmtSantri->get_result();
+
+    $totalSantriTerlibat = 0;
+    $poinTertinggi       = 0;
+    $santriTertinggi     = '-';
+
+    if ($resultSantri->num_rows > 0) {
+        $rowNum = 2; $no = 1;
+        while ($row = $resultSantri->fetch_assoc()) {
+            $sheetSantri->fromArray(
+                [$no, $row['nama'], $row['kelas'], $row['kamar'],
+                 $row['jumlah_pelanggaran'], $row['total_poin_pelanggaran'], $row['total_poin_reward'], $row['poin_aktif']],
+                NULL, 'A' . $rowNum
+            );
+            $totalSantriTerlibat++;
+            if ((int) $row['total_poin_pelanggaran'] > $poinTertinggi) {
+                $poinTertinggi   = (int) $row['total_poin_pelanggaran'];
+                $santriTertinggi = $row['nama'];
+            }
+            $rowNum++; $no++;
+        }
+    }
+    $stmtSantri->close();
+
+    ExcelTemplate::applyExecutiveStyle(
+        $sheetSantri,
+        'Rekapitulasi Detail Santri (Pelanggaran & Reward)',
+        ExcelTemplate::THEME_VIOLATION,
+        array_merge($baseOptions, [
+            'doc_number'   => 'ASUH/DISIP/' . date('Y') . '/001',
+            'summary_data' => [
+                ['label' => 'Santri Terlibat',  'value' => $totalSantriTerlibat . ' santri'],
+                ['label' => 'Poin Pelanggaran Tertinggi',   'value' => $poinTertinggi . ' poin'],
+                ['label' => 'Santri Tertinggi', 'value' => $santriTertinggi],
+                ['label' => 'Kamar Filter',     'value' => ($kamar === 'semua') ? 'Semua Kamar' : 'Kamar ' . $kamar],
+            ],
+        ])
+    );
+
+    // ── SHEET 2: DETAIL PELANGGARAN UMUM ────────────────────────────────────────
+    $sheetDetail = $spreadsheet->createSheet();
     $sheetDetail->setTitle('Detail Pelanggaran Umum');
 
     $sheetDetail->fromArray(
         ['No', 'Nama Santri', 'Kelas', 'Kamar', 'Nama Pelanggaran', 'Poin', 'Bagian', 'Tanggal'],
         NULL, 'A1'
     );
+    $sheetDetail->setAutoFilter('A1:H1');
 
     $sqlDetail = "SELECT s.nama, s.kelas, s.kamar, jp.nama_pelanggaran, jp.poin, jp.bagian, p.tanggal
                   FROM pelanggaran p
@@ -113,7 +189,7 @@ if (isset($_POST['export'])) {
         'Laporan Detail Pelanggaran Santri',
         ExcelTemplate::THEME_VIOLATION,
         array_merge($baseOptions, [
-            'doc_number'   => 'ASUH/DISIP/' . date('Y') . '/001',
+            'doc_number'   => 'ASUH/DISIP/' . date('Y') . '/002',
             'summary_data' => [
                 ['label' => 'Total Kejadian',  'value' => $totalDetailRows . ' kasus'],
                 ['label' => 'Total Poin',      'value' => $totalPoinDetail . ' poin'],
@@ -123,79 +199,17 @@ if (isset($_POST['export'])) {
         ])
     );
 
-
-    // ── SHEET 2: REKAP PER SANTRI ────────────────────────────────────────────────
-    $sheetRekapSantri = $spreadsheet->createSheet();
-    $sheetRekapSantri->setTitle('Rekap Santri (Umum)');
-
-    $sheetRekapSantri->fromArray(
-        ['No', 'Nama Santri', 'Kelas', 'Kamar', 'Jumlah Pelanggaran', 'Total Poin'],
-        NULL, 'A1'
-    );
-
-    $sqlSantri = "SELECT s.nama, s.kelas, s.kamar,
-                         COUNT(p.id)    AS jumlah_pelanggaran,
-                         SUM(jp.poin)  AS total_poin
-                  FROM pelanggaran p
-                  JOIN santri s          ON p.santri_id           = s.id
-                  JOIN jenis_pelanggaran jp ON p.jenis_pelanggaran_id = jp.id
-                  WHERE DATE(p.tanggal) BETWEEN ? AND ?
-                    AND jp.bagian <> 'Pengabdian'"
-                . $kamarClause
-                . " GROUP BY s.id, s.nama, s.kelas, s.kamar
-                  ORDER BY total_poin DESC";
-
-    $stmt   = $conn->prepare($sqlSantri);
-    $stmt->bind_param($types, ...$params);
-    $stmt->execute();
-    $result = $stmt->get_result();
-
-    $totalSantriTerlibat = 0;
-    $poinTertinggi       = 0;
-    $santriTertinggi     = '-';
-
-    if ($result->num_rows > 0) {
-        $rowNum = 2; $no = 1;
-        while ($row = $result->fetch_assoc()) {
-            $sheetRekapSantri->fromArray(
-                [$no, $row['nama'], $row['kelas'], $row['kamar'],
-                 $row['jumlah_pelanggaran'], $row['total_poin']],
-                NULL, 'A' . $rowNum
-            );
-            $totalSantriTerlibat++;
-            if ((int) $row['total_poin'] > $poinTertinggi) {
-                $poinTertinggi   = (int) $row['total_poin'];
-                $santriTertinggi = $row['nama'];
-            }
-            $rowNum++; $no++;
-        }
-    }
-    $stmt->close();
-
-    ExcelTemplate::applyExecutiveStyle(
-        $sheetRekapSantri,
-        'Rekapitulasi Akumulasi Poin Santri',
-        ExcelTemplate::THEME_VIOLATION,
-        array_merge($baseOptions, [
-            'doc_number'   => 'ASUH/DISIP/' . date('Y') . '/002',
-            'summary_data' => [
-                ['label' => 'Santri Terlibat',  'value' => $totalSantriTerlibat . ' santri'],
-                ['label' => 'Poin Tertinggi',   'value' => $poinTertinggi . ' poin'],
-                ['label' => 'Santri Tertinggi', 'value' => $santriTertinggi],
-                ['label' => 'Kamar Filter',     'value' => ($kamar === 'semua') ? 'Semua Kamar' : 'Kamar ' . $kamar],
-            ],
-        ])
-    );
-
-
-    // ── SHEET 3: REKAP PER KAMAR ─────────────────────────────────────────────────
+    // ── SHEET 3: REKAP PELANGGARAN UMUM PER KAMAR ──────────────────────────────
     $sheetRekapKamar = $spreadsheet->createSheet();
-    $sheetRekapKamar->setTitle('Rekap Kamar (Umum)');
+    // Excel membatasi nama sheet maksimal 31 karakter.
+    // "Rekap Pelanggaran Umum Per Kamar" = 32 karakter, sehingga diubah menjadi:
+    $sheetRekapKamar->setTitle('Rekap Pelanggaran Umum Kamar');
 
     $sheetRekapKamar->fromArray(
-        ['No', 'Kamar', 'Jumlah Pelanggaran', 'Keterangan', 'Catatan'],
+        ['No', 'Kamar', 'Jumlah Pelanggaran', 'Catatan'],
         NULL, 'A1'
     );
+    $sheetRekapKamar->setAutoFilter('A1:D1');
 
     $sqlKamar = "SELECT s.kamar, COUNT(p.id) AS jumlah_pelanggaran
                  FROM pelanggaran p
@@ -220,7 +234,7 @@ if (isset($_POST['export'])) {
         $rowNum = 2; $no = 1;
         while ($row = $result->fetch_assoc()) {
             $sheetRekapKamar->fromArray(
-                [$no, $row['kamar'], $row['jumlah_pelanggaran'], '', ''],
+                [$no, $row['kamar'], $row['jumlah_pelanggaran'], ''],
                 NULL, 'A' . $rowNum
             );
             $totalKamarTerlibat++;
@@ -235,7 +249,7 @@ if (isset($_POST['export'])) {
 
     ExcelTemplate::applyExecutiveStyle(
         $sheetRekapKamar,
-        'Rekapitulasi Pelanggaran Per Kamar',
+        'Rekapitulasi Pelanggaran Umum Per Kamar',
         ExcelTemplate::THEME_VIOLATION,
         array_merge($baseOptions, [
             'doc_number'   => 'ASUH/DISIP/' . date('Y') . '/003',
@@ -247,6 +261,70 @@ if (isset($_POST['export'])) {
         ])
     );
 
+    // ── SHEET 4: REKAP PELANGGARAN KEBERSIHAN ──────────────────────────────────
+    $sheetKebersihan = $spreadsheet->createSheet();
+    $sheetKebersihan->setTitle('Rekap Pelanggaran Kebersihan');
+
+    $sheetKebersihan->fromArray(
+        ['No', 'Kamar', 'Jumlah Pelanggaran', 'Catatan'],
+        NULL, 'A1'
+    );
+    $sheetKebersihan->setAutoFilter('A1:D1');
+
+    $sqlKebersihan = "SELECT kamar, COUNT(id) AS jumlah_pelanggaran
+                      FROM pelanggaran_kebersihan
+                      WHERE DATE(tanggal) BETWEEN ? AND ?";
+    
+    $paramsKebersihan = [$tanggal_mulai, $tanggal_selesai];
+    $typesKebersihan  = "ss";
+    
+    if ($kamar !== 'semua') {
+        $sqlKebersihan .= " AND kamar = ?";
+        $paramsKebersihan[] = $kamar;
+        $typesKebersihan .= "s";
+    }
+    
+    $sqlKebersihan .= " GROUP BY kamar ORDER BY jumlah_pelanggaran DESC";
+
+    $stmtKebersihan = $conn->prepare($sqlKebersihan);
+    $stmtKebersihan->bind_param($typesKebersihan, ...$paramsKebersihan);
+    $stmtKebersihan->execute();
+    $resultKebersihan = $stmtKebersihan->get_result();
+
+    $totalKamarKebersihan = 0;
+    $kamarTerburukKebersihan = '-';
+    $kasusTertinggiKebersihan = 0;
+
+    if ($resultKebersihan->num_rows > 0) {
+        $rowNum = 2; $no = 1;
+        while ($row = $resultKebersihan->fetch_assoc()) {
+            $sheetKebersihan->fromArray(
+                [$no, $row['kamar'], $row['jumlah_pelanggaran'], ''],
+                NULL, 'A' . $rowNum
+            );
+            $totalKamarKebersihan++;
+            if ($no === 1) {
+                $kamarTerburukKebersihan = $row['kamar'];
+                $kasusTertinggiKebersihan = $row['jumlah_pelanggaran'];
+            }
+            $rowNum++; $no++;
+        }
+    }
+    $stmtKebersihan->close();
+
+    ExcelTemplate::applyExecutiveStyle(
+        $sheetKebersihan,
+        'Rekapitulasi Pelanggaran Kebersihan Per Kamar',
+        ExcelTemplate::THEME_VIOLATION,
+        array_merge($baseOptions, [
+            'doc_number'   => 'ASUH/DISIP/' . date('Y') . '/004',
+            'summary_data' => [
+                ['label' => 'Total Kamar',         'value' => $totalKamarKebersihan . ' kamar'],
+                ['label' => 'Kamar Terbanyak',     'value' => 'Kamar ' . $kamarTerburukKebersihan],
+                ['label' => 'Jumlah Kasus Teratas','value' => $kasusTertinggiKebersihan . ' kasus'],
+            ],
+        ])
+    );
 
     $spreadsheet->setActiveSheetIndex(0);
 
