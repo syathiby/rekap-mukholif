@@ -49,7 +49,7 @@ require_once __DIR__ . '/../layouts/header.php';
     <div class="row g-4">
         <?php if (has_permission('rekap_view_umum')): ?>
         <div class="col-md-6 col-lg-4">
-            <a href="umum.php" class="text-decoration-none">
+            <a href="pelanggaran_umum.php" class="text-decoration-none">
                 <div class="card h-100 hover-up p-4 d-flex flex-row align-items-center gap-3 border-start border-4 border-primary">
                     <div class="icon-container text-primary flex-shrink-0" style="background-color: rgba(79, 70, 229, 0.1);">
                         <i class="fas fa-list-alt fs-4"></i>
@@ -57,6 +57,20 @@ require_once __DIR__ . '/../layouts/header.php';
                     <div>
                         <h6 class="text-dark fw-bold mb-1">Pelanggaran Umum</h6>
                         <p class="text-muted small mb-0">Laporan rekapitulasi pelanggaran secara umum</p>
+                    </div>
+                </div>
+            </a>
+        </div>
+
+        <div class="col-md-6 col-lg-4">
+            <a href="umum.php" class="text-decoration-none">
+                <div class="card h-100 hover-up p-4 d-flex flex-row align-items-center gap-3 border-start border-4" style="border-left-color: #10b981 !important;">
+                    <div class="icon-container flex-shrink-0" style="color: #10b981; background-color: rgba(16, 185, 129, 0.1);">
+                        <i class="fas fa-chart-pie fs-4"></i>
+                    </div>
+                    <div>
+                        <h6 class="text-dark fw-bold mb-1">Analisis Karakter Santri</h6>
+                        <p class="text-muted small mb-0">Rekapitulasi total pelanggaran & reward santri</p>
                     </div>
                 </div>
             </a>

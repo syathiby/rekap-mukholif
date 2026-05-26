@@ -17,36 +17,8 @@ $periode_aktif = mysqli_fetch_assoc($q_periode)['nilai'] ?? date('Y-m-d', strtot
 // Ambil filter dari URL
 $filter_kamar = $_GET['kamar'] ?? null;
 $filter_kelas = $_GET['kelas'] ?? null;
-$filter_bagian = $_GET['bagian'] ?? null;
-$filter_kategori = $_GET['kategori'] ?? null;
-$filter_jp = $_GET['jenis_pelanggaran'] ?? null;
 $start_date = $_GET['start_date'] ?? $periode_aktif;
 $end_date = $_GET['end_date'] ?? date("Y-m-d");
-
-// Query untuk filter dropdown dinamis berdasarkan rentang tanggal
-$params_for_filters = [$start_date, $end_date];
-$types_for_filters = "ss";
-
-// Ambil daftar Bagian yang ADA PELANGGARANNYA di periode ini
-$bagian_sql = "SELECT DISTINCT jp.bagian FROM pelanggaran p JOIN jenis_pelanggaran jp ON p.jenis_pelanggaran_id = jp.id WHERE DATE(p.tanggal) BETWEEN ? AND ? AND jp.bagian IS NOT NULL AND jp.bagian != '' ORDER BY jp.bagian ASC";
-$bagian_stmt = $conn->prepare($bagian_sql);
-$bagian_stmt->bind_param($types_for_filters, ...$params_for_filters);
-$bagian_stmt->execute();
-$bagian_result = $bagian_stmt->get_result();
-
-// Ambil daftar Kategori yang ADA PELANGGARANNYA di periode ini
-$kategori_sql = "SELECT DISTINCT jp.kategori FROM pelanggaran p JOIN jenis_pelanggaran jp ON p.jenis_pelanggaran_id = jp.id WHERE DATE(p.tanggal) BETWEEN ? AND ? AND jp.kategori IS NOT NULL AND jp.kategori != '' ORDER BY FIELD(jp.kategori, 'Sangat Berat', 'Berat', 'Sedang', 'Ringan')";
-$kategori_stmt = $conn->prepare($kategori_sql);
-$kategori_stmt->bind_param($types_for_filters, ...$params_for_filters);
-$kategori_stmt->execute();
-$kategori_result = $kategori_stmt->get_result();
-
-// Ambil daftar Jenis Pelanggaran yang ADA di periode ini
-$jp_sql = "SELECT DISTINCT jp.id, jp.nama_pelanggaran FROM pelanggaran p JOIN jenis_pelanggaran jp ON p.jenis_pelanggaran_id = jp.id WHERE DATE(p.tanggal) BETWEEN ? AND ? ORDER BY jp.nama_pelanggaran ASC";
-$jp_stmt = $conn->prepare($jp_sql);
-$jp_stmt->bind_param($types_for_filters, ...$params_for_filters);
-$jp_stmt->execute();
-$jp_result = $jp_stmt->get_result();
 
 // Ambil daftar Kamar (statis)
 $kamars_result = mysqli_query($conn, "SELECT DISTINCT kamar FROM santri WHERE kamar IS NOT NULL AND kamar != '' ORDER BY CAST(REGEXP_REPLACE(kamar, '[^0-9]', '') AS UNSIGNED) ASC, REGEXP_REPLACE(kamar, '[0-9]', '') ASC");
@@ -55,60 +27,48 @@ $kamars_result = mysqli_query($conn, "SELECT DISTINCT kamar FROM santri WHERE ka
 $kelas_result = mysqli_query($conn, "SELECT DISTINCT CAST(kelas AS UNSIGNED) AS kelas FROM santri WHERE kelas IS NOT NULL AND kelas != '' ORDER BY kelas ASC");
 
 
-// --- QUERY UTAMA (SUDAH DIMODIFIKASI LAGI) ---
+// --- QUERY UTAMA (GABUNGAN PELANGGARAN & REWARD) ---
 $sql = "
 SELECT
     s.id,
     s.nama,
     s.kelas,
     s.kamar,
-    s.poin_aktif, -- Ambil poin aktif untuk ditampilkan sebagai info tambahan
-    COALESCE(sub.total_pelanggaran_periode, 0) AS total_pelanggaran_periode,
-    COALESCE(sub.total_poin_periode, 0) AS total_poin_periode
+    s.poin_aktif,
+    COALESCE(sub_p.total_pelanggaran_periode, 0) AS total_pelanggaran_periode,
+    COALESCE(sub_p.total_poin_pelanggaran, 0) AS total_poin_pelanggaran,
+    COALESCE(sub_r.total_reward_periode, 0) AS total_reward_periode,
+    COALESCE(sub_r.total_poin_reward, 0) AS total_poin_reward
 FROM
     santri s
-JOIN(
-    -- Subquery ini HANYA akan mengambil santri yang punya pelanggaran di periode ini
+LEFT JOIN (
     SELECT
         p.santri_id,
-        COUNT(p.id) AS total_pelanggaran_periode, -- Hitung jumlah pelanggaran
-        SUM(jp.poin) AS total_poin_periode -- Hitung total poin
+        COUNT(p.id) AS total_pelanggaran_periode,
+        SUM(jp.poin) AS total_poin_pelanggaran
     FROM
         pelanggaran p
-    JOIN jenis_pelanggaran jp ON
-        p.jenis_pelanggaran_id = jp.id
-    WHERE
-        DATE(p.tanggal) BETWEEN ? AND ?
-";
-
-$params = [$start_date, $end_date];
-$types = "ss";
-
-// Terapkan filter di dalam subquery
-if ($filter_jp) {
-    $sql .= " AND p.jenis_pelanggaran_id = ?";
-    $params[] = $filter_jp;
-    $types .= "i";
-}
-if ($filter_bagian) {
-    $sql .= " AND jp.bagian = ?";
-    $params[] = $filter_bagian;
-    $types .= "s";
-}
-if ($filter_kategori) {
-    $sql .= " AND jp.kategori = ?";
-    $params[] = $filter_kategori;
-    $types .= "s";
-}
-
-$sql .= "
-    GROUP BY
-        p.santri_id
-) AS sub ON
-    s.id = sub.santri_id
+    JOIN jenis_pelanggaran jp ON p.jenis_pelanggaran_id = jp.id
+    WHERE DATE(p.tanggal) BETWEEN ? AND ?
+    GROUP BY p.santri_id
+) AS sub_p ON s.id = sub_p.santri_id
+LEFT JOIN (
+    SELECT
+        dr.santri_id,
+        COUNT(dr.id) AS total_reward_periode,
+        SUM(jr.poin_reward) AS total_poin_reward
+    FROM
+        daftar_reward dr
+    JOIN jenis_reward jr ON dr.jenis_reward_id = jr.id
+    WHERE DATE(dr.tanggal) BETWEEN ? AND ?
+    GROUP BY dr.santri_id
+) AS sub_r ON s.id = sub_r.santri_id
 WHERE
     1 = 1
 ";
+
+$params = [$start_date, $end_date, $start_date, $end_date];
+$types = "ssss";
 
 // Terapkan filter kamar & kelas di query utama
 if ($filter_kamar) {
@@ -122,13 +82,13 @@ if ($filter_kelas) {
     $types .= "s";
 }
 
-// Filter untuk memastikan hanya santri dengan poin di periode ini yang muncul
-$sql .= " AND sub.total_poin_periode > 0";
+// Filter untuk memastikan hanya santri dengan aktivitas (pelanggaran/reward) di periode ini yang muncul
+$sql .= " AND (sub_p.total_poin_pelanggaran > 0 OR sub_r.total_poin_reward > 0)";
 
-// Urutkan murni berdasarkan total poin di periode ini
+// Urutkan berdasarkan total aktivitas terbesar
 $sql .= "
 ORDER BY
-    total_poin_periode DESC,
+    (COALESCE(sub_p.total_poin_pelanggaran, 0) + COALESCE(sub_r.total_poin_reward, 0)) DESC,
     s.nama ASC
 ";
 
@@ -142,12 +102,12 @@ $query = $stmt->get_result();
 ?>
 
 <style>
-    /* CSS kamu tetap sama, tidak ada perubahan */
     :root {
         --primary: #4f46e5; --primary-light: #e0e7ff; --primary-dark: #4338ca;
         --secondary: #64748b; --light-bg: #f8fafc; --card-bg: #ffffff;
         --border-color: #e2e8f0; --text-dark: #1e293b; --text-light: #64748b;
         --gold: #f59e0b; --silver: #9ca3af; --bronze: #a16207;
+        --danger: #ef4444; --success: #10b981;
     }
     body { background-color: var(--light-bg); font-family: 'Poppins', sans-serif; }
     .card { background-color: var(--card-bg); border: 1px solid var(--border-color); border-radius: 0.75rem; box-shadow: 0 1px 3px 0 rgb(0 0 0 / 0.05); }
@@ -158,22 +118,16 @@ $query = $stmt->get_result();
     .rank-1 .rank-icon { color: var(--gold); }
     .rank-2 .rank-icon { color: var(--silver); }
     .rank-3 .rank-icon { color: var(--bronze); }
-    .poin-value { font-size: 1.25rem; font-weight: 700; color: var(--primary-dark); }
+    .poin-value-danger { font-size: 1.1rem; font-weight: 700; color: var(--danger); }
+    .poin-value-success { font-size: 1.1rem; font-weight: 700; color: var(--success); }
     .btn-detail { background-color: var(--primary-light); color: var(--primary-dark); font-weight: 600; text-decoration: none; transition: all 0.2s; }
     .btn-detail:hover { background-color: var(--primary-dark); color: white; }
-    .periode-stats { font-size: 0.8rem; font-weight: 500; color: var(--text-light); background-color: #f1f5f9; padding: 0.2rem 0.6rem; border-radius: 9999px; white-space: nowrap; }
-    /* Style baru buat info poin aktif */
-    .poin-aktif-info {
-        display: block;
-        font-size: 0.75rem;
-        color: #ef4444; /* Warna merah aksen biar keliatan */
-        font-weight: 500;
-        margin-top: 2px;
-    }
+    .periode-stats { font-size: 0.8rem; font-weight: 500; color: var(--text-light); background-color: #f1f5f9; padding: 0.2rem 0.6rem; border-radius: 9999px; white-space: nowrap; display: inline-block; margin-bottom: 4px; }
+    .poin-aktif-info { display: block; font-size: 0.75rem; color: #ef4444; font-weight: 500; margin-top: 2px; }
 </style>
 
 <div class="container py-4">
-    <h1 class="page-title mb-4"><i class="fas fa-list-alt me-3"></i>Rekapitulasi Pelanggaran Umum</h1>
+    <h1 class="page-title mb-4"><i class="fas fa-list-alt me-3"></i>Rekapitulasi Umum (Pelanggaran & Reward)</h1>
 
     <div class="card mb-4">
         <div class="card-body">
@@ -211,106 +165,66 @@ $query = $stmt->get_result();
                             <?php endwhile; ?>
                         </select>
                     </div>
-
-                    <div class="col-lg-4 col-md-6">
-                        <label for="bagian" class="form-label">Bagian</label>
-                        <select name="bagian" id="bagian" class="form-select">
-                            <option value="">Semua Bagian</option>
-                            <?php mysqli_data_seek($bagian_result, 0); while ($b = mysqli_fetch_assoc($bagian_result)) : ?>
-                                <option value="<?= htmlspecialchars($b['bagian']) ?>" <?= ($filter_bagian == $b['bagian']) ? 'selected' : '' ?>>
-                                    <?= htmlspecialchars($b['bagian']) ?>
-                                </option>
-                            <?php endwhile; ?>
-                        </select>
-                    </div>
-                    <div class="col-lg-4 col-md-6">
-                        <label for="kategori" class="form-label">Kategori</label>
-                        <select name="kategori" id="kategori" class="form-select">
-                            <option value="">Semua Kategori</option>
-                            <?php mysqli_data_seek($kategori_result, 0); while ($k = mysqli_fetch_assoc($kategori_result)) : ?>
-                                <option value="<?= htmlspecialchars($k['kategori']) ?>" <?= ($filter_kategori == $k['kategori']) ? 'selected' : '' ?>>
-                                    <?= htmlspecialchars($k['kategori']) ?>
-                                </option>
-                            <?php endwhile; ?>
-                        </select>
-                    </div>
-                    <div class="col-lg-4 col-md-12">
-                        <label for="jenis_pelanggaran" class="form-label">Jenis Pelanggaran</label>
-                        <select name="jenis_pelanggaran" id="jenis_pelanggaran" class="form-select">
-                            <option value="">Semua Pelanggaran</option>
-                            <?php mysqli_data_seek($jp_result, 0); while ($jp = mysqli_fetch_assoc($jp_result)) : ?>
-                                <option value="<?= $jp['id'] ?>" <?= ($filter_jp == $jp['id']) ? 'selected' : '' ?>>
-                                    <?= htmlspecialchars($jp['nama_pelanggaran']) ?>
-                                </option>
-                            <?php endwhile; ?>
-                        </select>
-                    </div>
                 </div>
             </form>
         </div>
     </div>
 
-    <div class="card">
-        <div class="card-body table-responsive">
-            <table class="table table-hover">
-                <thead>
-                    <tr>
-                        <th class="text-center">Peringkat</th>
-                        <th>Santri</th>
-                        <th class="text-center">Poin (Filter)</th>
-                        <th class="text-center">Statistik (Filter)</th>
-                        <th class="text-center">Aksi</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    <?php if (mysqli_num_rows($query) === 0) : ?>
-                        <tr>
-                            <td colspan="5" class="text-center p-5 text-muted">
-                                <i class="fas fa-check-circle fa-3x mb-3"></i><br>Tidak ada data pelanggaran ditemukan dengan filter ini.
-                            </td>
-                        </tr>
-                    <?php else : ?>
-                        <?php $no = 1; while ($row = mysqli_fetch_assoc($query)) : ?>
-                            <tr class="rank-<?= $no ?>">
-                                <td class="text-center">
-                                    <?php if ($no <= 3) : ?>
-                                        <i class="fas fa-trophy rank-icon"></i>
-                                    <?php else : ?>
-                                        <span class="fw-bold fs-5"><?= $no ?></span>
-                                    <?php endif; ?>
-                                </td>
-                                <td>
-                                    <div class="fw-bold"><?= htmlspecialchars($row['nama']) ?></div>
-                                    <small class="text-muted">Kls: <?= htmlspecialchars($row['kelas']) ?> | Kmr: <?= htmlspecialchars($row['kamar']) ?></small>
-                                    <small class="poin-aktif-info">Poin Aktif: <?= $row['poin_aktif'] ?></small>
-                                </td>
-                                <td class="text-center">
-                                    <span class="poin-value"><?= $row['total_poin_periode'] ?></span>
-                                </td>
-                                <td class="text-center">
-                                    <span class="periode-stats">
-                                        <?= $row['total_pelanggaran_periode'] ?> Pelanggaran
-                                    </span>
-                                </td>
-                                <td class="text-center">
+    <div class="row g-3">
+        <?php if (mysqli_num_rows($query) === 0) : ?>
+            <div class="col-12">
+                <div class="card border-0 shadow-sm rounded-4 p-5 text-center text-muted">
+                    <i class="fas fa-check-circle fa-3x mb-3"></i>
+                    <p class="mb-0">Tidak ada data ditemukan dengan filter ini.</p>
+                </div>
+            </div>
+        <?php else : ?>
+            <?php $no = 1; while ($row = mysqli_fetch_assoc($query)) : ?>
+                <div class="col-12">
+                    <div class="card border-0 shadow-sm rounded-4" style="transition: transform 0.2s;">
+                        <div class="card-body p-3 d-flex flex-column flex-md-row align-items-center justify-content-between gap-3">
+                            <div class="d-flex align-items-center gap-3 w-100">
+                                <div class="rounded-circle bg-light d-flex align-items-center justify-content-center text-secondary fw-bold" style="width: 45px; height: 45px; flex-shrink: 0;">
+                                    <?= $no ?>
+                                </div>
+                                <div class="flex-grow-1">
+                                    <h6 class="mb-1 fw-bold text-dark text-truncate" style="max-width: 200px;"><?= htmlspecialchars($row['nama']) ?></h6>
+                                    <div class="text-muted small">
+                                        Kls: <?= htmlspecialchars($row['kelas']) ?> &bull; Kmr: <?= htmlspecialchars($row['kamar']) ?>
+                                    </div>
+                                    <div class="poin-aktif-info mt-1" style="font-size: 0.7rem;">Poin Aktif: <?= $row['poin_aktif'] ?></div>
+                                </div>
+                            </div>
+                            
+                            <div class="d-flex align-items-center justify-content-around w-100 bg-light rounded-4 p-2 gap-2" style="max-width: 450px;">
+                                <div class="text-center px-2 flex-fill">
+                                    <div class="text-muted fw-semibold" style="font-size: 0.7rem; letter-spacing: 0.5px;">PELANGGARAN</div>
+                                    <div class="poin-value-danger lh-1 mt-1"><?= $row['total_poin_pelanggaran'] ?> <span class="fs-6 fw-normal">Poin</span></div>
+                                    <div class="text-muted mt-1" style="font-size: 0.7rem;"><?= $row['total_pelanggaran_periode'] ?> Kali</div>
+                                </div>
+                                
+                                <div class="text-center border-start border-end px-2 flex-fill border-2 border-white">
+                                    <div class="text-muted fw-semibold" style="font-size: 0.7rem; letter-spacing: 0.5px;">REWARD</div>
+                                    <div class="poin-value-success lh-1 mt-1">+<?= $row['total_poin_reward'] ?> <span class="fs-6 fw-normal">Poin</span></div>
+                                    <div class="text-muted mt-1" style="font-size: 0.7rem;"><?= $row['total_reward_periode'] ?> Kali</div>
+                                </div>
+                                
+                                <div class="text-center px-2 flex-fill">
                                     <?php
-                                    $detail_link = "detail_pelanggaran.php?id={$row['id']}&start_date=$start_date&end_date=$end_date"
+                                    $detail_link = "detail_umum.php?id={$row['id']}&start_date=$start_date&end_date=$end_date"
                                         . "&kamar=" . urlencode($filter_kamar ?? '')
-                                        . "&kelas=" . urlencode($filter_kelas ?? '')
-                                        . "&jenis_pelanggaran=" . urlencode($filter_jp ?? '')
-                                        . "&bagian=" . urlencode($filter_bagian ?? '')
-                                        . "&kategori=" . urlencode($filter_kategori ?? '');
+                                        . "&kelas=" . urlencode($filter_kelas ?? '');
                                     ?>
-                                    <a href="<?= $detail_link ?>" class="btn btn-sm btn-detail rounded-pill px-3">
-                                        <i class="fas fa-info-circle me-1"></i> Detail
+                                    <a href="<?= $detail_link ?>" class="btn btn-sm btn-detail rounded-pill px-3 py-2 w-100 fw-bold shadow-sm d-flex align-items-center justify-content-center">
+                                        <i class="fas fa-chart-pie me-1"></i> Detail
                                     </a>
-                                </td>
-                            </tr>
-                        <?php $no++; endwhile; ?>
-                    <?php endif; ?>
-                </tbody>
-            </table>
-        </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            <?php $no++; endwhile; ?>
+        <?php endif; ?>
     </div>
 </div>
 

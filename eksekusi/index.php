@@ -41,7 +41,7 @@ $pelanggaranQuery = mysqli_query($conn, "
     
     <!-- Header Page yang Dilepas dari Card Utama -->
     <div class="d-flex align-items-center mb-4 mt-2 px-1">
-        <div class="d-flex align-items-center justify-content-center rounded-circle me-3 shadow-sm" style="width: 56px; height: 56px; background: linear-gradient(135deg, #a78bfa, #8b5cf6); color: white;">
+        <div class="d-flex align-items-center justify-content-center rounded-circle me-3 shadow-sm flex-shrink-0" style="width: 56px; height: 56px; min-width: 56px; min-height: 56px; background: linear-gradient(135deg, #a78bfa, #8b5cf6); color: white;">
             <i class="fas fa-broom fa-xl"></i>
         </div>
         <div>
