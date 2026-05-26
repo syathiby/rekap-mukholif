@@ -1,4 +1,4 @@
-﻿<?php 
+<?php 
 // 1. Panggil 'Otak' aplikasi
 require_once __DIR__ . '/../../bootstrap/init.php';
 
@@ -130,108 +130,76 @@ $peringkat_list = mysqli_fetch_all(mysqli_stmt_get_result($stmt), MYSQLI_ASSOC);
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 
 <style>
-    /* -- SOFT BLUE THEME -- */
-    :root {
-        --theme-primary: #3b82f6;      
-        --theme-soft: #eff6ff;         
-        --theme-dark: #1e3a8a;         
-        --theme-card-bg: #ffffff;
-        --theme-border: #dbeafe;       
-    }
-    body { background-color: #f8f9fa; font-family: 'Poppins', sans-serif; }
-
-    /* PAGE HEADER */
-    .page-header {
-        background: linear-gradient(135deg, var(--theme-primary), var(--theme-dark));
-        color: white; padding: 2rem; border-radius: 16px; margin-bottom: 2rem;
-        box-shadow: 0 10px 20px -5px rgba(37, 99, 235, 0.3);
-        position: relative; overflow: hidden;
-    }
-    /* Stat Cards */
-    .stat-card-row {
-        display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 1rem;
-        margin-top: 1.5rem;
-    }
-    .stat-item {
-        background: rgba(255, 255, 255, 0.15);
-        backdrop-filter: blur(5px);
-        border: 1px solid rgba(255, 255, 255, 0.2);
-        padding: 1rem; border-radius: 12px;
-        text-align: center; color: white;
-        transition: transform 0.2s;
-    }
-    .stat-item:hover { transform: translateY(-3px); background: rgba(255, 255, 255, 0.25); }
-    .stat-value { font-size: 1.8rem; font-weight: 800; display: block; line-height: 1.2; }
-    .stat-label { font-size: 0.85rem; opacity: 0.9; text-transform: uppercase; letter-spacing: 0.5px; }
-
-    /* Filter */
-    .filter-card {
-        background: white; border-radius: 16px; border: 1px solid var(--theme-border);
-        box-shadow: 0 4px 15px rgba(59, 130, 246, 0.05); padding: 1.5rem;
-    }
-    .filter-label { font-weight: 700; color: var(--theme-dark); font-size: 0.8rem; text-transform: uppercase; margin-bottom: 5px; }
-    .form-control, .form-select { border-radius: 10px; border-color: #e5e7eb; }
-    .form-control:focus, .form-select:focus { border-color: var(--theme-primary); box-shadow: 0 0 0 4px var(--theme-soft); }
-
-    /* Charts */
-    .chart-card { background: white; border-radius: 16px; padding: 1.5rem; height: 100%; border: 1px solid var(--theme-border); box-shadow: 0 2px 4px rgba(0,0,0,0.02); }
-    .card-title { font-weight: 700; color: var(--theme-dark); border-bottom: 2px solid var(--theme-soft); padding-bottom: 10px; margin-bottom: 20px; }
-
-    /* Table */
-    .ranking-table tbody tr { background: white; transition: transform 0.2s; border-radius: 12px; box-shadow: 0 2px 4px rgba(0,0,0,0.02); }
-    .ranking-table tbody tr:hover { transform: translateY(-3px); box-shadow: 0 10px 20px -5px rgba(59, 130, 246, 0.1); }
-    .ranking-table td { padding: 1rem; vertical-align: middle; border: none; }
-    .ranking-table td:first-child { border-top-left-radius: 12px; border-bottom-left-radius: 12px; }
-    .ranking-table td:last-child { border-top-right-radius: 12px; border-bottom-right-radius: 12px; }
-    
     .rank-badge { width: 36px; height: 36px; display: flex; align-items: center; justify-content: center; border-radius: 50%; font-weight: bold; }
     .rank-1 { background: #fff7ed; color: #ea580c; border: 2px solid #fdba74; } 
     .rank-2 { background: #f1f5f9; color: #475569; border: 2px solid #cbd5e1; } 
     .rank-3 { background: #fefce8; color: #ca8a04; border: 2px solid #fde047; }
-    .rank-other { background: var(--theme-soft); color: var(--theme-primary); }
-    .poin-badge { background: var(--theme-soft); color: var(--theme-primary); padding: 6px 14px; border-radius: 20px; font-weight: 800; }
+    .rank-other { background: #f8f9fa; color: #6c757d; border: 1px solid #dee2e6; }
+    .poin-badge { background: #eff6ff; color: #3b82f6; padding: 6px 14px; border-radius: 20px; font-weight: 800; }
 </style>
 
 <div class="container my-4">
     
-    <div class="page-header">
-        <div class="d-flex flex-column align-items-start">
-            <h2 class="fw-bold mb-1"><i class="fas fa-user-tie me-2"></i>Rekap Kesantrian</h2>
-            <p class="mb-0 opacity-75 small">
-                Monitoring Kedisiplinan | Periode: <span class="fw-bold text-warning"><?= date('d M Y', strtotime($start_date)) ?> - <?= date('d M Y', strtotime($end_date)) ?></span>
+    <div class="d-flex align-items-center mb-4">
+        <div>
+            <h4 class="fw-bold mb-1"><i class="fas fa-user-tie me-2 text-primary"></i>Rekap Kesantrian</h4>
+            <p class="mb-0 text-secondary small">
+                Monitoring Kedisiplinan | Periode: <span class="fw-bold text-dark"><?= date('d M Y', strtotime($start_date)) ?> - <?= date('d M Y', strtotime($end_date)) ?></span>
             </p>
         </div>
+    </div>
 
-        <div class="stat-card-row">
-            <div class="stat-item">
-                <span class="stat-value"><?= number_format($stats['total_kasus']) ?></span>
-                <span class="stat-label">Total Pelanggaran</span>
+    <!-- Global Stats -->
+    <div class="row g-3 mb-4">
+        <div class="col-md-4">
+            <div class="pro-card p-4 d-flex align-items-center h-100">
+                <div class="icon-circle bg-danger bg-opacity-10 text-danger me-3" style="width: 50px; height: 50px; display: flex; align-items: center; justify-content: center; border-radius: 12px; font-size: 1.5rem;">
+                    <i class="fas fa-exclamation-circle"></i>
+                </div>
+                <div>
+                    <h6 class="text-muted mb-1 text-uppercase" style="font-size: 0.75rem; letter-spacing: 0.5px;">Total Pelanggaran</h6>
+                    <h3 class="mb-0 fw-bold text-dark"><?= number_format($stats['total_kasus']) ?></h3>
+                </div>
             </div>
-            <div class="stat-item">
-                <span class="stat-value"><?= number_format($stats['total_poin']) ?></span>
-                <span class="stat-label">Total Poin</span>
+        </div>
+        <div class="col-md-4">
+            <div class="pro-card p-4 d-flex align-items-center h-100">
+                <div class="icon-circle bg-warning bg-opacity-10 text-warning me-3" style="width: 50px; height: 50px; display: flex; align-items: center; justify-content: center; border-radius: 12px; font-size: 1.5rem;">
+                    <i class="fas fa-star-half-alt"></i>
+                </div>
+                <div>
+                    <h6 class="text-muted mb-1 text-uppercase" style="font-size: 0.75rem; letter-spacing: 0.5px;">Total Poin</h6>
+                    <h3 class="mb-0 fw-bold text-dark"><?= number_format($stats['total_poin']) ?></h3>
+                </div>
             </div>
-            <div class="stat-item">
-                <span class="stat-value"><?= number_format($stats['total_santri']) ?></span>
-                <span class="stat-label">Santri Terlibat</span>
+        </div>
+        <div class="col-md-4">
+            <div class="pro-card p-4 d-flex align-items-center h-100">
+                <div class="icon-circle bg-primary bg-opacity-10 text-primary me-3" style="width: 50px; height: 50px; display: flex; align-items: center; justify-content: center; border-radius: 12px; font-size: 1.5rem;">
+                    <i class="fas fa-users"></i>
+                </div>
+                <div>
+                    <h6 class="text-muted mb-1 text-uppercase" style="font-size: 0.75rem; letter-spacing: 0.5px;">Santri Terlibat</h6>
+                    <h3 class="mb-0 fw-bold text-dark"><?= number_format($stats['total_santri']) ?></h3>
+                </div>
             </div>
         </div>
     </div>
 
-    <div class="filter-card mb-4">
+    <div class="pro-card p-4 mb-4">
         <form method="get" id="filterForm">
             <div class="row g-3 align-items-end">
                 <div class="col-6 col-md-3">
-                    <label class="filter-label">Mulai Tanggal</label>
-                    <input type="date" class="form-control" name="start_date" value="<?= htmlspecialchars($start_date) ?>">
+                    <label class="form-label fw-bold text-secondary text-uppercase" style="font-size: 0.75rem; letter-spacing: 0.5px;">Mulai Tanggal</label>
+                    <input type="date" class="form-control bg-light" name="start_date" value="<?= htmlspecialchars($start_date) ?>">
                 </div>
                 <div class="col-6 col-md-3">
-                    <label class="filter-label">Sampai Tanggal</label>
-                    <input type="date" class="form-control" name="end_date" value="<?= htmlspecialchars($end_date) ?>">
+                    <label class="form-label fw-bold text-secondary text-uppercase" style="font-size: 0.75rem; letter-spacing: 0.5px;">Sampai Tanggal</label>
+                    <input type="date" class="form-control bg-light" name="end_date" value="<?= htmlspecialchars($end_date) ?>">
                 </div>
                 <div class="col-6 col-md-3">
-                    <label class="filter-label">Filter Kamar</label>
-                    <select name="kamar" class="form-select">
+                    <label class="form-label fw-bold text-secondary text-uppercase" style="font-size: 0.75rem; letter-spacing: 0.5px;">Filter Kamar</label>
+                    <select name="kamar" class="form-select bg-light">
                         <option value="">Semua Kamar</option>
                         <?php mysqli_data_seek($kamars_result, 0); while ($k = mysqli_fetch_assoc($kamars_result)): ?>
                             <option value="<?= htmlspecialchars($k['kamar']) ?>" <?= ($filter_kamar == $k['kamar']) ? 'selected' : '' ?>>Kamar <?= htmlspecialchars($k['kamar']) ?></option>
@@ -239,8 +207,8 @@ $peringkat_list = mysqli_fetch_all(mysqli_stmt_get_result($stmt), MYSQLI_ASSOC);
                     </select>
                 </div>
                 <div class="col-6 col-md-3">
-                    <label class="filter-label">Filter Kelas</label>
-                    <select name="kelas" class="form-select">
+                    <label class="form-label fw-bold text-secondary text-uppercase" style="font-size: 0.75rem; letter-spacing: 0.5px;">Filter Kelas</label>
+                    <select name="kelas" class="form-select bg-light">
                         <option value="">Semua Kelas</option>
                         <?php mysqli_data_seek($kelas_list, 0); while ($k = mysqli_fetch_assoc($kelas_list)): ?>
                             <option value="<?= htmlspecialchars($k['kelas']) ?>" <?= ($filter_kelas == $k['kelas']) ? 'selected' : '' ?>>Kelas <?= htmlspecialchars($k['kelas']) ?></option>
@@ -253,16 +221,16 @@ $peringkat_list = mysqli_fetch_all(mysqli_stmt_get_result($stmt), MYSQLI_ASSOC);
 
     <div class="row g-4 mb-5">
         <div class="col-md-7">
-            <div class="chart-card">
-                <h5 class="card-title text-primary"><i class="fas fa-chart-pie me-2"></i>Sebaran Per Kamar</h5>
+            <div class="pro-card p-4 h-100">
+                <h6 class="fw-bold text-dark mb-4 text-uppercase border-bottom pb-3" style="letter-spacing: 0.5px;"><i class="fas fa-chart-pie me-2 text-primary"></i>Sebaran Per Kamar</h6>
                 <div style="height: 250px; position: relative;">
                     <canvas id="chartKamar"></canvas>
                 </div>
             </div>
         </div>
         <div class="col-md-5">
-            <div class="chart-card">
-                <h5 class="card-title text-primary"><i class="fas fa-chart-doughnut me-2"></i>Sebaran Kelas</h5>
+            <div class="pro-card p-4 h-100">
+                <h6 class="fw-bold text-dark mb-4 text-uppercase border-bottom pb-3" style="letter-spacing: 0.5px;"><i class="fas fa-chart-doughnut me-2 text-primary"></i>Sebaran Kelas</h6>
                 <div style="height: 250px; position: relative;">
                     <canvas id="chartKelas"></canvas>
                 </div>
@@ -270,17 +238,19 @@ $peringkat_list = mysqli_fetch_all(mysqli_stmt_get_result($stmt), MYSQLI_ASSOC);
         </div>
     </div>
 
-    <div class="mb-5">
-        <h5 class="fw-bold text-dark mb-3 ps-2 border-start border-4 border-primary">&nbsp; Peringkat Pelanggaran</h5>
+    <div class="mb-5 pro-card p-0 overflow-hidden">
+        <div class="p-4 border-bottom bg-light">
+            <h6 class="fw-bold text-dark mb-0 text-uppercase" style="letter-spacing: 0.5px;"><i class="fas fa-trophy text-warning me-2"></i> Peringkat Pelanggaran</h6>
+        </div>
         <div class="table-responsive">
-            <table class="table ranking-table">
-                <thead>
+            <table class="table table-hover align-middle mb-0 ranking-table">
+                <thead class="text-secondary bg-white" style="font-size: 0.85rem; text-transform: uppercase; letter-spacing: 0.5px;">
                     <tr>
-                        <th class="text-center" width="80">Rank</th>
-                        <th>Identitas Santri</th>
-                        <th class="text-center">Total Poin</th>
-                        <th class="text-center">Jml Kasus</th>
-                        <th class="text-end pe-4">Aksi</th>
+                        <th class="text-center py-3" width="80">Rank</th>
+                        <th class="py-3">Identitas Santri</th>
+                        <th class="text-center py-3">Total Poin</th>
+                        <th class="text-center py-3">Jml Kasus</th>
+                        <th class="text-end pe-4 py-3">Aksi</th>
                     </tr>
                 </thead>
                 <tbody>
@@ -289,21 +259,21 @@ $peringkat_list = mysqli_fetch_all(mysqli_stmt_get_result($stmt), MYSQLI_ASSOC);
                     <?php else: ?>
                         <?php foreach ($peringkat_list as $index => $row): $no = $index + 1; ?>
                         <tr>
-                            <td class="text-center">
+                            <td class="text-center py-3">
                                 <div class="rank-badge mx-auto <?= ($no <= 3) ? 'rank-'.$no : 'rank-other' ?>">
                                     <?= ($no <= 3) ? '<i class="fas fa-crown"></i>' : $no ?>
                                 </div>
                             </td>
-                            <td>
+                            <td class="py-3">
                                 <div class="fw-bold text-dark mb-1"><?= htmlspecialchars($row['nama']) ?></div>
                                 <div class="d-flex gap-2">
                                     <span class="badge bg-light text-secondary border">Kls <?= htmlspecialchars($row['kelas']) ?></span>
                                     <span class="badge bg-light text-secondary border">Kmr <?= htmlspecialchars($row['kamar']) ?></span>
                                 </div>
                             </td>
-                            <td class="text-center"><span class="poin-badge"><?= $row['total_poin'] ?></span></td>
-                            <td class="text-center text-muted fw-bold"><?= $row['total_pelanggaran'] ?></td>
-                            <td class="text-end pe-3">
+                            <td class="text-center py-3"><span class="poin-badge"><?= $row['total_poin'] ?></span></td>
+                            <td class="text-center text-muted fw-bold py-3"><?= $row['total_pelanggaran'] ?></td>
+                            <td class="text-end pe-4 py-3">
                                 <a href="detail-kesantrian.php?santri_id=<?= $row['id'] ?>&start_date=<?= $start_date ?>&end_date=<?= $end_date ?>" class="btn btn-sm btn-outline-primary rounded-pill px-4 fw-bold">Detail <i class="fas fa-arrow-right ms-1"></i></a>
                             </td>
                         </tr>

@@ -1,4 +1,4 @@
-﻿<?php
+<?php
 // File: rekap-mukholif/rapot/index.php
 // VERSI 9.0: Fix 'Aria-Hidden' paling 'paksa' dengan listener 'click' di tombol [data-bs-dismiss]
 
@@ -143,12 +143,12 @@ require_once __DIR__ . '/../layouts/header.php';
         </button>
     </div>
     
-    <div class="card shadow mb-4">
-        <a href="#collapseFilter" class="d-block card-header py-3" data-bs-toggle="collapse" role="button" aria-expanded="true" aria-controls="collapseFilter">
-            <h6 class="m-0 font-weight-bold text-primary"><i class="fas fa-filter"></i> Filter Data Rapot</h6>
+    <div class="pro-card mb-4">
+        <a href="#collapseFilter" class="d-block card-header bg-transparent border-0 py-3 text-decoration-none" data-bs-toggle="collapse" role="button" aria-expanded="true" aria-controls="collapseFilter">
+            <h6 class="m-0 font-weight-bold text-primary"><i class="fas fa-filter me-2"></i> Filter Data Rapot</h6>
         </a>
         <div class="collapse show" id="collapseFilter">
-            <div class="card-body">
+            <div class="card-body pt-0">
                 <form action="index.php" method="GET" class="row g-3 align-items-end">
                     <div class="col-md-3">
                         <label for="kamar" class="form-label">Kamar:</label>
@@ -193,9 +193,8 @@ require_once __DIR__ . '/../layouts/header.php';
 
     <form method="POST" action="" id="bulkActionForm">
         
-        <div class="card shadow-sm mb-3">
-            <div class="card-body">
-                <div class="d-flex flex-wrap justify-content-between align-items-center gap-2">
+        <div class="pro-card mb-3 p-3">
+            <div class="d-flex flex-wrap justify-content-between align-items-center gap-2">
                     <div class="d-flex align-items-center gap-2">
                         <div class="btn-group" role="group">
                             <?php if ($can_cetak): ?>
@@ -224,17 +223,16 @@ require_once __DIR__ . '/../layouts/header.php';
             </div>
         </div>
 
-        <div class="card shadow mb-4">
-            <div class="card-body">
-                <div class="table-responsive">
-                    <table class="table table-bordered table-hover" id="dataTable" width="100%" cellspacing="0">
-                        <thead class="table-dark-blue">
-                            <tr>
-                                <th width="1%" class="text-center align-middle">
-                                    <input type="checkbox" id="selectAll">
-                                </th>
-                                <th width="5%">No.</th>
-                                <th>Nama Santri</th>
+        <div class="pro-card mb-4 p-0 overflow-hidden">
+            <div class="table-responsive">
+                <table class="table table-hover align-middle mb-0" id="dataTable" width="100%" cellspacing="0">
+                    <thead class="bg-light text-secondary border-bottom" style="font-size: 0.85rem; text-transform: uppercase; letter-spacing: 0.5px;">
+                        <tr>
+                            <th width="1%" class="text-center align-middle py-3">
+                                <input type="checkbox" id="selectAll" class="form-check-input border-secondary">
+                            </th>
+                            <th width="5%" class="py-3">No.</th>
+                            <th class="py-3">Nama Santri</th>
                                 <th width="10%">Kamar</th>
                                 <th width="15%">Periode</th>
                                 <th width="20%" class="d-none d-md-table-cell">Dicatat Oleh</th>
@@ -254,7 +252,7 @@ require_once __DIR__ . '/../layouts/header.php';
                                             $nama_santri_clean = preg_replace("/[^a-zA-Z0-9 ]/", "", $rapot['nama_santri'] ?? 'Santri');
                                             $filename_base = "Rapot {$nama_santri_clean} - {$rapot['bulan']} {$rapot['tahun']}";
                                             ?>
-                                            <input type="checkbox" class="row-checkbox" 
+                                            <input type="checkbox" class="row-checkbox form-check-input border-secondary" 
                                                    value="<?php echo $rapot['id']; ?>"
                                                    data-filename="<?php echo htmlspecialchars($filename_base); ?>">
                                         </td>
@@ -414,9 +412,8 @@ require_once __DIR__ . '/../layouts/header.php';
         z-index: 1100;
         min-width: 300px;
     }
-    .table-dark-blue, .table-dark-blue > th, .table-dark-blue > td {
-        background-color: #4e73df !important;
-        color: #fff !important;
+    .table > :not(caption) > * > * {
+        padding: 1rem 1.5rem;
     }
 </style>
 <div id="notif-placeholder"></div>
