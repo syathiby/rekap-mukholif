@@ -1,4 +1,4 @@
-﻿<?php 
+<?php 
 // 1. Panggil 'Otak' aplikasi dulu
 require_once __DIR__ . '/../../bootstrap/init.php';
 
@@ -25,336 +25,465 @@ $kamarQuery = mysqli_query($conn, "
 ");
 ?>
 
-<!-- Library CSS -->
-<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/jqueryui/1.13.2/themes/base/jquery-ui.min.css">
+<!-- Load Libraries -->
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/css/select2.min.css">
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/select2-bootstrap-5-theme@1.3.0/dist/select2-bootstrap-5-theme.min.css">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/jqueryui/1.13.2/themes/base/jquery-ui.min.css">
 
 <style>
-    /* -- VARS & THEME (Soft Gold Theme) -- */
     :root {
-        --theme-primary: #d4a017; /* Emas yang lebih kalem/elegan */
-        --theme-light: #fff9e6;   /* Background kuning pudar banget */
-        --theme-text: #495057;
+        --primary: #d4a017;       
+        --primary-dark: #b8860b;
+        --bg-body: #f8fafc;
+        --text-dark: #1e293b;
+        --text-muted: #64748b;
+        --card-border: rgba(0,0,0,0.05);
     }
 
-    /* Card Styling */
-    .card-custom {
-        border: none;
-        border-radius: 12px;
-        box-shadow: 0 4px 20px rgba(0,0,0,0.05);
-        overflow: hidden;
-    }
-    
-    /* Header Minimalis (One Tone) */
-    .card-header-custom {
-        background-color: #fff;
-        border-bottom: 2px solid #f0f0f0;
-        padding: 1.5rem;
-    }
-    .header-title {
-        color: var(--theme-text);
-        font-weight: 700;
-        font-size: 1.25rem;
-        display: flex;
-        align-items: center;
-    }
-    .header-icon {
-        background-color: var(--theme-light);
-        color: var(--theme-primary);
-        width: 40px; height: 40px;
-        display: flex; align-items: center; justify-content: center;
-        border-radius: 10px;
-        margin-right: 12px;
-    }
+    body { background-color: var(--bg-body); font-family: 'Inter', sans-serif; }
 
-    /* -- TABS STYLING (Menyatu dengan Body) -- */
+    /* === TABS === */
     .nav-tabs {
-        border-bottom: 1px solid #dee2e6;
-        padding: 0 1.5rem;
-        background: #fff;
-    }
-    .nav-tabs .nav-item {
-        margin-bottom: -1px;
+        border-bottom: 2px solid #e2e8f0;
+        margin-bottom: 2rem;
+        display: flex;
+        flex-direction: row;
+        flex-wrap: nowrap;
     }
     .nav-tabs .nav-link {
         border: none;
-        border-bottom: 3px solid transparent;
-        color: #adb5bd;
+        color: var(--text-muted);
         font-weight: 600;
         padding: 1rem 1.5rem;
-        transition: all 0.3s;
+        background: transparent;
+        transition: all 0.2s;
+        border-bottom: 3px solid transparent;
+        margin-bottom: -2px;
     }
     .nav-tabs .nav-link:hover {
-        color: var(--theme-primary);
-        background: transparent;
+        color: var(--primary);
     }
     .nav-tabs .nav-link.active {
-        color: var(--theme-primary);
-        background: #fff;
-        border-bottom: 3px solid var(--theme-primary);
+        color: var(--primary);
+        border-bottom: 3px solid var(--primary);
+        background: transparent;
     }
 
-    /* -- FORM ELEMENTS -- */
-    .form-label {
-        font-size: 0.9rem;
-        color: #6c757d;
-        font-weight: 600;
+    /* === CARD STYLES === */
+    .pro-card {
+        background: #ffffff;
+        border: 1px solid var(--card-border);
+        border-radius: 1.2rem;
+        box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05), 0 2px 4px -1px rgba(0, 0, 0, 0.03);
+        transition: box-shadow 0.3s ease;
+    }
+    .pro-card:hover {
+        box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.08), 0 4px 6px -2px rgba(0, 0, 0, 0.04);
+    }
+    .pro-card-header {
+        background: transparent;
+        border-bottom: 1px solid #f1f5f9;
+        padding: 1.5rem 1.5rem 1rem 1.5rem;
+    }
+    .pro-card-body {
+        padding: 1.5rem;
+    }
+    .pro-card-footer {
+        background: #ffffff;
+        border-top: 1px solid #f1f5f9;
+        padding: 1.5rem;
+        border-bottom-left-radius: 1.2rem;
+        border-bottom-right-radius: 1.2rem;
+    }
+
+    /* === FORM INPUTS === */
+    .form-control-custom {
+        padding: 0.75rem 1rem;
+        border-radius: 0.75rem;
+        border: 1px solid #cbd5e1;
+        font-size: 0.95rem;
+        background-color: #f8fafc;
+        transition: all 0.2s;
+        width: 100%;
+        color: var(--text-dark);
+    }
+    .form-control-custom:focus {
+        border-color: var(--primary);
+        background-color: #ffffff;
+        box-shadow: 0 0 0 4px rgba(212, 160, 23, 0.15);
+        outline: none;
+    }
+    .form-label-custom {
+        font-weight: 700;
+        font-size: 0.75rem;
+        text-transform: uppercase;
+        letter-spacing: 0.05em;
+        color: var(--text-muted);
         margin-bottom: 0.5rem;
     }
-    .form-control, .form-select, .select2-container--bootstrap-5 .select2-selection {
-        border: 1px solid #dee2e6;
-        border-radius: 8px;
-        padding: 0.6rem 1rem;
-        font-size: 0.95rem;
+
+    /* === AUTOCOMPLETE DROPDOWN === */
+    .ui-autocomplete {
+        border-radius: 0.75rem;
+        box-shadow: 0 10px 25px rgba(0,0,0,0.1);
+        border: 1px solid #e2e8f0;
+        padding: 0;
+        max-height: 320px;
+        overflow-y: auto;
+        font-family: inherit;
+        z-index: 9999 !important;
+        background: #fff;
+        margin-top: 8px;
     }
-    .form-control:focus, .form-select:focus, .select2-container--bootstrap-5.select2-container--focus .select2-selection {
-        border-color: var(--theme-primary);
-        box-shadow: 0 0 0 0.25rem rgba(212, 160, 23, 0.15);
+    .ui-menu-item-wrapper {
+        padding: 0.8rem 1.2rem;
+        border-bottom: 1px solid #f1f5f9;
+        display: flex;
+        align-items: center;
+        transition: all 0.2s;
+        cursor: pointer;
+    }
+    .ui-menu-item:last-child .ui-menu-item-wrapper {
+        border-bottom: none;
+    }
+    .ui-menu-item-wrapper:hover, .ui-state-active {
+        background-color: #f8fafc !important;
+        color: inherit !important;
+        border-bottom: 1px solid #f1f5f9;
+        margin: 0;
     }
 
-    /* -- CHECKBOX GRID (Kebersihan) -- */
+    /* === TABLE === */
+    .table-responsive-custom {
+        border-radius: 0.75rem;
+        border: 1px solid #e2e8f0;
+        overflow: hidden;
+    }
+    .table > :not(caption) > * > * {
+        padding: 1rem 1.2rem;
+        border-bottom-color: #f1f5f9;
+    }
+    .table thead th {
+        background-color: #f8fafc;
+        color: var(--text-muted);
+        font-size: 0.75rem;
+        font-weight: 700;
+        text-transform: uppercase;
+        letter-spacing: 0.05em;
+        border-bottom: 1px solid #e2e8f0;
+    }
+    .table tbody tr { transition: background-color 0.2s; }
+    .table tbody tr:hover { background-color: #f8fafc; }
+
+    /* === EMPTY STATE === */
+    .empty-state {
+        text-align: center;
+        padding: 4rem 2rem;
+        background-color: #f8fafc;
+        border-radius: 0.75rem;
+        border: 2px dashed #cbd5e1;
+    }
+
+    /* === CHECKBOX GRID (Kebersihan) === */
     .checkbox-grid {
         display: grid;
         grid-template-columns: repeat(auto-fill, minmax(85px, 1fr));
         gap: 10px;
     }
-    .btn-check:checked + .btn-outline-custom {
-        background-color: var(--theme-primary);
-        color: white;
-        border-color: var(--theme-primary);
-    }
     .btn-outline-custom {
-        color: #6c757d;
-        border-color: #dee2e6;
-        border-radius: 8px;
-        padding: 0.5rem;
-        font-size: 0.9rem;
+        color: var(--text-muted);
+        border: 1px solid #cbd5e1;
+        border-radius: 0.75rem;
+        padding: 0.75rem;
+        font-size: 0.95rem;
         font-weight: 600;
+        background: #fff;
+        transition: all 0.2s;
+        width: 100%;
+        text-align: center;
+        display: inline-block;
+        cursor: pointer;
+    }
+    .btn-check:checked + .btn-outline-custom {
+        background-color: var(--primary);
+        color: white;
+        border-color: var(--primary);
+        box-shadow: 0 4px 10px rgba(212, 160, 23, 0.3);
     }
     .btn-outline-custom:hover {
-        background-color: #f8f9fa;
-        color: var(--theme-primary);
-        border-color: var(--theme-primary);
+        border-color: var(--primary);
+        color: var(--primary);
     }
 
-    /* -- UI Autocomplete Fix (Soft & Clean) -- */
-    .ui-autocomplete { 
-        z-index: 1050; 
-        max-height: 250px; 
-        overflow-y: auto; 
-        border-radius: 10px; 
-        border: 1px solid #eee;
-        box-shadow: 0 10px 30px rgba(0,0,0,0.08); /* Shadow halus */
-        padding: 5px;
-        background: #fff;
+    /* === BUTTONS === */
+    .btn-save {
+        background: linear-gradient(135deg, #d4a017, #b8860b);
+        color: white;
+        border: none;
+        border-radius: 0.75rem;
+        padding: 1rem;
+        font-weight: 700;
+        font-size: 1.05rem;
+        box-shadow: 0 4px 12px rgba(212, 160, 23, 0.3);
+        transition: all 0.3s;
+        width: 100%;
     }
-    /* Style pas item di-hover atau dipilih pake keyboard */
-    .ui-menu-item .ui-menu-item-wrapper.ui-state-active {
-        background: #f8f9fa !important; /* Abu muda soft */
-        color: #212529 !important;
-        border: none !important;
-        border-radius: 6px;
+    .btn-save:hover {
+        background: linear-gradient(135deg, #b8860b, #996e08);
+        transform: translateY(-2px);
+        box-shadow: 0 6px 16px rgba(212, 160, 23, 0.4);
+        color: white;
     }
-    .ui-menu-item {
-        margin-bottom: 2px;
-    }
-
-    /* -- TABLE -- */
-    .table-custom thead th {
-        background-color: #f8f9fa;
-        color: #495057;
+    .btn-back {
+        background: #ffffff;
+        border: 1px solid #cbd5e1;
+        color: var(--text-dark);
+        border-radius: 50px;
         font-weight: 600;
-        border-bottom: 2px solid #e9ecef;
-        padding: 1rem;
+        padding: 0.5rem 1.25rem;
+        transition: all 0.2s;
     }
-    .table-custom tbody td {
-        padding: 1rem;
-        vertical-align: middle;
+    .btn-back:hover {
+        background: #f1f5f9;
+        border-color: #94a3b8;
+        color: var(--primary);
     }
-
-    /* -- RESPONSIVE TWEAKS -- */
-    @media (max-width: 767px) {
-        /* Tab Sebelahan 50:50 */
-        .nav-tabs {
-            display: flex;
-            flex-wrap: nowrap;
-            padding: 0;
-        }
-        .nav-item { width: 50%; text-align: center; }
-        .nav-link { width: 100%; padding: 1rem 0.5rem; font-size: 0.95rem; }
-        
-        .card-body { padding: 1.25rem !important; }
-        .checkbox-grid { grid-template-columns: repeat(auto-fill, minmax(70px, 1fr)); }
-        
-        /* Tombol Simpan Full Width di HP */
-        .btn-simpan-responsive { width: 100%; margin-top: 1rem; }
+    
+    /* Select2 customizations */
+    .select2-container--bootstrap-5 .select2-selection {
+        border-radius: 0.75rem !important;
+        border: 1px solid #cbd5e1 !important;
+        background-color: #f8fafc !important;
+        padding: 0.3rem 0.5rem;
+    }
+    .select2-container--bootstrap-5 .select2-selection:focus,
+    .select2-container--bootstrap-5.select2-container--focus .select2-selection {
+        border-color: var(--primary) !important;
+        background-color: #ffffff !important;
+        box-shadow: 0 0 0 4px rgba(212, 160, 23, 0.15) !important;
     }
 </style>
 
-<div class="container my-4">
-    <div class="card card-custom col-xl-10 col-lg-12 mx-auto">
+<div class="container-fluid py-4 px-4">
+    <!-- Header Page -->
+    <div class="d-flex flex-column flex-md-row justify-content-between align-items-center mb-4 gap-3">
+        <div>
+            <h3 class="fw-bolder text-dark mb-1"><i class="fas fa-hand-holding-heart" style="color: var(--primary)"></i> Input Pengabdian</h3>
+            <p class="text-muted mb-0">Catat pelanggaran individu atau ketidakbersihan kamar.</p>
+        </div>
+        <a href="../../rekap/keterlambatan.php" id="dynamic-rekap-btn" class="btn-back shadow-sm text-decoration-none">
+            <i class="fas fa-chart-line me-1"></i> <span id="dynamic-rekap-text">Rekap Keterlambatan</span>
+        </a>
+    </div>
+
+    <!-- Alert -->
+    <?php if (isset($_SESSION['message'])): ?>
+        <div class="alert alert-<?php echo $_SESSION['message']['type']; ?> alert-dismissible fade show border-0 shadow-sm mb-4 rounded-3 d-flex align-items-center">
+            <i class="<?php echo ($_SESSION['message']['type'] == 'success') ? 'fas fa-check-circle text-success' : 'fas fa-exclamation-circle text-danger'; ?> fs-4 me-3"></i>
+            <div><?php echo $_SESSION['message']['text']; ?></div>
+            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+        </div>
+        <?php unset($_SESSION['message']); ?>
+    <?php endif; ?>
+
+    <!-- TABS: Navigasi -->
+    <ul class="nav nav-tabs" id="pelanggaranTab" role="tablist">
+        <li class="nav-item" role="presentation">
+            <button class="nav-link active" id="individu-tab" data-bs-toggle="tab" data-bs-target="#individu" type="button" role="tab">
+                <i class="fas fa-user-clock me-2"></i>Individu
+            </button>
+        </li>
+        <li class="nav-item" role="presentation">
+            <button class="nav-link" id="kamar-tab" data-bs-toggle="tab" data-bs-target="#kamar" type="button" role="tab">
+                <i class="fas fa-broom me-2"></i>Kebersihan Kamar
+            </button>
+        </li>
+    </ul>
+
+    <div class="tab-content" id="pelanggaranTabContent">
         
-        <!-- HEADER: Clean & Minimalist -->
-        <div class="card-header-custom">
-             <div class="header-title">
-                 <div class="header-icon">
-                     <i class="fas fa-hand-holding-heart"></i>
-                 </div>
-                 <span>Input Pengabdian</span>
-             </div>
-        </div>
-
-        <!-- TABS: Navigasi -->
-        <ul class="nav nav-tabs" id="pelanggaranTab" role="tablist">
-            <li class="nav-item" role="presentation">
-                <button class="nav-link active" id="individu-tab" data-bs-toggle="tab" data-bs-target="#individu" type="button" role="tab">
-                    <i class="fas fa-user-clock me-2 d-none d-sm-inline"></i>Individu
-                </button>
-            </li>
-            <li class="nav-item" role="presentation">
-                <button class="nav-link" id="kamar-tab" data-bs-toggle="tab" data-bs-target="#kamar" type="button" role="tab">
-                    <i class="fas fa-broom me-2 d-none d-sm-inline"></i>Kebersihan
-                </button>
-            </li>
-        </ul>
-
-        <div class="card-body">
-            
-            <!-- Flash Message -->
-            <?php if (isset($_SESSION['message'])): ?>
-                <div class="alert alert-<?php echo $_SESSION['message']['type']; ?> alert-dismissible fade show border-0 shadow-sm mb-4" role="alert">
-                    <?php echo $_SESSION['message']['text']; ?>
-                    <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
-                </div>
-                <?php unset($_SESSION['message']); ?>
-            <?php endif; ?>
-
-            <div class="tab-content" id="pelanggaranTabContent">
-                
-                <!-- ============================================= -->
-                <!-- TAB 1: PELANGGARAN INDIVIDU                   -->
-                <!-- ============================================= -->
-                <div class="tab-pane fade show active" id="individu" role="tabpanel">
-                    <form action="process.php" method="POST" id="form-individu">
-                        <input type="hidden" name="tipe_pelanggaran" value="individu">
+        <!-- ============================================= -->
+        <!-- TAB 1: PELANGGARAN INDIVIDU                   -->
+        <!-- ============================================= -->
+        <div class="tab-pane fade show active" id="individu" role="tabpanel">
+            <form action="process.php" method="POST" id="form-individu">
+                <input type="hidden" name="tipe_pelanggaran" value="individu">
+                <div class="row g-4">
+                    <!-- LEFT COLUMN: Config & Search -->
+                    <div class="col-lg-4 d-flex flex-column gap-4">
                         
-                        <div class="row g-4 mb-4">
-                            <!-- 1. Jenis Pelanggaran -->
-                            <div class="col-md-7">
-                                <label for="jenis_pelanggaran_id" class="form-label">1. Jenis Pelanggaran</label>
-                                <select name="jenis_pelanggaran_id" id="jenis_pelanggaran_id" class="form-select" required>
-                                    <option value="">-- Cari Pelanggaran --</option>
-                                    <?php 
-                                    mysqli_data_seek($jp_individu_list, 0); 
-                                    while ($jp = mysqli_fetch_assoc($jp_individu_list)): ?>
-                                        <option value="<?= $jp['id'] ?>">
-                                            <?= htmlspecialchars($jp['nama_pelanggaran']) ?> (<?= $jp['poin'] ?> Poin)
-                                        </option>
-                                    <?php endwhile; ?>
-                                </select>
-                            </div>
-                            <!-- 2. Tanggal -->
-                            <div class="col-md-5">
-                                <label for="tanggal_individu" class="form-label">2. Tanggal Kejadian</label>
-                                <input type="datetime-local" name="tanggal_individu" id="tanggal_individu" class="form-control" value="<?php echo date('Y-m-d\TH:i'); ?>" required>
-                            </div>
-                        </div>
-
-                        <!-- 3. Cari Santri -->
-                        <div class="mb-4">
-                            <label class="form-label">3. Cari Nama Santri</label>
-                            <div class="input-group">
-                                <span class="input-group-text bg-white border-end-0 text-muted ps-3"><i class="fas fa-search"></i></span>
-                                <input type="text" id="santri-search" class="form-control border-start-0 ps-2" placeholder="Ketik nama santri...">
-                            </div>
-                        </div>
-
-                        <!-- 4. Tabel Daftar -->
-                        <div class="table-responsive border rounded-3 mb-4">
-                            <table class="table table-custom mb-0" id="tabel-santri-pelanggar">
-                                <thead>
-                                    <tr>
-                                        <th class="ps-3">Nama Santri</th>
-                                        <th class="d-none d-md-table-cell">Kelas</th>
-                                        <th class="d-none d-md-table-cell">Kamar</th>
-                                        <th class="text-center" width="60"><i class="fas fa-trash-alt"></i></th>
-                                    </tr>
-                                </thead>
-                                <tbody>
-                                    <!-- Data masuk via JS -->
-                                </tbody>
-                            </table>
-                            <!-- State Kosong -->
-                            <div id="empty-table-message" class="text-center py-5 text-muted">
-                                <div class="mb-2 opacity-25">
-                                    <i class="fas fa-user-plus fa-3x"></i>
+                        <!-- CARD 1: PENGATURAN -->
+                        <div class="pro-card">
+                            <div class="pro-card-header d-flex align-items-center">
+                                <div class="rounded-circle d-flex align-items-center justify-content-center me-3" style="width: 36px; height: 36px; background-color: rgba(212, 160, 23, 0.1); color: var(--primary);">
+                                    <i class="fas fa-cog"></i>
                                 </div>
-                                <small>Belum ada santri ditambahkan.</small>
+                                <h6 class="fw-bold text-dark mb-0">1. Pengaturan Pelanggaran</h6>
+                            </div>
+                            <div class="pro-card-body">
+                                <div class="mb-4">
+                                    <label class="form-label-custom">JENIS PELANGGARAN</label>
+                                    <select name="jenis_pelanggaran_id" id="jenis_pelanggaran_id" class="form-select" required>
+                                        <option value="">Cari jenis pelanggaran...</option>
+                                        <?php 
+                                        mysqli_data_seek($jp_individu_list, 0); 
+                                        while ($jp = mysqli_fetch_assoc($jp_individu_list)): ?>
+                                            <option value="<?= $jp['id'] ?>">
+                                                <?= htmlspecialchars($jp['nama_pelanggaran']) ?> (<?= $jp['poin'] ?> Poin)
+                                            </option>
+                                        <?php endwhile; ?>
+                                    </select>
+                                </div>
+                                
+                                <div>
+                                    <label class="form-label-custom">TANGGAL PENCATATAN</label>
+                                    <input type="datetime-local" name="tanggal_individu" class="form-control-custom" value="<?= date('Y-m-d\TH:i'); ?>" required>
+                                </div>
                             </div>
                         </div>
 
-                        <!-- Tombol Simpan -->
-                        <div class="d-flex justify-content-end">
-                            <button type="submit" name="submit_pelanggaran" class="btn btn-success px-4 py-2 fw-bold shadow-sm btn-simpan-responsive">
-                                <i class="fas fa-check-circle me-2"></i> Simpan Data Individu
-                            </button>
+                        <!-- CARD 2: CARI SANTRI -->
+                        <div class="pro-card">
+                            <div class="pro-card-header d-flex align-items-center">
+                                <div class="rounded-circle d-flex align-items-center justify-content-center me-3" style="width: 36px; height: 36px; background-color: rgba(212, 160, 23, 0.1); color: var(--primary);">
+                                    <i class="fas fa-search"></i>
+                                </div>
+                                <h6 class="fw-bold text-dark mb-0">2. Cari Santri</h6>
+                            </div>
+                            <div class="pro-card-body">
+                                <p class="text-muted small mb-3">Ketik nama santri untuk menambahkan ke daftar pelanggar.</p>
+                                <div class="position-relative">
+                                    <i class="fas fa-search position-absolute text-muted" style="top: 14px; left: 16px; z-index: 5;"></i>
+                                    <input type="text" id="santri-search" class="form-control-custom ps-5" placeholder="Ketik minimal 2 huruf...">
+                                </div>
+                            </div>
                         </div>
-                    </form>
-                </div>
 
-                <!-- ============================================= -->
-                <!-- TAB 2: KEBERSIHAN KAMAR                       -->
-                <!-- ============================================= -->
-                <div class="tab-pane fade" id="kamar" role="tabpanel">
-                    <form action="process.php" method="POST">
-                        <input type="hidden" name="tipe_pelanggaran" value="kamar">
-                        
-                        <div class="mb-4">
-                            <label class="form-label d-block">1. Pilih Kamar (Bisa Banyak)</label>
-                            <div class="checkbox-grid">
-                                <?php mysqli_data_seek($kamarQuery, 0); // Reset pointer ?>
-                                <?php while($row = mysqli_fetch_assoc($kamarQuery)): ?>
-                                    <div>
-                                        <input type="checkbox" class="btn-check" name="kamar[]" id="kamar-<?= $row['kamar'] ?>" value="<?= htmlspecialchars($row['kamar']) ?>" autocomplete="off">
-                                        <label class="btn btn-outline-custom w-100" for="kamar-<?= $row['kamar'] ?>"><?= htmlspecialchars($row['kamar']) ?></label>
+                    </div>
+
+                    <!-- RIGHT COLUMN: Table Data -->
+                    <div class="col-lg-8">
+                        <div class="pro-card h-100 d-flex flex-column">
+                            <div class="pro-card-header d-flex justify-content-between align-items-center">
+                                <div class="d-flex align-items-center">
+                                    <div class="rounded-circle d-flex align-items-center justify-content-center me-3" style="width: 36px; height: 36px; background-color: rgba(212, 160, 23, 0.1); color: var(--primary);">
+                                        <i class="fas fa-users"></i>
                                     </div>
-                                <?php endwhile; ?>
+                                    <h6 class="fw-bold text-dark mb-0">3. Daftar Santri Pelanggar</h6>
+                                </div>
+                                <button type="button" class="btn btn-sm btn-outline-danger fw-bold rounded-pill px-3 py-1" onclick="clearAll()" id="btn-clear-all" style="display:none; font-size: 0.8rem;">
+                                    <i class="fas fa-trash-alt me-1"></i> Hapus Semua
+                                </button>
+                            </div>
+                            
+                            <div class="pro-card-body d-flex flex-column flex-grow-1 p-4" style="min-height: 400px;">
+                                
+                                <!-- Tabel Data -->
+                                <div class="table-responsive-custom mb-0" id="table-container" style="display:none; flex-grow: 1;">
+                                    <table class="table table-borderless m-0 align-middle" id="tabel-santri-pelanggar">
+                                        <thead>
+                                            <tr>
+                                                <th class="ps-4">NAMA SANTRI</th>
+                                                <th class="text-center pe-4" width="80">AKSI</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody></tbody>
+                                    </table>
+                                </div>
+
+                                <!-- Empty State -->
+                                <div id="empty-state" class="empty-state d-flex flex-column align-items-center justify-content-center flex-grow-1">
+                                    <div class="bg-light rounded-circle d-flex align-items-center justify-content-center mb-3" style="width: 80px; height: 80px;">
+                                        <i class="fas fa-user-graduate fa-2x text-muted opacity-50"></i>
+                                    </div>
+                                    <h6 class="fw-bold text-dark mb-2">Belum Ada Santri</h6>
+                                    <p class="text-muted small mb-0" style="max-width: 250px;">Gunakan kolom pencarian di sebelah kiri untuk memilih santri pelanggar.</p>
+                                </div>
+
+                            </div>
+
+                            <div class="pro-card-footer mt-auto">
+                                <button type="submit" name="submit_pelanggaran" class="btn-save">
+                                    <i class="fas fa-check-circle me-2"></i> SIMPAN DATA INDIVIDU
+                                </button>
                             </div>
                         </div>
-                        
-                        <!-- Catatan Dinamis -->
-                        <div class="mb-4">
-                            <label class="form-label">2. Catatan (Opsional)</label>
-                            <div id="catatan-kamar-container" class="bg-light p-3 rounded-3 border border-dashed">
-                                <small class="text-muted fst-italic d-flex align-items-center" id="catatan-placeholder">
-                                    <i class="fas fa-info-circle me-2"></i> Pilih kamar di atas untuk menulis catatan...
-                                </small>
-                            </div>
-                        </div>
-                        
-                        <div class="mb-4">
-                            <label for="tanggal_kamar" class="form-label">3. Tanggal Pengecekan</label>
-                            <input type="datetime-local" name="tanggal_kamar" id="tanggal_kamar" class="form-control" value="<?php echo date('Y-m-d\TH:i'); ?>" required>
-                        </div>
-
-                        <!-- Tombol Simpan -->
-                        <div class="d-flex justify-content-end">
-                            <button type="submit" name="submit_pelanggaran" class="btn btn-success px-4 py-2 fw-bold shadow-sm btn-simpan-responsive">
-                                <i class="fas fa-broom me-2"></i> Simpan Kebersihan
-                            </button>
-                        </div>
-                    </form>
-                </div>
-
-            </div>
+                    </div>
+                </div> <!-- End Row -->
+            </form>
         </div>
+
+        <!-- ============================================= -->
+        <!-- TAB 2: KEBERSIHAN KAMAR                       -->
+        <!-- ============================================= -->
+        <div class="tab-pane fade" id="kamar" role="tabpanel">
+            <form action="process.php" method="POST" id="form-kamar">
+                <input type="hidden" name="tipe_pelanggaran" value="kamar">
+                <div class="row g-4">
+                    <!-- LEFT COLUMN: Kamar Grid -->
+                    <div class="col-lg-8">
+                        <div class="pro-card h-100 d-flex flex-column">
+                            <div class="pro-card-header d-flex align-items-center">
+                                <div class="rounded-circle d-flex align-items-center justify-content-center me-3" style="width: 36px; height: 36px; background-color: rgba(212, 160, 23, 0.1); color: var(--primary);">
+                                    <i class="fas fa-bed"></i>
+                                </div>
+                                <h6 class="fw-bold text-dark mb-0">Pilih Kamar & Catatan (Opsional)</h6>
+                            </div>
+                            <div class="pro-card-body">
+                                <p class="text-muted small mb-4">Klik satu atau beberapa kamar yang kotor. Form catatan tambahan akan muncul secara otomatis.</p>
+                                
+                                <div class="checkbox-grid mb-5">
+                                    <?php mysqli_data_seek($kamarQuery, 0); // Reset pointer ?>
+                                    <?php while($row = mysqli_fetch_assoc($kamarQuery)): ?>
+                                        <div>
+                                            <input type="checkbox" class="btn-check" name="kamar[]" id="kamar-<?= $row['kamar'] ?>" value="<?= htmlspecialchars($row['kamar']) ?>" autocomplete="off">
+                                            <label class="btn-outline-custom" for="kamar-<?= $row['kamar'] ?>"><?= htmlspecialchars($row['kamar']) ?></label>
+                                        </div>
+                                    <?php endwhile; ?>
+                                </div>
+
+                                <div id="catatan-kamar-container" class="bg-light p-4 rounded-3 border border-dashed" style="border-color: #cbd5e1 !important; border-width: 2px !important;">
+                                    <div class="text-center text-muted fst-italic" id="catatan-placeholder">
+                                        <i class="fas fa-info-circle mb-2 fa-2x opacity-50 d-block"></i>
+                                        <small>Pilih kamar di atas untuk menulis catatan tambahan...</small>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- RIGHT COLUMN: Config -->
+                    <div class="col-lg-4 d-flex flex-column gap-4">
+                        <div class="pro-card h-100 d-flex flex-column">
+                            <div class="pro-card-header d-flex align-items-center">
+                                <div class="rounded-circle d-flex align-items-center justify-content-center me-3" style="width: 36px; height: 36px; background-color: rgba(212, 160, 23, 0.1); color: var(--primary);">
+                                    <i class="fas fa-calendar-check"></i>
+                                </div>
+                                <h6 class="fw-bold text-dark mb-0">Pengaturan</h6>
+                            </div>
+                            <div class="pro-card-body flex-grow-1">
+                                <div class="mb-4">
+                                    <label class="form-label-custom">TANGGAL PENGECEKAN</label>
+                                    <input type="datetime-local" name="tanggal_kamar" class="form-control-custom" value="<?php echo date('Y-m-d\TH:i'); ?>" required>
+                                </div>
+                            </div>
+                            <div class="pro-card-footer mt-auto border-0 pt-0">
+                                <button type="submit" name="submit_pelanggaran" class="btn-save">
+                                    <i class="fas fa-broom me-2"></i> SIMPAN KEBERSIHAN
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div> <!-- End Row -->
+            </form>
+        </div>
+
     </div>
 </div>
 
 <?php require_once __DIR__ . '/../../layouts/footer.php'; ?>
 
-<!-- Scripts -->
+<!-- Script JS -->
 <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
 <script src="https://code.jquery.com/ui/1.13.2/jquery-ui.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
@@ -364,113 +493,154 @@ $(document).ready(function() {
     let selectedSantri = null;
 
     function escapeHTML(str) {
-        if (str === null || typeof str === 'undefined') return '';
+        if (!str) return '';
         return $('<div>').text(str).html();
     }
 
-    // Init Select2 Modern Style
+    // Init Select2
     $('#jenis_pelanggaran_id').select2({
         theme: "bootstrap-5",
         dropdownParent: $('#jenis_pelanggaran_id').parent(),
         width: '100%',
-        placeholder: "Cari jenis pelanggaran...",
+        placeholder: "Cari jenis pelanggaran..."
     });
 
     // ==========================================
-    // 1. LOGIKA AUTO ADD (INDIVIDU)
+    // DYNAMIC REKAP BUTTON
+    // ==========================================
+    $('button[data-bs-toggle="tab"]').on('shown.bs.tab', function (e) {
+        let targetTab = $(e.target).attr("data-bs-target"); // "#individu" or "#kamar"
+        let btn = $('#dynamic-rekap-btn');
+        let txt = $('#dynamic-rekap-text');
+        
+        if (targetTab === '#kamar') {
+            btn.attr('href', '../../rekap/kebersihan.php');
+            txt.text('Rekap Kebersihan');
+        } else {
+            btn.attr('href', '../../rekap/keterlambatan.php');
+            txt.text('Rekap Keterlambatan');
+        }
+    });
+
+    // ==========================================
+    // AUTOCOMPLETE SETUP (WITH IMPROVED UI)
     // ==========================================
     $("#santri-search").autocomplete({
         source: "search_santri.php",
         minLength: 2,
         select: function(event, ui) {
             selectedSantri = ui.item;
-            tambahSantri(); // Auto Add Trigger
-            $(this).val('');
+            tambahSantri(); 
+            $(this).val(''); 
             return false;
         }
-    }).autocomplete("instance")._renderItem = function(ul, item) {
-        // ✨ UPDATE: Tambah text 'Kelas' & 'Kamar' biar jelas ✨
+    })
+    .autocomplete("instance")._renderItem = function(ul, item) {
         return $("<li>")
             .append(`
-                <div class='py-2 px-3 border-bottom'>
-                    <div class='fw-semibold text-dark'>${item.value}</div>
-                    <small class='text-muted'>Kelas: ${item.kelas} • Kamar: ${item.kamar}</small>
+                <div class="ui-menu-item-wrapper gap-3">
+                    <div class="bg-light rounded-circle d-flex align-items-center justify-content-center flex-shrink-0" style="width: 40px; height: 40px;">
+                        <i class="fas fa-user text-secondary"></i>
+                    </div>
+                    <div class="flex-grow-1">
+                        <div class="fw-bold text-dark mb-1" style="font-size: 0.95rem;">${item.value}</div>
+                        <div class="d-flex gap-2">
+                            <span class="badge bg-light text-secondary border fw-normal"><i class="fas fa-chalkboard-teacher me-1"></i> ${item.kelas}</span>
+                            <span class="badge bg-light text-secondary border fw-normal"><i class="fas fa-bed me-1"></i> ${item.kamar}</span>
+                        </div>
+                    </div>
                 </div>
             `)
             .appendTo(ul);
     };
 
-    function checkTableEmpty() {
+    // ==========================================
+    // TABLE LOGIC
+    // ==========================================
+    function checkTableState() {
         if ($('#tabel-santri-pelanggar tbody tr').length === 0) {
-            $('#empty-table-message').show();
-            $('#tabel-santri-pelanggar').parent().addClass('d-none'); // Hide wrapper border
+            $('#table-container').hide();
+            $('#btn-clear-all').hide();
+            $('#empty-state').removeClass('d-none').addClass('d-flex');
         } else {
-            $('#empty-table-message').hide();
-            $('#tabel-santri-pelanggar').parent().removeClass('d-none').show();
+            $('#table-container').show();
+            $('#btn-clear-all').show();
+            $('#empty-state').removeClass('d-flex').addClass('d-none');
         }
     }
     
-    // Global function
-    window.checkTableEmpty = checkTableEmpty;
-    checkTableEmpty(); // Init state
+    window.clearAll = function() {
+        if(confirm('Hapus semua santri dari daftar?')) { 
+            $('#tabel-santri-pelanggar tbody').empty(); 
+            checkTableState(); 
+        }
+    }
+    
+    window.checkTableState = checkTableState;
+    checkTableState();
 
     function tambahSantri() {
         if (!selectedSantri) return;
-
         if ($('#tabel-santri-pelanggar').find('tr[data-id="' + selectedSantri.id + '"]').length > 0) {
-            alert('Santri ini sudah masuk daftar, Bos!');
-            return;
+            alert('Santri ini sudah ada di daftar.'); return;
         }
 
-        let namaSantri = escapeHTML(selectedSantri.value);
-        let kelasSantri = escapeHTML(selectedSantri.kelas);
-        let kamarSantri = escapeHTML(selectedSantri.kamar);
-
-        // ✅ UPDATE: Tambah text 'Kelas:' dan 'Kamar:' di badge mobile
-        let barisBaru = `
+        let nama = escapeHTML(selectedSantri.value);
+        
+        let row = `
             <tr data-id="${selectedSantri.id}">
-                <td class="ps-3">
-                    <div class="fw-bold text-dark">${namaSantri}</div>
-                    <!-- Badge Mobile -->
-                    <div class="d-block d-md-none mt-1">
-                        <span class="badge bg-light text-dark border me-1">Kelas: ${kelasSantri}</span>
-                        <span class="badge bg-light text-dark border">Kamar: ${kamarSantri}</span>
+                <td class="ps-4">
+                    <div class="d-flex align-items-center">
+                        <div class="bg-light rounded-circle d-flex align-items-center justify-content-center me-3 d-none d-sm-flex" style="width: 40px; height: 40px;">
+                            <i class="fas fa-user text-secondary"></i>
+                        </div>
+                        <div>
+                            <div class="fw-bold text-dark" style="font-size: 0.95rem;">${nama}</div>
+                            <div class="text-muted small mt-1">
+                                <span class="me-2"><i class="fas fa-chalkboard-teacher me-1 opacity-75"></i>Kelas ${selectedSantri.kelas}</span>
+                                <span><i class="fas fa-bed me-1 opacity-75"></i>Kamar ${selectedSantri.kamar}</span>
+                            </div>
+                        </div>
                     </div>
                     <input type="hidden" name="santri_ids[]" value="${selectedSantri.id}">
                 </td>
-                <td class="d-none d-md-table-cell align-middle text-muted">${kelasSantri}</td>
-                <td class="d-none d-md-table-cell align-middle text-muted">${kamarSantri}</td>
-                <td class="text-center align-middle">
-                    <button type="button" class="btn btn-sm btn-link text-danger p-0" onclick="$(this).closest('tr').remove(); checkTableEmpty();" title="Hapus">
-                        <i class="fas fa-times-circle fa-lg"></i>
+                <td class="text-center align-middle pe-4">
+                    <button type="button" class="btn btn-sm btn-light text-danger rounded-circle shadow-sm" style="width: 32px; height: 32px;" onclick="$(this).closest('tr').remove(); checkTableState();" title="Hapus">
+                        <i class="fas fa-times"></i>
                     </button>
                 </td>
             </tr>
         `;
-        $('#tabel-santri-pelanggar tbody').append(barisBaru);
+        $('#tabel-santri-pelanggar tbody').append(row);
         selectedSantri = null;
-        checkTableEmpty(); 
+        checkTableState();
     }
 
     $("#form-individu").on('submit', function(e) {
         if (!$("#jenis_pelanggaran_id").val()) {
             e.preventDefault();
-            alert("⚠️ Eits, pilih jenis pelanggarannya dulu dong!");
+            alert("Pilih jenis pelanggaran terlebih dahulu.");
             $('#jenis_pelanggaran_id').select2('open');
             return;
         }
         if ($('#tabel-santri-pelanggar tbody tr').length === 0) {
             e.preventDefault();
-            alert('⚠️ Belum ada santri nih. Cari dulu namanya!');
+            alert('Belum ada santri yang ditambahkan.');
             $('#santri-search').focus();
+            return;
         }
     });
 
     // ==========================================
-    // 2. LOGIKA CATATAN KAMAR (TAB 2)
+    // LOGIKA CATATAN KAMAR (TAB 2)
     // ==========================================
     const catatanContainer = $('#catatan-kamar-container');
-    const placeholderText = '<small class="text-muted fst-italic d-flex align-items-center" id="catatan-placeholder"><i class="fas fa-info-circle me-2"></i> Pilih kamar di atas untuk menulis catatan...</small>';
+    const placeholderText = `
+        <div class="text-center text-muted fst-italic" id="catatan-placeholder">
+            <i class="fas fa-info-circle mb-2 fa-2x opacity-50 d-block"></i>
+            <small>Pilih kamar di atas untuk menulis catatan tambahan...</small>
+        </div>
+    `;
 
     $('input[name="kamar[]"]').on('change', function() {
         const checkbox = $(this);
@@ -481,10 +651,10 @@ $(document).ready(function() {
             $('#catatan-placeholder').remove();
             const newField = `
                 <div class="mb-3 animate__animated animate__fadeIn" id="catatan-wrapper-${kamarId}">
-                    <label class="form-label small mb-1 fw-bold text-muted">
-                        Catatan untuk Kamar <span class="text-dark">${kamar}</span>
+                    <label class="form-label-custom mb-2">
+                        Catatan Kamar <span class="text-primary">${kamar}</span>
                     </label>
-                    <input type="text" name="catatan[${kamar}]" class="form-control form-control-sm" placeholder="Contoh: Sprei berantakan">
+                    <input type="text" name="catatan[${kamar}]" class="form-control-custom" placeholder="Contoh: Sprei berantakan">
                 </div>
             `;
             catatanContainer.append(newField);
@@ -496,9 +666,9 @@ $(document).ready(function() {
         }
     });
     
-    $('form[action="process.php"]').not('#form-individu').submit(function(e) {
+    $('#form-kamar').submit(function(e) {
         if ($('input[name="kamar[]"]:checked').length === 0) {
-            alert('⚠️ Pilih minimal satu kamar dulu ya!');
+            alert('Pilih minimal satu kamar terlebih dahulu.');
             e.preventDefault();
         }
     });

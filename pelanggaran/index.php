@@ -74,8 +74,8 @@ require_once __DIR__ . '/../layouts/header.php';
         <?php if (has_permission('pelanggaran_bahasa_input')): ?>
         <div class="col-md-6 col-lg-4">
             <a href="bahasa/create.php" class="text-decoration-none">
-                <div class="card h-100 hover-up p-4 d-flex flex-row align-items-center gap-3 border-start border-4 border-danger">
-                    <div class="icon-container text-danger flex-shrink-0" style="background-color: rgba(220, 53, 69, 0.1);">
+                <div class="card h-100 hover-up p-4 d-flex flex-row align-items-center gap-3 border-start border-4 border-info">
+                    <div class="icon-container text-info flex-shrink-0" style="background-color: rgba(13, 202, 240, 0.1);">
                         <i class="fas fa-language fs-4"></i>
                     </div>
                     <div>
@@ -106,8 +106,8 @@ require_once __DIR__ . '/../layouts/header.php';
         <?php if (has_permission('pelanggaran_tahfidz_input')): ?>
         <div class="col-md-6 col-lg-4">
             <a href="tahfidz/create.php" class="text-decoration-none">
-                <div class="card h-100 hover-up p-4 d-flex flex-row align-items-center gap-3 border-start border-4" style="border-left-color: #0891b2 !important;">
-                    <div class="icon-container flex-shrink-0" style="color: #0891b2; background-color: rgba(8, 145, 178, 0.1);">
+                <div class="card h-100 hover-up p-4 d-flex flex-row align-items-center gap-3 border-start border-4 border-danger">
+                    <div class="icon-container text-danger flex-shrink-0" style="background-color: rgba(220, 53, 69, 0.1);">
                         <i class="fas fa-book-reader fs-4"></i>
                     </div>
                     <div>

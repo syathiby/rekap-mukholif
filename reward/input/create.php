@@ -85,25 +85,28 @@ $jenis_reward_result = $stmt->get_result();
         box-shadow: 0 10px 25px rgba(0,0,0,0.1);
         border: 1px solid #e2e8f0;
         padding: 0;
-        max-height: 300px;
+        max-height: 320px;
         overflow-y: auto;
         font-family: inherit;
         z-index: 9999 !important;
         background: #fff;
+        margin-top: 8px; /* Jarak antara input dan dropdown */
     }
     .ui-menu-item-wrapper {
         padding: 0.8rem 1.2rem;
         border-bottom: 1px solid #f1f5f9;
         display: flex;
-        justify-content: space-between;
         align-items: center;
-        transition: background-color 0.2s;
+        transition: all 0.2s;
         cursor: pointer;
     }
+    .ui-menu-item:last-child .ui-menu-item-wrapper {
+        border-bottom: none;
+    }
     .ui-menu-item-wrapper:hover, .ui-state-active {
-        background: #f8fafc !important;
+        background-color: #f8fafc !important;
         color: inherit !important;
-        border: none;
+        border-bottom: 1px solid #f1f5f9;
         margin: 0;
     }
 
@@ -245,10 +248,7 @@ $jenis_reward_result = $stmt->get_result();
                         
                         <div>
                             <label class="form-label-custom">TANGGAL PENCATATAN</label>
-                            <div class="input-group">
-                                <span class="input-group-text bg-white border-end-0 text-muted" style="border-radius: 0.75rem 0 0 0.75rem; border-color: #cbd5e1;"><i class="far fa-calendar-alt"></i></span>
-                                <input type="datetime-local" name="tanggal" class="form-control-custom border-start-0 ps-0" style="border-radius: 0 0.75rem 0.75rem 0;" value="<?= date('Y-m-d\TH:i'); ?>" required>
-                            </div>
+                            <input type="datetime-local" name="tanggal" class="form-control-custom" value="<?= date('Y-m-d\TH:i'); ?>" required>
                         </div>
                     </div>
                 </div>
@@ -368,19 +368,25 @@ $(document).ready(function() {
         let starHtml = '';
         
         if (poin > 0) {
-            starHtml = `<span class="star-red"><i class="fas fa-exclamation-circle me-1"></i> ${poin} Poin</span>`;
+            starHtml = `<span class="badge bg-danger bg-opacity-10 text-danger border border-danger border-opacity-25 px-2 py-1"><i class="fas fa-exclamation-circle me-1"></i> ${poin} Poin</span>`;
         } else {
-            starHtml = `<span class="star-green"><i class="fas fa-star text-warning me-1"></i> Bersih (0)</span>`;
+            starHtml = `<span class="badge bg-success bg-opacity-10 text-success border border-success border-opacity-25 px-2 py-1"><i class="fas fa-star text-warning me-1"></i> Bersih</span>`;
         }
 
         return $("<li>")
             .append(`
-                <div class="ui-menu-item-wrapper">
-                    <div>
-                        <div class="fw-bold text-dark" style="font-size: 0.95rem;">${item.value}</div>
-                        <div class="text-muted small mt-1"><i class="fas fa-id-card me-1 opacity-75"></i>Kelas ${item.kelas}</div>
+                <div class="ui-menu-item-wrapper gap-3">
+                    <div class="bg-light rounded-circle d-flex align-items-center justify-content-center flex-shrink-0" style="width: 40px; height: 40px;">
+                        <i class="fas fa-user text-secondary"></i>
                     </div>
-                    <div>${starHtml}</div>
+                    <div class="flex-grow-1">
+                        <div class="fw-bold text-dark mb-1" style="font-size: 0.95rem;">${item.value}</div>
+                        <div class="d-flex gap-2">
+                            <span class="badge bg-light text-secondary border fw-normal"><i class="fas fa-chalkboard-teacher me-1"></i> Kelas ${item.kelas}</span>
+                            <span class="badge bg-light text-secondary border fw-normal"><i class="fas fa-bed me-1"></i> Kamar ${item.kamar}</span>
+                        </div>
+                    </div>
+                    <div class="flex-shrink-0">${starHtml}</div>
                 </div>
             `)
             .appendTo(ul);

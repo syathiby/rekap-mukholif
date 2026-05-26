@@ -4,6 +4,8 @@
 
 :root {
     /* --- COLOR PALETTE --- */
+    --global-primary: #4F46E5;
+    --global-primary-hover: #4338ca;
     --primary: #4F46E5;
     /* Indigo 600 */
     --primary-hover: #4338ca;
@@ -1549,13 +1551,13 @@ a {
 }
 
 .bottom-nav-link.active {
-    color: var(--primary);
+    color: var(--global-primary);
     font-weight: 600;
 }
 
 .bottom-nav-link.active i {
     transform: translateY(-2px);
-    color: var(--primary);
+    color: var(--global-primary);
 }
 
 .bottom-nav-link:active i {
@@ -1577,7 +1579,7 @@ a {
     width: 46px;
     height: 46px;
     border-radius: 50%;
-    background: linear-gradient(135deg, var(--primary) 0%, var(--primary-hover) 100%);
+    background: linear-gradient(135deg, var(--global-primary) 0%, var(--global-primary-hover) 100%);
     color: white !important;
     display: flex;
     align-items: center;
