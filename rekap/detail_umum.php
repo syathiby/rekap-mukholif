@@ -3,7 +3,7 @@
 require_once __DIR__ . '/../bootstrap/init.php';
 
 // 2. Jalankan 'SATPAM'
-guard('rekap_view_umum');
+guard('rekap_detail_santri');
 
 // 3. Ambil Parameter
 $santri_id = (int)($_GET['id'] ?? 0);

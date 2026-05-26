@@ -3,7 +3,7 @@
 require_once __DIR__ . '/../bootstrap/init.php';
 
 // 2. Jalankan 'SATPAM' buat ngejaga halaman
-guard(['user_manage', 'reset_poin_manage', 'periode_aktif_manage', 'izin_manage', 'history_manage']); 
+guard(['user_manage', 'reset_poin_manage', 'periode_aktif_manage', 'izin_manage', 'history_manage', 'backup_restore_manage']); 
 
 // 3. Kalau lolos, baru panggil Tampilan
 require_once __DIR__ . '/../layouts/header.php'; 
@@ -64,6 +64,10 @@ require_once __DIR__ . '/../layouts/header.php';
         /* Riwayat (Teal/Toska) */
         .card-history::before { background: linear-gradient(90deg, #14b8a6, #2dd4bf); }
         .card-history .icon-box { background: rgba(20, 184, 166, 0.1); color: #14b8a6; }
+
+        /* Backup (Biru) */
+        .card-backup::before { background: linear-gradient(90deg, #3b82f6, #60a5fa); }
+        .card-backup .icon-box { background: rgba(59, 130, 246, 0.1); color: #3b82f6; }
 
         .icon-box {
             width: 48px;
@@ -175,6 +179,20 @@ require_once __DIR__ . '/../layouts/header.php';
                     <p class="text-muted small mb-4">Kembalikan poin pelanggaran santri ke nol, baik secara individu maupun keseluruhan.</p>
                     <a href="reset-poin/index.php" class="settings-link">
                         Reset Poin <i class="fas fa-arrow-right small"></i>
+                    </a>
+                </div>
+            </div>
+            <?php endif; ?>
+
+            <!-- KARTU: Backup & Restore -->
+            <?php if (has_permission('backup_restore_manage')): ?>
+            <div class="col-xl-4 col-md-6">
+                <div class="settings-card card-backup shadow-sm">
+                    <div class="icon-box"><i class="fas fa-database"></i></div>
+                    <h5 class="fw-bold text-dark mb-2">Backup & Restore</h5>
+                    <p class="text-muted small mb-4">Cadangkan seluruh data sistem ke dalam file SQL, atau pulihkan data dari file cadangan yang ada.</p>
+                    <a href="backup-restore/index.php" class="settings-link">
+                        Kelola Database <i class="fas fa-arrow-right small"></i>
                     </a>
                 </div>
             </div>

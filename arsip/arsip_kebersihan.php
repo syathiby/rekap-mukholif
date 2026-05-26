@@ -1,4 +1,4 @@
-﻿<?php 
+<?php 
 // 1. Panggil 'Otak' aplikasi dulu
 require_once __DIR__ . '/../bootstrap/init.php';
 
@@ -234,7 +234,7 @@ $stmt_data->close();
                                         'kamar_filter' => $filter_kamar_kembali,
                                         'kelas' => $filter_kelas_kembali
                                     ]);
-                                    $detail_link = "detail-kamar.php?" . $detail_link_params;
+                                    $detail_link = "detail_kebersihan.php?" . $detail_link_params;
                                 ?>
                                 <a href="<?= $detail_link ?>" class="btn-detail">
                                     <i class="fas fa-info-circle"></i> Detail

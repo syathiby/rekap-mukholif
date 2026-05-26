@@ -3,7 +3,7 @@
 require_once __DIR__ . '/../bootstrap/init.php';
 
 // 2. Jalankan 'SATPAM' buat ngejaga halaman
-guard(['rekap_view_statistik', 'rekap_view_per_kamar', 'rekap_view_santri', 'rekap_view_umum']); 
+guard(['rekap_view_statistik', 'rekap_kebersihan', 'rekap_keterlambatan', 'rekap_pelanggaran_umum', 'rekap_detail_santri']); 
 
 // 3. Kalau lolos, baru panggil Tampilan
 require_once __DIR__ . '/../layouts/header.php'; 
@@ -47,7 +47,7 @@ require_once __DIR__ . '/../layouts/header.php';
     </div>
 
     <div class="row g-4">
-        <?php if (has_permission('rekap_view_umum')): ?>
+        <?php if (has_permission('rekap_pelanggaran_umum')): ?>
         <div class="col-md-6 col-lg-4">
             <a href="pelanggaran_umum.php" class="text-decoration-none">
                 <div class="card h-100 hover-up p-4 d-flex flex-row align-items-center gap-3 border-start border-4 border-primary">
@@ -61,7 +61,9 @@ require_once __DIR__ . '/../layouts/header.php';
                 </div>
             </a>
         </div>
+        <?php endif; ?>
 
+        <?php if (has_permission('rekap_detail_santri')): ?>
         <div class="col-md-6 col-lg-4">
             <a href="umum.php" class="text-decoration-none">
                 <div class="card h-100 hover-up p-4 d-flex flex-row align-items-center gap-3 border-start border-4" style="border-left-color: #10b981 !important;">
@@ -77,7 +79,7 @@ require_once __DIR__ . '/../layouts/header.php';
         </div>
         <?php endif; ?>
 
-        <?php if (has_permission('rekap_view_santri')): ?>
+        <?php if (has_permission('rekap_keterlambatan')): ?>
         <div class="col-md-6 col-lg-4">
             <a href="keterlambatan.php" class="text-decoration-none">
                 <div class="card h-100 hover-up p-4 d-flex flex-row align-items-center gap-3 border-start border-4 border-info">
@@ -93,7 +95,7 @@ require_once __DIR__ . '/../layouts/header.php';
         </div>
         <?php endif; ?>
 
-        <?php if (has_permission('rekap_view_per_kamar')): ?>
+        <?php if (has_permission('rekap_kebersihan')): ?>
         <div class="col-md-6 col-lg-4">
             <a href="kebersihan.php" class="text-decoration-none">
                 <div class="card h-100 hover-up p-4 d-flex flex-row align-items-center gap-3 border-start border-4 border-warning">

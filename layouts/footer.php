@@ -52,9 +52,10 @@ if (function_exists('has_permission')) {
 $can_view_rekap = false;
 if (function_exists('has_permission')) {
     $can_view_rekap = has_permission([
-        'rekap_view_umum', 
-        'rekap_view_per_kamar', 
-        'rekap_view_santri', 
+        'rekap_pelanggaran_umum', 
+        'rekap_detail_santri', 
+        'rekap_kebersihan', 
+        'rekap_keterlambatan', 
         'rekap_view_statistik', 
         'rekap_view_tahfidz'
     ]);
