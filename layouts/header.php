@@ -161,7 +161,7 @@ $style_v    = time(); // selalu fresh
 
 
     <!-- Konten Utama (Kanan) -->
-    <main class="main-content">
+    <main class="main-content d-flex flex-column min-vh-100">
         <!-- Header Minimalis ala SyathibyFood -->
         <header class="header sticky-top bg-white mb-4" style="border-bottom: 1px solid var(--border-color); z-index: 1020;">
             <nav class="navbar h-100 px-lg-4 px-3 py-2">

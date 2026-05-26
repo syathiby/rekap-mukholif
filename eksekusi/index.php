@@ -50,87 +50,112 @@ $pelanggaranQuery = mysqli_query($conn, "
         </div>
     </div>
 
-    <!-- Kotak Utama Konten -->
-    <div class="card shadow-sm border-0 rounded-4 overflow-hidden" style="background: linear-gradient(180deg, #ffffff 0%, #f8fafc 100%);">
-        <div class="card-body p-4">
-            <form action="process.php" method="POST">
+    <form action="process.php" method="POST">
                 
                 <h5 class="fw-bold mb-3"><i class="fas fa-list-check text-primary me-2"></i>Daftar Pelanggaran (Belum Dieksekusi)</h5>
                 
-                <div class="table-responsive mb-4">
-                    <table class="table table-hover align-middle" style="border-radius: 12px; overflow: hidden; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.05);">
-                        <thead style="background: linear-gradient(90deg, #8b5cf6, #6366f1); color: white;">
-                            <tr>
-                                <th width="5%" class="text-center border-0 py-3">No</th>
-                                <th width="5%" class="text-center border-0 py-3"><i class="fas fa-check-square"></i></th>
-                                <th class="border-0 py-3">Kamar</th>
-                                <th class="border-0 py-3">Tanggal Pelanggaran</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                        <?php
-                        $no = 1;
-                        $adaData = false;
-                        while ($row = mysqli_fetch_assoc($pelanggaranQuery)):
-                            $adaData = true;
-                        ?>
-                            <tr style="transition: all 0.2s;" onmouseover="this.style.backgroundColor='#f5f3ff'" onmouseout="this.style.backgroundColor='transparent'">
-                                <td class="text-center text-muted fw-medium"><?= $no++ ?></td>
-                                <td class="text-center">
-                                    <input type="checkbox" name="pelanggaran_id[]" value="<?= $row['pelanggaran_id'] ?>" class="form-check-input border-secondary" style="cursor: pointer; width: 1.25rem; height: 1.25rem;">
-                                </td>
-                                <td class="fw-bold text-dark"><i class="fas fa-door-closed text-primary me-2 opacity-75"></i><?= htmlspecialchars($row['kamar']) ?></td>
-                                <td>
-                                    <span class="badge bg-light text-secondary border px-2 py-1"><i class="far fa-clock me-1 text-warning"></i><?= date('d M Y H:i', strtotime($row['tanggal_pelanggaran'])) ?></span>
-                                </td>
-                            </tr>
-                        <?php endwhile; ?>
-                        <?php if (!$adaData): ?>
-                            <tr>
-                                <td colspan="4" class="text-center py-5 text-muted">
-                                    <i class="far fa-smile-beam fa-3x mb-3 text-success opacity-50"></i><br>
-                                    Semua pelanggaran kebersihan sudah dieksekusi.
-                                </td>
-                            </tr>
-                        <?php endif; ?>
-                        </tbody>
-                    </table>
-                </div>
-
-                <div class="row g-4 p-4 rounded-4" style="background: rgba(99, 102, 241, 0.04); border: 1px dashed rgba(99, 102, 241, 0.3);">
-                    <div class="col-md-4">
-                        <label class="form-label fw-bold text-primary mb-2" style="font-size:0.9rem;">Jenis Hukuman <span class="text-danger">*</span></label>
-                        <div class="input-group shadow-sm rounded-3 overflow-hidden">
-                            <span class="input-group-text bg-white border-end-0 text-primary"><i class="fas fa-gavel"></i></span>
-                            <input type="text" name="jenis_hukuman" class="form-control border-start-0 ps-0" required placeholder="Contoh: Membersihkan selokan">
-                        </div>
-                    </div>
-
-                    <div class="col-md-4">
-                        <label class="form-label fw-bold text-teal mb-2" style="font-size:0.9rem;">Tanggal Eksekusi <span class="text-danger">*</span></label>
-                        <div class="input-group shadow-sm rounded-3 overflow-hidden">
-                            <span class="input-group-text bg-white border-end-0 text-teal"><i class="far fa-calendar-check"></i></span>
-                            <input type="datetime-local" name="tanggal" class="form-control border-start-0 ps-0" value="<?= date('Y-m-d\TH:i') ?>" required>
-                        </div>
-                    </div>
-
-                    <div class="col-md-4">
-                        <label class="form-label fw-bold text-warning mb-2" style="font-size:0.9rem;">Catatan (Opsional)</label>
-                        <div class="input-group shadow-sm rounded-3 overflow-hidden">
-                            <span class="input-group-text bg-white border-end-0 text-warning"><i class="fas fa-sticky-note"></i></span>
-                            <input type="text" name="catatan" class="form-control border-start-0 ps-0" placeholder="Tambahan info...">
-                        </div>
+                <div class="card-premium mb-4 border rounded-3">
+                    <div class="table-responsive">
+                        <table class="table-premium w-100 mb-0">
+                            <thead>
+                                <tr>
+                                    <th class="text-center" style="width: 50px;">No</th>
+                                    <th class="text-center" style="width: 50px;">
+                                        <div class="form-check d-flex justify-content-center m-0">
+                                            <input class="form-check-input" type="checkbox" id="checkAll" style="cursor: pointer;">
+                                        </div>
+                                    </th>
+                                    <th class="text-nowrap">Kamar</th>
+                                    <th class="text-nowrap">Waktu Pelanggaran</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                            <?php
+                            $no = 1;
+                            $adaData = false;
+                            while ($row = mysqli_fetch_assoc($pelanggaranQuery)):
+                                $adaData = true;
+                            ?>
+                                <tr>
+                                    <td class="text-center text-muted fw-medium"><?= $no++ ?></td>
+                                    <td class="text-center">
+                                        <div class="form-check d-flex justify-content-center m-0">
+                                            <input type="checkbox" name="pelanggaran_id[]" value="<?= $row['pelanggaran_id'] ?>" class="form-check-input check-item border-secondary" style="cursor: pointer;">
+                                        </div>
+                                    </td>
+                                    <td class="text-nowrap">
+                                        <div class="fw-bold text-dark"><i class="fas fa-door-closed text-primary me-2 opacity-75"></i>Kamar <?= htmlspecialchars($row['kamar']) ?></div>
+                                    </td>
+                                    <td class="text-nowrap">
+                                        <div class="text-dark small"><i class="far fa-clock me-1 text-warning"></i><?= date('d M Y H:i', strtotime($row['tanggal_pelanggaran'])) ?></div>
+                                    </td>
+                                </tr>
+                            <?php endwhile; ?>
+                            <?php if (!$adaData): ?>
+                                <tr>
+                                    <td colspan="4" class="text-center py-5 text-muted">
+                                        <i class="far fa-smile-beam fa-3x mb-3 text-success opacity-50"></i><br>
+                                        Semua pelanggaran kebersihan sudah dieksekusi.
+                                    </td>
+                                </tr>
+                            <?php endif; ?>
+                            </tbody>
+                        </table>
                     </div>
                 </div>
 
-                <div class="mt-4 d-flex justify-content-end">
-                    <button type="submit" class="btn btn-primary px-5 py-2 fw-bold rounded-pill shadow" style="background: linear-gradient(90deg, #6366f1, #8b5cf6); border: none;">
+                <div class="card bg-white border-0 rounded-4 shadow-sm mb-4">
+                    <div class="card-body p-3 p-md-4">
+                        <h6 class="fw-bold text-dark mb-3"><i class="fas fa-cog text-secondary me-2"></i>Pengaturan Eksekusi</h6>
+                        <div class="row g-4">
+                            <div class="col-md-4">
+                                <label class="form-label fw-semibold text-dark mb-2" style="font-size:0.9rem;">Jenis Hukuman <span class="text-danger">*</span></label>
+                                <div class="input-group-modern">
+                                    <i class="fas fa-gavel text-primary"></i>
+                                    <input type="text" name="jenis_hukuman" class="form-control input-modern" required placeholder="Contoh: Membersihkan selokan">
+                                </div>
+                            </div>
+
+                            <div class="col-md-4">
+                                <label class="form-label fw-semibold text-dark mb-2" style="font-size:0.9rem;">Tanggal Eksekusi <span class="text-danger">*</span></label>
+                                <div class="input-group-modern">
+                                    <i class="far fa-calendar-check text-success"></i>
+                                    <input type="datetime-local" name="tanggal" class="form-control input-modern" value="<?= date('Y-m-d\TH:i') ?>" required>
+                                </div>
+                            </div>
+
+                            <div class="col-md-4">
+                                <label class="form-label fw-semibold text-dark mb-2" style="font-size:0.9rem;">Catatan (Opsional)</label>
+                                <div class="input-group-modern">
+                                    <i class="fas fa-sticky-note text-warning"></i>
+                                    <input type="text" name="catatan" class="form-control input-modern" placeholder="Tambahan info...">
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="d-grid d-md-flex justify-content-md-end mb-4">
+                    <button type="submit" class="btn btn-primary px-5 py-2 fw-bold rounded-pill shadow-sm" style="background: var(--primary); border: none;">
                         <i class="fas fa-save me-2"></i>Simpan Eksekusi
                     </button>
                 </div>
+
+                <script>
+                document.addEventListener('DOMContentLoaded', function() {
+                    const checkAll = document.getElementById('checkAll');
+                    const checkItems = document.querySelectorAll('.check-item');
+                    if (checkAll) {
+                        checkAll.addEventListener('change', function() {
+                            checkItems.forEach(item => {
+                                item.checked = checkAll.checked;
+                            });
+                        });
+                    }
+                });
+                </script>
+
             </form>
-        </div>
-    </div>
 </div>
 
 <?php include __DIR__ . '/../layouts/footer.php'; mysqli_close($conn); ?>

@@ -1,3 +1,6 @@
+<footer class="mt-auto mb-5 text-center text-muted small pb-4">
+    &copy; 2025 Built by <a href="https://ajsk.vercel.app/" target="_blank" rel="noopener noreferrer" class="text-decoration-none text-primary">AJSK.</a>
+</footer>
 </main>
 
 <?php
