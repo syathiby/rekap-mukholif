@@ -119,14 +119,56 @@ if ($hide_violators) {
     $types .= "ss";
 }
 
-// Prioritas Urutan (Ranking)
-$sql .= " ORDER BY total_pelanggaran ASC, total_reward DESC, avg_rapot DESC, CAST(s.kamar AS UNSIGNED) ASC, s.nama ASC";
-
 // Eksekusi Statement
 $stmt = mysqli_prepare($conn, $sql);
 mysqli_stmt_bind_param($stmt, $types, ...$params);
 mysqli_stmt_execute($stmt);
 $result = mysqli_stmt_get_result($stmt);
+
+// Logika Pemeringkatan dengan Bobot & Normalisasi
+$max_rapot = 0;
+$max_reward = 0;
+$max_pelanggaran = 0;
+$santri_data = [];
+
+while ($row = mysqli_fetch_assoc($result)) {
+    $pelanggaran = (int)$row['total_pelanggaran'];
+    $reward = (int)$row['total_reward'];
+    $rapot = (float)$row['avg_rapot'];
+
+    if ($pelanggaran > $max_pelanggaran) $max_pelanggaran = $pelanggaran;
+    if ($reward > $max_reward) $max_reward = $reward;
+    if ($rapot > $max_rapot) $max_rapot = $rapot;
+
+    $santri_data[] = $row;
+}
+
+// Hitung skor teladan
+foreach ($santri_data as &$s) {
+    $pelanggaran = (int)$s['total_pelanggaran'];
+    $reward = (int)$s['total_reward'];
+    $rapot = (float)$s['avg_rapot'];
+
+    $skor_rapot = ($max_rapot > 0) ? ($rapot / $max_rapot) * 100 : (($rapot == 0) ? 0 : 100);
+    $skor_reward = ($max_reward > 0) ? ($reward / $max_reward) * 100 : (($reward == 0) ? 0 : 100);
+    $skor_pelanggaran = ($max_pelanggaran > 0) ? 100 - (($pelanggaran / $max_pelanggaran) * 100) : (($pelanggaran == 0) ? 100 : 0);
+
+    // Bobot: 50% Rapot, 30% Reward, 20% Pelanggaran
+    $s['skor_teladan'] = ($skor_rapot * 0.50) + ($skor_reward * 0.30) + ($skor_pelanggaran * 0.20);
+}
+unset($s);
+
+// Urutkan berdasarkan skor teladan
+usort($santri_data, function($a, $b) {
+    if (abs($a['skor_teladan'] - $b['skor_teladan']) < 0.0001) {
+        // Tie breaker
+        if ($a['kamar'] == $b['kamar']) {
+            return strcmp($a['nama'], $b['nama']);
+        }
+        return (int)$a['kamar'] - (int)$b['kamar'];
+    }
+    return ($b['skor_teladan'] <=> $a['skor_teladan']);
+});
 
 if ($is_ajax) {
     ob_start();
@@ -474,11 +516,11 @@ body {
 <div class="container">
     <div class="page-header">
         <h2>Peringkat Santri Teladan</h2>
-        <p class="subtitle">Berdasarkan total poin pelanggaran terendah, poin reward tertinggi, dan nilai rapot rata-rata terbaik.</p>
+        <p class="subtitle">Peringkat dihitung berdasarkan bobot: <strong>50% Rapot Kepengasuhan</strong>, <strong>30% Poin Reward</strong>, dan <strong>20% Poin Pelanggaran</strong>.</p>
         <div style="margin-top: 15px; padding: 12px 18px; border-radius: 10px; font-size: 13.5px; display: flex; align-items: flex-start; gap: 12px; background-color: #eff6ff; color: #1e3a8a; border: 1px solid #bfdbfe;">
             <i class="fas fa-info-circle" style="font-size: 18px; margin-top: 2px;"></i>
             <div>
-                <strong>Informasi Perhitungan:</strong> Angka yang ditampilkan pada kartu adalah <strong>Total Poin Pelanggaran</strong> dan <strong>Total Poin Reward</strong>, bukan jumlah/frekuensi kejadiannya.
+                <strong>Info Sistem Skor:</strong> Nilai dikonversi ke skala 0-100 berdasarkan nilai tertinggi pada periode terpilih, lalu dikalikan dengan bobot masing-masing untuk menghasilkan <strong>Skor Teladan</strong>. Angka poin pada kartu di bawah adalah poin asli santri.
             </div>
         </div>
     </div>
@@ -549,7 +591,7 @@ body {
 ?>
         <div class="card-grid">
         <?php
-        if (mysqli_num_rows($result) === 0) {
+        if (empty($santri_data)) {
             echo "
             <div class='no-data'>
                 <div class='icon'>🎉</div>
@@ -557,7 +599,7 @@ body {
             </div>";
         } else {
             $no = 1;
-            while ($row = mysqli_fetch_assoc($result)) {
+            foreach ($santri_data as $row) {
                 $animation_delay = min($no * 0.05, 1.5); // Cap delay at 1.5s
                 
                 $pelanggaran = (int)$row['total_pelanggaran'];
@@ -607,6 +649,11 @@ body {
                                 </span>
                                 <span class="stat-label">Rapot</span>
                             </div>
+                        </div>
+
+                        <div style="margin-top: 15px; padding-top: 15px; border-top: 1px dashed #e2e8f0; display: flex; justify-content: space-between; align-items: center;">
+                            <span style="font-size: 12px; font-weight: 700; color: #64748b; text-transform: uppercase; letter-spacing: 0.5px;">Skor Teladan</span>
+                            <span style="font-size: 18px; font-weight: 800; color: #4f46e5;"><?= number_format($row['skor_teladan'], 2) ?></span>
                         </div>
                     </div>
                 </div>

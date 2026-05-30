@@ -20,268 +20,193 @@ if ($result) {
 }
 ?>
 
-<!DOCTYPE html>
-<html lang="id">
+<style>
+    :root {
+        --bg-card: #ffffff;
+        --border: #e2e8f0;
+        --text-main: #0f172a;
+        --text-muted: #64748b;
+    }
+    
+    .table-container {
+        background-color: var(--bg-card);
+        padding: 0;
+        border-radius: 1rem;
+        margin-bottom: 2rem;
+        box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.05), 0 1px 2px -1px rgba(0, 0, 0, 0.05);
+        border: 1px solid var(--border);
+        overflow: hidden;
+    }
+    
+    .table thead {
+        background-color: #f8fafc;
+        color: var(--text-muted);
+        font-weight: 600;
+        text-transform: uppercase;
+        font-size: 0.75rem;
+        letter-spacing: 0.05em;
+    }
+    
+    .table th {
+        border-bottom-width: 1px;
+        padding: 1rem 1.5rem !important;
+    }
+    
+    .table td {
+        padding: 1rem 1.5rem !important;
+        vertical-align: middle;
+    }
+    
+    .table tbody tr {
+        transition: background-color 0.2s ease;
+    }
+    
+    .table tbody tr:hover {
+        background-color: #f8fafc;
+    }
+    
+    .badge-role-admin {
+        background-color: rgba(16, 185, 129, 0.1);
+        color: #059669;
+        font-size: 0.75rem;
+        font-weight: 600;
+        padding: 0.35rem 0.75rem;
+        border-radius: 9999px;
+        display: inline-block;
+    }
+    
+    .badge-role-user {
+        background-color: rgba(79, 70, 229, 0.1);
+        color: #4f46e5;
+        font-size: 0.75rem;
+        font-weight: 600;
+        padding: 0.35rem 0.75rem;
+        border-radius: 9999px;
+        display: inline-block;
+    }
 
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Manajemen User</title>
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
-    <style>
-        /* ==================================================================== */
-        /* ===== BAGIAN CSS YANG HILANG SUDAH GW BALIKIN LAGI DI SINI ===== */
-        /* ==================================================================== */
-        :root {
-            --primary-color: #0d6efd;
-            --primary-hover: #0b5ed7;
-            --danger-color: #dc3545;
-            --warning-color: #ffc107;
-            --text-dark: #212529;
-            --text-light: #6c757d;
-            --border-color: #dee2e6;
-            --card-bg: #ffffff;
-            --body-bg: #f1f5f9;
-        }
+    .btn-action-edit {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        width: 32px;
+        height: 32px;
+        border-radius: 50%;
+        background-color: rgba(245, 158, 11, 0.08);
+        color: #d97706;
+        transition: all 0.2s ease;
+    }
+    
+    .btn-action-edit:hover {
+        background-color: #f59e0b;
+        color: white;
+        transform: translateY(-2px);
+    }
+    
+    .btn-action-delete {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        width: 32px;
+        height: 32px;
+        border-radius: 50%;
+        background-color: rgba(239, 68, 68, 0.08);
+        color: #dc2626;
+        transition: all 0.2s ease;
+    }
+    
+    .btn-action-delete:hover {
+        background-color: #ef4444;
+        color: white;
+        transform: translateY(-2px);
+    }
+</style>
 
-        body {
-            font-family: 'Inter', sans-serif;
-            background-color: var(--body-bg);
-            color: var(--text-dark);
-        }
-
-        .user-management-container {
-            max-width: 950px;
-            margin: 0 auto;
-            padding: 2rem 1.5rem;
-        }
-
-        .page-header {
-            display: flex;
-            justify-content: space-between;
-            align-items: flex-start;
-            margin-bottom: 2rem;
-            gap: 1rem;
-        }
-
-        .page-header h1 {
-            font-size: 2rem;
-            font-weight: 700;
-            display: flex;
-            align-items: center;
-            gap: 0.75rem;
-            margin: 0;
-            color: #334155;
-        }
-        
-        .page-header .subtitle {
-            font-size: 1rem;
-            color: var(--text-light);
-            margin-top: 0.25rem;
-        }
-
-        .btn-add-user {
-            display: inline-flex;
-            align-items: center;
-            gap: 0.5rem;
-            background: linear-gradient(145deg, var(--primary-color), var(--primary-hover));
-            color: white;
-            padding: 0.75rem 1.25rem;
-            border-radius: 0.5rem;
-            font-weight: 600;
-            text-decoration: none;
-            transition: all 0.2s ease-in-out;
-            box-shadow: 0 4px 10px rgba(13, 110, 253, 0.3);
-            border: none;
-            white-space: nowrap;
-        }
-        .btn-add-user:hover {
-            transform: translateY(-3px);
-            box-shadow: 0 7px 15px rgba(13, 110, 253, 0.4);
-        }
-
-        .table-wrapper {
-            background-color: var(--card-bg);
-            border-radius: 0.75rem;
-            box-shadow: 0 4px 25px rgba(0, 0, 0, 0.07);
-            border: 1px solid var(--border-color);
-        }
-        
-        .table-responsive {
-            overflow-x: auto;
-        }
-        
-        .table {
-            margin-bottom: 0;
-            border-collapse: collapse;
-            width: 100%;
-            min-width: 700px; 
-        }
-
-        .table thead th {
-            background-color: #f8f9fa;
-            color: var(--text-light);
-            font-weight: 600;
-            text-transform: uppercase;
-            letter-spacing: 0.5px;
-            font-size: 0.75rem;
-            padding: 1rem 1.5rem;
-            border-bottom: 2px solid var(--border-color);
-        }
-
-        .table tbody td {
-            vertical-align: middle;
-            padding: 1rem 1.5rem;
-            border-bottom: 1px solid #f1f1f1;
-        }
-        
-        .table tbody tr:last-child td {
-            border-bottom: none;
-        }
-
-        .table .nama-lengkap {
-            font-weight: 600;
-            color: #343a40;
-        }
-        
-        .table .username {
-            color: var(--text-light);
-            font-family: monospace;
-            font-size: 0.9rem;
-        }
-        
-        .table .badge-role {
-            background-color: #198754e3;
-            color: #ffffff;
-            font-size: 0.75rem;
-            font-weight: 600;
-            padding: 0.4em 0.8em;
-            border-radius: 9999px;
-            text-shadow: 0 1px 1px rgba(0,0,0,0.1);
-        }
-        
-        .action-buttons {
-            display: flex;
-            gap: 1rem;
-        }
-
-        .action-buttons a {
-            font-size: 1.1rem;
-            text-decoration: none;
-            transition: transform 0.2s ease, color 0.2s ease;
-        }
-        .action-buttons a.btn-edit:hover {
-            transform: scale(1.2);
-            color: #e6a800;
-        }
-        .action-buttons a.btn-delete:hover {
-            transform: scale(1.2);
-            color: #b02a37;
-        }
-
-        .btn-edit { color: var(--warning-color); }
-        .btn-delete { color: var(--danger-color); }
-
-        @media (max-width: 576px) {
-            .user-management-container {
-                padding: 1.5rem 1rem;
-            }
-            .page-header {
-                flex-direction: column; 
-                align-items: flex-start; 
-            }
-            .page-header .header-title {
-                margin-bottom: 1rem;
-            }
-            .btn-add-user {
-                width: 100%; 
-                justify-content: center; 
-            }
-        }
-    </style>
-</head>
-
-<body>
-    <div class="user-management-container">
-        <div class="page-header">
-            <div class="header-title">
-                <h1><i class="fas fa-users-cog"></i>Manajemen User</h1>
-                <p class="subtitle">Daftar semua pengguna yang terdaftar di sistem.</p>
-            </div>
-            <a href="form-user.php" class="btn-add-user">
-                <i class="fas fa-user-plus"></i>Tambah User Baru
-            </a>
+<div class="container-fluid py-4 px-4">
+    <!-- Header Page -->
+    <div class="d-flex flex-column flex-md-row justify-content-between align-items-md-center mb-4 gap-3">
+        <div>
+            <h3 class="fw-bold text-dark mb-1"><i class="fas fa-users-cog text-primary me-2"></i>Manajemen User</h3>
+            <p class="text-muted mb-0">Daftar semua pengguna yang terdaftar di sistem.</p>
         </div>
+        <div class="d-flex align-items-center">
+            <a href="form-user.php" class="btn btn-primary shadow-sm rounded-pill px-4"><i class="fas fa-user-plus me-2"></i> Tambah User Baru</a>
+        </div>
+    </div>
 
-        <?php if (isset($_SESSION['success_message']) && $_SESSION['success_message']) : ?>
-            <div class="alert alert-success"><?= $_SESSION['success_message']; unset($_SESSION['success_message']); ?></div>
-        <?php endif; ?>
-        <?php if (isset($_SESSION['error_message']) && $_SESSION['error_message']) : ?>
-            <div class="alert alert-danger"><?= $_SESSION['error_message']; unset($_SESSION['error_message']); ?></div>
-        <?php endif; ?>
+    <!-- Alert / Notification -->
+    <?php if (isset($_SESSION['success_message']) && $_SESSION['success_message']) : ?>
+        <div class="alert alert-success alert-dismissible fade show mb-4" role="alert">
+            <i class="fas fa-check-circle me-2"></i> <?= $_SESSION['success_message']; unset($_SESSION['success_message']); ?>
+            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+        </div>
+    <?php endif; ?>
+    <?php if (isset($_SESSION['error_message']) && $_SESSION['error_message']) : ?>
+        <div class="alert alert-danger alert-dismissible fade show mb-4" role="alert">
+            <i class="fas fa-times-circle me-2"></i> <?= $_SESSION['error_message']; unset($_SESSION['error_message']); ?>
+            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+        </div>
+    <?php endif; ?>
 
-        <div class="table-wrapper">
-            <div class="table-responsive">
-                <table class="table">
-                    <thead>
+    <!-- Table -->
+    <div class="table-container">
+        <div class="table-responsive">
+            <table class="table table-hover align-middle mb-0">
+                <thead>
+                    <tr>
+                        <th width="8%" class="text-center">No</th>
+                        <th>Nama Lengkap</th>
+                        <th>Username</th>
+                        <th width="20%">Jabatan (Role)</th>
+                        <th width="15%" class="text-center">Aksi</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <?php if (empty($users)) : ?>
                         <tr>
-                            <th scope="col">No</th>
-                            <th scope="col">Nama Lengkap</th>
-                            <th scope="col">Username</th>
-                            <th scope="col">Jabatan (Role)</th>
-                            <th scope="col">Aksi</th>
+                            <td colspan="5" class="text-center text-muted py-5">
+                                <i class="fas fa-users fa-3x mb-3 text-secondary" style="opacity: 0.4;"></i>
+                                <h5 class="fw-semibold">Belum Ada Data User</h5>
+                                <p class="text-muted small">Silakan klik tombol "Tambah User Baru" untuk memulai.</p>
+                            </td>
                         </tr>
-                    </thead>
-                    <tbody>
-                        <?php if (empty($users)) : ?>
+                    <?php else : ?>
+                        <?php $nomor = 1; ?>
+                        <?php foreach ($users as $user) : ?>
                             <tr>
-                                <td colspan="5" class="text-center text-muted py-5">
-                                    <h4>Belum Ada Data User</h4>
-                                    <p>Silakan klik tombol "Tambah User Baru" untuk memulai.</p>
+                                <td class="text-center fw-semibold"><?= $nomor++ ?></td>
+                                <td class="fw-semibold text-dark"><?= htmlspecialchars($user['nama_lengkap']) ?></td>
+                                <td class="text-muted font-monospace" style="font-size: 0.9rem;"><?= htmlspecialchars($user['username']) ?></td>
+                                <td>
+                                    <?php if (strtolower($user['role']) == 'admin') : ?>
+                                        <span class="badge-role-admin">Admin</span>
+                                    <?php else: ?>
+                                        <span class="badge-role-user"><?= htmlspecialchars(ucfirst($user['role'])) ?></span>
+                                    <?php endif; ?>
                                 </td>
-                            </tr>
-                        <?php else : ?>
-                            <?php $nomor = 1; ?>
-                            <?php foreach ($users as $user) : ?>
-                                <tr>
-                                    <td class="text-center"><strong><?= $nomor++ ?></strong></td>
-                                    <td class="nama-lengkap"><?= htmlspecialchars($user['nama_lengkap']) ?></td>
-                                    <td class="username"><?= htmlspecialchars($user['username']) ?></td>
-                                    <td>
-                                        <span class="badge-role">
-                                            <?= htmlspecialchars(ucfirst($user['role'])) ?>
-                                        </span>
-                                    </td>
-                                    <td class="action-buttons">
-                                        <?php
-                                        // Tombol edit muncul jika: baris ini BUKAN admin, ATAU yang login adalah admin.
-                                        if (strtolower($user['role']) != 'admin' || (isset($_SESSION['role']) && strtolower($_SESSION['role']) == 'admin')) :
-                                        ?>
-                                            <a href="form-user.php?id=<?= $user['id'] ?>" class="btn-edit" title="Edit User">
+                                <td class="text-center">
+                                    <div class="d-inline-flex gap-2">
+                                        <?php if (strtolower($user['role']) != 'admin' || (isset($_SESSION['role']) && strtolower($_SESSION['role']) == 'admin')) : ?>
+                                            <a href="form-user.php?id=<?= $user['id'] ?>" class="btn-action-edit" title="Edit User">
                                                 <i class="fas fa-pen-to-square"></i>
                                             </a>
                                         <?php endif; ?>
                                         
                                         <?php if (strtolower($user['role']) != 'admin') : ?>
-                                            <a href="delete-user.php?id=<?= $user['id'] ?>" class="btn-delete" title="Hapus User" onclick="confirmSubmit(event, this, 'Hapus User', 'Yakin mau hapus user <?= htmlspecialchars($user['username']) ?>? Tindakan ini tidak bisa dibatalkan!');">
+                                            <a href="delete-user.php?id=<?= $user['id'] ?>" class="btn-action-delete" title="Hapus User" onclick="confirmSubmit(event, this, 'Hapus User', 'Yakin mau hapus user <?= htmlspecialchars($user['username']) ?>? Tindakan ini tidak bisa dibatalkan!');">
                                                 <i class="fas fa-trash-alt"></i>
                                             </a>
                                         <?php endif; ?>
-                                    </td>
-                                </tr>
-                            <?php endforeach; ?>
-                        <?php endif; ?>
-                    </tbody>
-                </table>
-            </div>
+                                    </div>
+                                </td>
+                            </tr>
+                        <?php endforeach; ?>
+                    <?php endif; ?>
+                </tbody>
+            </table>
         </div>
     </div>
-</body>
-
-</html>
+</div>
 
 <?php
 require_once __DIR__ . '/../../layouts/footer.php';

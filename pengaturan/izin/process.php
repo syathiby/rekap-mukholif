@@ -21,9 +21,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $loggedInUserId = $_SESSION['user_id'] ?? null; 
     
     if ($userId === $loggedInUserId) {
-        // Jika user mencoba mengedit izinnya sendiri, langsung tendang ke dashboard!
-        $_SESSION['error_message'] = "❌ Kamu tidak bisa mengubah izin milikmu sendiri.";
-        header("Location: " . BASE_URL . "/index.php");
+        // Jika user mencoba mengedit izinnya sendiri, lempar ke access_denied.php
+        http_response_code(403);
+        require __DIR__ . '/../../bootstrap/access_denied.php';
         exit;
     }
     // --- AKHIR DARI LOGIKA BARU ---

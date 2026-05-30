@@ -1,4 +1,4 @@
-﻿<?php
+<?php
 ob_start(); // Tahan semua output dulu, biar aman pas redirect
 
 // 1. Panggil 'Otak' aplikasi dulu
@@ -40,13 +40,15 @@ if (isset($_GET['id']) && is_numeric($_GET['id'])) {
         // --- TAMBAHAN: Simpan role asli ke variabel untuk dikirim ke JavaScript ---
         $original_role_for_js = json_encode($user_data['role']);
 
-        if (
-            strtolower($user_data['role']) === 'admin' &&
-            (!isset($_SESSION['role']) || strtolower($_SESSION['role']) !== 'admin')
-        ) {
-            // Hapus pesan session, langsung tendang ke halaman akses ditolak
-            header("Location: " . BASE_URL . "/index.php");
-            exit;
+        if (strtolower($user_data['role']) === 'admin') {
+            $logged_in_user_id = $_SESSION['user_id'] ?? null;
+            // Hanya admin bersangkutan yang boleh mengedit dirinya sendiri
+            if ($user_id !== (int)$logged_in_user_id) {
+                $stmt->close();
+                http_response_code(403);
+                require __DIR__ . '/../../bootstrap/access_denied.php';
+                exit;
+            }
         }
 
         $page_title = 'Edit User';
@@ -267,13 +269,19 @@ if ($result_roles) {
                     <label for="role" class="form-label">Jabatan (Role)</label>
                     <div class="input-group">
                         <span class="input-group-text"><i class="fas fa-shield-halved fa-fw"></i></span>
-                        <input class="form-control" list="role-list" id="role" name="role" value="<?= htmlspecialchars($user_data['role']) ?>" placeholder="Masukan Role" required>
+                        <?php if ($is_edit_mode && strtolower($user_data['role']) === 'admin'): ?>
+                            <!-- Admin mengedit dirinya sendiri: role terkunci sebagai 'Admin' -->
+                            <input type="text" class="form-control" value="Admin" disabled style="background-color: #e9ecef; cursor: not-allowed;">
+                            <input type="hidden" id="role" name="role" value="admin">
+                        <?php else: ?>
+                            <!-- Tambah user baru ATAU edit user non-admin: Opsi 'Admin' disembunyikan sepenuhnya -->
+                            <select class="form-control" id="role" name="role" required>
+                                <option value="">-- Pilih Jabatan/Role --</option>
+                                <option value="pengelola" <?= (strtolower($user_data['role']) === 'pengelola') ? 'selected' : '' ?>>Pengelola</option>
+                                <option value="staff" <?= (strtolower($user_data['role']) === 'staff') ? 'selected' : '' ?>>Staff</option>
+                            </select>
+                        <?php endif; ?>
                     </div>
-                    <datalist id="role-list">
-                        <?php foreach ($existing_roles as $role_row): ?>
-                            <option value="<?= htmlspecialchars($role_row['role']) ?>">
-                        <?php endforeach; ?>
-                    </datalist>
                 </div>
 
                 <div class="mb-4">
@@ -317,47 +325,55 @@ if ($result_roles) {
             }
         }
 
-        // --- LOGIKA BARU DITAMBAHKAN DI SINI UNTUK MENCEGAH ROLE ADMIN GANDA ---
         document.addEventListener('DOMContentLoaded', function() {
             const form = document.querySelector('form.form-card');
             const formWrapper = document.querySelector('.form-content-wrapper');
             const roleInput = document.getElementById('role');
+            const usernameInput = document.getElementById('username');
             
-            // Variabel ini diambil dari PHP di atas
             const isEditMode = <?= $is_edit_mode ? 'true' : 'false' ?>;
             const originalRole = <?= $original_role_for_js ?>;
 
             form.addEventListener('submit', function(event) {
                 const newRoleValue = roleInput.value.trim().toLowerCase();
+                const newUsernameValue = usernameInput.value.trim().toLowerCase();
 
-                // Cek jika role yang diinput adalah 'admin'
+                // Hapus notifikasi error lama jika ada
+                const existingError = formWrapper.querySelector('.alert.alert-danger.custom-validation');
+                if (existingError) {
+                    existingError.remove();
+                }
+
+                // 1. Cek jika username yang diinput adalah 'admin'
+                if (newUsernameValue === 'admin') {
+                    // Hanya diizinkan jika ini mode edit DAN memang aslinya sudah admin (misal cuma edit nama/password)
+                    const isTryingToHijackOrUseAdminUsername = !isEditMode || (isEditMode && originalRole.trim().toLowerCase() !== 'admin');
+                    if (isTryingToHijackOrUseAdminUsername) {
+                        event.preventDefault();
+                        showCustomError('❌ Username "admin" dilarang digunakan untuk user baru atau user non-admin.');
+                        return;
+                    }
+                }
+
+                // 2. Cek jika role yang diinput adalah 'admin'
                 if (newRoleValue === 'admin') {
-                    // Cek apakah ini mode 'tambah user' ATAU mode 'edit' tapi role aslinya bukan 'admin'.
-                    // Jika user yang diedit sudah 'admin', maka tidak apa-apa (misal cuma ganti nama).
                     const isTryingToCreateOrChangeToAdmin = !isEditMode || (isEditMode && originalRole.trim().toLowerCase() !== 'admin');
                     
                     if (isTryingToCreateOrChangeToAdmin) {
                         event.preventDefault(); // Batalkan submit form
-
-                        // Hapus notifikasi error lama jika ada, biar gak numpuk
-                        const existingError = formWrapper.querySelector('.alert.alert-danger.custom-validation');
-                        if (existingError) {
-                            existingError.remove();
-                        }
-
-                        // Buat elemen div untuk pesan error baru
-                        const errorDiv = document.createElement('div');
-                        errorDiv.className = 'alert alert-danger custom-validation'; // Tambah kelas khusus
-                        errorDiv.innerHTML = '❌ Wih, jago! Tapi sayangnya, Anda tidak bisa menambahkan atau mengubah user menjadi "Admin".';
-                        
-                        // Tampilkan pesan error di atas form card
-                        formWrapper.insertBefore(errorDiv, form);
-                        
-                        // Scroll ke pesan error agar langsung terlihat
-                        errorDiv.scrollView({ behavior: 'smooth', block: 'center' });
+                        showCustomError('❌ Anda tidak bisa menambahkan atau mengubah user menjadi "Admin".');
+                        return;
                     }
                 }
             });
+
+            function showCustomError(message) {
+                const errorDiv = document.createElement('div');
+                errorDiv.className = 'alert alert-danger custom-validation';
+                errorDiv.innerHTML = message;
+                formWrapper.insertBefore(errorDiv, form);
+                errorDiv.scrollIntoView({ behavior: 'smooth', block: 'center' });
+            }
         });
     </script>
 </body>

@@ -28,38 +28,96 @@ if (!$is_edit_mode && empty($password)) {
     exit;
 }
 
-// --- LOGIKA BARU: VALIDASI ROLE ADMIN DI SISI SERVER ---
-if ($role === 'admin') {
-    // Cek apakah BASE_URL sudah didefinisikan untuk keamanan
-    if (!defined('BASE_URL')) {
-        // Fallback jika BASE_URL tidak ada, meskipun seharusnya ada dari config
-        die("Konfigurasi BASE_URL tidak ditemukan.");
-    }
-
+// --- LOGIKA BARU: VALIDASI ROLE DAN USERNAME ADMIN DI SISI SERVER ---
+// 1. Blokir username 'admin' untuk user baru atau perubahan username menjadi 'admin' (kecuali jika user tersebut aslinya sudah admin)
+$is_trying_username_admin = (strtolower($username) === 'admin');
+if ($is_trying_username_admin) {
+    $allow_username_admin = false;
     if ($is_edit_mode) {
-        // Mode edit: Cek role asli user di database.
         $user_id_check = (int)$_POST['user_id'];
-        $stmt_role_check = $conn->prepare("SELECT role FROM users WHERE id = ?");
-        $stmt_role_check->bind_param("i", $user_id_check);
-        $stmt_role_check->execute();
-        $result_role = $stmt_role_check->get_result();
+        $stmt_admin_check = $conn->prepare("SELECT role, username FROM users WHERE id = ?");
+        $stmt_admin_check->bind_param("i", $user_id_check);
+        $stmt_admin_check->execute();
+        $result_admin = $stmt_admin_check->get_result();
+        if ($result_admin->num_rows === 1) {
+            $user_asli_data = $result_admin->fetch_assoc();
+            if (strtolower($user_asli_data['role']) === 'admin' && strtolower($user_asli_data['username']) === 'admin') {
+                $allow_username_admin = true;
+            }
+        }
+        $stmt_admin_check->close();
+    }
+    
+    if (!$allow_username_admin) {
+        http_response_code(403);
+        require __DIR__ . '/../../bootstrap/access_denied.php';
+        exit;
+    }
+}
+
+// 2. Proteksi Perubahan Role dan Edit User Admin
+if ($is_edit_mode) {
+    $user_id_check = (int)$_POST['user_id'];
+    $stmt_role_check = $conn->prepare("SELECT role FROM users WHERE id = ?");
+    $stmt_role_check->bind_param("i", $user_id_check);
+    $stmt_role_check->execute();
+    $result_role = $stmt_role_check->get_result();
+    
+    if ($result_role->num_rows === 1) {
+        $user_asli = $result_role->fetch_assoc();
+        $role_asli = strtolower($user_asli['role']);
         
-        if ($result_role->num_rows === 1) {
-            $user_asli = $result_role->fetch_assoc();
-            // Jika role aslinya BUKAN admin, langsung tendang!
-            if (strtolower($user_asli['role']) !== 'admin') {
+        // Skenario A: User target aslinya adalah admin
+        if ($role_asli === 'admin') {
+            $logged_in_user_id = $_SESSION['user_id'] ?? null;
+            // Hanya admin bersangkutan yang boleh mengedit dirinya sendiri
+            if ($user_id_check !== (int)$logged_in_user_id) {
                 $stmt_role_check->close();
                 $conn->close();
-                header("Location: " . BASE_URL . "/index.php");
+                http_response_code(403);
+                require __DIR__ . '/../../bootstrap/access_denied.php';
+                exit;
+            }
+            
+            // Mencegah admin mendegradasi rolenya sendiri menjadi bukan admin
+            if ($role !== 'admin') {
+                $stmt_role_check->close();
+                http_response_code(403);
+                require __DIR__ . '/../../bootstrap/access_denied.php';
                 exit;
             }
         }
-        $stmt_role_check->close();
-    } else {
-        // Mode tambah: Langsung tendang jika mencoba membuat admin baru!
+    }
+    $stmt_role_check->close();
+}
+
+// 3. Mencegah pembuatan role admin baru atau promosi non-admin menjadi admin
+if ($role === 'admin') {
+    if (!$is_edit_mode) {
+        // Mode tambah: Langsung blokir pembuatan admin baru
         $conn->close();
-        header("Location: " . BASE_URL . "/index.php");
+        http_response_code(403);
+        require __DIR__ . '/../../bootstrap/access_denied.php';
         exit;
+    } else {
+        // Mode edit: Cek apakah role asli user di database memang admin.
+        // Jika aslinya bukan admin, tolak keras (mencegah promosi ilegal ke admin).
+        $user_id_check = (int)$_POST['user_id'];
+        $stmt_promo_check = $conn->prepare("SELECT role FROM users WHERE id = ?");
+        $stmt_promo_check->bind_param("i", $user_id_check);
+        $stmt_promo_check->execute();
+        $result_promo = $stmt_promo_check->get_result();
+        if ($result_promo->num_rows === 1) {
+            $user_promo = $result_promo->fetch_assoc();
+            if (strtolower($user_promo['role']) !== 'admin') {
+                $stmt_promo_check->close();
+                $conn->close();
+                http_response_code(403);
+                require __DIR__ . '/../../bootstrap/access_denied.php';
+                exit;
+            }
+        }
+        $stmt_promo_check->close();
     }
 }
 

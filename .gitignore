@@ -1,4 +1,4 @@
 .env
-.env.local
+.env.server
 .idea/
 vendor/

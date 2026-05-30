@@ -586,7 +586,7 @@ a {
 }
 
 .login-body {
-    background: linear-gradient(-45deg, #e0e7ff, #f3f4f6, #fbcfe8, #d1fae5);
+    background: linear-gradient(-45deg, #e0e7ff, #f3f4f6, #dcfce7, #d1fae5);
     background-size: 400% 400%;
     animation: gradientBg 15s ease infinite;
     min-height: 100vh;

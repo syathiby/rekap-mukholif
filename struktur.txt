@@ -9,8 +9,8 @@ C:\laragon\www\rekap-mukholif
 |   +--- arsip_pelanggaran.php         => Halaman untuk melihat data arsip pelanggaran umum.
 |   +--- arsip_santri.php              => Halaman untuk melihat data arsip santri secara umum.
 |   +--- create.php                    => Script (logika) untuk membuat atau memasukkan data ke dalam tabel arsip.
-|   +--- detail_kebersihan.php              => Melihat rincian riwayat arsip per kamar.
-|   +--- detail_keterlambatan.php      => Melihat riwayat data keterlambatan santri dari periode-periode lalu.
+|   +--- detail-kamar.php              => Melihat rincian riwayat arsip per kamar.
+|   +--- detail_keterlambatan.php      => Halaman untuk melihat detail riwayat seluruh pelanggaran seorang santri dari data arsip periode lalu.
 |   +--- export_arsip.php              => Fitur untuk mengunduh/export data arsip menjadi file Excel.
 |   +--- index.php                     => Halaman utama (dashboard) untuk masuk ke berbagai menu arsip.
 |   +--- process.php                   => File yang memproses aksi (simpan, ubah, hapus) yang terjadi di dalam fitur arsip.
@@ -81,6 +81,10 @@ C:\laragon\www\rekap-mukholif
 |   |   \--- search_santri.php         => Live search santri tahfidz.
 |   \--- index.php                     => Halaman dashboard/menu depan dari keseluruhan modul pelanggaran (Akses cepat).
 +--- pengaturan                        => [FOLDER] Menu Khusus Admin/Super Administrator untuk "Setting" isi daleman sistem.
+|   +--- backup-restore                => [FOLDER] Fitur untuk mencadangkan (Backup) dan memulihkan (Restore) database MySQL.
+|   |   +--- export.php                => Skrip untuk mengekspor database menjadi file SQL.
+|   |   +--- import.php                => Skrip untuk mengimpor data dari file SQL ke database.
+|   |   \--- index.php                 => Halaman depan untuk mengelola proses backup dan restore database.
 |   +--- history                       => [FOLDER] Log aktivitas. Mencatat siapa saja yang ngedit/hapus/nambah data apa.
 |   |   +--- history_view.php          => Halaman buat memantau semua jejak digital user.
 |   |   +--- index.php                 => Tampilan tabel dasar riwayat.
@@ -98,7 +102,7 @@ C:\laragon\www\rekap-mukholif
 |   +--- users                         => [FOLDER] Mengelola akun-akun orang yang bisa masuk ke aplikasi (Ustadz, Musyrif, Admin).
 |   |   +--- delete-user.php           => Skrip blokir/hapus akun.
 |   |   +--- form-user.php             => Form registrasi / edit password akun staf.
-|   |   +--- index.php                 => Tabel daftar semua admin yang ada di sistem.
+|   |   +--- index.php                 => Tabel daftar semua user/pengguna yang ada di sistem.
 |   |   \--- process-user.php          => Proses simpan data akun tersebut ke server dengan password di-enkripsi (di-hash).
 |   \--- index.php                     => Pintu masuk ke menu Pengaturan.
 +--- rapot                             => [FOLDER] Fitur keren: Sistem Cetak Lembar Rapor Evaluasi Akhir Santri secara dinamis (Cetak PDF / Gambar / Kertas).
@@ -118,7 +122,7 @@ C:\laragon\www\rekap-mukholif
 |   \--- view.php                      => Halaman pratinjau (Preview) untuk mengintip rapor sebelum ditekan cetak.
 +--- rekap                             => [FOLDER] Modul Laporan & Dashboard Analitik Bergrafik (Data Visualization). Sangat berguna buat Rapat Pimpinan!
 |   +--- chart.php                     => Modul yang menyajikan diagram batang/pie tentang kondisi pesantren terkini.
-|   +--- detail_kebersihan.php              => Lihat "Kamar Paling Bandel" vs "Kamar Paling Taat". Rekap poin di-kalkulasi per kamar.
+|   +--- detail_kebersihan.php         => Lihat "Kamar Paling Bandel" vs "Kamar Paling Taat". Rekap poin di-kalkulasi per kamar.
 |   +--- detail_keterlambatan.php      => Analisis spesifik tentang kebiasaan lambat santri di berbagai kegiatan.
 |   +--- detail_pelanggaran.php        => List detil catatan per baris kasus semua jenis.
 |   +--- detail_umum.php               => Rekap keseluruhan dalam bentuk ringkasan list.
@@ -158,12 +162,11 @@ C:\laragon\www\rekap-mukholif
 |   +--- index.php                     => Pangkalan utama melihat tabel 1000+ data santri lengkap dengan sistem Paginasi.
 |   \--- search.php                    => Mesin pencari instan (Live Search via Javascript/AJAX) tanpa reload halaman.
 +--- .env                              => (PENTING) File "Top Secret". Isinya variabel rahasia seperti Password Database, alamat URL website asli. JANGAN PERNAH di-upload ke internet/Github terbuka!
++--- .env.server                       => File konfigurasi environment cadangan untuk deployment server.
 +--- .gitignore                        => Petunjuk buat aplikasi "Git": file apa aja yang dilarang disinkronisasi ke server (Misalnya file password .env atau file sisa-sisa Windows).
 +--- composer.json                     => Daftar keranjang belanja berisi komponen "Library PHP" tambahan dari pihak luar (seperti library PHPSpreadsheet pembuat Excel).
 +--- composer.lock                     => Catatan "Kuitansi Belanja" yang mengunci versi persis setiap aplikasi pihak luar biar web kita tidak gampang error kalo ada library yang update tiba-tiba.
 +--- composer.phar                     => Program kecil portable buat menginstall daftar belanja composer.json tanpa pusing install dari internet langsung.
-+--- create_log_kebersihan.php         => Skrip khusus operasional di balik layar (Mungkin dipakai cron job) untuk mencatat skor evaluasi piket mingguan.
-+--- describe.php                      => Skrip khusus developer buat membedah isi kolom database (debugging). Bisa dihapus jika web sudah benar-benar dirilis komersil.
 +--- index.php                         => "Pintu Gerbang Utama". Cek tiket (Session). Kalau sudah login disuruh masuk dashboard, kalau belum ya dilempar ke login.php.
 +--- login.php                         => Halaman selamat datang / pengisian Username & Password.
 +--- logout.php                        => Skrip penghapus identitas user di browser (Session Destroy) agar orang lain di komputer yang sama tidak bisa baca datanya.
@@ -171,4 +174,5 @@ C:\laragon\www\rekap-mukholif
 +--- offline.php                       => Halaman "Dinosaurus" / Peringatan tidak ada internet yang akan otomatis nongol di HP user jika mereka pakai aplikasi ini saat HP sedang Airplane Mode.
 +--- README.md                         => File teks perkenalan buat developer. Isinya langkah instalasi kalau ada programmer baru bergabung mengembangkan ini via Github.
 +--- struktur.txt                      => Ya, ini adalah file kamus panduan yang sedang Anda baca sekarang!
-\--- sw.js                             => Service Worker. Trik gaib javascript berjalan di belakang layar. Fungsinya men-cache/menyimpan halaman web di memori HP agar saat dibuka lagi rasanya lebih ngebut.
++--- sw.js                             => Service Worker. Trik gaib javascript berjalan di belakang layar. Fungsinya men-cache/menyimpan halaman web di memori HP agar saat dibuka lagi rasanya lebih ngebut.
+\--- vendor                            => [FOLDER] Kumpulan library pihak ketiga yang di-install via Composer.

@@ -11,11 +11,20 @@ require_once __DIR__ . '/../../layouts/header.php';
 
 <?php
 
-// Ambil semua user untuk dropdown
-$usersResult = $conn->query("SELECT id, nama_lengkap, username FROM users WHERE role != 'admin' ORDER BY nama_lengkap ASC");
-
 // Ambil ID user yang mau di-edit dari URL (jika ada)
 $selectedUserId = isset($_GET['user_id']) ? (int)$_GET['user_id'] : null;
+
+// --- LOGIKA BARU: CEGAH MANIPULASI URL KE ID DIRI SENDIRI ---
+$loggedInUserId = $_SESSION['user_id'] ?? null;
+if ($selectedUserId && $selectedUserId === $loggedInUserId) {
+    http_response_code(403);
+    require __DIR__ . '/../../bootstrap/access_denied.php';
+    exit;
+}
+
+// Ambil semua user untuk dropdown (kecuali admin dan user yang sedang login)
+$usersResult = $conn->query("SELECT id, nama_lengkap, username FROM users WHERE role != 'admin' AND id != $loggedInUserId ORDER BY nama_lengkap ASC");
+
 $permissions = [];
 $userPermissions = [];
 $selectedUserName = '';
@@ -63,13 +72,20 @@ if ($selectedUserId) {
     <div class="dashboard-wrapper container-fluid px-0 px-md-2 mt-2 mb-5">
         
         <!-- Header Page yang Dilepas dari Card Utama -->
-        <div class="d-flex align-items-center mb-4 px-1">
-            <div class="d-flex align-items-center justify-content-center rounded-circle me-3 shadow-sm flex-shrink-0" style="width: 56px; height: 56px; background: linear-gradient(135deg, #f97316, #fb923c); color: white;">
-                <i class="fas fa-ticket-alt fa-xl"></i>
+        <div class="d-flex flex-column flex-md-row justify-content-between align-items-md-center mb-4 px-1 gap-3">
+            <div class="d-flex align-items-center">
+                <div class="d-flex align-items-center justify-content-center rounded-circle me-3 shadow-sm flex-shrink-0" style="width: 56px; height: 56px; background: linear-gradient(135deg, #f97316, #fb923c); color: white;">
+                    <i class="fas fa-ticket-alt fa-xl"></i>
+                </div>
+                <div>
+                    <h3 class="fw-bold mb-1 text-dark" style="letter-spacing: -0.5px; font-size: 1.5rem;">Loket Pengaturan Izin</h3>
+                    <p class="text-muted mb-0" style="font-size: 0.95rem;">Atur "tiket" atau hak akses setiap pengguna secara fleksibel dan mendetail.</p>
+                </div>
             </div>
             <div>
-                <h3 class="fw-bold mb-1 text-dark" style="letter-spacing: -0.5px; font-size: 1.5rem;">Loket Pengaturan Izin</h3>
-                <p class="text-muted mb-0" style="font-size: 0.95rem;">Atur "tiket" atau hak akses setiap pengguna secara fleksibel dan mendetail.</p>
+                <a href="bulk.php" class="btn btn-primary shadow-sm rounded-pill px-4" style="background: linear-gradient(135deg, #4f46e5, #3b82f6); border: none; font-weight: 600;">
+                    <i class="fas fa-users-cog me-2"></i>Edit Izin Massal (Bulk)
+                </a>
             </div>
         </div>
 

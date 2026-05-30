@@ -344,12 +344,14 @@ require_once __DIR__ . '/../layouts/header.php';
                     <div class="card-body bg-white">
                         <div class="d-flex flex-column flex-sm-row justify-content-between align-items-start align-items-sm-center gap-3 mb-3">
                             <label for="catatan_musyrif" class="mb-0 fw-bold text-dark"><i class="fas fa-pen me-2 text-primary"></i>Catatan Musyrif</label>
+                            <?php if (has_permission('catatan_otomatis')): ?>
                             <span tabindex="0" data-bs-toggle="tooltip" title="Harap isi semua data penilaian terlebih dahulu" id="wrapper-auto-catatan" class="align-self-stretch align-self-sm-auto d-inline-block">
                                 <button type="button" id="btn-auto-catatan" class="btn btn-sm btn-info text-white border-0 shadow-sm rounded-pill fw-bold px-4 py-2 text-nowrap w-100" 
                                         style="letter-spacing: 0.3px; pointer-events: none;" disabled>
                                     <i class="fas fa-magic me-2"></i> Buat Otomatis
                                 </button>
                             </span>
+                            <?php endif; ?>
                         </div>
                         <div class="form-group mb-0">
                             <textarea name="catatan_musyrif" id="catatan_musyrif" class="form-control bg-light border-0" rows="5" style="border-radius: 0.75rem;" placeholder="Ketik manual atau klik tombol 'Buat Otomatis'..."><?php echo $data_duplikat ? htmlspecialchars($data_duplikat['catatan_musyrif']) : ''; ?></textarea>
@@ -420,7 +422,10 @@ $(document).ready(function() {
         autoCatatanBtn.css('pointer-events', isFormValid ? 'auto' : 'none');
         simpanBtn.css('pointer-events', isFormValid ? 'auto' : 'none');
 
-        updateTooltip(document.getElementById('wrapper-auto-catatan'), isFormValid ? 'Buat catatan berdasarkan nilai di atas' : 'Harap isi semua data penilaian terlebih dahulu');
+        var wrapperAutoCatatan = document.getElementById('wrapper-auto-catatan');
+        if (wrapperAutoCatatan) {
+            updateTooltip(wrapperAutoCatatan, isFormValid ? 'Buat catatan berdasarkan nilai di atas' : 'Harap isi semua data penilaian terlebih dahulu');
+        }
         updateTooltip(document.getElementById('wrapper-simpan'), isFormValid ? 'Simpan data rapot' : 'Harap isi semua data penilaian terlebih dahulu');
     }
 
