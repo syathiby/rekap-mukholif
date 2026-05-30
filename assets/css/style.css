@@ -1849,10 +1849,14 @@ select,
 .form-control,
 .form-select {
     font-size: 16px !important; /* Forces iOS to not zoom when focused */
-    height: 46px;
+    min-height: 46px;
     border-radius: 10px;
     border: 1px solid #cbd5e1;
     padding-left: 0.85rem;
+}
+
+textarea.form-control {
+    height: auto !important;
 }
 
 /* Select2 iOS touch & zoom optimizations */

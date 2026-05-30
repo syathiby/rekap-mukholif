@@ -1,4 +1,4 @@
-﻿<?php
+<?php
 // File: rekap-mukholif/rapot/get_pelanggaran_santri.php
 
 // 1. Panggil 'Otak' aplikasi
@@ -64,7 +64,7 @@ if (empty($pelanggaran_list)) {
         ';
     }
     $html .= '
-        <li class="list-group-item d-flex justify-content-between align-items-center active">
+        <li class="list-group-item d-flex justify-content-between align-items-center bg-light text-danger">
             <strong>Total Poin Pelanggaran</strong>
             <strong>' . $total_poin . ' Poin</strong>
         </li>
