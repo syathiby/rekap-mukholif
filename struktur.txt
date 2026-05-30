@@ -9,8 +9,8 @@ C:\laragon\www\rekap-mukholif
 |   +--- arsip_pelanggaran.php         => Halaman untuk melihat data arsip pelanggaran umum.
 |   +--- arsip_santri.php              => Halaman untuk melihat data arsip santri secara umum.
 |   +--- create.php                    => Script (logika) untuk membuat atau memasukkan data ke dalam tabel arsip.
-|   +--- detail-kamar.php              => Melihat rincian riwayat arsip per kamar.
-|   +--- detail_keterlambatan.php      => Halaman untuk melihat detail riwayat seluruh pelanggaran seorang santri dari data arsip periode lalu.
+|   +--- detail_kebersihan_arsip.php   => Melihat rincian riwayat arsip per kamar.
+|   +--- detail_pelanggaran_arsip.php  => Halaman untuk melihat detail riwayat seluruh pelanggaran seorang santri dari data arsip periode lalu.
 |   +--- export_arsip.php              => Fitur untuk mengunduh/export data arsip menjadi file Excel.
 |   +--- index.php                     => Halaman utama (dashboard) untuk masuk ke berbagai menu arsip.
 |   +--- process.php                   => File yang memproses aksi (simpan, ubah, hapus) yang terjadi di dalam fitur arsip.

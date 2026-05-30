@@ -234,7 +234,7 @@ $stmt_data->close();
                                         'kamar_filter' => $filter_kamar_kembali,
                                         'kelas' => $filter_kelas_kembali
                                     ]);
-                                    $detail_link = "detail_kebersihan.php?" . $detail_link_params;
+                                    $detail_link = "detail_kebersihan_arsip.php?" . $detail_link_params;
                                 ?>
                                 <a href="<?= $detail_link ?>" class="btn-detail">
                                     <i class="fas fa-info-circle"></i> Detail
