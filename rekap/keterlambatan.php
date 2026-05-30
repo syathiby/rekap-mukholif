@@ -134,139 +134,133 @@ while($row = $query_chart->fetch_assoc()){
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 
 <style>
-    /* ... CSS tidak berubah ... */
     :root {
-        --danger: #B91C1C; --danger-light: #FEE2E2; --danger-dark: #991B1B;
-        --danger-text: #7F1D1D; --success: #15803D; --success-light: #DCFCE7;
-        --text-primary: #1F2937; --text-secondary: #6B7280;
-        --light-bg: #F9FAFB; --card-bg: #FFFFFF; --border-color: #E5E7EB;
-        --gold: #FFD700; --silver: #C0C0C0; --bronze: #CD7F32;
+        --primary: #4f46e5; --primary-light: #e0e7ff; --primary-dark: #4338ca;
+        --secondary: #64748b; --light-bg: #f8fafc; --card-bg: #ffffff;
+        --border-color: #e2e8f0; --text-dark: #1e293b; --text-light: #64748b;
+        --gold: #f59e0b; --silver: #9ca3af; --bronze: #a16207;
+        --danger: #ef4444; --danger-light: #fee2e2; --danger-dark: #b91c1c;
     }
-    .page-title { color: var(--danger); margin-bottom: 1.5rem; font-size: 2rem; font-weight: 700; display: flex; align-items: center; gap: 0.75rem; }
-    .card { background-color: var(--card-bg); border-radius: 12px; padding: 1.5rem; margin-bottom: 1.5rem; box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.05); border: 1px solid var(--border-color); }
-    .card-title { font-size: 1.125rem; font-weight: 600; margin-bottom: 1rem; color: var(--text-primary); display: flex; align-items: center; gap: 0.5rem; }
-    .filter-form { display: flex; flex-wrap: wrap; gap: 1rem; align-items: flex-end; }
-    .form-group label { display: block; margin-bottom: 0.5rem; font-size: 0.875rem; color: var(--text-secondary); font-weight: 500; }
-    .filter-form input[type="date"], .filter-form select { padding: 0.5rem 0.75rem; border: 1px solid var(--border-color); border-radius: 6px; background-color: white; }
-    .table-responsive { display: block; width: 100%; overflow-x: auto; }
-    table { width: 100%; border-collapse: collapse; } 
-    table th, table td { padding: 0.75rem 1rem; text-align: left; vertical-align: middle; }
-    table th { background-color: var(--light-bg); color: var(--danger-text); font-weight: 600; }
-    .rank-1 { border-left: 4px solid var(--gold); }
-    .rank-2 { border-left: 4px solid var(--silver); }
-    .rank-3 { border-left: 4px solid var(--bronze); }
-    .badge-danger { background-color: var(--danger-light); color: var(--danger-text); padding: 0.25rem 0.6rem; border-radius: 20px; font-weight: 600; }
-    .btn-detail { display: inline-flex; align-items: center; justify-content: center; gap: 0.5rem; background-color: var(--success-light); color: var(--success); padding: 0.375rem 0.875rem; text-decoration: none; border-radius: 6px; font-weight: 600; }
-    .no-data { text-align: center; padding: 4rem; color: var(--text-secondary); }
-    @media (max-width: 768px) {
-        table th, table td { white-space: nowrap; padding: 0.6rem 0.8rem; }
-        .page-title { font-size: 1.5rem; }
-    }
+    body { background-color: var(--light-bg); font-family: 'Poppins', sans-serif; }
+    .card { background-color: var(--card-bg); border: 1px solid var(--border-color); border-radius: 0.75rem; box-shadow: 0 1px 3px 0 rgb(0 0 0 / 0.05); }
+    .page-title { color: var(--text-dark); font-weight: 700; }
+    .table th { background-color: var(--light-bg); color: var(--text-light); text-transform: uppercase; font-size: 0.75rem; letter-spacing: 0.05em; border-bottom: 1px solid var(--border-color); }
+    .table tbody td { vertical-align: middle; padding-top: 1rem; padding-bottom: 1rem; border-bottom: 1px solid var(--border-color); }
+    .rank-icon { font-size: 1.5rem; }
+    .rank-1 .rank-icon { color: var(--gold); }
+    .rank-2 .rank-icon { color: var(--silver); }
+    .rank-3 .rank-icon { color: var(--bronze); }
+    .btn-detail { background-color: var(--primary-light); color: var(--primary-dark); font-weight: 600; text-decoration: none; transition: all 0.2s; padding: 0.375rem 1rem; border-radius: 9999px; }
+    .btn-detail:hover { background-color: var(--primary-dark); color: white; }
+    .badge-danger { background-color: var(--danger-light); color: var(--danger-dark); padding: 0.25rem 0.75rem; border-radius: 9999px; font-weight: 600; font-size: 0.875rem;}
 </style>
 
-<div class="container-fluid mt-4 mb-5">
-    <h1 class="page-title"><i class="fas fa-exclamation-triangle"></i>Rekap Pelanggaran Keterlambatan Santri</h1>
+<div class="container py-4">
+    <h1 class="page-title mb-4"><i class="fas fa-clock me-3"></i>Rekap Pelanggaran Keterlambatan Santri</h1>
     
-    <div class="card">
-        <h2 class="card-title"><i class="fas fa-filter"></i>Filter Data</h2>
-        <form method="get" class="filter-form" id="filterForm">
-            <div class="form-group">
-                <label for="start_date">Dari Tanggal</label>
-                <input type="date" name="start_date" id="start_date" value="<?= htmlspecialchars($start_date) ?>">
-            </div>
-            <div class="form-group">
-                <label for="end_date">Sampai Tanggal</label>
-                <input type="date" name="end_date" id="end_date" value="<?= htmlspecialchars($end_date) ?>">
-            </div>
-            <div class="form-group">
-                <label for="kamar">Kamar</label>
-                <select name="kamar" id="kamar">
-                    <option value="">Semua Kamar</option>
-                    <?php 
-                    mysqli_data_seek($kamars, 0);
-                    while ($k = mysqli_fetch_assoc($kamars)): ?>
-                        <option value="<?= htmlspecialchars($k['kamar']) ?>" <?= ($filter_kamar == $k['kamar']) ? 'selected' : '' ?>>
-                            <?= htmlspecialchars($k['kamar']) ?>
-                        </option>
-                    <?php endwhile; ?>
-                </select>
-            </div>
-            <div class="form-group">
-                <label for="kelas">Kelas</label>
-                <select name="kelas" id="kelas">
-                    <option value="">Semua Kelas</option>
-                    <?php 
-                    mysqli_data_seek($kelas_list, 0);
-                    while ($k = mysqli_fetch_assoc($kelas_list)): ?>
-                        <option value="<?= htmlspecialchars($k['kelas']) ?>" <?= ($filter_kelas == $k['kelas']) ? 'selected' : '' ?>>
-                            <?= htmlspecialchars($k['kelas']) ?>
-                        </option>
-                    <?php endwhile; ?>
-                </select>
-            </div>
-        </form>
+    <div class="card mb-4">
+        <div class="card-body">
+            <h5 class="card-title fw-bold mb-3"><i class="fas fa-filter me-2"></i>Filter Data</h5>
+            <form method="get" id="filterForm">
+                <div class="row g-3">
+                    <div class="col-lg-3 col-md-6">
+                        <label for="start_date" class="form-label">Dari Tanggal</label>
+                        <input type="date" class="form-control" name="start_date" id="start_date" value="<?= htmlspecialchars($start_date) ?>">
+                    </div>
+                    <div class="col-lg-3 col-md-6">
+                        <label for="end_date" class="form-label">Sampai Tanggal</label>
+                        <input type="date" class="form-control" name="end_date" id="end_date" value="<?= htmlspecialchars($end_date) ?>">
+                    </div>
+                    <div class="col-lg-3 col-md-6">
+                        <label for="kamar" class="form-label">Kamar</label>
+                        <select name="kamar" id="kamar" class="form-select">
+                            <option value="">Semua Kamar</option>
+                            <?php 
+                            mysqli_data_seek($kamars, 0);
+                            while ($k = mysqli_fetch_assoc($kamars)): ?>
+                                <option value="<?= htmlspecialchars($k['kamar']) ?>" <?= ($filter_kamar == $k['kamar']) ? 'selected' : '' ?>>
+                                    <?= htmlspecialchars($k['kamar']) ?>
+                                </option>
+                            <?php endwhile; ?>
+                        </select>
+                    </div>
+                    <div class="col-lg-3 col-md-6">
+                        <label for="kelas" class="form-label">Kelas</label>
+                        <select name="kelas" id="kelas" class="form-select">
+                            <option value="">Semua Kelas</option>
+                            <?php 
+                            mysqli_data_seek($kelas_list, 0);
+                            while ($k = mysqli_fetch_assoc($kelas_list)): ?>
+                                <option value="<?= htmlspecialchars($k['kelas']) ?>" <?= ($filter_kelas == $k['kelas']) ? 'selected' : '' ?>>
+                                    <?= htmlspecialchars($k['kelas']) ?>
+                                </option>
+                            <?php endwhile; ?>
+                        </select>
+                    </div>
+                </div>
+            </form>
+        </div>
     </div>
     
-    <div class="row">
+    <div class="row g-4">
         <div class="col-lg-8">
-            <div class="card">
-                <div class="table-responsive">
-                    <table class="table">
+            <div class="card h-100">
+                <div class="card-body table-responsive">
+                    <table class="table table-hover">
                         <thead>
                             <tr>
-                                <th>Peringkat</th>
-                                <th>Nama Santri</th>
-                                <th>Total</th>
+                                <th class="text-center">Peringkat</th>
+                                <th>Santri</th>
+                                <th class="text-center">Total</th>
                                 <th>Detail Pelanggaran</th>
-                                <th>Aksi</th>
+                                <th class="text-center">Aksi</th>
                             </tr>
                         </thead>
                         <tbody>
                             <?php
                             $no = 1;
                             if (mysqli_num_rows($query_table) === 0) {
-                                echo '<tr><td colspan="5" class="no-data"><i class="fas fa-check-circle"></i><p><b>Hebat!</b><br>Tidak ada pelanggaran pada periode ini.</p></td></tr>';
+                                echo '<tr><td colspan="5" class="text-center p-5 text-muted"><i class="fas fa-check-circle fa-3x mb-3"></i><br><b>Hebat!</b><br>Tidak ada pelanggaran pada periode ini.</td></tr>';
                             } else {
                                 while ($row = mysqli_fetch_assoc($query_table)) {
-                                    $rank_class = match($no) { 1 => "rank-1", 2 => "rank-2", 3 => "rank-3", default => "" };
-                                    $peringkat_display = $no;
-                                    if ($no == 1) $peringkat_display = '<i class="fas fa-trophy" style="color: var(--gold);"></i> 1';
-                                    elseif ($no == 2) $peringkat_display = '<i class="fas fa-trophy" style="color: var(--silver);"></i> 2';
-                                    elseif ($no == 3) $peringkat_display = '<i class="fas fa-trophy" style="color: var(--bronze);"></i> 3';
-                                    
                                     $detail_link = "detail_keterlambatan.php?id={$row['id']}"
                                                  . "&start_date=" . htmlspecialchars($start_date)
                                                  . "&end_date=" . htmlspecialchars($end_date)
                                                  . "&kamar=" . urlencode($filter_kamar ?? '')
                                                  . "&kelas=" . urlencode($filter_kelas ?? '');
-
-                                    echo "<tr class='{$rank_class}'>
-                                            <td>{$peringkat_display}</td>
-                                            <td>
-                                                <div>
-                                                    <span class='fw-bold'>{$row['nama']}</span><br>
-                                                    <span class='small text-muted'>Kelas: {$row['kelas']} | Kamar: {$row['kamar']}</span>
-                                                </div>
-                                            </td>
-                                            <td class='text-center'>
-                                                <span class='badge-danger'>{$row['total_pelanggaran']}</span>
-                                            </td>
-                                            <td class='small'>
-                                                <div class='d-flex flex-column'>
-                                                    <span class='d-flex align-items-center gap-1' style='color:#C2410C;'>
-                                                        <i class='fas fa-pray fa-fw'></i> Telat Sholat: <b>{$row['telat_sholat']}</b>
-                                                    </span>
-                                                    <span class='d-flex align-items-center gap-1' style='color:#1D4ED8;'>
-                                                        <i class='fas fa-book fa-fw'></i> Telat KBM: <b>{$row['telat_kbm']}</b>
-                                                    </span>
-                                                </div>
-                                            </td>
-                                            <td>
-                                                <a href='{$detail_link}' class='btn-detail'>
-                                                    <i class='fas fa-info-circle'></i> Detail
-                                                </a>
-                                            </td>
-                                        </tr>";
+                                    ?>
+                                    <tr class="rank-<?= $no ?>">
+                                        <td class="text-center">
+                                            <?php if ($no <= 3) : ?>
+                                                <i class="fas fa-trophy rank-icon"></i>
+                                            <?php else : ?>
+                                                <span class="fw-bold fs-5"><?= $no ?></span>
+                                            <?php endif; ?>
+                                        </td>
+                                        <td>
+                                            <div class="fw-bold"><?= htmlspecialchars($row['nama']) ?></div>
+                                            <small class="text-muted">Kls: <?= htmlspecialchars($row['kelas']) ?> | Kmr: <?= htmlspecialchars($row['kamar']) ?></small>
+                                        </td>
+                                        <td class="text-center">
+                                            <span class="badge-danger"><?= $row['total_pelanggaran'] ?></span>
+                                        </td>
+                                        <td>
+                                            <div class="d-flex flex-column gap-1 small">
+                                                <span class="d-flex align-items-center gap-2" style="color:var(--danger-dark);">
+                                                    <i class="fas fa-pray fa-fw"></i> Telat Sholat: <b><?= $row['telat_sholat'] ?></b>
+                                                </span>
+                                                <span class="d-flex align-items-center gap-2" style="color:var(--primary-dark);">
+                                                    <i class="fas fa-book fa-fw"></i> Telat KBM: <b><?= $row['telat_kbm'] ?></b>
+                                                </span>
+                                            </div>
+                                        </td>
+                                        <td class="text-center">
+                                            <a href="<?= $detail_link ?>" class="btn btn-sm btn-detail d-inline-flex align-items-center justify-content-center">
+                                                <i class="fas fa-info-circle me-1"></i> Detail
+                                            </a>
+                                        </td>
+                                    </tr>
+                                    <?php
                                     $no++;
                                  }
                             }
@@ -278,17 +272,20 @@ while($row = $query_chart->fetch_assoc()){
         </div>
 
         <div class="col-lg-4">
-            <div class="card">
-                <h2 class="card-title"><i class="fas fa-chart-pie"></i>Ringkasan Grafik</h2>
-                <?php if (!empty($chart_data)): ?>
-                    <div style="position: relative; height: 350px; width: 100%;">
-                        <canvas id="pelanggaranChart"></canvas>
-                    </div>
-                <?php else: ?>
-                    <div class="no-data" style="padding: 2rem 1rem;">
-                        <p>Tidak ada data untuk ditampilkan di grafik.</p>
-                    </div>
-                <?php endif; ?>
+            <div class="card h-100">
+                <div class="card-body">
+                    <h5 class="card-title fw-bold mb-4"><i class="fas fa-chart-pie me-2"></i>Ringkasan Grafik</h5>
+                    <?php if (!empty($chart_data)): ?>
+                        <div style="position: relative; height: 350px; width: 100%;">
+                            <canvas id="pelanggaranChart"></canvas>
+                        </div>
+                    <?php else: ?>
+                        <div class="text-center p-5 text-muted d-flex flex-column align-items-center justify-content-center h-100">
+                            <i class="fas fa-chart-bar fa-3x mb-3" style="opacity: 0.2;"></i>
+                            <p>Tidak ada data untuk ditampilkan di grafik.</p>
+                        </div>
+                    <?php endif; ?>
+                </div>
             </div>
         </div>
     </div>

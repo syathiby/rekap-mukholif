@@ -53,8 +53,32 @@ if (isset($_GET['kamar']) || isset($_GET['bulan']) || isset($_GET['tahun'])) {
     $filter_tahun = '';
 }
 
-// 4. Ambil data rapot
+// 4. Ambil data rapot dengan paginasi
 try {
+    $limit = 100;
+    $page = isset($_GET['page']) ? (int)$_GET['page'] : 1;
+    if ($page < 1) $page = 1;
+    $offset = ($page - 1) * $limit;
+
+    // Hitung total data
+    $sql_count = "
+        SELECT COUNT(r.id) AS total
+        FROM rapot_kepengasuhan r
+        LEFT JOIN santri s ON r.santri_id = s.id
+        WHERE 1=1 
+    ";
+    $params_count = []; $types_count = "";
+    if (!empty($filter_kamar)) { $sql_count .= " AND s.kamar = ?"; $params_count[] = $filter_kamar; $types_count .= "s"; }
+    if (!empty($filter_bulan)) { $sql_count .= " AND r.bulan = ?"; $params_count[] = $filter_bulan; $types_count .= "s"; }
+    if (!empty($filter_tahun)) { $sql_count .= " AND r.tahun = ?"; $params_count[] = $filter_tahun; $types_count .= "i"; }
+    
+    $stmt_count = $conn->prepare($sql_count);
+    if (!empty($params_count)) { $stmt_count->bind_param($types_count, ...$params_count); }
+    $stmt_count->execute();
+    $total_data = $stmt_count->get_result()->fetch_assoc()['total'];
+    $total_pages = ceil($total_data / $limit);
+
+    // Ambil data untuk halaman aktif
     $sql = "
         SELECT 
             r.id, r.bulan, r.tahun, r.dibuat_pada,
@@ -65,20 +89,64 @@ try {
         LEFT JOIN users u ON r.musyrif_id = u.id
         WHERE 1=1 
     "; 
-    $params = []; $types = "";
-    if (!empty($filter_kamar)) { $sql .= " AND s.kamar = ?"; $params[] = $filter_kamar; $types .= "s"; }
-    if (!empty($filter_bulan)) { $sql .= " AND r.bulan = ?"; $params[] = $filter_bulan; $types .= "s"; }
-    if (!empty($filter_tahun)) { $sql .= " AND r.tahun = ?"; $params[] = $filter_tahun; $types .= "i"; }
-    $sql .= " ORDER BY CAST(s.kamar AS UNSIGNED) ASC, s.nama ASC";
+    $params = $params_count; 
+    $types = $types_count;
+    if (!empty($filter_kamar)) { $sql .= " AND s.kamar = ?"; }
+    if (!empty($filter_bulan)) { $sql .= " AND r.bulan = ?"; }
+    if (!empty($filter_tahun)) { $sql .= " AND r.tahun = ?"; }
+    
+    $sql .= " ORDER BY CAST(s.kamar AS UNSIGNED) ASC, s.nama ASC LIMIT ? OFFSET ?";
+    $types .= "ii";
+    $params[] = $limit;
+    $params[] = $offset;
     
     $stmt = $conn->prepare($sql);
     if (!empty($params)) { $stmt->bind_param($types, ...$params); }
     $stmt->execute();
     $rapot_list = $stmt->get_result()->fetch_all(MYSQLI_ASSOC);
-    $total_data = count($rapot_list);
 } catch (Exception $e) {
     die("Error fetching rapot list: ". $e->getMessage());
 }
+
+// Helper: Generate HTML Paginasi
+function render_pagination($current_page, $total_pages) {
+    if ($total_pages <= 1) return '';
+    $html = '<nav aria-label="Navigasi Halaman" class="mt-3"><ul class="pagination justify-content-center mb-0">';
+    
+    $prev_disabled = ($current_page <= 1) ? 'disabled' : '';
+    $prev_page = $current_page - 1;
+    $html .= "<li class='page-item {$prev_disabled}'><a class='page-link' href='#' data-page='{$prev_page}'>&laquo; Prev</a></li>";
+    
+    $start_page = max(1, $current_page - 2);
+    $end_page = min($total_pages, $current_page + 2);
+    
+    if ($start_page > 1) {
+        $html .= "<li class='page-item'><a class='page-link' href='#' data-page='1'>1</a></li>";
+        if ($start_page > 2) {
+            $html .= "<li class='page-item disabled'><span class='page-link'>...</span></li>";
+        }
+    }
+    
+    for ($i = $start_page; $i <= $end_page; $i++) {
+        $active = ($i == $current_page) ? 'active' : '';
+        $html .= "<li class='page-item {$active}'><a class='page-link' href='#' data-page='{$i}'>{$i}</a></li>";
+    }
+    
+    if ($end_page < $total_pages) {
+        if ($end_page < $total_pages - 1) {
+            $html .= "<li class='page-item disabled'><span class='page-link'>...</span></li>";
+        }
+        $html .= "<li class='page-item'><a class='page-link' href='#' data-page='{$total_pages}'>{$total_pages}</a></li>";
+    }
+    
+    $next_disabled = ($current_page >= $total_pages) ? 'disabled' : '';
+    $next_page = $current_page + 1;
+    $html .= "<li class='page-item {$next_disabled}'><a class='page-link' href='#' data-page='{$next_page}'>Next &raquo;</a></li>";
+    
+    $html .= '</ul></nav>';
+    return $html;
+}
+$pagination_html = render_pagination($page, $total_pages);
 
 // 4.5. HANDLE AJAX REQUEST
 if (isset($_GET['ajax']) && $_GET['ajax'] == '1') {
@@ -100,7 +168,7 @@ if (isset($_GET['ajax']) && $_GET['ajax'] == '1') {
                            value="<?php echo $rapot['id']; ?>"
                            data-filename="<?php echo htmlspecialchars($filename_base); ?>">
                 </td>
-                <td class="align-middle text-center"><?php echo $index + 1; ?></td>
+                <td class="align-middle text-center"><?php echo $offset + $index + 1; ?></td>
                 <td class="align-middle fw-bold text-dark"><?php echo htmlspecialchars($rapot['nama_santri'] ?? 'Santri Dihapus'); ?></td>
                 <td class="align-middle text-center"><?php echo htmlspecialchars($rapot['kamar_santri'] ?? 'N/A'); ?></td>
                 <td class="align-middle"><?php echo htmlspecialchars($rapot['bulan']) . ' ' . $rapot['tahun']; ?></td>
@@ -148,6 +216,7 @@ if (isset($_GET['ajax']) && $_GET['ajax'] == '1') {
     header('Content-Type: application/json');
     echo json_encode([
         'html' => $html,
+        'pagination' => $pagination_html,
         'total' => $total_data
     ]);
     exit;
@@ -381,7 +450,7 @@ require_once __DIR__ . '/../layouts/header.php';
                                                    value="<?php echo $rapot['id']; ?>"
                                                    data-filename="<?php echo htmlspecialchars($filename_base); ?>">
                                         </td>
-                                        <td class="align-middle text-center"><?php echo $index + 1; ?></td>
+                                        <td class="align-middle text-center"><?php echo $offset + $index + 1; ?></td>
                                         <td class="align-middle fw-bold text-dark"><?php echo htmlspecialchars($rapot['nama_santri'] ?? 'Santri Dihapus'); ?></td>
                                         <td class="align-middle text-center"><?php echo htmlspecialchars($rapot['kamar_santri'] ?? 'N/A'); ?></td>
                                         <td class="align-middle"><?php echo htmlspecialchars($rapot['bulan']) . ' ' . $rapot['tahun']; ?></td>
@@ -426,6 +495,11 @@ require_once __DIR__ . '/../layouts/header.php';
                             <?php endif; ?>
                         </tbody>
                     </table>
+                </div>
+                
+                <!-- Container Paginasi -->
+                <div id="pagination-container" class="px-3 pb-3">
+                    <?php echo $pagination_html; ?>
                 </div>
             </div>
         </div>
@@ -650,60 +724,83 @@ document.addEventListener('DOMContentLoaded', function() {
     tableResponsive.style.position = 'relative';
     tableResponsive.appendChild(loadingOverlay);
 
+    // === AJAX Data Fetch Function ===
+    function fetchRapotData(page = 1) {
+        loadingOverlay.style.display = 'flex';
+        
+        const currentForm = document.querySelector('.filter-card form');
+        const formData = new FormData(currentForm);
+        const params = new URLSearchParams(formData);
+        params.append('ajax', '1');
+        params.append('page', page);
+
+        fetch(`index.php?${params.toString()}`)
+            .then(response => response.json())
+            .then(data => {
+                tableBody.innerHTML = data.html;
+                totalDataDisplay.textContent = data.total;
+                
+                const paginationContainer = document.getElementById('pagination-container');
+                if (paginationContainer && data.pagination !== undefined) {
+                    paginationContainer.innerHTML = data.pagination;
+                }
+                
+                // Update variables
+                rowCheckboxes = document.querySelectorAll('.row-checkbox');
+                
+                // Re-init tooltips
+                const tooltips = [].slice.call(tableBody.querySelectorAll('[data-bs-toggle="tooltip"]'));
+                tooltips.map(function (tooltipTriggerEl) {
+                    return new bootstrap.Tooltip(tooltipTriggerEl);
+                });
+
+                // Re-init checkboxes events & restore state
+                const selectedData = getStoredData();
+                rowCheckboxes.forEach(checkbox => {
+                    checkbox.checked = selectedData.has(checkbox.value);
+                    checkbox.addEventListener('change', handleSelectionChange);
+                });
+                
+                // Re-init single delete buttons
+                tableBody.querySelectorAll('.single-delete-btn').forEach(function(btn) {
+                    btn.addEventListener('click', setModalTrigger);
+                    btn.addEventListener('click', function(e) {
+                        e.preventDefault();
+                        const rapotId = this.dataset.id;
+                        deleteCountPlaceholder.textContent = '1';
+                        deleteConfirmModalElement.dataset.checkedIds = JSON.stringify([rapotId]);
+                        deleteConfirmModal.show();
+                    });
+                });
+
+                updateSelectAllState();
+                toggleActionButtons();
+                
+                loadingOverlay.style.display = 'none';
+            })
+            .catch(error => {
+                console.error('Error fetching data:', error);
+                tampilkanNotif('Gagal mengambil data, silakan coba lagi.', 'danger');
+                loadingOverlay.style.display = 'none';
+            });
+    }
+
+    // Filter Change Listener
     document.querySelectorAll('#kamar, #bulan, #tahun').forEach(function(selectElement) {
         selectElement.addEventListener('change', function() {
-            loadingOverlay.style.display = 'flex';
-            
-            const currentForm = this.closest('form');
-            const formData = new FormData(currentForm);
-            const params = new URLSearchParams(formData);
-            params.append('ajax', '1');
-
-            fetch(`index.php?${params.toString()}`)
-                .then(response => response.json())
-                .then(data => {
-                    tableBody.innerHTML = data.html;
-                    totalDataDisplay.textContent = data.total;
-                    
-                    // Update variables
-                    rowCheckboxes = document.querySelectorAll('.row-checkbox');
-                    
-                    // Re-init tooltips
-                    const tooltips = [].slice.call(tableBody.querySelectorAll('[data-bs-toggle="tooltip"]'));
-                    tooltips.map(function (tooltipTriggerEl) {
-                        return new bootstrap.Tooltip(tooltipTriggerEl);
-                    });
-
-                    // Re-init checkboxes events & restore state
-                    const selectedData = getStoredData();
-                    rowCheckboxes.forEach(checkbox => {
-                        checkbox.checked = selectedData.has(checkbox.value);
-                        checkbox.addEventListener('change', handleSelectionChange);
-                    });
-                    
-                    // Re-init single delete buttons
-                    tableBody.querySelectorAll('.single-delete-btn').forEach(function(btn) {
-                        btn.addEventListener('click', setModalTrigger);
-                        btn.addEventListener('click', function(e) {
-                            e.preventDefault();
-                            const rapotId = this.dataset.id;
-                            deleteCountPlaceholder.textContent = '1';
-                            deleteConfirmModalElement.dataset.checkedIds = JSON.stringify([rapotId]);
-                            deleteConfirmModal.show();
-                        });
-                    });
-
-                    updateSelectAllState();
-                    toggleActionButtons();
-                    
-                    loadingOverlay.style.display = 'none';
-                })
-                .catch(error => {
-                    console.error('Error fetching data:', error);
-                    tampilkanNotif('Gagal mengambil data filter, silakan coba lagi.', 'danger');
-                    loadingOverlay.style.display = 'none';
-                });
+            fetchRapotData(1);
         });
+    });
+
+    // Pagination Click Listener
+    document.addEventListener('click', function(e) {
+        if (e.target.closest('#pagination-container') && e.target.tagName === 'A') {
+            e.preventDefault();
+            const page = e.target.dataset.page;
+            if (page) {
+                fetchRapotData(page);
+            }
+        }
     });
 
     // === Helper Canggih (Dari Contoh) ===

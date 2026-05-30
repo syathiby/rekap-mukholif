@@ -92,217 +92,272 @@ $q_pelanggaran = $stmt_pelanggaran->get_result();
 ?>
 
 <style>
-@import url('https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700&display=swap');
+    :root {
+        --primary: #4f46e5;
+        --primary-dark: #4338ca;
+        --secondary: #64748b;
+        --light-bg: #f8fafc;
+        --card-bg: #ffffff;
+        --border-color: #e2e8f0;
+        --table-border-color: #f1f5f9;
+        --text-dark: #1e293b;
+        --text-light: #64748b;
+        --text-danger: #dc2626;
+        --card-header-bg: #f8fafc;
+    }
 
-:root {
-    --bg-color: #f8f9fa;
-    --card-bg: #ffffff;
-    --primary-color: #4f46e5;
-    --text-dark: #1f2937;
-    --text-light: #6b7280;
-    --border-color: #e5e7eb;
-    --accent-red: #ef4444;
-}
-body {
-    background-color: var(--bg-color);
-    font-family: 'Poppins', sans-serif;
-    color: var(--text-dark);
-}
-.container {
-    max-width: 800px;
-    margin: 2rem auto;
-    padding: 0 15px;
-}
+    body {
+        background-color: var(--light-bg);
+        font-family: 'Poppins', sans-serif;
+        color: var(--text-dark);
+    }
 
-/* ? REVISI: Header responsif */
-.page-header {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    margin-bottom: 1.5rem;
-    flex-wrap: wrap;
-    gap: 1rem;
-}
-.page-title {
-    font-size: 1.75rem;
-    font-weight: 700;
-    color: var(--text-dark);
-    line-height: 1.2;
-}
-.btn-back {
-    display: inline-flex;
-    align-items: center;
-    gap: 0.5rem;
-    background-color: var(--card-bg);
-    border: 1px solid var(--border-color);
-    padding: 0.5rem 1rem;
-    border-radius: 8px;
-    text-decoration: none;
-    color: var(--text-light);
-    font-weight: 500;
-    transition: all 0.2s ease;
-    flex-shrink: 0;
-}
-.btn-back:hover {
-    background-color: #f3f4f6;
-    color: var(--text-dark);
-}
-
-.santri-info-card {
-    background-color: var(--primary-color);
-    color: white;
-    padding: 1.5rem;
-    border-radius: 12px;
-    margin-bottom: 1.5rem;
-    box-shadow: 0 4px 6px -1px rgba(0,0,0,0.1), 0 2px 4px -2px rgba(0,0,0,0.1);
-}
-.santri-info-card h3 { margin: 0; font-size: 1.5rem; font-weight: 600; }
-.santri-info-card p { margin: 0.25rem 0 0; opacity: 0.8; }
-
-/* ? REVISI: Filter Card responsif */
-.filter-card {
-    background-color: var(--card-bg);
-    padding: 1rem;
-    border-radius: 12px;
-    border: 1px solid var(--border-color);
-    margin-bottom: 1.5rem;
-}
-.filter-label {
-    display: block;
-    font-size: 0.875rem;
-    font-weight: 500;
-    color: var(--text-light);
-    margin-bottom: 0.5rem;
-}
-.form-select {
-    width: 100%;
-    padding: 0.75rem;
-    border-radius: 8px;
-    border: 1px solid var(--border-color);
-    background-color: #f9fafb;
-    font-family: 'Poppins', sans-serif;
-    font-size: 1rem;
-    -webkit-appearance: none;
-    appearance: none;
-    background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 20 20'%3e%3cpath stroke='%236b7280' stroke-linecap='round' stroke-linejoin='round' stroke-width='1.5' d='M6 8l4 4 4-4'/%3e%3c/svg%3e");
-    background-position: right 0.5rem center;
-    background-repeat: no-repeat;
-    background-size: 1.5em 1.5em;
-    padding-right: 2.5rem;
-}
-
-.pelanggaran-list { display: flex; flex-direction: column; gap: 1rem; }
-.pelanggaran-item {
-    display: flex;
-    align-items: center;
-    gap: 1rem;
-    background-color: var(--card-bg);
-    padding: 1.25rem;
-    border-radius: 12px;
-    border: 1px solid var(--border-color);
-    transition: all 0.2s ease;
-    animation: fadeIn 0.5s ease-out;
-}
-.pelanggaran-item:hover {
-    transform: translateY(-3px);
-    box-shadow: 0 4px 6px -1px rgba(0,0,0,0.1), 0 2px 4px -2px rgba(0,0,0,0.1);
-}
-
-/* ? REVISI: Ikon tanpa background, tapi dari background abu-abu muda */
-.item-icon {
-    flex-shrink: 0;
-    width: 50px;
-    height: 50px;
-    display: grid;
-    place-items: center;
-    background-color: #f3f4f6; /* Latar belakang abu-abu muda */
-    border-radius: 50%;
-}
-.item-details { flex-grow: 1; }
-.item-details h4 { margin: 0; font-size: 1.1rem; font-weight: 600; color: var(--text-dark); }
-.item-details p { margin: 0.25rem 0 0; font-size: 0.9rem; color: var(--text-light); }
-.item-poin { font-size: 1.25rem; font-weight: 700; color: var(--accent-red); }
-
-.no-data {
-    text-align: center;
-    padding: 3rem;
-    background-color: var(--card-bg);
-    border-radius: 12px;
-    border: 1px solid var(--border-color);
-}
-.no-data .icon { font-size: 3rem; margin-bottom: 1rem; }
-.no-data p { font-size: 1.1rem; color: var(--text-light); }
-
-@keyframes fadeIn {
-    from { opacity: 0; transform: translateY(10px); }
-    to { opacity: 1; transform: translateY(0); }
-}
-
-/* Media query untuk layar lebih besar */
-@media (min-width: 576px) {
-    .page-title { font-size: 2rem; }
-    .filter-card {
+    .page-header {
         display: flex;
+        justify-content: space-between;
         align-items: center;
+        margin-bottom: 2rem;
+        flex-wrap: wrap;
         gap: 1rem;
     }
-    .filter-label { margin-bottom: 0; }
-}
+
+    .page-title {
+        font-weight: 700;
+        font-size: 1.75rem;
+        margin: 0;
+    }
+
+    .btn-back {
+        background-color: var(--card-bg);
+        border: 1px solid var(--border-color);
+        color: var(--text-dark);
+        font-weight: 600;
+        transition: all 0.2s ease;
+    }
+
+    .btn-back:hover {
+        background-color: var(--primary);
+        color: white;
+        border-color: var(--primary);
+    }
+
+    .summary-card {
+        background-color: var(--card-bg);
+        border: 1px solid var(--border-color);
+        border-radius: 0.75rem;
+        box-shadow: 0 1px 3px 0 rgb(0 0 0 / 0.05);
+        padding: 1.5rem;
+    }
+
+    .santri-name {
+        font-size: 1.5rem;
+        font-weight: 600;
+        margin-bottom: 0.25rem;
+    }
+
+    .santri-info {
+        color: var(--text-light);
+        margin-bottom: 1.5rem;
+    }
+
+    .stats-grid {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 1.5rem;
+        border-top: 1px solid var(--border-color);
+        padding-top: 1.5rem;
+    }
+
+    .stat-item .stat-number {
+        font-size: 2.25rem;
+        font-weight: 700;
+        color: var(--primary-dark);
+        line-height: 1;
+    }
+
+    .stat-item .stat-label {
+        color: var(--text-light);
+        font-size: 0.875rem;
+    }
+
+    .filters-display {
+        background-color: var(--card-bg);
+        border: 1px solid var(--border-color);
+        border-radius: 0.75rem;
+        padding: 1rem;
+        box-shadow: 0 1px 3px 0 rgb(0 0 0 / 0.05);
+    }
+
+    .filters-display .form-select {
+        border-radius: 0.5rem;
+    }
+
+    .detail-card {
+        background-color: var(--card-bg);
+        border: 1px solid var(--border-color);
+        border-radius: 0.75rem;
+        box-shadow: 0 1px 3px 0 rgb(0 0 0 / 0.05);
+        overflow: hidden; 
+    }
+
+    .detail-card-header {
+        padding: 1rem 1.5rem;
+        background-color: var(--card-header-bg);
+        border-bottom: 1px solid var(--border-color);
+        font-weight: 600;
+        font-size: 1.1rem;
+    }
+
+    .table {
+        margin-bottom: 0;
+    }
+
+    .table th, .table td {
+        vertical-align: middle;
+        padding: 1rem 1.5rem;
+        border-bottom: 1px solid var(--table-border-color);
+    }
+
+    .table thead th {
+        color: var(--text-light);
+        text-transform: uppercase;
+        font-size: 0.75rem;
+        letter-spacing: 0.05em;
+        border-bottom-width: 2px;
+        border-color: var(--border-color);
+        background-color: var(--card-header-bg);
+    }
+    
+    .table tbody tr:last-child td {
+        border-bottom: none;
+    }
+
+    .point-value {
+        font-size: 1.25rem;
+        font-weight: 700;
+        color: var(--text-danger);
+    }
+
+    .icon-container {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        width: 36px;
+        height: 36px;
+        background-color: var(--light-bg);
+        border-radius: 50%;
+        margin-right: 0.75rem;
+    }
 </style>
 
-<div class="container">
-    <header class="page-header">
-        <h1 class="page-title">Detail Pelanggaran</h1>
-        <a href="keterlambatan.php?start_date=<?= htmlspecialchars($start_date ?? '') ?>&end_date=<?= htmlspecialchars($end_date ?? '') ?>" class="btn-back">
-            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" viewBox="0 0 16 16"><path fill-rule="evenodd" d="M15 8a.5.5 0 0 0-.5-.5H2.707l3.147-3.146a.5.5 0 1 0-.708-.708l-4 4a.5.5 0 0 0 0 .708l4 4a.5.5 0 0 0 .708-.708L2.707 8.5H14.5A.5.5 0 0 0 15 8z"/></svg>
-            <span>Kembali</span>
+<?php
+// Tentukan array data agar kita bisa ambil total
+$detail_list = $q_pelanggaran->fetch_all(MYSQLI_ASSOC);
+$total_pelanggaran = count($detail_list);
+$total_poin = array_sum(array_column($detail_list, 'poin'));
+?>
+
+<div class="container py-4 py-lg-5">
+    
+    <div class="page-header">
+        <div>
+            <h1 class="page-title">Detail Keterlambatan</h1>
+            <p class="text-muted mb-0">Rincian lengkap pelanggaran keterlambatan yang tercatat.</p>
+        </div>
+        <a href="keterlambatan.php?start_date=<?= htmlspecialchars($start_date ?? '') ?>&end_date=<?= htmlspecialchars($end_date ?? '') ?>" class="btn btn-back">
+            <i class="fas fa-arrow-left me-2"></i>Kembali ke Rekap
         </a>
-    </header>
-
-    <div class="santri-info-card">
-        <h3><?= htmlspecialchars($santri['nama']) ?></h3>
-        <p>Kelas: <?= htmlspecialchars($santri['kelas']) ?> | Kamar: <?= htmlspecialchars($santri['kamar']) ?></p>
     </div>
 
-    <div class="filter-card">
-        <label for="filter-waktu" class="filter-label">Filter berdasarkan waktu:</label>
-        <select id="filter-waktu" class="form-select">
-            <option value="semua">Semua Waktu</option>
-            <option value="KBM">KBM</option>
-            <option value="Subuh">Sholat Subuh</option>
-            <option value="Dzuhur">Sholat Dzuhur</option>
-            <option value="Ashar">Sholat Ashar</option>
-            <option value="Maghrib">Sholat Maghrib</option>
-            <option value="Isya">Sholat Isya</option>
-            <option value="Lainnya">Di Luar Jadwal</option>
-        </select>
-    </div>
-
-    <div class="pelanggaran-list" id="list-pelanggaran">
-        <?php
-        if ($q_pelanggaran->num_rows === 0) {
-            echo "<div class='no-data'>
-                    <div class='icon'>??</div>
-                    <p>Alhamdulillah, tidak ada riwayat<br>pelanggaran sholat atau KBM.</p>
-                  </div>";
-        } else {
-            while ($row = $q_pelanggaran->fetch_assoc()) {
-                $detail_kategori = getDetailKategoriWaktu($row['tanggal'], $row['nama_pelanggaran']);
-        ?>
-            <div class="pelanggaran-item" data-kategori="<?= $detail_kategori['nama'] ?>">
-                <div class="item-icon">
-                    <?= $detail_kategori['icon'] ?>
-                </div>
-                <div class="item-details">
-                    <h4><?= htmlspecialchars($row['nama_pelanggaran']) ?></h4>
-                    <p><?= date('d M Y, H:i', strtotime($row['tanggal'])) ?> &bull; <?= $detail_kategori['nama'] ?></p>
-                </div>
+    <div class="row g-4">
+        <!-- KIRI: SUMMARY CARD & FILTER -->
+        <div class="col-lg-4">
+            <div class="summary-card">
+                <h2 class="santri-name"><?= htmlspecialchars($santri['nama']) ?></h2>
+                <p class="santri-info">Kelas: <strong><?= htmlspecialchars($santri['kelas']) ?></strong> | Kamar: <strong><?= htmlspecialchars($santri['kamar']) ?></strong></p>
                 
+                <div class="stats-grid">
+                    <div class="stat-item">
+                        <div class="stat-number"><?= $total_pelanggaran ?></div>
+                        <div class="stat-label">Total Keterlambatan</div>
+                    </div>
+                    <div class="stat-item">
+                        <div class="stat-number"><?= $total_poin ?></div>
+                        <div class="stat-label">Total Poin</div>
+                    </div>
+                    <div class="stat-item" style="grid-column: 1 / -1; padding-top: 1rem; border-top: 1px dashed var(--border-color);">
+                        <div class="stat-number text-danger"><?= $santri['poin_aktif'] ?></div>
+                        <div class="stat-label">Total Poin Aktif</div>
+                    </div>
+                </div>
             </div>
-        <?php
-            }
-        }
-        ?>
+            
+            <div class="filters-display mt-3">
+                <label for="filter-waktu" class="form-label fw-bold"><i class="fas fa-filter me-2"></i>Filter Waktu:</label>
+                <select id="filter-waktu" class="form-select">
+                    <option value="semua">Semua Waktu</option>
+                    <option value="KBM">KBM</option>
+                    <option value="Subuh">Sholat Subuh</option>
+                    <option value="Dzuhur">Sholat Dzuhur</option>
+                    <option value="Ashar">Sholat Ashar</option>
+                    <option value="Maghrib">Sholat Maghrib</option>
+                    <option value="Isya">Sholat Isya</option>
+                    <option value="Lainnya">Di Luar Jadwal</option>
+                </select>
+            </div>
+        </div>
+
+        <!-- KANAN: TABEL RINCIAN -->
+        <div class="col-lg-8">
+            <div class="detail-card">
+                <div class="detail-card-header">
+                    <i class="fas fa-clock me-2"></i>Rincian Keterlambatan
+                </div>
+                <div class="table-responsive">
+                    <table class="table mb-0">
+                        <thead>
+                            <tr>
+                                <th class="text-center" style="width: 5%;">No</th>
+                                <th>Tanggal</th>
+                                <th>Nama Pelanggaran</th>
+                                <th class="text-center">Poin</th>
+                            </tr>
+                        </thead>
+                        <tbody id="list-pelanggaran">
+                            <?php if (empty($detail_list)): ?>
+                                <tr><td colspan="4" class="text-center p-5 text-muted"><i class="fas fa-check-circle fa-3x mb-3"></i><br>Alhamdulillah, tidak ada riwayat keterlambatan.</td></tr>
+                            <?php else: ?>
+                                <?php foreach ($detail_list as $index => $row): 
+                                    $detail_kategori = getDetailKategoriWaktu($row['tanggal'], $row['nama_pelanggaran']);
+                                ?>
+                                <tr class="pelanggaran-item" data-kategori="<?= htmlspecialchars($detail_kategori['nama']) ?>">
+                                    <td class="text-center fw-bold text-muted"><?= $index + 1 ?></td>
+                                    <td>
+                                        <div class="fw-500"><?= date('d M Y', strtotime($row['tanggal'])) ?></div>
+                                        <small class="text-muted"><?= date('H:i', strtotime($row['tanggal'])) ?> WIB</small>
+                                    </td>
+                                    <td>
+                                        <div class="d-flex align-items-center">
+                                            <div class="icon-container">
+                                                <?= $detail_kategori['icon'] ?>
+                                            </div>
+                                            <div>
+                                                <div><?= htmlspecialchars($row['nama_pelanggaran']) ?></div>
+                                                <span class="badge bg-secondary bg-opacity-10 text-secondary mt-1"><?= htmlspecialchars($detail_kategori['nama']) ?></span>
+                                            </div>
+                                        </div>
+                                    </td>
+                                    <td class="text-center">
+                                        <span class="point-value"><?= $row['poin'] ?></span>
+                                    </td>
+                                </tr>
+                                <?php endforeach; ?>
+                            <?php endif; ?>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
     </div>
 </div>
 
@@ -311,12 +366,6 @@ document.addEventListener('DOMContentLoaded', function() {
     const filterSelect = document.getElementById('filter-waktu');
     const listContainer = document.getElementById('list-pelanggaran');
     const allItems = listContainer.querySelectorAll('.pelanggaran-item');
-    const noDataMessage = listContainer.querySelector('.no-data');
-
-    // Sembunyikan pesan 'no-data' jika awalnya ada item
-    if (noDataMessage && allItems.length > 0) {
-        noDataMessage.style.display = 'none';
-    }
 
     filterSelect.addEventListener('change', function() {
         const selectedCategory = this.value;
@@ -324,7 +373,7 @@ document.addEventListener('DOMContentLoaded', function() {
 
         allItems.forEach(item => {
             if (selectedCategory === 'semua' || item.dataset.kategori === selectedCategory) {
-                item.style.display = 'flex';
+                item.style.display = 'table-row';
                 visibleCount++;
             } else {
                 item.style.display = 'none';
@@ -334,10 +383,10 @@ document.addEventListener('DOMContentLoaded', function() {
         // Menampilkan pesan jika tidak ada hasil setelah filter
         if (visibleCount === 0 && allItems.length > 0) {
              if (!listContainer.querySelector('.temp-no-data')) {
-                const tempNoData = document.createElement('div');
-                tempNoData.className = 'no-data temp-no-data';
-                tempNoData.innerHTML = `<div class='icon'>??</div><p>Tidak ada pelanggaran untuk<br>kategori waktu yang dipilih.</p>`;
-                listContainer.appendChild(tempNoData);
+                const tempRow = document.createElement('tr');
+                tempRow.className = 'temp-no-data';
+                tempRow.innerHTML = `<td colspan="4" class="text-center p-5 text-muted"><i class="fas fa-search fa-3x mb-3"></i><br>Tidak ada pelanggaran untuk kategori waktu yang dipilih.</td>`;
+                listContainer.appendChild(tempRow);
              }
         } else {
             const tempMessage = listContainer.querySelector('.temp-no-data');

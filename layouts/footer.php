@@ -56,6 +56,7 @@ if (function_exists('has_permission')) {
         'rekap_detail_santri', 
         'rekap_kebersihan', 
         'rekap_keterlambatan', 
+        'rekap_santri_teladan',
         'rekap_view_statistik', 
         'rekap_view_tahfidz'
     ]);

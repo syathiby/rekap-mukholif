@@ -98,25 +98,48 @@ $frequent_violation_query = mysqli_query($conn, "
 $frequent_violation = mysqli_fetch_assoc($frequent_violation_query);
 
 $top_violators = mysqli_query($conn, "
-    SELECT s.nama, s.kamar, COUNT(*) as total 
+    SELECT s.nama, s.kamar, s.poin_aktif, SUM(jp.poin) as total_poin 
     FROM pelanggaran p
     JOIN santri s ON p.santri_id = s.id
+    JOIN jenis_pelanggaran jp ON p.jenis_pelanggaran_id = jp.id
     WHERE p.tanggal BETWEEN '$start_date_sql' AND '$end_date_sql'
     GROUP BY s.id
-    ORDER BY total DESC
+    ORDER BY total_poin DESC, s.nama ASC
     LIMIT 5
 ");
 
+
 $best_students = mysqli_query($conn, "
-    SELECT s.nama, s.kelas, s.kamar 
+    SELECT s.id, s.nama, s.kelas, s.kamar,
+           COALESCE(rwd.total_reward, 0) AS total_reward,
+           COALESCE(rpt.avg_rapot, 0) AS avg_rapot
     FROM santri s
-    WHERE NOT EXISTS (
-        SELECT 1 FROM pelanggaran p 
-        WHERE p.santri_id = s.id AND p.tanggal BETWEEN '$start_date_sql' AND '$end_date_sql'
+    LEFT JOIN (
+        SELECT dr.santri_id, SUM(jr.poin_reward) AS total_reward
+        FROM daftar_reward dr
+        JOIN jenis_reward jr ON dr.jenis_reward_id = jr.id
+        WHERE dr.tanggal BETWEEN '$start_date_sql' AND '$end_date_sql'
+        GROUP BY dr.santri_id
+    ) rwd ON s.id = rwd.santri_id
+    LEFT JOIN (
+        SELECT santri_id, 
+               ((AVG(puasa_sunnah) + AVG(sholat_duha) + AVG(sholat_malam) + AVG(sedekah) + AVG(sunnah_tidur) + AVG(ibadah_lainnya) + 
+                 AVG(lisan) + AVG(sikap) + AVG(kesopanan) + AVG(muamalah) + 
+                 AVG(tidur) + AVG(keterlambatan) + AVG(seragam) + AVG(makan) + AVG(arahan) + AVG(bahasa_arab) + 
+                 AVG(mandi) + AVG(penampilan) + AVG(piket) + AVG(kerapihan_barang)) / 20) AS avg_rapot
+        FROM rapot_kepengasuhan
+        WHERE STR_TO_DATE(CONCAT(tahun, '-', FIELD(bulan, 'Januari','Februari','Maret','April','Mei','Juni','Juli','Agustus','September','Oktober','November','Desember'), '-01'), '%Y-%c-%d') 
+              BETWEEN STR_TO_DATE(CONCAT(DATE_FORMAT('$start_date_sql', '%Y-%m'), '-01'), '%Y-%m-%d') 
+              AND LAST_DAY('$end_date_sql')
+        GROUP BY santri_id
+    ) rpt ON s.id = rpt.santri_id
+    WHERE s.id NOT IN (
+        SELECT p.santri_id FROM pelanggaran p WHERE p.tanggal BETWEEN '$start_date_sql' AND '$end_date_sql'
     )
-    ORDER BY s.nama ASC
+    ORDER BY total_reward DESC, avg_rapot DESC, CAST(s.kamar AS UNSIGNED) ASC, s.nama ASC
     LIMIT 5
 ");
+
 
 // =============================================================
 // PERSIAPAN UNTUK LOGIKA TAMPILAN BERDASARKAN IZIN (REVISI 2)
@@ -125,7 +148,8 @@ $best_students = mysqli_query($conn, "
 
 // Izin Sesuai Arahan Baru:
 $can_view_pel_terkini = has_permission('rekap_view_statistik'); // Tombol "Lihat semua" Pelanggaran Terkini
-$can_view_rekap_santri = has_permission('rekap_keterlambatan');   // Tombol "Lihat semua" Top Pelanggar & Santri Teladan
+$can_view_santri_teladan = has_permission('rekap_santri_teladan');   // Tombol "Lihat semua" Santri Teladan
+$can_view_top_pelanggar = has_permission('rekap_pelanggaran_umum');  // Tombol "Lihat semua" Top Pelanggar
 
 // Card 1: Total Santri
 $can_view_santri = has_permission('santri_view');
@@ -145,12 +169,48 @@ $chart_href = $can_view_chart ? 'href="rekap/chart.php"' : 'href="#"';
 $chart_style = !$can_view_chart ? 'style="cursor: not-allowed; opacity: 0.7;"' : '';
 $chart_onclick = !$can_view_chart ? 'onclick="event.preventDefault(); return false;"' : '';
 
-// Card 4: Santri Teladan (Izin: rekap_keterlambatan)
-$teladan_href = $can_view_rekap_santri ? 'href="rekap/santri_teladan.php"' : 'href="#"';
-$teladan_style = !$can_view_rekap_santri ? 'style="cursor: not-allowed; opacity: 0.7;"' : '';
-$teladan_onclick = !$can_view_rekap_santri ? 'onclick="event.preventDefault(); return false;"' : '';
+// Card 4: Santri Teladan (Izin: rekap_santri_teladan)
+$teladan_href = $can_view_santri_teladan ? 'href="rekap/santri_teladan.php"' : 'href="#"';
+$teladan_style = !$can_view_santri_teladan ? 'style="cursor: not-allowed; opacity: 0.7;"' : '';
+$teladan_onclick = !$can_view_santri_teladan ? 'onclick="event.preventDefault(); return false;"' : '';
 
+// --- CSS KHUSUS UNTUK RANKING ---
 ?>
+<style>
+.rank-badge-sm {
+    width: 32px;
+    height: 32px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: 800;
+    font-size: 14px;
+    border-radius: 50%;
+    margin-left: auto;
+}
+.rank-badge-sm.rank-1 { background: linear-gradient(135deg, #fbbf24, #d97706); color: white; box-shadow: 0 3px 8px rgba(217, 119, 6, 0.3); }
+.rank-badge-sm.rank-2 { background: linear-gradient(135deg, #cbd5e1, #64748b); color: white; box-shadow: 0 3px 8px rgba(100, 116, 139, 0.3); }
+.rank-badge-sm.rank-3 { background: linear-gradient(135deg, #fca5a5, #b91c1c); color: white; box-shadow: 0 3px 8px rgba(185, 28, 28, 0.3); }
+.rank-badge-sm.rank-other { background: #f1f5f9; color: #64748b; border: 1px solid #e2e8f0; }
+
+.mini-stats {
+    display: flex;
+    gap: 12px;
+    margin-top: 4px;
+}
+.mini-stat {
+    font-size: 11px;
+    font-weight: 600;
+    color: #64748b;
+    display: flex;
+    align-items: center;
+    gap: 4px;
+}
+.mini-stat span {
+    font-weight: 800;
+}
+</style>
+
     <!-- Banner utama dihapus, form filter dirapikan -->
     <div class="dashboard-wrapper">
         
@@ -251,7 +311,7 @@ $teladan_onclick = !$can_view_rekap_santri ? 'onclick="event.preventDefault(); r
                         </div>
                         <div class="text-muted small mt-2 d-flex justify-content-between align-items-center">
                             <span>Tanpa catatan kasus</span>
-                            <?php if ($can_view_rekap_santri): ?>
+                            <?php if ($can_view_santri_teladan): ?>
                                 <a href="rekap/santri_teladan.php" class="text-primary text-decoration-none fw-semibold stretched-link" style="font-size:0.8rem;">Daftar <i class="fas fa-arrow-right ms-1"></i></a>
                             <?php else: ?>
                                 <i class="fas fa-lock opacity-50"></i>
@@ -383,55 +443,77 @@ $teladan_onclick = !$can_view_rekap_santri ? 'onclick="event.preventDefault(); r
 
                         <div class="tab-content" id="studentTabsContent">
                             <div class="tab-pane fade show active" id="violators-panel" role="tabpanel">
-                                <?php if ($can_view_rekap_santri): ?>
-                                    <div class="text-end mb-3"><a href="rekap/keterlambatan.php" class="text-primary text-decoration-none small fw-medium">Lihat semua <i class="fas fa-arrow-right"></i></a></div>
+                                <?php if ($can_view_top_pelanggar): ?>
+                                    <div class="text-end mb-3"><a href="rekap/pelanggaran_umum.php" class="text-primary text-decoration-none small fw-medium">Lihat semua <i class="fas fa-arrow-right"></i></a></div>
                                 <?php endif; ?>
                                 
                                 <div class="student-list d-flex flex-column gap-3">
                                     <?php if(mysqli_num_rows($top_violators) > 0): ?>
                                         <?php while($violator = mysqli_fetch_assoc($top_violators)): ?>
-                                            <div class="student-item d-flex align-items-center p-2 border rounded bg-light">
-                                                <div class="student-avatar top-violators rounded-circle text-white bg-danger d-flex align-items-center justify-content-center me-3 fw-bold">
+                                            <div class="student-item d-flex align-items-center p-3 border rounded bg-white shadow-sm">
+                                                <div class="student-avatar rounded-circle text-white d-flex align-items-center justify-content-center me-3 fw-bold" style="background: linear-gradient(135deg, #ef4444, #b91c1c); box-shadow: 0 3px 8px rgba(239,68,68,0.2);">
                                                     <?= htmlspecialchars(substr($violator['nama'], 0, 1)) ?>
                                                 </div>
                                                 <div class="flex-grow-1">
-                                                    <div class="fw-bold text-dark"><?= htmlspecialchars($violator['nama']) ?></div>
-                                                    <div class="text-muted small"><span><i class="fas fa-home"></i> Km. <?= htmlspecialchars($violator['kamar']) ?></span></div>
+                                                    <div class="fw-bold text-dark text-truncate" style="max-width: 180px;"><?= htmlspecialchars($violator['nama']) ?></div>
+                                                    <div class="text-muted" style="font-size: 11px;">
+                                                        <span class="me-2"><i class="fas fa-home opacity-75"></i> Km. <?= htmlspecialchars($violator['kamar']) ?></span>
+                                                    </div>
+                                                    <div class="mt-1">
+                                                        <span class="badge bg-light text-secondary border px-2 py-1" style="font-size: 10px;">
+                                                            Poin Aktif: <strong class="text-dark"><?= max(0, (int)$violator['poin_aktif']) ?></strong>
+                                                        </span>
+                                                    </div>
                                                 </div>
-                                                <div class="violation-count badge bg-danger text-white rounded-pill px-3 py-2 fs-6">
-                                                    <?= $violator['total'] ?>
+                                                <div class="badge text-white rounded-pill px-3 py-2 fw-bold" style="background-color: #ef4444; font-size: 14px;">
+                                                    <?= (int)$violator['total_poin'] ?>
                                                 </div>
                                             </div>
                                         <?php endwhile; ?>
                                     <?php else: ?>
+
                                         <div class="text-center text-muted py-4"><i class="fas fa-info-circle fs-2 mb-2"></i><p>Tidak ada data pelanggar</p></div>
                                     <?php endif; ?>
                                 </div>
                             </div>
                             
                             <div class="tab-pane fade" id="teladan-panel" role="tabpanel">
-                                <?php if ($can_view_rekap_santri): ?>
+                                <?php if ($can_view_santri_teladan): ?>
                                     <div class="text-end mb-3"><a href="rekap/santri_teladan.php" class="text-primary text-decoration-none small fw-medium">Lihat semua <i class="fas fa-arrow-right"></i></a></div>
                                 <?php endif; ?>
                                 
                                 <div class="student-list d-flex flex-column gap-3">
                                     <?php if(mysqli_num_rows($best_students) > 0): ?>
-                                        <?php while($student = mysqli_fetch_assoc($best_students)): ?>
-                                            <div class="student-item d-flex align-items-center p-2 border rounded bg-light">
-                                                <div class="student-avatar best-students rounded-circle text-white bg-success d-flex align-items-center justify-content-center me-3 fw-bold">
+                                        <?php $no = 1; while($student = mysqli_fetch_assoc($best_students)): 
+                                            // Menentukan warna rank
+                                            if ($no === 1) $rank_class = 'rank-1';
+                                            elseif ($no === 2) $rank_class = 'rank-2';
+                                            elseif ($no === 3) $rank_class = 'rank-3';
+                                            else $rank_class = 'rank-other';
+                                            
+                                            $rapot = round((float)$student['avg_rapot'], 1);
+                                            $str_rapot = ($rapot > 0) ? number_format($rapot, 1, '.', '') : '-';
+                                        ?>
+                                            <div class="student-item d-flex align-items-center p-3 border rounded bg-white shadow-sm position-relative">
+                                                <div class="student-avatar rounded-circle text-white d-flex align-items-center justify-content-center me-3 fw-bold" style="background: linear-gradient(135deg, #10b981, #059669); box-shadow: 0 3px 8px rgba(16,185,129,0.2);">
                                                     <?= htmlspecialchars(substr($student['nama'], 0, 1)) ?>
                                                 </div>
                                                 <div class="flex-grow-1">
-                                                    <div class="fw-bold text-dark"><?= htmlspecialchars($student['nama']) ?></div>
-                                                    <div class="text-muted small">
-                                                        <span class="me-2"><i class="fas fa-home"></i> Km. <?= htmlspecialchars($student['kamar']) ?></span>
-                                                        <span><i class="fas fa-graduation-cap"></i> <?= htmlspecialchars($student['kelas']) ?></span>
+                                                    <div class="fw-bold text-dark text-truncate" style="max-width: 180px;"><?= htmlspecialchars($student['nama']) ?></div>
+                                                    <div class="text-muted" style="font-size: 11px;">
+                                                        <span class="me-2"><i class="fas fa-home opacity-75"></i> Km. <?= htmlspecialchars($student['kamar']) ?></span>
+                                                        <span><i class="fas fa-graduation-cap opacity-75"></i> Kls <?= htmlspecialchars($student['kelas']) ?></span>
+                                                    </div>
+                                                    <div class="mini-stats">
+                                                        <div class="mini-stat text-success"><i class="fas fa-plus-circle"></i> <span style="font-size: 12px;"> <?= (int)$student['total_reward'] ?></span></div>
+                                                        <div class="mini-stat text-primary"><i class="fas fa-star"></i> <span style="font-size: 12px;"> <?= $str_rapot ?></span></div>
                                                     </div>
                                                 </div>
-                                                <div class="violation-count zero text-success fs-5"><i class="fas fa-check-circle"></i></div>
+                                                <div class="rank-badge-sm <?= $rank_class ?>"><?= $no ?></div>
                                             </div>
-                                        <?php endwhile; ?>
+                                        <?php $no++; endwhile; ?>
                                     <?php else: ?>
+
                                         <div class="text-center text-muted py-4"><i class="fas fa-info-circle fs-2 mb-2"></i><p>Belum ada santri tanpa pelanggaran</p></div>
                                     <?php endif; ?>
                                 </div>

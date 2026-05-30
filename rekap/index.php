@@ -3,7 +3,7 @@
 require_once __DIR__ . '/../bootstrap/init.php';
 
 // 2. Jalankan 'SATPAM' buat ngejaga halaman
-guard(['rekap_view_statistik', 'rekap_kebersihan', 'rekap_keterlambatan', 'rekap_pelanggaran_umum', 'rekap_detail_santri']); 
+guard(['rekap_view_statistik', 'rekap_kebersihan', 'rekap_keterlambatan', 'rekap_pelanggaran_umum', 'rekap_detail_santri', 'rekap_santri_teladan']);
 
 // 3. Kalau lolos, baru panggil Tampilan
 require_once __DIR__ . '/../layouts/header.php'; 
@@ -89,6 +89,22 @@ require_once __DIR__ . '/../layouts/header.php';
                     <div>
                         <h6 class="text-dark fw-bold mb-1">Keterlambatan Santri</h6>
                         <p class="text-muted small mb-0">Laporan akumulasi poin dan denda keterlambatan</p>
+                    </div>
+                </div>
+            </a>
+        </div>
+        <?php endif; ?>
+
+        <?php if (has_permission('rekap_santri_teladan')): ?>
+        <div class="col-md-6 col-lg-4">
+            <a href="santri_teladan.php" class="text-decoration-none">
+                <div class="card h-100 hover-up p-4 d-flex flex-row align-items-center gap-3 border-start border-4" style="border-left-color: #3b82f6 !important;">
+                    <div class="icon-container flex-shrink-0" style="color: #3b82f6; background-color: rgba(59, 130, 246, 0.1);">
+                        <i class="fas fa-award fs-4"></i>
+                    </div>
+                    <div>
+                        <h6 class="text-dark fw-bold mb-1">Santri Teladan</h6>
+                        <p class="text-muted small mb-0">Peringkat santri berprestasi tanpa pelanggaran</p>
                     </div>
                 </div>
             </a>
