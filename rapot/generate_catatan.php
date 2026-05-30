@@ -4,7 +4,7 @@
 require_once __DIR__ . '/../bootstrap/init.php';
 require_once __DIR__ . '/helper.php';
 
-guard('rapot_create');
+guard('catatan_otomatis');
 
 // 1. Ambil data utama dari AJAX (opsional, hanya untuk poin pelanggaran & reward)
 $santri_id = (int)($_POST['santri_id'] ?? 0);
