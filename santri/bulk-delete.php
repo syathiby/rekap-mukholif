@@ -1,4 +1,4 @@
-﻿<?php
+<?php
 // Protokol Khusus Ruang Mesin
 if (session_status() === PHP_SESSION_NONE) { session_start(); }
 require_once __DIR__ . '/../bootstrap/init.php';
@@ -44,6 +44,9 @@ if ($_SERVER["REQUEST_METHOD"] == "POST" && isset($_POST['ids']) && is_array($_P
             mysqli_commit($conn);
             
             if ($deleted_count > 0) {
+                write_activity_log('DELETE', 'santri', "Bulk delete $deleted_count santri beserta riwayatnya", [
+                    'jumlah_dihapus' => $deleted_count
+                ]);
                 $_SESSION['success_message'] = "Berhasil menghapus $deleted_count santri beserta riwayat pelanggarannya.";
             } else {
                 $_SESSION['error_message'] = "Tidak ada santri yang dihapus (mungkin ID tidak ditemukan).";

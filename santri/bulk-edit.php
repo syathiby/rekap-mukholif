@@ -1,4 +1,4 @@
-﻿<?php
+<?php
 // BAGIAN 1: LOGIKA RUANG MESIN (TIDAK ADA PERUBAHAN)
 if (session_status() === PHP_SESSION_NONE) { session_start(); }
 require_once __DIR__ . '/../bootstrap/init.php';
@@ -52,6 +52,13 @@ if ($_SERVER["REQUEST_METHOD"] == "POST" && isset($_POST['update'])) {
         $stmt->close();
         
         if ($updated_count > 0) {
+            $perubahan = [];
+            if (!empty($kelasBaru_input)) $perubahan[] = 'Kelas → ' . $kelasBaru_input;
+            if (!empty($kamarBaru_input)) $perubahan[] = 'Kamar → ' . $kamarBaru_input;
+            write_activity_log('UPDATE', 'santri', "Bulk edit $updated_count santri (" . implode(', ', $perubahan) . ")", [
+                'jumlah_santri' => $updated_count,
+                'perubahan'     => $perubahan
+            ]);
             $_SESSION['success_message'] = "Berhasil update data untuk $updated_count santri!";
         } else {
             $_SESSION['error_message'] = "Terjadi kesalahan, tidak ada data santri yang diperbarui.";

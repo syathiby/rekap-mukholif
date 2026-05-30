@@ -13,14 +13,15 @@ if (isset($_POST['add_reward_bulk'])) {
         header("Location: create.php"); exit;
     }
 
-    // Ambil nilai reward
-    $q_reward = mysqli_prepare($conn, "SELECT poin_reward FROM jenis_reward WHERE id = ?");
+    // Ambil nilai reward dan namanya
+    $q_reward = mysqli_prepare($conn, "SELECT nama_reward, poin_reward FROM jenis_reward WHERE id = ?");
     mysqli_stmt_bind_param($q_reward, "i", $reward_id);
     mysqli_stmt_execute($q_reward);
     $res_reward = mysqli_stmt_get_result($q_reward);
     $d_reward = mysqli_fetch_assoc($res_reward);
     mysqli_stmt_close($q_reward);
     $nilai_pengurang = (int)$d_reward['poin_reward'];
+    $nama_reward = $d_reward['nama_reward'];
 
     mysqli_begin_transaction($conn);
 
@@ -43,6 +44,29 @@ if (isset($_POST['add_reward_bulk'])) {
         mysqli_stmt_close($update_stmt);
 
         mysqli_commit($conn);
+
+        // Ambil nama santri untuk dicatat di log
+        $santri_names = [];
+        if (!empty($santri_ids)) {
+            $ids_str = implode(',', array_map('intval', $santri_ids));
+            $q_s = $conn->query("SELECT nama FROM santri WHERE id IN ($ids_str)");
+            if ($q_s) {
+                while ($s_row = $q_s->fetch_assoc()) {
+                    $santri_names[] = $s_row['nama'];
+                }
+            }
+        }
+
+        // Catat log pemberian reward
+        write_activity_log('CREATE', 'reward', "Memberikan apresiasi/reward '" . htmlspecialchars($nama_reward) . "' (Poin: +$nilai_pengurang) kepada " . count($santri_names) . " santri: " . implode(', ', $santri_names), [
+            'santri_ids' => $santri_ids,
+            'santri_names' => $santri_names,
+            'jenis_reward_id' => $reward_id,
+            'nama_reward' => $nama_reward,
+            'poin_reward' => $nilai_pengurang,
+            'tanggal' => $tanggal
+        ]);
+
         $_SESSION['message'] = ['type' => 'success', 'text' => count($santri_ids) . " santri berhasil diberi reward. Poin telah diperbarui."];
         header("Location: ../history/index.php");
 

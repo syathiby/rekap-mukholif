@@ -28,7 +28,7 @@ if (isset($_POST['create_bulk_pelanggaran'])) {
     // =================================================================
     // LANGKAH #1: Ambil Poin dari Jenis Pelanggaran
     // =================================================================
-    $query_get_poin = "SELECT poin FROM jenis_pelanggaran WHERE id = ?";
+    $query_get_poin = "SELECT poin, nama_pelanggaran, bagian FROM jenis_pelanggaran WHERE id = ?";
     $stmt_get_poin = mysqli_prepare($conn, $query_get_poin);
     mysqli_stmt_bind_param($stmt_get_poin, "i", $jenis_pelanggaran_id);
     mysqli_stmt_execute($stmt_get_poin);
@@ -112,6 +112,30 @@ if (isset($_POST['create_bulk_pelanggaran'])) {
         ];
     } else {
         mysqli_commit($conn); // Simpan permanen semua perubahan
+
+        // Ambil nama santri untuk dicatat di log
+        $santri_names = [];
+        if (!empty($santri_ids)) {
+            $ids_str = implode(',', array_map('intval', $santri_ids));
+            $q_s = $conn->query("SELECT nama FROM santri WHERE id IN ($ids_str)");
+            if ($q_s) {
+                while ($s_row = $q_s->fetch_assoc()) {
+                    $santri_names[] = $s_row['nama'];
+                }
+            }
+        }
+
+        // Catat log input pelanggaran
+        write_activity_log('CREATE', 'pelanggaran', "Mencatat pelanggaran '" . htmlspecialchars($data_pelanggaran['nama_pelanggaran']) . "' (Poin: $poin_to_add) untuk " . count($santri_names) . " santri: " . implode(', ', $santri_names), [
+            'santri_ids' => $santri_ids,
+            'santri_names' => $santri_names,
+            'jenis_pelanggaran_id' => $jenis_pelanggaran_id,
+            'nama_pelanggaran' => $data_pelanggaran['nama_pelanggaran'],
+            'bagian' => $data_pelanggaran['bagian'],
+            'poin' => $poin_to_add,
+            'tanggal' => $tanggal
+        ]);
+
         if ($is_ajax) {
             header('Content-Type: application/json');
             echo json_encode([

@@ -19,16 +19,19 @@ if (isset($_GET['id']) && is_numeric($_GET['id'])) {
     // ====================================================================
     // ===== BAGIAN CEK ROLE SEBELUM HAPUS (FIXED) =====
     // ====================================================================
-    // Ambil dulu data role dari user yang mau dihapus
-    $stmt_check = $conn->prepare("SELECT role FROM users WHERE id = ?");
+    // Ambil dulu data user yang mau dihapus
+    $stmt_check = $conn->prepare("SELECT username, nama_lengkap, role FROM users WHERE id = ?");
     $stmt_check->bind_param("i", $user_id_to_delete);
     $stmt_check->execute();
     $result_check = $stmt_check->get_result();
 
     if ($result_check->num_rows > 0) {
         $user_to_delete_data = $result_check->fetch_assoc(); 
+        $username_to_delete = $user_to_delete_data['username'];
+        $nama_to_delete = $user_to_delete_data['nama_lengkap'];
+        $role_to_delete = $user_to_delete_data['role'];
 
-        if (strtolower($user_to_delete_data['role']) === 'admin') {
+        if (strtolower($role_to_delete) === 'admin') {
             // Kalau rolenya 'admin', langsung tendang ke halaman akses ditolak
             $stmt_check->close();
             $conn->close();
@@ -52,6 +55,12 @@ if (isset($_GET['id']) && is_numeric($_GET['id'])) {
     $stmt->bind_param("i", $user_id_to_delete);
 
     if ($stmt->execute()) {
+        write_activity_log('DELETE', 'users', "Menghapus user/staf: '" . htmlspecialchars($username_to_delete) . "' (Nama: " . htmlspecialchars($nama_to_delete) . ")", [
+            'id' => $user_id_to_delete,
+            'username' => $username_to_delete,
+            'nama_lengkap' => $nama_to_delete,
+            'role' => $role_to_delete
+        ]);
         // Kalo berhasil, kasih notif sukses
         $_SESSION['success_message'] = "✅ User berhasil dihapus.";
     } else {

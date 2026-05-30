@@ -31,6 +31,14 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
         $kelas_bersih = intval($kelas_mentah);
         $kamar_bersih = intval($kamar_mentah);
 
+        // Ambil data lama dulu buat log
+        $stmt_old = mysqli_prepare($conn, "SELECT nama, kelas, kamar FROM santri WHERE id = ?");
+        mysqli_stmt_bind_param($stmt_old, "i", $id);
+        mysqli_stmt_execute($stmt_old);
+        $res_old = mysqli_stmt_get_result($stmt_old);
+        $old_data = mysqli_fetch_assoc($res_old);
+        mysqli_stmt_close($stmt_old);
+
         // Update data using prepared statement
         $stmt = mysqli_prepare($conn, "UPDATE santri SET nama=?, kelas=?, kamar=? WHERE id=?");
         
@@ -38,6 +46,18 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
         mysqli_stmt_bind_param($stmt, "siii", $nama, $kelas_bersih, $kamar_bersih, $id);
         
         if (mysqli_stmt_execute($stmt)) {
+            // Catat log edit
+            if ($old_data) {
+                write_activity_log('UPDATE', 'santri', "Mengubah data santri: '" . htmlspecialchars($old_data['nama']) . "'", [
+                    'id' => $id,
+                    'old' => $old_data,
+                    'new' => [
+                        'nama' => $nama,
+                        'kelas' => $kelas_bersih,
+                        'kamar' => $kamar_bersih
+                    ]
+                ]);
+            }
             $_SESSION['operation_result'] = [
                 'success' => true, 
                 'message' => "Data santri $nama berhasil diperbarui!"

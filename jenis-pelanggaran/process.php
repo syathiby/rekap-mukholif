@@ -1,4 +1,4 @@
-﻿<?php
+<?php
 if (session_status() === PHP_SESSION_NONE) { session_start(); }
 require_once __DIR__ . '/../bootstrap/init.php';
 
@@ -30,7 +30,14 @@ if (isset($_POST['create_single'])) {
     mysqli_stmt_bind_param($stmt, "ssis", $nama_pelanggaran, $bagian, $poin, $kategori);
     
     if (mysqli_stmt_execute($stmt)) {
-        // ==> INI NOTIFIKASINYA
+        $new_id = mysqli_insert_id($conn);
+        write_activity_log('CREATE', 'jenis_pelanggaran', "Menambahkan jenis pelanggaran baru: '" . htmlspecialchars($nama_pelanggaran) . "' (Poin: $poin, Bagian: $bagian)", [
+            'id' => $new_id,
+            'nama_pelanggaran' => $nama_pelanggaran,
+            'bagian' => $bagian,
+            'poin' => $poin,
+            'kategori' => $kategori
+        ]);
         $_SESSION['message'] = ['type' => 'success', 'text' => 'Data pelanggaran berhasil ditambahkan.'];
     } else {
         $_SESSION['message'] = ['type' => 'danger', 'text' => 'Gagal menambahkan data: ' . mysqli_stmt_error($stmt)];
@@ -100,6 +107,9 @@ if (isset($_POST['create_bulk'])) {
 
     if (empty($errors)) {
         mysqli_commit($conn);
+        write_activity_log('CREATE', 'jenis_pelanggaran', "Menambahkan bulk $success_count jenis pelanggaran baru", [
+            'success_count' => $success_count
+        ]);
         // ==> INI NOTIFIKASI SUKSES BULK
         $_SESSION['message'] = ['type' => 'success', 'text' => "Mantap! Berhasil menambahkan $success_count data pelanggaran."];
     } else {
@@ -188,6 +198,16 @@ if (isset($_POST['update'])) {
 
         // 4. Kalau semua aman, 'simpan permanen' perubahannya
         mysqli_commit($conn);
+        write_activity_log('UPDATE', 'jenis_pelanggaran', "Mengubah jenis pelanggaran: '" . htmlspecialchars($nama_pelanggaran) . "' (Poin: $poin_baru, Bagian: $bagian)", [
+            'id' => $id,
+            'old' => $old_data,
+            'new' => [
+                'nama_pelanggaran' => $nama_pelanggaran,
+                'bagian' => $bagian,
+                'poin' => $poin_baru,
+                'kategori' => $kategori
+            ]
+        ]);
         $_SESSION['message'] = ['type' => 'success', 'text' => 'Data pelanggaran berhasil diupdate dan poin santri telah disinkronkan.'];
 
     } catch (Exception $e) {
@@ -292,6 +312,9 @@ if (isset($_POST['bulk_update'])) {
 
         // 4. Kalo semua aman, simpan permanen
         mysqli_commit($conn);
+        write_activity_log('UPDATE', 'jenis_pelanggaran', "Melakukan bulk update $updated_count jenis pelanggaran", [
+            'updated_count' => $updated_count
+        ]);
         $_SESSION['message'] = ['type' => 'success', 'text' => "Mantap! Berhasil mengupdate $updated_count data dan menyinkronkan poin santri."];
 
     } catch (Exception $e) {
@@ -314,11 +337,23 @@ if (isset($_POST['delete'])) {
 
     $id = (int)$_POST['id'];
     
+    // Ambil nama jenis pelanggaran sebelum dihapus
+    $q_old_jp = mysqli_query($conn, "SELECT nama_pelanggaran, bagian, poin FROM jenis_pelanggaran WHERE id = $id LIMIT 1");
+    $old_jp = mysqli_fetch_assoc($q_old_jp);
+    
     $query = "DELETE FROM jenis_pelanggaran WHERE id = ?";
     $stmt = mysqli_prepare($conn, $query);
     mysqli_stmt_bind_param($stmt, "i", $id);
 
     if (mysqli_stmt_execute($stmt)) {
+        if ($old_jp) {
+            write_activity_log('DELETE', 'jenis_pelanggaran', "Menghapus jenis pelanggaran: '" . htmlspecialchars($old_jp['nama_pelanggaran']) . "' (Bagian: " . htmlspecialchars($old_jp['bagian']) . ")", [
+                'id' => $id,
+                'nama_pelanggaran' => $old_jp['nama_pelanggaran'],
+                'bagian' => $old_jp['bagian'],
+                'poin' => $old_jp['poin']
+            ]);
+        }
         // ==> INI NOTIFIKASI DELETE
         $_SESSION['message'] = ['type' => 'success', 'text' => 'Data pelanggaran berhasil dihapus.'];
     } else {

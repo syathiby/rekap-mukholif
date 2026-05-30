@@ -1,12 +1,5 @@
 <?php
-// Cek dulu: kalau session belum aktif, baru kita atur dan mulai
-if (session_status() === PHP_SESSION_NONE) {
-    ini_set('session.cookie_lifetime', 0); // Auto logout saat browser ditutup
-    session_start();
-}
-
-// Panggil file config sakti kita buat dapetin BASE_URL
-require_once __DIR__ . '/config/app.php';
+require_once __DIR__ . '/bootstrap/init.php';
 
 // ─── CACHE BUSTING UNTUK ASET GAMBAR ───────────────────────────────
 $_img_base = $_SERVER['DOCUMENT_ROOT'];
@@ -21,8 +14,6 @@ $favicon_v = file_exists($_favicon_path) ? filemtime($_favicon_path) : '1';
 $appicon_v = file_exists($_appicon_path) ? filemtime($_appicon_path) : '1';
 $style_v   = time();
 // ───────────────────────────────────────────────────
-
-require_once __DIR__ . '/config/database.php';
 
 $error = '';
 if (isset($_GET['timeout'])) {
@@ -62,6 +53,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             
             // Buat "kantong tiket" buat user
             $_SESSION['permissions'] = $user['permissions'] ? explode(',', $user['permissions']) : [];
+
+            // Catat log login
+            write_activity_log('LOGIN', 'auth', "User '" . $user['username'] . "' berhasil login ke sistem");
 
             // REVISI: Arahkan ke halaman index pake BASE_URL
             header("Location: " . BASE_URL . "/index.php");

@@ -30,6 +30,13 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
         mysqli_stmt_bind_param($stmt, "sii", $nama, $kelas_bersih, $kamar_bersih);
         
         if (mysqli_stmt_execute($stmt)) {
+            $new_id = mysqli_insert_id($conn);
+            write_activity_log('CREATE', 'santri', "Menambahkan santri baru: '" . htmlspecialchars($nama) . "' (Kelas: $kelas_bersih, Kamar: $kamar_bersih)", [
+                'id' => $new_id,
+                'nama' => $nama,
+                'kelas' => $kelas_bersih,
+                'kamar' => $kamar_bersih
+            ]);
             $_SESSION['success_message'] = "Santri $nama berhasil ditambahkan!";
         } else {
             throw new Exception("Gagal menambahkan santri: " . mysqli_error($conn));

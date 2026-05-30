@@ -14,6 +14,9 @@ if (isset($_POST['add_jenis'])) {
     mysqli_stmt_bind_param($stmt, "sis", $nama, $poin, $desc);
     
     if (mysqli_stmt_execute($stmt)) {
+        write_activity_log('CREATE', 'jenis_reward', "Menambahkan jenis reward baru: '$nama' (Poin: $poin)", [
+            'sesudah' => ['nama_reward' => $nama, 'poin_reward' => $poin, 'deskripsi' => $desc]
+        ]);
         $_SESSION['message'] = ['type' => 'success', 'text' => 'Reward baru berhasil ditambahkan!'];
     } else {
         $_SESSION['message'] = ['type' => 'danger', 'text' => 'Gagal: ' . mysqli_error($conn)];
@@ -37,6 +40,9 @@ if (isset($_POST['edit_jenis'])) {
     mysqli_stmt_bind_param($stmt, "sisi", $nama, $poin, $desc, $id);
 
     if (mysqli_stmt_execute($stmt)) {
+        write_activity_log('UPDATE', 'jenis_reward', "Mengubah jenis reward: '$nama' (Poin: $poin)", [
+            'sesudah' => ['id' => $id, 'nama_reward' => $nama, 'poin_reward' => $poin, 'deskripsi' => $desc]
+        ]);
         $_SESSION['message'] = ['type' => 'success', 'text' => 'Data reward berhasil diperbarui.'];
     } else {
         $_SESSION['message'] = ['type' => 'danger', 'text' => 'Gagal update: ' . mysqli_error($conn)];
@@ -73,6 +79,9 @@ if (isset($_POST['bulk_update'])) {
     }
     mysqli_stmt_close($stmt);
 
+    if ($success_count > 0) {
+        write_activity_log('UPDATE', 'jenis_reward', "Bulk update $success_count jenis reward sekaligus");
+    }
     $_SESSION['message'] = ['type' => 'success', 'text' => "$success_count data reward berhasil diperbarui sekaligus."];
     header("Location: index.php");
     exit;
@@ -120,6 +129,7 @@ if (isset($_POST['add_bulk'])) {
             'text' => "$success_count berhasil ditambahkan. Ada error: " . implode('<br>', array_slice($errors, 0, 3))
         ];
     } else {
+        write_activity_log('CREATE', 'jenis_reward', "Bulk tambah $success_count jenis reward sekaligus");
         $_SESSION['message'] = [
             'type' => 'success',
             'text' => "Berhasil menambahkan $success_count reward sekaligus!"

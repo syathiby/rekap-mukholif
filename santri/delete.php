@@ -1,4 +1,4 @@
-﻿<?php
+<?php
 // Protokol Khusus Ruang Mesin
 if (session_status() === PHP_SESSION_NONE) { session_start(); }
 require_once __DIR__ . '/../bootstrap/init.php';
@@ -8,6 +8,14 @@ guard('santri_delete');
 $id = isset($_GET['id']) ? intval($_GET['id']) : 0;
 
 if ($id > 0) {
+    // Ambil nama santri sebelum dihapus
+    $stmt_check = mysqli_prepare($conn, "SELECT nama, kelas, kamar FROM santri WHERE id = ?");
+    mysqli_stmt_bind_param($stmt_check, "i", $id);
+    mysqli_stmt_execute($stmt_check);
+    $res_check = mysqli_stmt_get_result($stmt_check);
+    $santri_data = mysqli_fetch_assoc($res_check);
+    mysqli_stmt_close($stmt_check);
+
     // Memulai mode transaksi
     mysqli_begin_transaction($conn);
 
@@ -27,6 +35,17 @@ if ($id > 0) {
         if (mysqli_stmt_affected_rows($stmt2) > 0) {
             // Jika berhasil, commit transaksi (simpan permanen semua perubahan)
             mysqli_commit($conn);
+            
+            // Catat log hapus santri
+            if ($santri_data) {
+                write_activity_log('DELETE', 'santri', "Menghapus data santri: '" . htmlspecialchars($santri_data['nama']) . "' (Kelas: " . htmlspecialchars($santri_data['kelas']) . ", Kamar: " . htmlspecialchars($santri_data['kamar']) . ")", [
+                    'id' => $id,
+                    'nama' => $santri_data['nama'],
+                    'kelas' => $santri_data['kelas'],
+                    'kamar' => $santri_data['kamar']
+                ]);
+            }
+            
             $_SESSION['success_message'] = "Data santri dan semua riwayat pelanggarannya berhasil dihapus.";
         } else {
             // Jika santri dengan ID tsb tidak ditemukan

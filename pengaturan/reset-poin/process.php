@@ -68,6 +68,18 @@ if (isset($_POST['reset_satu_santri'])) {
         exit();
     }
 
+    // Ambil nama santri untuk dicatat di log
+    $santri_names = [];
+    if (!empty($id_santri_array)) {
+        $ids_str = implode(',', array_map('intval', $id_santri_array));
+        $q_s = $conn->query("SELECT nama FROM santri WHERE id IN ($ids_str)");
+        if ($q_s) {
+            while ($s_row = $q_s->fetch_assoc()) {
+                $santri_names[] = $s_row['nama'];
+            }
+        }
+    }
+
     mysqli_begin_transaction($conn);
     try {
         $processed_count = 0;
@@ -80,7 +92,15 @@ if (isset($_POST['reset_satu_santri'])) {
         }
         
         mysqli_commit($conn);
-        $_SESSION['message'] = ['type' => 'success', 'text' => "RESET BERHASIL! Sebanyak $processed_count santri telah direset poin dan riwayat pelanggaran non-permanennya."];
+        
+        // Catat log reset poin
+        write_activity_log('RESET_POIN', 'reset-poin', "Melakukan reset poin santri sebanyak " . count($santri_names) . " anak: " . implode(', ', $santri_names), [
+            'santri_ids' => $id_santri_array,
+            'santri_names' => $santri_names,
+            'keterangan' => $keterangan
+        ]);
+        
+        $_SESSION['message'] = ['type' => 'success', 'text' => "RESET BERHASIL! Sebanyak $processed_count santri telah direset poin and riwayat pelanggaran non-permanennya."];
     } catch (Exception $e) {
         mysqli_rollback($conn);
         $_SESSION['message'] = ['type' => 'danger', 'text' => 'RESET GAGAL! Terjadi kesalahan: ' . $e->getMessage()];
@@ -113,6 +133,13 @@ elseif (isset($_POST['reset_semua_poin'])) {
         }
 
         mysqli_commit($conn);
+        
+        // Catat log reset poin massal
+        write_activity_log('RESET_POIN', 'reset-poin', "Melakukan reset massal seluruh poin aktif santri ($processed_count santri)", [
+            'processed_count' => $processed_count,
+            'keterangan' => $keterangan
+        ]);
+
         $_SESSION['message'] = ['type' => 'success', 'text' => "RESET MASSAL BERHASIL! Sebanyak $processed_count data poin santri dan riwayat pelanggaran non-permanennya telah direset."];
 
     } catch (Exception $e) {

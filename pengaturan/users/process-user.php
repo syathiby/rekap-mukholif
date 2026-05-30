@@ -155,6 +155,13 @@ if ($is_edit_mode) {
     }
 
     if ($stmt_update->execute()) {
+        write_activity_log('UPDATE', 'users', "Mengubah profil/informasi user '" . htmlspecialchars($username) . "' (Role: " . htmlspecialchars($role) . ")", [
+            'id' => $user_id,
+            'nama_lengkap' => $nama_lengkap,
+            'username' => $username,
+            'role' => $role,
+            'password_changed' => !empty($password)
+        ]);
         $_SESSION['success_message'] = "✅ Data user '".htmlspecialchars($username)."' berhasil diperbarui!";
     } else {
         $_SESSION['error_message'] = "❌ Gagal memperbarui data user.";
@@ -168,6 +175,13 @@ if ($is_edit_mode) {
     $stmt_insert->bind_param("ssss", $nama_lengkap, $username, $hashedPassword, $role); 
 
     if ($stmt_insert->execute()){
+        $new_user_id = $conn->insert_id;
+        write_activity_log('CREATE', 'users', "Membuat user/staf baru: '" . htmlspecialchars($username) . "' (Role: " . htmlspecialchars($role) . ")", [
+            'id' => $new_user_id,
+            'nama_lengkap' => $nama_lengkap,
+            'username' => $username,
+            'role' => $role
+        ]);
         $_SESSION['success_message'] = "✅ User '".htmlspecialchars($username)."' berhasil dibuat!";
         $redirect_url = "form-user.php"; // Redirect ke form kosong setelah berhasil
     } else {

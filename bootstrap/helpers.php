@@ -98,16 +98,61 @@ function display_flash_message()
 
 /**
  * =================================================================
- * FUNGSI BANTUAN LAINNYA (Bisa ditambahkan di sini)
+ * FUNGSI BANTUAN LAINNYA
  * =================================================================
  */
 
-// Contoh fungsi helper lain di masa depan, misalnya untuk format tanggal:
-/*
-function format_tanggal_indonesia($date) {
-    // Logika untuk mengubah format tanggal
-    return $formatted_date;
-}
-*/
+/**
+ * Mencatat aktivitas pengguna ke dalam database.
+ *
+ * @param string $aksi      Jenis aksi (e.g., 'CREATE', 'UPDATE', 'DELETE', 'LOGIN', 'LOGOUT', 'RESET_POIN', 'RESTORE', 'BACKUP', 'UPDATE_PERMISSION', 'CHANGE_PERIODE')
+ * @param string $fitur     Kategori fitur/modul (e.g., 'santri', 'pelanggaran', 'reward', 'users', 'izin', 'periode-aktif', 'reset-poin', 'backup-restore', 'auth')
+ * @param string $deskripsi Keterangan aktivitas yang ramah pengguna
+ * @param mixed  $detail    Data tambahan (seperti array data lama vs baru) yang akan dikonversi ke JSON
+ */
+function write_activity_log($aksi, $fitur, $deskripsi, $detail = null)
+{
+    global $conn;
 
+    // Pastikan koneksi database tersedia
+    if (!isset($conn) || !($conn instanceof mysqli)) {
+        return false;
+    }
+
+    // Ambil data user dari session
+    $userId = isset($_SESSION['user_id']) ? (int)$_SESSION['user_id'] : null;
+    $username = isset($_SESSION['username']) ? $_SESSION['username'] : 'Sistem';
+    $namaLengkap = isset($_SESSION['nama_lengkap']) ? $_SESSION['nama_lengkap'] : 'Sistem Otomatis';
+
+    // Deteksi IP Address secara aman
+    $ipAddress = '0.0.0.0';
+    if (!empty($_SERVER['HTTP_CLIENT_IP'])) {
+        $ipAddress = $_SERVER['HTTP_CLIENT_IP'];
+    } elseif (!empty($_SERVER['HTTP_X_FORWARDED_FOR'])) {
+        $ipAddress = explode(',', $_SERVER['HTTP_X_FORWARDED_FOR'])[0];
+    } elseif (!empty($_SERVER['REMOTE_ADDR'])) {
+        $ipAddress = $_SERVER['REMOTE_ADDR'];
+    }
+    $ipAddress = trim($ipAddress);
+
+    // Deteksi User Agent
+    $userAgent = isset($_SERVER['HTTP_USER_AGENT']) ? $_SERVER['HTTP_USER_AGENT'] : 'Unknown';
+
+    // Format detail ke JSON jika ada
+    $detailJson = null;
+    if ($detail !== null) {
+        $detailJson = json_encode($detail, JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE);
+    }
+
+    // Insert ke database menggunakan prepared statement agar aman dari SQL Injection
+    $stmt = $conn->prepare("INSERT INTO log_aktifitas (user_id, username, nama_lengkap, aksi, fitur, deskripsi, detail, ip_address, user_agent) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)");
+    if ($stmt) {
+        $stmt->bind_param("issssssss", $userId, $username, $namaLengkap, $aksi, $fitur, $deskripsi, $detailJson, $ipAddress, $userAgent);
+        $result = $stmt->execute();
+        $stmt->close();
+        return $result;
+    }
+
+    return false;
+}
 ?>

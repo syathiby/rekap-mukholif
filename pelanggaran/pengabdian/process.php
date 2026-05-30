@@ -1,4 +1,4 @@
-﻿<?php
+<?php
 if (session_status() === PHP_SESSION_NONE) {
     session_start();
 }
@@ -90,6 +90,30 @@ if (isset($_POST['submit_pelanggaran'])) {
             $_SESSION['message'] = ['type' => 'danger', 'text' => "Terjadi kesalahan! Proses dibatalkan. Error: " . $error_message];
         } else {
             mysqli_commit($conn);
+
+            // Ambil nama santri untuk dicatat di log
+            $santri_names = [];
+            if (!empty($santri_ids)) {
+                $ids_str = implode(',', array_map('intval', $santri_ids));
+                $q_s = $conn->query("SELECT nama FROM santri WHERE id IN ($ids_str)");
+                if ($q_s) {
+                    while ($s_row = $q_s->fetch_assoc()) {
+                        $santri_names[] = $s_row['nama'];
+                    }
+                }
+            }
+
+            // Catat log input pelanggaran individu
+            write_activity_log('CREATE', 'pelanggaran', "Mencatat pelanggaran '" . htmlspecialchars($nama_pelanggaran) . "' (Poin: $poin_to_add) untuk " . count($santri_names) . " santri: " . implode(', ', $santri_names), [
+                'santri_ids' => $santri_ids,
+                'santri_names' => $santri_names,
+                'jenis_pelanggaran_id' => $jenis_pelanggaran_id,
+                'nama_pelanggaran' => $nama_pelanggaran,
+                'bagian' => 'Pengabdian',
+                'poin' => $poin_to_add,
+                'tanggal' => $tanggal
+            ]);
+
             $_SESSION['message'] = ['type' => 'success', 'text' => "Berhasil mencatat $success_count pelanggaran individu."];
         }
 
@@ -125,6 +149,11 @@ if (isset($_POST['submit_pelanggaran'])) {
         mysqli_stmt_close($stmt);
 
         if ($success_count > 0) {
+            write_activity_log('CREATE', 'pelanggaran', "Mencatat pelanggaran kebersihan untuk " . count($kamar_list) . " kamar: " . implode(', ', $kamar_list), [
+                'kamar_list' => $kamar_list,
+                'tanggal' => $tanggal,
+                'catatan' => $catatan_array
+            ]);
             $_SESSION['message'] = ['type' => 'success', 'text' => "Berhasil mencatat $success_count pelanggaran kebersihan kamar."];
         }
 

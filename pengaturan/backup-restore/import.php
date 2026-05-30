@@ -65,6 +65,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_FILES['sql_file'])) {
     $conn->query("SET FOREIGN_KEY_CHECKS=1");
     
     if ($success) {
+        // Catat log restore
+        write_activity_log('RESTORE', 'backup-restore', "Melakukan restore/pemulihan database dari file cadangan: '" . htmlspecialchars($_FILES['sql_file']['name']) . "'", [
+            'filename' => $_FILES['sql_file']['name'],
+            'filesize' => $_FILES['sql_file']['size']
+        ]);
         set_flash_message('Restore database berhasil dilakukan! Seluruh data telah diperbarui.', 'success');
     } else {
         set_flash_message('Terjadi error saat restore: ' . $error_msg, 'danger');

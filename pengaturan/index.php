@@ -3,7 +3,7 @@
 require_once __DIR__ . '/../bootstrap/init.php';
 
 // 2. Jalankan 'SATPAM' buat ngejaga halaman
-guard(['user_manage', 'reset_poin_manage', 'periode_aktif_manage', 'izin_manage', 'history_manage', 'backup_restore_manage']); 
+guard(['user_manage', 'reset_poin_manage', 'periode_aktif_manage', 'izin_manage', 'history_manage', 'backup_restore_manage', 'activity_log_manage']); 
 
 // 3. Kalau lolos, baru panggil Tampilan
 require_once __DIR__ . '/../layouts/header.php'; 
@@ -74,6 +74,10 @@ require_once __DIR__ . '/../layouts/header.php';
     .card-backup::before { background: linear-gradient(90deg, #3b82f6, #93c5fd); }
     .card-backup:hover { border-color: #3b82f6; }
     .card-backup .icon-box { background: rgba(59, 130, 246, 0.08); color: #2563eb; }
+
+    .card-log-aktifitas::before { background: #6366f1; }
+    .card-log-aktifitas:hover { border-color: #6366f1; }
+    .card-log-aktifitas .icon-box { background: rgba(99, 102, 241, 0.1); color: #4f46e5; }
 
     .icon-box {
         width: 52px;
@@ -195,6 +199,22 @@ require_once __DIR__ . '/../layouts/header.php';
                 <p class="card-desc">Lihat log dan kelola riwayat pelanggaran santri. Batalkan pelanggaran jika terjadi kesalahan input.</p>
                 <a href="history/index.php" class="settings-link">
                     Lihat Riwayat <i class="fas fa-arrow-right text-xs"></i>
+                </a>
+            </div>
+        </div>
+        <?php endif; ?>
+
+        <!-- KARTU: Log Aktivitas -->
+        <?php if (has_permission('activity_log_manage')): 
+            $log_folder = is_dir(__DIR__ . '/log_aktifitas') ? 'log_aktifitas' : 'log-aktifitas';
+        ?>
+        <div class="col-xl-4 col-md-6">
+            <div class="settings-card card-log-aktifitas">
+                <div class="icon-box"><i class="fas fa-file-signature"></i></div>
+                <h5 class="card-title">Log Aktivitas</h5>
+                <p class="card-desc">Audit jejak aktivitas krusial, perubahan sistem, perizinan, dan CRUD yang dilakukan pengguna.</p>
+                <a href="<?= $log_folder ?>/index.php" class="settings-link">
+                    Lihat Log <i class="fas fa-arrow-right text-xs"></i>
                 </a>
             </div>
         </div>

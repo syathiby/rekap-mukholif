@@ -52,10 +52,14 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
     
     $_SESSION['bulk_upload_result'] = [
         'success' => $success_count,
-        'error' => $error_count,
-        'errors' => $errors
+        'error'   => $error_count,
+        'errors'  => $errors
     ];
-    
+
+    if ($success_count > 0) {
+        write_activity_log('CREATE', 'santri', "Bulk import $success_count santri baru sekaligus (error: $error_count)");
+    }
+
     header("Location: index.php");
     exit;
 }

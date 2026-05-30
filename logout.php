@@ -18,6 +18,11 @@ if (session_status() === PHP_SESSION_NONE) {
     session_start();
 }
 
+// Catat log logout
+if (isset($_SESSION['username'])) {
+    write_activity_log('LOGOUT', 'auth', "User '" . $_SESSION['username'] . "' melakukan logout dari sistem");
+}
+
 // ── 1. Hancurkan session server-side ──────────────────────────────────────
 $_SESSION = [];
 
@@ -46,19 +51,13 @@ header("Expires: Sat, 26 Jul 1997 05:00:00 GMT");
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
     <title>Keluar — AsuhTrack</title>
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
     <style>
         *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
         body {
-            font-family: 'Poppins', sans-serif;
-            background: #0f172a;
-            /* Gradien gelap dengan aksen hijau emerald yang elegan */
-            background-image: 
-                radial-gradient(circle at 10% 20%, rgba(22, 163, 74, 0.05) 0%, transparent 40%),
-                radial-gradient(circle at 90% 80%, rgba(15, 23, 42, 0.2) 0%, transparent 40%);
-            color: #f1f5f9;
+            font-family: 'Inter', sans-serif;
+            background: #0d1117;
+            color: #e6edf3;
             min-height: 100vh;
             display: flex;
             align-items: center;
@@ -66,16 +65,14 @@ header("Expires: Sat, 26 Jul 1997 05:00:00 GMT");
             padding: 16px;
         }
         .logout-card {
-            background: rgba(30, 41, 59, 0.7);
-            border: 1px solid rgba(255, 255, 255, 0.08);
-            backdrop-filter: blur(16px);
-            -webkit-backdrop-filter: blur(16px);
-            border-radius: 24px;
+            background: #161b22;
+            border: 1px solid rgba(255,255,255,0.07);
+            border-radius: 20px;
             padding: 40px 32px;
-            max-width: 380px;
+            max-width: 360px;
             width: 100%;
             text-align: center;
-            box-shadow: 0 20px 50px rgba(0, 0, 0, 0.3);
+            box-shadow: 0 20px 60px rgba(0,0,0,0.5);
         }
         .spinner-wrap {
             width: 64px; height: 64px;
@@ -85,8 +82,8 @@ header("Expires: Sat, 26 Jul 1997 05:00:00 GMT");
         .spinner {
             width: 100%; height: 100%;
             border-radius: 50%;
-            border: 3px solid rgba(22, 163, 74, 0.12);
-            border-top-color: #22c55e;
+            border: 3px solid rgba(37,99,235,0.12);
+            border-top-color: #2563eb;
             animation: spin 0.9s linear infinite;
         }
         .spinner-icon {
@@ -99,12 +96,12 @@ header("Expires: Sat, 26 Jul 1997 05:00:00 GMT");
         }
         @keyframes spin { to { transform: rotate(360deg); } }
 
-        h2 { font-size: 1.25rem; font-weight: 700; margin-bottom: 8px; color: #f8fafc; }
-        p  { font-size: 0.85rem; color: #94a3b8; line-height: 1.6; }
+        h2 { font-size: 1.1rem; font-weight: 700; margin-bottom: 8px; color: #e6edf3; }
+        p  { font-size: 0.82rem; color: #8b949e; line-height: 1.6; }
 
         .step-list {
             list-style: none;
-            margin: 24px 0 0;
+            margin: 20px 0 0;
             text-align: left;
             display: flex;
             flex-direction: column;
@@ -113,31 +110,28 @@ header("Expires: Sat, 26 Jul 1997 05:00:00 GMT");
         .step-list li {
             display: flex;
             align-items: center;
-            gap: 12px;
-            font-size: 0.8rem;
-            color: #94a3b8;
-            padding: 10px 14px;
-            border-radius: 12px;
-            background: rgba(255, 255, 255, 0.02);
-            border: 1px solid rgba(255, 255, 255, 0.03);
+            gap: 10px;
+            font-size: 0.78rem;
+            color: #8b949e;
+            padding: 8px 12px;
+            border-radius: 8px;
+            background: rgba(255,255,255,0.03);
             transition: all 0.3s ease;
         }
         .step-list li.done {
-            color: #22c55e;
-            background: rgba(34, 197, 94, 0.06);
-            border-color: rgba(34, 197, 94, 0.12);
+            color: #3fb950;
+            background: rgba(63,185,80,0.08);
         }
-        .step-list li.done .step-dot { background: #22c55e; }
+        .step-list li.done .step-dot { background: #3fb950; }
         .step-list li.active {
-            color: #38bdf8;
-            background: rgba(56, 189, 248, 0.06);
-            border-color: rgba(56, 189, 248, 0.12);
+            color: #60a5fa;
+            background: rgba(96,165,250,0.08);
         }
-        .step-list li.active .step-dot { background: #38bdf8; animation: pulse 1s infinite; }
+        .step-list li.active .step-dot { background: #60a5fa; animation: pulse 1s infinite; }
         .step-dot {
             width: 8px; height: 8px;
             border-radius: 50%;
-            background: rgba(255, 255, 255, 0.15);
+            background: rgba(255,255,255,0.15);
             flex-shrink: 0;
             transition: background 0.3s;
         }
@@ -192,6 +186,7 @@ async function zeroTrashLogout() {
 
     // STEP 1: Semua storage (localStorage, sessionStorage)
     try {
+        // Hapus setiap key secara individual juga (double-clean)
         if (window.localStorage) {
             const lKeys = Object.keys(localStorage);
             lKeys.forEach(k => localStorage.removeItem(k));
@@ -219,6 +214,7 @@ async function zeroTrashLogout() {
     try {
         if ('serviceWorker' in navigator) {
             const registrations = await navigator.serviceWorker.getRegistrations();
+            // Kirim pesan clear ke SW yang aktif sebelum unregister
             for (const reg of registrations) {
                 if (reg.active) {
                     reg.active.postMessage({ type: 'CLEAR_ALL_CACHES' });
@@ -238,6 +234,7 @@ async function zeroTrashLogout() {
             const eqPos = cookie.indexOf('=');
             const name = eqPos > -1 ? cookie.substr(0, eqPos).trim() : cookie.trim();
             if (!name) continue;
+            // Hapus di berbagai kemungkinan path & domain
             const expiry = 'expires=Thu, 01 Jan 1970 00:00:00 GMT';
             document.cookie = `${name}=; ${expiry}; path=/`;
             document.cookie = `${name}=; ${expiry}; path=/admin/`;

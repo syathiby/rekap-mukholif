@@ -47,6 +47,19 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
     $permissionIds = $_POST['permissions'] ?? [];
 
+    // Ambil nama izin yang dicentang buat dicatat di log
+    $assigned_perm_names = [];
+    if (!empty($permissionIds)) {
+        $ids_str = implode(',', array_map('intval', $permissionIds));
+        // Kueri nama izin dari database
+        $q_perm = $conn->query("SELECT nama_izin FROM permissions WHERE id IN ($ids_str)");
+        if ($q_perm) {
+            while ($p_row = $q_perm->fetch_assoc()) {
+                $assigned_perm_names[] = $p_row['nama_izin'];
+            }
+        }
+    }
+
     // Gunakan transaksi biar aman!
     $conn->begin_transaction();
     try {
@@ -69,6 +82,14 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
         // Jika semua proses di atas lancar, kunci perubahannya!
         $conn->commit();
+        
+        // Catat log perubahan izin
+        write_activity_log('UPDATE_PERMISSION', 'izin', "Memperbarui izin akses untuk user '" . htmlspecialchars($userName) . "'", [
+            'target_user_id' => $userId,
+            'target_username' => $userName,
+            'permissions_assigned' => $assigned_perm_names
+        ]);
+
         // ✅ UBAH NOTIFIKASI: Sebutin nama user-nya
         $_SESSION['success_message'] = "✅ Tiket untuk user '" . htmlspecialchars($userName) . "' berhasil diperbarui!";
 

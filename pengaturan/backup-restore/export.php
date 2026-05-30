@@ -28,6 +28,12 @@ while ($row = $result->fetch_row()) {
 $is_gz = ($format === 'gz');
 $filename = 'backup_asuhtrack_' . date('Y_m_d_His') . '.sql' . ($is_gz ? '.gz' : '');
 
+// Catat log backup database
+write_activity_log('BACKUP', 'backup-restore', "Mengekspor cadangan database: '$filename'", [
+    'filename' => $filename,
+    'format' => $format
+]);
+
 // Persiapan File Handler
 if ($is_gz) {
     // Untuk GZIP, kita gunakan temporary file di server agar memory safe

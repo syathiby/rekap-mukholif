@@ -198,6 +198,7 @@ $style_v    = time(); // selalu fresh
                                 elseif (strpos($req_path, '/rekap') === 0) $page_title = 'Rekap Pelanggaran';
                                 elseif (strpos($req_path, '/rapot') === 0) $page_title = 'Rapot Kepengasuhan';
                                 elseif (strpos($req_path, '/export') === 0) $page_title = 'Export Data';
+                                elseif (strpos($req_path, '/pengaturan/log-aktifitas') === 0 || strpos($req_path, '/pengaturan/log_aktifitas') === 0) $page_title = 'Log Aktivitas';
                                 elseif (strpos($req_path, '/pengaturan') === 0) $page_title = 'Pengaturan';
                                 echo $page_title;
                                 ?>
