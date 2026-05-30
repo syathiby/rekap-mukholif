@@ -80,23 +80,161 @@ try {
     die("Error fetching rapot list: ". $e->getMessage());
 }
 
+// 4.5. HANDLE AJAX REQUEST
+if (isset($_GET['ajax']) && $_GET['ajax'] == '1') {
+    ob_start();
+    ?>
+    <?php if ($total_data == 0): ?>
+        <tr><td colspan="7" class="text-center py-4">
+            <?php echo (!empty($filter_kamar) || !empty($filter_bulan) || !empty($filter_tahun)) ? 'Data rapot tidak ditemukan dengan filter yang dipilih.' : 'Belum ada data rapot yang dibuat.'; ?>
+        </td></tr>
+    <?php else: ?>
+        <?php foreach ($rapot_list as $index => $rapot): ?>
+            <tr>
+                <td class="text-center align-middle">
+                    <?php
+                    $nama_santri_clean = preg_replace("/[^a-zA-Z0-9 ]/", "", $rapot['nama_santri'] ?? 'Santri');
+                    $filename_base = "Rapot {$nama_santri_clean} - {$rapot['bulan']} {$rapot['tahun']}";
+                    ?>
+                    <input type="checkbox" class="row-checkbox form-check-input border-secondary" 
+                           value="<?php echo $rapot['id']; ?>"
+                           data-filename="<?php echo htmlspecialchars($filename_base); ?>">
+                </td>
+                <td class="align-middle text-center"><?php echo $index + 1; ?></td>
+                <td class="align-middle fw-bold text-dark"><?php echo htmlspecialchars($rapot['nama_santri'] ?? 'Santri Dihapus'); ?></td>
+                <td class="align-middle text-center"><?php echo htmlspecialchars($rapot['kamar_santri'] ?? 'N/A'); ?></td>
+                <td class="align-middle"><?php echo htmlspecialchars($rapot['bulan']) . ' ' . $rapot['tahun']; ?></td>
+                <td class="align-middle d-none d-md-table-cell"><?php echo htmlspecialchars($rapot['nama_musyrif'] ?? 'User Dihapus'); ?></td>
+                <td class="text-nowrap text-center align-middle">
+                    <div class="dropdown">
+                        <button class="btn btn-sm btn-secondary dropdown-toggle" type="button" id="aksiDropdown-<?php echo $rapot['id']; ?>" data-bs-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
+                            <i class="fas fa-cog"></i>
+                        </button>
+                        <div class="dropdown-menu dropdown-menu-right shadow animated--fade-in" aria-labelledby="aksiDropdown-<?php echo $rapot['id']; ?>">
+                            <?php if ($can_view): ?>
+                                <a class="dropdown-item" href="view.php?id=<?php echo $rapot['id']; ?>" target="_blank" data-bs-toggle="tooltip" title="Lihat Rapot di Halaman Web">
+                                    <i class="fas fa-eye fa-sm fa-fw me-2 text-gray-400"></i> View Rapot
+                                </a>
+                            <?php endif; ?>
+                            <?php if ($can_cetak): ?>
+                                <a class="dropdown-item" href="generate_pdf.php?id=<?php echo $rapot['id']; ?>" target="_blank" data-bs-toggle="tooltip" title="Unduh PDF">
+                                    <i class="fas fa-file-pdf fa-sm fa-fw me-2 text-gray-400"></i> Unduh PDF
+                                </a>
+                                <a class="dropdown-item" href="generate_png.php?id=<?php echo $rapot['id']; ?>" target="_blank" data-bs-toggle="tooltip" title="Unduh PNG (Maks 2MB)">
+                                    <i class="fas fa-file-image fa-sm fa-fw me-2 text-gray-400"></i> Unduh PNG
+                                </a>
+                            <?php endif; ?>
+                            <?php if ($can_create): ?>
+                                <a class="dropdown-item" href="create.php?duplicate_id=<?php echo $rapot['id']; ?>&kamar=<?php echo urlencode($filter_kamar); ?>" data-bs-toggle="tooltip" title="Duplikat rapot ini ke bulan baru">
+                                    <i class="fas fa-copy fa-sm fa-fw me-2 text-gray-400"></i> Duplikat
+                                </a>
+                            <?php endif; ?>
+                            <?php if ($can_delete): ?>
+                                <div class="dropdown-divider"></div>
+                                <a class="dropdown-item single-delete-btn" href="javascript:void(0);"
+                                   data-id="<?php echo $rapot['id']; ?>"
+                                   style="color: #e74a3b;" data-bs-toggle="tooltip" title="Hapus Rapot Ini">
+                                    <i class="fas fa-trash fa-sm fa-fw me-2 text-gray-400"></i> Hapus
+                                </a>
+                            <?php endif; ?>
+                        </div>
+                    </div>
+                </td>
+            </tr>
+        <?php endforeach; ?>
+    <?php endif; ?>
+    <?php
+    $html = ob_get_clean();
+    header('Content-Type: application/json');
+    echo json_encode([
+        'html' => $html,
+        'total' => $total_data
+    ]);
+    exit;
+}
+
 // 5. Panggil Header
 $page_title = "Daftar Rapot Kepengasuhan";
 require_once __DIR__ . '/../layouts/header.php';
 ?>
 
-<div class="container-fluid">
+<style>
+    :root {
+        --primary: #4f46e5;      /* Indigo 600 */
+        --primary-hover: #4338ca; /* Indigo 700 */
+        --bg-body: #f8fafc;       /* Slate 50 */
+        --bg-card: #ffffff;
+        --text-main: #0f172a;     /* Slate 900 */
+        --text-muted: #64748b;    /* Slate 500 */
+        --border: #e2e8f0;        /* Slate 200 */
+    }
+    
+    .page-title-card {
+        background: var(--bg-card);
+        color: var(--text-main);
+        border-radius: 1rem;
+        box-shadow: 0 1px 3px 0 rgb(0 0 0 / 0.1), 0 1px 2px -1px rgb(0 0 0 / 0.1);
+        border: 1px solid var(--border);
+    }
+    .filter-card {
+        background-color: var(--bg-card);
+        border-radius: 1rem;
+        box-shadow: 0 1px 3px 0 rgb(0 0 0 / 0.1), 0 1px 2px -1px rgb(0 0 0 / 0.1);
+        border: 1px solid var(--border);
+    }
+    .table-container {
+        background-color: var(--bg-card);
+        border-radius: 1rem;
+        box-shadow: 0 1px 3px 0 rgb(0 0 0 / 0.1), 0 1px 2px -1px rgb(0 0 0 / 0.1);
+        border: 1px solid var(--border);
+        overflow: hidden;
+    }
+    .table thead {
+        background-color: #f1f5f9; /* Slate 100 */
+        color: var(--text-muted);
+        font-weight: 600;
+        text-transform: uppercase;
+        font-size: 0.8rem;
+        letter-spacing: 0.05em;
+    }
+    .table th {
+        border-bottom-width: 1px;
+    }
+    .card-action-bulk {
+        padding: 1rem;
+        background-color: var(--bg-card);
+        border-radius: 1rem;
+        border: 1px solid var(--border);
+        box-shadow: 0 1px 3px 0 rgb(0 0 0 / 0.1);
+    }
+    @media (max-width: 768px) {
+        .page-title-card h2 { font-size: 1.25rem; }
+        .filter-buttons {
+            display: grid;
+            grid-template-columns: 1fr auto;
+            gap: 0.5rem;
+        }
+    }
+</style>
 
-    <div class="d-flex align-items-center justify-content-between mb-4">
-        <h1 class="h3 mb-0 text-gray-800"><?php echo htmlspecialchars($page_title); ?></h1>
-        
+<div class="container-fluid py-4 px-4">
+
+    <!-- Header Page -->
+    <div class="d-flex flex-column flex-md-row justify-content-between align-items-md-center mb-4 gap-3">
+        <div>
+            <h3 class="fw-bolder text-dark mb-1">
+                <i class="fas fa-file-alt text-primary me-2"></i>Daftar Rapot Kepengasuhan
+                <button type="button" class="btn btn-sm btn-link text-info p-0 ms-2" data-bs-toggle="modal" data-bs-target="#guideModal" title="Buku Panduan">
+                    <i class="fas fa-info-circle fs-5"></i>
+                </button>
+            </h3>
+            <p class="text-muted mb-0">Kelola dan cetak rapot kepengasuhan santri</p>
+        </div>
         <div class="d-flex align-items-center">
-            <?php if ($can_create): ?>
-                <a href="create.php?kamar=<?php echo urlencode($filter_kamar); ?>" class="btn btn-primary shadow-sm">
-                    <i class="fas fa-plus fa-sm text-white-50"></i>
-                    <span class="ms-1">CREATE</span>
-                </a>
-            <?php endif; ?>
+            <span class="badge bg-white border text-dark fs-6 px-3 py-2 rounded-pill shadow-sm">
+                <i class="fas fa-database me-1 text-primary"></i>
+                Total Data: <strong class="ms-1 total-data-display"><?php echo number_format($total_data); ?></strong>
+            </span>
         </div>
     </div>
     
@@ -133,100 +271,87 @@ require_once __DIR__ . '/../layouts/header.php';
         unset($_SESSION['flash_message']);
     }
     ?>
-
-    <div class="alert alert-info shadow-sm" role="alert">
-        <h5 class="alert-heading" style="font-size: 1.1rem;"><i class="fas fa-book-reader me-2"></i>Panduan Cepat!</h5>
-        <p class="mb-2">Baru pertama kali ke halaman ini?</p>
-        <p>Disarankan <strong>Baca panduan terlebih dahulu</strong> untuk mengerti cara kerja filter, checkbox pintar, dan tombol aksi massal.</p>
-        <button type="button" class="btn btn-sm btn-info" data-bs-toggle="modal" data-bs-target="#guideModal">
-            <i class="fas fa-book-open me-1"></i> Buka Buku Panduan
-        </button>
-    </div>
     
-    <div class="pro-card mb-4">
-        <a href="#collapseFilter" class="d-block card-header bg-transparent border-0 py-3 text-decoration-none" data-bs-toggle="collapse" role="button" aria-expanded="true" aria-controls="collapseFilter">
-            <h6 class="m-0 font-weight-bold text-primary"><i class="fas fa-filter me-2"></i> Filter Data Rapot</h6>
-        </a>
-        <div class="collapse show" id="collapseFilter">
-            <div class="card-body pt-0">
-                <form action="index.php" method="GET" class="row g-3 align-items-end">
-                    <div class="col-md-3">
-                        <label for="kamar" class="form-label">Kamar:</label>
-                        <select name="kamar" id="kamar" class="form-select">
-                            <option value="">Semua Kamar</option>
-                            <?php foreach ($kamar_list as $kamar): ?>
-                                <option value="<?php echo htmlspecialchars($kamar['kamar']); ?>" <?php echo ($filter_kamar == $kamar['kamar']) ? 'selected' : ''; ?>>
-                                    <?php echo htmlspecialchars($kamar['kamar']); ?>
-                                </option>
-                            <?php endforeach; ?>
-                        </select>
-                    </div>
-                    <div class="col-md-3">
-                        <label for="bulan" class="form-label">Bulan:</label>
-                        <select name="bulan" id="bulan" class="form-select">
-                            <option value="">Semua Bulan</option>
-                            <?php foreach ($bulan_list as $bulan): ?>
-                                <option value="<?php echo $bulan; ?>" <?php echo ($filter_bulan == $bulan) ? 'selected' : ''; ?>>
-                                    <?php echo $bulan; ?>
-                                </option>
-                            <?php endforeach; ?>
-                        </select>
-                    </div>
-                    <div class="col-md-3">
-                        <label for="tahun" class="form-label">Tahun:</label>
-                        <select name="tahun" id="tahun" class="form-select">
-                            <option value="">Semua Tahun</option>
-                            <?php foreach ($tahun_list as $tahun): ?>
-                                <option value="<?php echo $tahun; ?>" <?php echo ($filter_tahun == $tahun) ? 'selected' : ''; ?>>
-                                    <?php echo $tahun; ?>
-                                </option>
-                            <?php endforeach; ?>
-                        </select>
-                    </div>
-                    <div class="col-md-3 d-flex">
-                        <a href="index.php?reset=1" id="resetFilterBtn" class="btn btn-outline-secondary w-100"><i class="fas fa-sync"></i> Reset</a>
-                    </div>
-                </form>
+    <div class="filter-card p-3 p-md-4 mb-4">
+        <form action="index.php" method="GET" class="row g-3 align-items-end">
+            <div class="col-12 col-md-3">
+                <label class="form-label text-muted small fw-bold mb-1">Filter Kamar</label>
+                <select name="kamar" id="kamar" class="form-select">
+                    <option value="">Semua Kamar</option>
+                    <?php foreach ($kamar_list as $kamar): ?>
+                        <option value="<?php echo htmlspecialchars($kamar['kamar']); ?>" <?php echo ($filter_kamar == $kamar['kamar']) ? 'selected' : ''; ?>>
+                            <?php echo htmlspecialchars($kamar['kamar']); ?>
+                        </option>
+                    <?php endforeach; ?>
+                </select>
             </div>
-        </div>
+            <div class="col-12 col-md-3">
+                <label class="form-label text-muted small fw-bold mb-1">Filter Bulan</label>
+                <select name="bulan" id="bulan" class="form-select">
+                    <option value="">Semua Bulan</option>
+                    <?php foreach ($bulan_list as $bulan): ?>
+                        <option value="<?php echo $bulan; ?>" <?php echo ($filter_bulan == $bulan) ? 'selected' : ''; ?>>
+                            <?php echo $bulan; ?>
+                        </option>
+                    <?php endforeach; ?>
+                </select>
+            </div>
+            <div class="col-12 col-md-3">
+                <label class="form-label text-muted small fw-bold mb-1">Filter Tahun</label>
+                <select name="tahun" id="tahun" class="form-select">
+                    <option value="">Semua Tahun</option>
+                    <?php foreach ($tahun_list as $tahun): ?>
+                        <option value="<?php echo $tahun; ?>" <?php echo ($filter_tahun == $tahun) ? 'selected' : ''; ?>>
+                            <?php echo $tahun; ?>
+                        </option>
+                    <?php endforeach; ?>
+                </select>
+            </div>
+            <div class="col-12 col-md-3">
+                <a href="index.php?reset=1" id="resetFilterBtn" class="btn btn-light border w-100 text-secondary fw-medium" title="Reset Filter"><i class="fas fa-sync-alt me-1"></i> Reset</a>
+            </div>
+        </form>
     </div>
 
     <form method="POST" action="" id="bulkActionForm">
         
-        <div class="pro-card mb-3 p-3">
-            <div class="d-flex flex-wrap justify-content-between align-items-center gap-2">
-                    <div class="d-flex align-items-center gap-2">
-                        <div class="btn-group" role="group">
-                            <?php if ($can_cetak): ?>
-                                <button type="button" id="bulk-download-pdf-btn" class="btn btn-primary btn-sm shadow-sm" disabled>
-                                    <i class="fas fa-file-pdf me-1"></i> PDF (ZIP)
-                                </button>
-                                <button type="button" id="bulk-download-png-btn" class="btn btn-success btn-sm shadow-sm" disabled>
-                                    <i class="fas fa-file-image me-1"></i> PNG (ZIP)
-                                </button>
-                            <?php endif; ?>
-                            <?php if ($can_delete): ?>
-                                <button type="button" id="bulk-delete-btn" class="btn btn-danger btn-sm shadow-sm" disabled>
-                                    <i class="fas fa-trash me-1"></i> Hapus
-                                </button>
-                            <?php endif; ?>
-                        </div>
-                        <div id="selected-count-info" class="ms-2 d-none">
-                            <span class="badge bg-secondary">0 data terpilih</span>
-                        </div>
-                    </div>
+        <div class="card shadow-sm mb-3 card-action-bulk">
+            <div class="row g-3 align-items-center">
+                <!-- Group Kiri: Create -->
+                <div class="col-12 col-lg-auto d-flex gap-2 flex-grow-1">
+                    <?php if ($can_create): ?>
+                        <a href="create.php?kamar=<?php echo urlencode($filter_kamar); ?>" class="btn btn-success flex-grow-1 flex-md-grow-0 fw-medium">
+                            <i class="fas fa-plus-circle me-1"></i> Buat Rapot Baru
+                        </a>
+                    <?php endif; ?>
+                </div>
 
-                    <div class="text-muted">
-                        Total Data: <strong><?= $total_data; ?></strong>
+                <!-- Group Kanan: Bulk Action -->
+                <div class="col-12 col-lg-auto d-flex gap-2 justify-content-lg-end align-items-center flex-wrap">
+                    <div id="selected-count-info" class="d-none w-100 w-sm-auto text-center text-sm-start mb-2 mb-sm-0">
+                        <span class="badge bg-secondary px-3 py-2 rounded-pill shadow-sm" style="font-size:0.85rem;">0 data terpilih</span>
                     </div>
+                    <?php if ($can_cetak): ?>
+                        <button type="button" id="bulk-download-pdf-btn" class="btn btn-primary flex-grow-1 flex-sm-grow-0 fw-medium shadow-sm" disabled>
+                            <i class="fas fa-file-pdf me-1"></i> PDF (ZIP)
+                        </button>
+                        <button type="button" id="bulk-download-png-btn" class="btn btn-info text-white flex-grow-1 flex-sm-grow-0 fw-medium shadow-sm" disabled>
+                            <i class="fas fa-file-image me-1"></i> PNG (ZIP)
+                        </button>
+                    <?php endif; ?>
+                    <?php if ($can_delete): ?>
+                        <button type="button" id="bulk-delete-btn" class="btn btn-danger flex-grow-1 flex-sm-grow-0 fw-medium shadow-sm" disabled>
+                            <i class="fas fa-trash-alt me-1"></i> Hapus
+                        </button>
+                    <?php endif; ?>
                 </div>
             </div>
         </div>
 
-        <div class="pro-card mb-4 p-0 overflow-hidden">
-            <div class="table-responsive">
+        <div class="table-container mb-4 p-0">
+            <div class="table-responsive" style="min-height: 300px;">
                 <table class="table table-hover align-middle mb-0" id="dataTable" width="100%" cellspacing="0">
-                    <thead class="bg-light text-secondary border-bottom" style="font-size: 0.85rem; text-transform: uppercase; letter-spacing: 0.5px;">
+                    <thead>
                         <tr>
                             <th width="1%" class="text-center align-middle py-3">
                                 <input type="checkbox" id="selectAll" class="form-check-input border-secondary">
@@ -257,7 +382,7 @@ require_once __DIR__ . '/../layouts/header.php';
                                                    data-filename="<?php echo htmlspecialchars($filename_base); ?>">
                                         </td>
                                         <td class="align-middle text-center"><?php echo $index + 1; ?></td>
-                                        <td class="align-middle"><?php echo htmlspecialchars($rapot['nama_santri'] ?? 'Santri Dihapus'); ?></td>
+                                        <td class="align-middle fw-bold text-dark"><?php echo htmlspecialchars($rapot['nama_santri'] ?? 'Santri Dihapus'); ?></td>
                                         <td class="align-middle text-center"><?php echo htmlspecialchars($rapot['kamar_santri'] ?? 'N/A'); ?></td>
                                         <td class="align-middle"><?php echo htmlspecialchars($rapot['bulan']) . ' ' . $rapot['tahun']; ?></td>
                                         <td class="align-middle d-none d-md-table-cell"><?php echo htmlspecialchars($rapot['nama_musyrif'] ?? 'User Dihapus'); ?></td>
@@ -316,47 +441,44 @@ require_once __DIR__ . '/../layouts/header.php';
 
 <div class="modal fade" id="guideModal" tabindex="-1" aria-labelledby="guideModalLabel" aria-hidden="true">
   <div class="modal-dialog modal-dialog-centered modal-dialog-scrollable">
-    <div class="modal-content">
-      <div class="modal-header bg-info text-white">
-        <h5 class="modal-title" id="guideModalLabel"><i class="fas fa-book-open me-2"></i>Buku Panduan - Halaman Rapot</h5>
-        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+    <div class="modal-content border-0 shadow-lg" style="border-radius: 1rem;">
+      <div class="modal-header border-bottom-0 pb-0 mt-2 mx-2">
+        <h5 class="modal-title fw-bolder text-dark" id="guideModalLabel">
+            <i class="fas fa-book-open text-primary me-2"></i>Panduan Halaman
+        </h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
       </div>
-      <div class="modal-body">
-        <p>Halaman ini adalah pusat untuk mengelola semua rapot kepengasuhan.</p>
+      <div class="modal-body pt-3 px-4 pb-4 text-muted">
+        <p class="mb-4 small">Halaman ini adalah pusat pengelolaan rapot kepengasuhan.</p>
         
-        <h6><i class="fas fa-filter me-1"></i> 1. Filter Data</h6>
-        <ul class="mb-3">
-          <li>Gunakan dropdown <strong>Kamar</strong>, <strong>Bulan</strong>, atau <strong>Tahun</strong> untuk menyaring data.</li>
-          <li>Filter akan otomatis berjalan saat Anda memilih.</li>
-          <li>Klik <strong>Reset</strong> untuk membersihkan filter dan semua centang yang tersimpan.</li>
+        <h6 class="text-dark fw-bold mb-2"><i class="fas fa-filter text-primary me-2"></i>1. Filter Data</h6>
+        <ul class="mb-4 small" style="padding-left: 1.25rem;">
+          <li class="mb-1">Gunakan dropdown <strong>Kamar</strong>, <strong>Bulan</strong>, atau <strong>Tahun</strong> untuk menyaring.</li>
+          <li class="mb-1">Tabel akan termuat ulang secara <strong>otomatis</strong>.</li>
+          <li>Klik tombol <strong>Reset</strong> untuk menghapus filter dan centang tersimpan.</li>
         </ul>
 
-        <div class="alert alert-warning small">
-            <i class="fas fa-exclamation-triangle me-2"></i>
-            <strong>Sangat Disarankan:</strong> Atur filter (terutama <strong>Kamar</strong>) sebelum klik "CREATE". Filter ini "kokoh" dan akan menentukan santri siapa saja yang muncul di halaman pembuatan rapot.
+        <div class="bg-light border-start border-4 border-warning rounded p-3 mb-4 small text-dark shadow-sm">
+            <i class="fas fa-exclamation-circle text-warning me-1"></i>
+            <strong>Sangat Disarankan:</strong> Atur filter <strong>Kamar</strong> terlebih dahulu sebelum menekan "Buat Rapot Baru" agar daftar santri yang termuat sesuai kelas/kamar.
         </div>
 
-        <h6><i class="fas fa-tasks me-1"></i> 2. Aksi Massal (Bulk Action)</h6>
-        <p>Anda bisa memilih banyak rapot sekaligus untuk melakukan aksi cepat:</p>
-        <ul class="mb-3">
-          <li>Centang data yang Anda inginkan. Centang di header tabel akan memilih semua data yang <strong>terlihat di halaman ini</strong>.</li>
-          <li><strong>Centang Anda DISIMPAN:</strong> Walaupun Anda berganti filter, centang Anda tidak akan hilang (tersimpan di browser).</li>
-          <li><strong>Tombol Aksi:</strong> Tombol "PDF (ZIP)", "PNG (ZIP)", dan "Hapus" hanya akan aktif jika ada minimal 1 data terpilih.</li>
-          <li><strong>PDF (ZIP):</strong> Mengunduh semua rapot terpilih sebagai file PDF dalam satu file ZIP.</li>
-          <li><strong>PNG (ZIP):</strong> Mengunduh semua rapot terpilih sebagai gambar PNG dalam satu file ZIP. (Proses ini butuh waktu).</li>
+        <h6 class="text-dark fw-bold mb-2"><i class="fas fa-tasks text-primary me-2"></i>2. Aksi Massal (Bulk Action)</h6>
+        <ul class="mb-4 small" style="padding-left: 1.25rem;">
+          <li class="mb-1">Centang kotak pada tabel untuk memilih rapot.</li>
+          <li class="mb-1"><strong>Centang Disimpan:</strong> Saat filter diubah, centang tidak hilang.</li>
+          <li>Tombol <strong>PDF</strong>, <strong>PNG</strong>, dan <strong>Hapus</strong> akan aktif otomatis saat data terpilih.</li>
         </ul>
 
-        <h6><i class="fas fa-cog me-1"></i> 3. Aksi Satuan</h6>
-        <p>Klik tombol <i class="fas fa-cog"></i> di setiap baris data untuk:</p>
-        <ul class="mb-0">
-          <li><strong>View Rapot:</strong> Melihat tampilan rapot di tab baru.</li>
-          <li><strong>Unduh PDF/PNG:</strong> Mengunduh rapot *itu saja* sebagai PDF atau PNG.</li>
-          <li><strong>Duplikat:</strong> Menyalin isi rapot ini untuk membuat rapot baru (misal untuk bulan depan).</li>
-          <li><strong>Hapus:</strong> Menghapus rapot *itu saja*.</li>
+        <h6 class="text-dark fw-bold mb-2"><i class="fas fa-cog text-primary me-2"></i>3. Aksi Satuan</h6>
+        <p class="small mb-2">Klik tombol <i class="fas fa-cog"></i> di setiap baris untuk:</p>
+        <ul class="mb-0 small" style="padding-left: 1.25rem;">
+          <li class="mb-1">Melihat (*View*), mengunduh PDF/PNG, atau menghapus satuan.</li>
+          <li><strong>Duplikat:</strong> Menyalin isi rapot untuk bulan/periode depan.</li>
         </ul>
       </div>
-      <div class="modal-footer">
-        <button type="button" class="btn btn-primary" data-bs-dismiss="modal">Saya Mengerti</button>
+      <div class="modal-footer border-top-0 pt-0 pb-4 px-4">
+        <button type="button" class="btn btn-primary w-100 fw-medium shadow-sm" style="border-radius: 0.75rem;" data-bs-dismiss="modal">Saya Mengerti</button>
       </div>
     </div>
   </div>
@@ -513,10 +635,74 @@ document.addEventListener('DOMContentLoaded', function() {
     // === AKHIR REVISI 9.0 ===
 
 
-    // === Auto-submit Filter ===
+    // === AJAX Filter ===
+    // Menggunakan closest selector untuk tabel dan filter form
+    const tableBody = document.querySelector('#dataTable tbody');
+    const totalDataDisplay = document.querySelector('.total-data-display');
+    
+    // Create loading overlay
+    const loadingOverlay = document.createElement('div');
+    loadingOverlay.innerHTML = '<div class="spinner-border text-primary" style="width: 3rem; height: 3rem;" role="status"><span class="visually-hidden">Loading...</span></div>';
+    loadingOverlay.style.cssText = 'position: absolute; top: 0; left: 0; right: 0; bottom: 0; background: rgba(255,255,255,0.6); display: flex; justify-content: center; align-items: center; z-index: 10; border-radius: 0.35rem;';
+    loadingOverlay.style.display = 'none';
+    
+    const tableResponsive = document.querySelector('.table-responsive');
+    tableResponsive.style.position = 'relative';
+    tableResponsive.appendChild(loadingOverlay);
+
     document.querySelectorAll('#kamar, #bulan, #tahun').forEach(function(selectElement) {
         selectElement.addEventListener('change', function() {
-            this.closest('form').submit();
+            loadingOverlay.style.display = 'flex';
+            
+            const currentForm = this.closest('form');
+            const formData = new FormData(currentForm);
+            const params = new URLSearchParams(formData);
+            params.append('ajax', '1');
+
+            fetch(`index.php?${params.toString()}`)
+                .then(response => response.json())
+                .then(data => {
+                    tableBody.innerHTML = data.html;
+                    totalDataDisplay.textContent = data.total;
+                    
+                    // Update variables
+                    rowCheckboxes = document.querySelectorAll('.row-checkbox');
+                    
+                    // Re-init tooltips
+                    const tooltips = [].slice.call(tableBody.querySelectorAll('[data-bs-toggle="tooltip"]'));
+                    tooltips.map(function (tooltipTriggerEl) {
+                        return new bootstrap.Tooltip(tooltipTriggerEl);
+                    });
+
+                    // Re-init checkboxes events & restore state
+                    const selectedData = getStoredData();
+                    rowCheckboxes.forEach(checkbox => {
+                        checkbox.checked = selectedData.has(checkbox.value);
+                        checkbox.addEventListener('change', handleSelectionChange);
+                    });
+                    
+                    // Re-init single delete buttons
+                    tableBody.querySelectorAll('.single-delete-btn').forEach(function(btn) {
+                        btn.addEventListener('click', setModalTrigger);
+                        btn.addEventListener('click', function(e) {
+                            e.preventDefault();
+                            const rapotId = this.dataset.id;
+                            deleteCountPlaceholder.textContent = '1';
+                            deleteConfirmModalElement.dataset.checkedIds = JSON.stringify([rapotId]);
+                            deleteConfirmModal.show();
+                        });
+                    });
+
+                    updateSelectAllState();
+                    toggleActionButtons();
+                    
+                    loadingOverlay.style.display = 'none';
+                })
+                .catch(error => {
+                    console.error('Error fetching data:', error);
+                    tampilkanNotif('Gagal mengambil data filter, silakan coba lagi.', 'danger');
+                    loadingOverlay.style.display = 'none';
+                });
         });
     });
 
@@ -531,7 +717,7 @@ document.addEventListener('DOMContentLoaded', function() {
 
     // === Variabel Elemen Tombol & Checkbox ===
     const selectAllCheckbox = document.getElementById('selectAll');
-    const rowCheckboxes = document.querySelectorAll('.row-checkbox');
+    let rowCheckboxes = document.querySelectorAll('.row-checkbox');
     const bulkPdfBtn = document.getElementById('bulk-download-pdf-btn');
     const bulkPngBtn = document.getElementById('bulk-download-png-btn');
     const bulkDeleteBtn = document.getElementById('bulk-delete-btn');
@@ -549,7 +735,7 @@ document.addEventListener('DOMContentLoaded', function() {
 
         if (selectedCountInfo) {
             if (checkedCount > 0) {
-                selectedCountInfo.innerHTML = `<span class="badge bg-secondary">${checkedCount} data terpilih</span>`;
+                selectedCountInfo.innerHTML = `<span class="badge bg-secondary px-3 py-2 rounded-pill shadow-sm" style="font-size:0.85rem;">${checkedCount} data terpilih</span>`;
                 selectedCountInfo.classList.remove('d-none');
             } else {
                 selectedCountInfo.classList.add('d-none');
