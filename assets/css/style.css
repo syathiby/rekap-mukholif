@@ -1891,29 +1891,6 @@ textarea:focus {
     border: none !important;
 }
 
-.page-title-card h1,
-.page-title-card h2,
-.page-title-card h3,
-.page-title-card h4,
-.page-title-card h5,
-.page-title-card h6 {
-    /* dihapus color putih paksa */
-}
-
-.page-title-card p {
-    /* dihapus color putih paksa */
-}
-
-.page-title-card h1 i,
-.page-title-card h2 i,
-.page-title-card h3 i,
-.page-title-card h4 i,
-.page-title-card h5 i,
-.page-title-card h6 i,
-.page-title-card .btn-info-circle,
-.page-title-card .btn-info-circle i {
-    /* dihapus color putih paksa */
-}
 
 @media (max-width: 768px) {
     .page-title-card {
