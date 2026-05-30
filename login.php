@@ -50,6 +50,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
     if ($user = $result->fetch_assoc()) {
         if (hash('sha256', $password) === $user['password']) {
+            // Regenerasi session ID untuk mencegah serangan Session Fixation
+            session_regenerate_id(true);
             
             // Simpan semua info penting ke session, termasuk kantong tiketnya
             $_SESSION['user_id'] = $user['id'];
@@ -249,6 +251,14 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     </style>
 
     <script>
+    // ── Pembersihan Storage Sisi Client (Fallback Keamanan) ──────────
+    try {
+        localStorage.clear();
+        sessionStorage.clear();
+    } catch (e) {
+        console.warn('[PWA] Gagal membersihkan storage:', e);
+    }
+
     function togglePassword() {
         const passwordInput = document.getElementById('password');
         const toggleIcon = document.getElementById('toggle-icon');

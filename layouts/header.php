@@ -74,6 +74,18 @@ $style_v    = time(); // selalu fresh
     <link rel="stylesheet" href="<?= BASE_URL ?>/assets/css/style.css?v=<?= $style_v ?>">
 
     <!-- ═══════════════════════════════════════════════════
+         SAFARI / IOS BACK BUTTON (BFCACHE) PROTECTION
+         Memaksa browser melakukan reload jika halaman dipanggil dari cache browser (misal klik Back setelah logout)
+    ═══════════════════════════════════════════════════ -->
+    <script>
+    window.addEventListener('pageshow', function(event) {
+        if (event.persisted || (window.performance && window.performance.navigation.type === 2)) {
+            window.location.reload();
+        }
+    });
+    </script>
+
+    <!-- ═══════════════════════════════════════════════════
          PWA — SERVICE WORKER REGISTRATION
          Ditempatkan di <head> agar SW terdaftar secepat mungkin
     ═══════════════════════════════════════════════════ -->
@@ -143,7 +155,7 @@ $style_v    = time(); // selalu fresh
         <!-- Footer -->
         <div class="sb-footer">
 
-            <a href="<?= BASE_URL ?>/logout.php" class="sb-link" style="margin-bottom:6px; background:rgba(239,68,68,0.08); border-color:rgba(239,68,68,0.12);">
+            <a href="<?= BASE_URL ?>/logout.php" onclick="confirmLogout(event)" class="sb-link" style="margin-bottom:6px; background:rgba(239,68,68,0.08); border-color:rgba(239,68,68,0.12);">
                 <i class="fas fa-sign-out-alt" style="color:#f87171;"></i>
                 <span style="color:#f87171;">Logout</span>
             </a>
@@ -230,6 +242,35 @@ function closeSidebarMobile() {
         setTimeout(() => { overlay.style.display = 'none'; }, 250);
     }
     document.body.style.overflow = '';
+}
+
+function confirmLogout(event) {
+    event.preventDefault();
+    const logoutUrl = event.currentTarget.href;
+    if (typeof Swal !== 'undefined') {
+        Swal.fire({
+            title: 'Keluar dari Sistem?',
+            text: 'Sesi Anda akan diakhiri dan seluruh jejak browser akan dibersihkan demi keamanan.',
+            icon: 'warning',
+            showCancelButton: true,
+            confirmButtonColor: '#22c55e',
+            cancelButtonColor: '#64748b',
+            confirmButtonText: 'Ya, Keluar',
+            cancelButtonText: 'Batal',
+            reverseButtons: true,
+            background: '#1e293b',
+            color: '#f8fafc',
+            iconColor: '#f59e0b'
+        }).then((result) => {
+            if (result.isConfirmed) {
+                window.location.href = logoutUrl;
+            }
+        });
+    } else {
+        if (confirm('Apakah Anda yakin ingin keluar? Sesi Anda akan berakhir.')) {
+            window.location.href = logoutUrl;
+        }
+    }
 }
 </script>
 

@@ -75,7 +75,7 @@ $recent_violations = mysqli_query($conn, "
         LEFT JOIN users u ON pk.dicatat_oleh = u.id
     )
     ORDER BY tanggal DESC
-    LIMIT 5
+    LIMIT 7
 ");
 
 $frequent_violation_query = mysqli_query($conn, "

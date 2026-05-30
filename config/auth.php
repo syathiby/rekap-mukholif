@@ -49,6 +49,14 @@ if (!function_exists('has_permission')) {
  */
 if (!function_exists('guard')) {
     function guard($permission = null) {
+        // Tambahkan header anti-cache agar halaman terproteksi tidak disimpan di cache browser (mencegah bypass tombol Back)
+        if (!headers_sent()) {
+            header("Cache-Control: no-store, no-cache, must-revalidate, max-age=0");
+            header("Cache-Control: post-check=0, pre-check=0", false);
+            header("Pragma: no-cache");
+            header("Expires: Mon, 26 Jul 1997 05:00:00 GMT");
+        }
+
         // Peraturan #1: Belum login? Tendang ke halaman login.
         if (!isset($_SESSION['user_id'])) {
             // REVISI: Gunakan BASE_URL untuk path dinamis
@@ -78,7 +86,7 @@ if (!function_exists('guard')) {
 
 /**
  * =================================================================
- * FUNGSI PENGHANCUR SESI v2: logout()
+ * FUNGSI PENGHANCUR SESI v3: logout()
  * =================================================================
  * Menghancurkan session dan mengarahkan ke halaman login.
  */
@@ -92,7 +100,16 @@ if (!function_exists('logout')) {
         // Hapus semua variabel session
         $_SESSION = array();
 
-        // Hancurkan session
+        // Hapus session cookie di browser secara manual
+        if (ini_get("session.use_cookies")) {
+            $params = session_get_cookie_params();
+            setcookie(session_name(), '', time() - 42000,
+                $params["path"], $params["domain"],
+                $params["secure"], $params["httponly"]
+            );
+        }
+
+        // Hancurkan session di server
         session_destroy();
 
         // Arahkan pengguna kembali ke halaman login

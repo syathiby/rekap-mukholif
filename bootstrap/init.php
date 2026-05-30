@@ -64,14 +64,14 @@ require_once __DIR__ . '/helpers.php';
  * Tidak ada query database di sini — murni operasi session (RAM).
  */
 if (isset($_SESSION['user_id'], $_SESSION['login_time'])) {
-    // Batas inaktif: 12 jam (43200 detik)
-    if ((time() - $_SESSION['login_time']) > 43200) {
+    // Batas inaktif: 1 jam (3600 detik)
+    if ((time() - $_SESSION['login_time']) > 3600) {
         // Hancurkan session secara bersih
         $_SESSION = [];
         if (session_status() === PHP_SESSION_ACTIVE) {
             session_destroy();
         }
-        header('Location: ' . BASE_URL . '/login.php?timeout=1');
+        header('Location: ' . BASE_URL . '/logout.php?timeout=1');
         exit();
     }
 
