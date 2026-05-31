@@ -117,7 +117,7 @@ require_once __DIR__ . '/../../layouts/header.php';
 .row-delete { background:#fef2f2 !important; }
 .row-fatal  { background:#fff5f5 !important; border-left:4px solid #e53e3e !important; }
 
-.diff-old { font-size:.84rem; color:#94a3b8; text-decoration:line-through; margin-right:4px; }
+.diff-old { font-size:.84rem; color:#94a3b8; text-decoration:line-through; text-decoration-color:#ef4444; text-decoration-thickness:2px; margin-right:4px; opacity: 0.7; }
 .diff-new { font-weight:600; color:#0f172a; }
 .fatal-reason { font-size:.77rem; color:#9b2c2c; line-height:1.4; margin-top:6px;
                 background:#fff; padding:7px 12px; border-radius:6px;
@@ -370,9 +370,6 @@ require_once __DIR__ . '/../../layouts/header.php';
                 <?php if ($cnt_fatal): ?>
                 <div class="fatal-card mb-0">
                     <div class="d-flex gap-3 align-items-start">
-                        <div class="fatal-icon flex-shrink-0">
-                            <i class="bi bi-exclamation-octagon-fill fs-3 pulse"></i>
-                        </div>
                         <div>
                             <h6 class="fw-bold mb-2" style="color:#742a2a">Terdeteksi <?= $cnt_fatal ?> Konflik ID &amp; Nama</h6>
                             <p class="mb-2" style="font-size:.86rem;color:#9b2c2c;line-height:1.5">

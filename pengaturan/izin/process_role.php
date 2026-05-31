@@ -22,7 +22,17 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         exit;
     }
 
-    $availableRoles = ['pelihat', 'staff', 'pengelola'];
+    if ($role === 'admin') {
+        http_response_code(403);
+        require __DIR__ . '/../../bootstrap/access_denied.php';
+        exit;
+    }
+
+    $availableRoles = [];
+    $resRoles = $conn->query("SELECT id FROM roles WHERE id != 'admin'");
+    while($r = $resRoles->fetch_assoc()) {
+        $availableRoles[] = $r['id'];
+    }
     if (!in_array($role, $availableRoles)) {
         $_SESSION['error_message'] = "Error: Role tidak dikenal.";
         header("Location: role.php");

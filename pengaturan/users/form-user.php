@@ -259,10 +259,14 @@ if ($result_roles) {
                         <?php else: ?>
                             <!-- Tambah user baru ATAU edit user non-admin: Opsi 'Admin' disembunyikan sepenuhnya -->
                             <select class="form-control" id="role" name="role" required>
-                                <option value="">-- Pilih Jabatan/Role --</option>
-                                <option value="pengelola" <?= (strtolower($user_data['role']) === 'pengelola') ? 'selected' : '' ?>>Pengelola</option>
-                                <option value="staff" <?= (strtolower($user_data['role']) === 'staff') ? 'selected' : '' ?>>Staff</option>
-                                <option value="pelihat" <?= (strtolower($user_data['role']) === 'pelihat') ? 'selected' : '' ?>>Pelihat</option>
+                                <option value="">-- Pilih Role --</option>
+                                <?php
+                                $resRoles = $conn->query("SELECT id, role_name FROM roles WHERE id != 'admin' ORDER BY created_at ASC");
+                                while($r = $resRoles->fetch_assoc()) {
+                                    $selected = (strtolower($user_data['role']) === strtolower($r['id'])) ? 'selected' : '';
+                                    echo '<option value="' . htmlspecialchars($r['id']) . '" ' . $selected . '>' . htmlspecialchars($r['role_name']) . '</option>';
+                                }
+                                ?>
                             </select>
                         <?php endif; ?>
                     </div>

@@ -259,7 +259,7 @@ if (function_exists('has_permission')) {
 
     // Global Fix: Mencegah error accessibility 'aria-hidden' di DevTools Chrome
     // saat menutup modal Bootstrap dan elemen di dalamnya masih memiliki fokus.
-    document.addEventListener('hidden.bs.modal', function () {
+    document.addEventListener('hide.bs.modal', function () {
         if (document.activeElement && document.activeElement !== document.body) {
             document.activeElement.blur();
         }

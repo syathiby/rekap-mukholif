@@ -14,12 +14,19 @@ require_once __DIR__ . '/../../layouts/header.php';
 // Ambil role yang mau di-edit dari URL (jika ada)
 $selectedRole = isset($_GET['role']) ? strtolower($_GET['role']) : null;
 
+// Jika user nekat mengakses role admin lewat URL, lempar ke halaman terlarang.
+if ($selectedRole === 'admin') {
+    http_response_code(403);
+    require __DIR__ . '/../../bootstrap/access_denied.php';
+    exit;
+}
+
 // Daftar role yang bisa diatur izin defaultnya
-$availableRoles = [
-    'pelihat' => 'Pelihat',
-    'staff' => 'Staff',
-    'pengelola' => 'Pengelola'
-];
+$availableRoles = [];
+$resRoles = $conn->query("SELECT id, role_name FROM roles WHERE id != 'admin' ORDER BY created_at ASC");
+while($r = $resRoles->fetch_assoc()) {
+    $availableRoles[$r['id']] = $r['role_name'];
+}
 
 $permissions = [];
 $rolePermissions = [];
@@ -64,9 +71,12 @@ if ($selectedRole && array_key_exists($selectedRole, $availableRoles)) {
                     <p class="text-muted mb-0" style="font-size: 0.95rem;">Atur izin otomatis yang akan diberikan saat membuat akun baru berdasarkan rolenya.</p>
                 </div>
             </div>
-            <div>
+            <div class="d-flex gap-2">
                 <a href="index.php" class="btn btn-outline-secondary shadow-sm rounded-pill px-4" style="font-weight: 600;">
                     <i class="fas fa-arrow-left me-2"></i>Kembali ke Izin per User
+                </a>
+                <a href="manage_roles.php" class="btn btn-primary shadow-sm rounded-pill px-4" style="background: linear-gradient(135deg, #8b5cf6, #7c3aed); border: none; font-weight: 600;">
+                    <i class="fas fa-tags me-2"></i>Kelola Role
                 </a>
             </div>
         </div>

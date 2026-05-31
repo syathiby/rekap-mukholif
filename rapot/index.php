@@ -700,11 +700,10 @@ document.addEventListener('DOMContentLoaded', function() {
         btn.addEventListener('click', returnFocusToTrigger);
     });
 
-    // 6. REVISI 9.0: Kita tetap pake 'hidden.bs.modal' sebagai failsafe (jaga-jaga)
-    // kalo modal ditutup pake 'Esc' atau klik di luar.
-    if (guideModalElement) guideModalElement.addEventListener('hidden.bs.modal', returnFocusToTrigger);
-    if (pngWarningModalElement) pngWarningModalElement.addEventListener('hidden.bs.modal', returnFocusToTrigger);
-    if (deleteConfirmModalElement) deleteConfirmModalElement.addEventListener('hidden.bs.modal', returnFocusToTrigger);
+    // 6. REVISI 9.0: Kita tetap pake 'hide.bs.modal' sebagai failsafe (jaga-jaga)
+    if (guideModalElement) guideModalElement.addEventListener('hide.bs.modal', returnFocusToTrigger);
+    if (pngWarningModalElement) pngWarningModalElement.addEventListener('hide.bs.modal', returnFocusToTrigger);
+    if (deleteConfirmModalElement) deleteConfirmModalElement.addEventListener('hide.bs.modal', returnFocusToTrigger);
 
     // === AKHIR REVISI 9.0 ===
 

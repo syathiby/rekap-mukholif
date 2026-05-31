@@ -662,6 +662,7 @@ document.addEventListener('DOMContentLoaded', function() {
                     ]
                 },
                 options:{
+                    clip: false,
                     responsive:true, maintainAspectRatio:false,
                     layout: { padding: { top: 15 } },
                     interaction:{ mode:'index', intersect:false },

@@ -1,4 +1,4 @@
-<?php 
+﻿<?php 
 // 1. Panggil 'Otak' aplikasi dulu
 require_once __DIR__ . '/../bootstrap/init.php';
 
@@ -320,29 +320,29 @@ if ($result_kamar && $result_kamar->num_rows > 0) {
                             <p class="text-muted">Seluruh profil santri aktif beserta sisa akumulasi poin aktif mereka saat ini.</p>
                         </div>
                         <button type="submit" name="export_santri" class="btn btn-premium btn-green w-100">
-                            <i class="fas fa-users"></i> Ekspor Santri
+                            <i class="fas fa-users"></i> Ekspor Data Santri
                         </button>
                     </div>
 
                     <!-- Button Card 2: Pelanggaran -->
                     <div class="master-btn-card">
                         <div>
-                            <h6>Klasifikasi Pelanggaran</h6>
+                            <h6>Data Jenis Pelanggaran</h6>
                             <p class="text-muted">Data master jenis pelanggaran, kategori bobot poin, dan pembagian pengasuhannya.</p>
                         </div>
                         <button type="submit" name="export_jenis_pelanggaran" class="btn btn-premium btn-gray w-100">
-                            <i class="fas fa-exclamation-triangle"></i> Ekspor Pelanggaran
+                            <i class="fas fa-exclamation-triangle"></i> Ekspor Jenis Pelanggaran
                         </button>
                     </div>
 
                     <!-- Button Card 3: Reward -->
                     <div class="master-btn-card">
                         <div>
-                            <h6>Klasifikasi Reward</h6>
+                            <h6>Data Jenis Reward</h6>
                             <p class="text-muted">Data master jenis apresiasi/reward beserta bobot poin pengurang hukuman.</p>
                         </div>
                         <button type="submit" name="export_jenis_reward" class="btn btn-premium btn-blue w-100">
-                            <i class="fas fa-trophy"></i> Ekspor Reward
+                            <i class="fas fa-trophy"></i> Ekspor Jenis Reward
                         </button>
                     </div>
                 </div>

@@ -400,7 +400,7 @@ $(document).ready(function() {
         modalTriggerElement = null;
     }));
     const guideModalElement = document.getElementById('guideModal');
-    if (guideModalElement) guideModalElement.addEventListener('hidden.bs.modal', () => {
+    if (guideModalElement) guideModalElement.addEventListener('hide.bs.modal', () => {
         if (modalTriggerElement) modalTriggerElement.focus();
         modalTriggerElement = null;
     });
