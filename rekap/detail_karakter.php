@@ -9,7 +9,7 @@ guard('rekap_detail_santri');
 $santri_id = (int)($_GET['id'] ?? 0);
 if ($santri_id <= 0) {
     $_SESSION['flash_error'] = "Data santri tidak valid.";
-    header("Location: umum.php");
+    header("Location: karakter.php");
     exit;
 }
 
@@ -142,9 +142,13 @@ $stmt_radar = $conn->prepare(
         AVG(mandi) as mandi, AVG(penampilan) as penampilan,
         AVG(piket) as piket, AVG(kerapihan_barang) as kerapihan_barang,
         COUNT(*) as total_rapot
-     FROM rapot_kepengasuhan WHERE santri_id = ?"
+     FROM rapot_kepengasuhan 
+     WHERE santri_id = ?
+       AND STR_TO_DATE(CONCAT(tahun, '-', FIELD(bulan, 'Januari','Februari','Maret','April','Mei','Juni','Juli','Agustus','September','Oktober','November','Desember'), '-01'), '%Y-%c-%d') 
+           BETWEEN STR_TO_DATE(CONCAT(DATE_FORMAT(?, '%Y-%m'), '-01'), '%Y-%m-%d') 
+           AND LAST_DAY(?)"
 );
-$stmt_radar->bind_param("i", $santri_id);
+$stmt_radar->bind_param("iss", $santri_id, $start_date, $end_date);
 $stmt_radar->execute();
 $radar_data  = $stmt_radar->get_result()->fetch_assoc();
 $total_rapot = (int)($radar_data['total_rapot'] ?? 0);
@@ -187,9 +191,12 @@ if ($total_rapot > 0) {
                 ROUND((mandi+penampilan+piket+kerapihan_barang)/4,2) AS avg_kebersihan
          FROM rapot_kepengasuhan
          WHERE santri_id = ?
+           AND STR_TO_DATE(CONCAT(tahun, '-', FIELD(bulan, 'Januari','Februari','Maret','April','Mei','Juni','Juli','Agustus','September','Oktober','November','Desember'), '-01'), '%Y-%c-%d') 
+               BETWEEN STR_TO_DATE(CONCAT(DATE_FORMAT(?, '%Y-%m'), '-01'), '%Y-%m-%d') 
+               AND LAST_DAY(?)
          ORDER BY tahun ASC, $bulan_order ASC"
     );
-    $stmt_tren_k->bind_param("i", $santri_id);
+    $stmt_tren_k->bind_param("iss", $santri_id, $start_date, $end_date);
     $stmt_tren_k->execute();
     $res_tren_k = $stmt_tren_k->get_result();
     while ($row = $res_tren_k->fetch_assoc()) {
@@ -308,7 +315,7 @@ require_once __DIR__ . '/../layouts/header.php';
 <div class="container py-4" style="overflow-x:hidden">
     <div class="d-flex justify-content-between align-items-center mb-4">
         <h1 class="page-title m-0"><i class="fas fa-chart-pie me-2"></i>Analisis Santri</h1>
-        <a href="umum.php?start_date=<?= $start_date ?>&end_date=<?= $end_date ?>" class="btn btn-outline-secondary rounded-pill">
+        <a href="javascript:history.back()" class="btn btn-outline-secondary rounded-pill shadow-sm">
             <i class="fas fa-arrow-left me-1"></i> Kembali
         </a>
     </div>
@@ -317,7 +324,13 @@ require_once __DIR__ . '/../layouts/header.php';
     <div class="character-summary">
         <i class="fas <?= $karakter_icon ?> character-icon <?= $karakter_class ?>"></i>
         <h3 class="fw-bold mb-2"><?= htmlspecialchars($santri['nama']) ?></h3>
-        <p class="text-muted mb-3">Kelas: <?= htmlspecialchars($santri['kelas']) ?> &nbsp;|&nbsp; Kamar: <?= htmlspecialchars($santri['kamar']) ?></p>
+        <p class="text-muted mb-2">Kelas: <?= htmlspecialchars($santri['kelas']) ?> &nbsp;|&nbsp; Kamar: <?= htmlspecialchars($santri['kamar']) ?></p>
+        
+        <div class="mb-3">
+            <span class="badge bg-white text-secondary border px-3 py-2 shadow-sm text-wrap" style="font-size: 0.85rem; font-weight: 500; border-radius: 8px; line-height: 1.5;">
+                <i class="far fa-calendar-alt me-1 text-primary"></i> Menampilkan data: <strong><?= date('d M Y', strtotime($start_date)) ?></strong> s/d <strong><?= date('d M Y', strtotime($end_date)) ?></strong>
+            </span>
+        </div>
         <?php if ($sp_status): ?>
         <div class="mb-3">
             <span class="badge rounded-pill <?= $sp_class ?> px-4 py-2 shadow-sm" style="font-size:.9rem;letter-spacing:1px">

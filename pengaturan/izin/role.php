@@ -14,16 +14,24 @@ require_once __DIR__ . '/../../layouts/header.php';
 // Ambil role yang mau di-edit dari URL (jika ada)
 $selectedRole = isset($_GET['role']) ? strtolower($_GET['role']) : null;
 
-// Jika user nekat mengakses role admin lewat URL, lempar ke halaman terlarang.
+// Jika user nekat mengakses role admin (atau pengelola bagi non-admin) lewat URL, lempar ke halaman terlarang.
 if ($selectedRole === 'admin') {
     http_response_code(403);
     require __DIR__ . '/../../bootstrap/access_denied.php';
     exit;
+} elseif ($selectedRole === 'pengelola') {
+    if (!isset($_SESSION['role']) || strtolower($_SESSION['role']) !== 'admin') {
+        http_response_code(403);
+        require __DIR__ . '/../../bootstrap/access_denied.php';
+        exit;
+    }
 }
 
 // Daftar role yang bisa diatur izin defaultnya
 $availableRoles = [];
-$resRoles = $conn->query("SELECT id, role_name FROM roles WHERE id != 'admin' ORDER BY created_at ASC");
+$is_admin = (isset($_SESSION['role']) && strtolower($_SESSION['role']) === 'admin');
+$role_condition = $is_admin ? "id != 'admin'" : "id NOT IN ('admin', 'pengelola')";
+$resRoles = $conn->query("SELECT id, role_name FROM roles WHERE $role_condition ORDER BY created_at ASC");
 while($r = $resRoles->fetch_assoc()) {
     $availableRoles[$r['id']] = $r['role_name'];
 }

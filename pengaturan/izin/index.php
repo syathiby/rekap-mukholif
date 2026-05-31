@@ -23,7 +23,10 @@ if ($selectedUserId && $selectedUserId === $loggedInUserId) {
 }
 
 // Ambil semua user untuk dropdown (kecuali admin dan user yang sedang login)
-$usersResult = $conn->query("SELECT id, nama_lengkap, username FROM users WHERE role != 'admin' AND id != $loggedInUserId ORDER BY nama_lengkap ASC");
+// --- LOGIKA BARU: Jika bukan admin, jangan tampilkan user dengan role 'pengelola' ---
+$is_admin = (isset($_SESSION['role']) && strtolower($_SESSION['role']) === 'admin');
+$role_condition = $is_admin ? "role != 'admin'" : "role NOT IN ('admin', 'pengelola')";
+$usersResult = $conn->query("SELECT id, nama_lengkap, username FROM users WHERE $role_condition AND id != $loggedInUserId ORDER BY nama_lengkap ASC");
 
 $permissions = [];
 $userPermissions = [];

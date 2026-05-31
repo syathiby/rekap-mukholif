@@ -7,6 +7,20 @@ guard('pelanggaran_bahasa_input'); // Pastikan guard-nya sesuai permission lu
 
 $is_ajax = (!empty($_SERVER['HTTP_X_REQUESTED_WITH']) && strtolower($_SERVER['HTTP_X_REQUESTED_WITH']) === 'xmlhttprequest');
 
+if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+    if (!isset($_POST['csrf_token']) || !isset($_SESSION['csrf_token']) || !hash_equals($_SESSION['csrf_token'], $_POST['csrf_token'])) {
+        if ($is_ajax) {
+            header('Content-Type: application/json');
+            http_response_code(403);
+            echo json_encode(['status' => 'error', 'message' => 'Token keamanan (CSRF) tidak valid atau telah kedaluwarsa. Silakan muat ulang halaman.']);
+            exit();
+        }
+        http_response_code(403);
+        require __DIR__ . '/../../bootstrap/csrf_expired.php';
+        exit;
+    }
+}
+
 if (isset($_POST['create_bulk_pelanggaran'])) {
     $jenis_pelanggaran_id_raw = $_POST['jenis_pelanggaran_id'] ?? '';
     $tanggal = $_POST['tanggal'];
@@ -257,8 +271,10 @@ if (isset($_POST['create_bulk_pelanggaran'])) {
 
 if ($is_ajax) {
     header('Content-Type: application/json');
+    http_response_code(403);
     echo json_encode(['status' => 'error', 'message' => 'Akses langsung tidak diizinkan.']);
     exit();
 }
-header("Location: ../bahasa/create.php");
-exit();
+http_response_code(403);
+require __DIR__ . '/../../bootstrap/access_denied.php';
+exit;

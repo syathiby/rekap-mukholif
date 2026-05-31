@@ -13,6 +13,11 @@ $can_create = has_permission('jenis_pelanggaran_create');
 $can_edit = has_permission('jenis_pelanggaran_edit');
 $can_delete = has_permission('jenis_pelanggaran_delete');
 
+// Inisialisasi CSRF Token untuk fitur bulk action & hapus
+if (empty($_SESSION['csrf_token'])) {
+    $_SESSION['csrf_token'] = bin2hex(random_bytes(32));
+}
+
 // --- AMBIL DATA UNTUK FILTER ---
 $bagian_list_query = "SELECT DISTINCT bagian FROM jenis_pelanggaran ORDER BY bagian ASC";
 $bagian_list_result = mysqli_query($conn, $bagian_list_query);

@@ -232,7 +232,7 @@ function getKategoriInfo($kategori) {
             <p class="text-muted mb-0">Rincian lengkap pelanggaran yang tercatat.</p>
         </div>
         <?php
-            $kembali_url = "umum.php?start_date=" . urlencode($start_date) 
+            $kembali_url = "pelanggaran_umum.php?start_date=" . urlencode($start_date) 
                          . "&end_date=" . urlencode($end_date) 
                          . "&kamar=" . urlencode($filter_kamar ?? '') 
                          . "&bagian=" . urlencode($filter_bagian ?? '')

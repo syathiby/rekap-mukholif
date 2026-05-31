@@ -8,10 +8,17 @@ guard('izin_manage');
 // =================================================================
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+    // Validasi CSRF Token
+    if (!isset($_POST['csrf_token']) || !isset($_SESSION['csrf_token']) || !hash_equals($_SESSION['csrf_token'], $_POST['csrf_token'])) {
+        http_response_code(403);
+        require __DIR__ . '/../../bootstrap/csrf_expired.php';
+        exit;
+    }
+
     // Validasi input
     if (!isset($_POST['user_id']) || empty($_POST['user_id'])) {
-        $_SESSION['error_message'] = "❌ ID User tidak ditemukan.";
-        header("Location: index.php");
+        http_response_code(403);
+        require __DIR__ . '/../../bootstrap/access_denied.php';
         exit;
     }
 
@@ -26,6 +33,23 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         require __DIR__ . '/../../bootstrap/access_denied.php';
         exit;
     }
+    
+    // --- LOGIKA BARU: PROTEKSI ROLE PENGELOLA ---
+    $stmt_check_role = $conn->prepare("SELECT role FROM users WHERE id = ?");
+    $stmt_check_role->bind_param("i", $userId);
+    $stmt_check_role->execute();
+    $result_role = $stmt_check_role->get_result();
+    if ($row_role = $result_role->fetch_assoc()) {
+        if (strtolower($row_role['role']) === 'pengelola') {
+            if (!isset($_SESSION['role']) || strtolower($_SESSION['role']) !== 'admin') {
+                $stmt_check_role->close();
+                http_response_code(403);
+                require __DIR__ . '/../../bootstrap/access_denied.php';
+                exit;
+            }
+        }
+    }
+    $stmt_check_role->close();
     // --- AKHIR DARI LOGIKA BARU ---
 
     // =================================================================
@@ -98,13 +122,15 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $conn->rollback();
         $_SESSION['error_message'] = "❌ Gagal memperbarui tiket: " . $exception->getMessage();
     }
+
+    // Setelah selesai, kembalikan ke halaman loket, sambil bawa ID user biar langsung nampilin user yg sama
+    $redirect_user_id = $userId ?? ($_POST['user_id'] ?? '');
+    header("Location: index.php?user_id=" . $redirect_user_id);
+    exit;
 } else {
     // Jika file ini diakses langsung via URL, tendang
-    $_SESSION['error_message'] = "❌ Akses tidak sah.";
+    http_response_code(403);
+    require __DIR__ . '/../../bootstrap/access_denied.php';
+    exit;
 }
-
-// Setelah selesai, kembalikan ke halaman loket, sambil bawa ID user biar langsung nampilin user yg sama
-$redirect_user_id = $userId ?? ($_POST['user_id'] ?? '');
-header("Location: index.php?user_id=" . $redirect_user_id);
-exit;
 ?>

@@ -3,7 +3,7 @@
 require_once __DIR__ . '/../bootstrap/init.php';
 
 // 2. Jalankan 'SATPAM' buat ngejaga halaman
-guard(['rekap_view_statistik', 'rekap_kebersihan', 'rekap_keterlambatan', 'rekap_pelanggaran_umum', 'rekap_detail_santri', 'rekap_santri_teladan']);
+guard(['rekap_view_statistik', 'rekap_kebersihan', 'rekap_keterlambatan', 'rekap_pelanggaran_umum', 'rekap_detail_santri', 'rekap_santri_teladan', 'rekap_kamar']);
 
 // 3. Kalau lolos, baru panggil Tampilan
 require_once __DIR__ . '/../layouts/header.php'; 
@@ -65,7 +65,7 @@ require_once __DIR__ . '/../layouts/header.php';
 
         <?php if (has_permission('rekap_detail_santri')): ?>
         <div class="col-md-6 col-lg-4">
-            <a href="umum.php" class="text-decoration-none">
+            <a href="karakter.php" class="text-decoration-none">
                 <div class="card h-100 hover-up p-4 d-flex flex-row align-items-center gap-3 border-start border-4" style="border-left-color: #10b981 !important;">
                     <div class="icon-container flex-shrink-0" style="color: #10b981; background-color: rgba(16, 185, 129, 0.1);">
                         <i class="fas fa-chart-pie fs-4"></i>
@@ -105,6 +105,22 @@ require_once __DIR__ . '/../layouts/header.php';
                     <div>
                         <h6 class="text-dark fw-bold mb-1">Santri Teladan</h6>
                         <p class="text-muted small mb-0">Peringkat santri berprestasi tanpa pelanggaran</p>
+                    </div>
+                </div>
+            </a>
+        </div>
+        <?php endif; ?>
+
+        <?php if (has_permission('rekap_kamar')): ?>
+        <div class="col-md-6 col-lg-4">
+            <a href="peringkat_kamar.php" class="text-decoration-none">
+                <div class="card h-100 hover-up p-4 d-flex flex-row align-items-center gap-3 border-start border-4" style="border-left-color: #ec4899 !important;">
+                    <div class="icon-container flex-shrink-0" style="color: #ec4899; background-color: rgba(236, 72, 153, 0.1);">
+                        <i class="fas fa-bed fs-4"></i>
+                    </div>
+                    <div>
+                        <h6 class="text-dark fw-bold mb-1">Peringkat Kamar</h6>
+                        <p class="text-muted small mb-0">Analisis dan peringkat performa karakter asrama</p>
                     </div>
                 </div>
             </a>

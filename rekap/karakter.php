@@ -211,7 +211,7 @@ $query = $stmt->get_result();
                                 
                                 <div class="text-center px-2 flex-fill">
                                     <?php
-                                    $detail_link = "detail_umum.php?id={$row['id']}&start_date=$start_date&end_date=$end_date"
+                                    $detail_link = "detail_karakter.php?id={$row['id']}&start_date=$start_date&end_date=$end_date"
                                         . "&kamar=" . urlencode($filter_kamar ?? '')
                                         . "&kelas=" . urlencode($filter_kelas ?? '');
                                     ?>

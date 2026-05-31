@@ -6,8 +6,8 @@ guard('izin_manage');
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     // 0. Validasi CSRF Token
     if (!isset($_POST['csrf_token']) || !isset($_SESSION['csrf_token']) || !hash_equals($_SESSION['csrf_token'], $_POST['csrf_token'])) {
-        $_SESSION['error_message'] = "❌ Token keamanan tidak valid. Silakan muat ulang halaman.";
-        header("Location: bulk.php");
+        http_response_code(403);
+        require __DIR__ . '/../../bootstrap/csrf_expired.php';
         exit;
     }
 
@@ -43,10 +43,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         exit;
     }
 
-    // 3.1. Pencegahan Eskalasi Hak Akses: Filter ID yang berstatus admin
+    // 3.1. Pencegahan Eskalasi Hak Akses: Filter ID yang berstatus admin (dan pengelola jika bukan admin)
     $validIdsStr = implode(',', $validUserIds);
     $safeUserIds = [];
-    $res = $conn->query("SELECT id FROM users WHERE id IN ($validIdsStr) AND role != 'admin'");
+    $is_admin = (isset($_SESSION['role']) && strtolower($_SESSION['role']) === 'admin');
+    $role_condition = $is_admin ? "role != 'admin'" : "role NOT IN ('admin', 'pengelola')";
+    $res = $conn->query("SELECT id FROM users WHERE id IN ($validIdsStr) AND $role_condition");
     if ($res) {
         while($row = $res->fetch_assoc()) {
             $safeUserIds[] = (int)$row['id'];
@@ -122,10 +124,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $_SESSION['error_message'] = "❌ Gagal menerapkan perubahan izin massal: " . $e->getMessage();
     }
 } else {
-    $_SESSION['error_message'] = "❌ Akses tidak sah.";
+    http_response_code(403);
+    require __DIR__ . '/../../bootstrap/access_denied.php';
+    exit;
 }
-
-// Redirect kembali ke halaman bulk edit
-header("Location: bulk.php");
-exit;
 ?>

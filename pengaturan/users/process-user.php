@@ -5,7 +5,8 @@ require_once __DIR__ . '/../../bootstrap/init.php';
 guard('user_manage');
 
 if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
-    header("Location: " . BASE_URL . "/index.php");
+    http_response_code(403);
+    require __DIR__ . '/../../bootstrap/access_denied.php';
     exit;
 }
 
@@ -86,38 +87,57 @@ if ($is_edit_mode) {
                 require __DIR__ . '/../../bootstrap/access_denied.php';
                 exit;
             }
-        }
-    }
-    $stmt_role_check->close();
-}
-
-// 3. Mencegah pembuatan role admin baru atau promosi non-admin menjadi admin
-if ($role === 'admin') {
-    if (!$is_edit_mode) {
-        // Mode tambah: Langsung blokir pembuatan admin baru
-        $conn->close();
-        http_response_code(403);
-        require __DIR__ . '/../../bootstrap/access_denied.php';
-        exit;
-    } else {
-        // Mode edit: Cek apakah role asli user di database memang admin.
-        // Jika aslinya bukan admin, tolak keras (mencegah promosi ilegal ke admin).
-        $user_id_check = (int)$_POST['user_id'];
-        $stmt_promo_check = $conn->prepare("SELECT role FROM users WHERE id = ?");
-        $stmt_promo_check->bind_param("i", $user_id_check);
-        $stmt_promo_check->execute();
-        $result_promo = $stmt_promo_check->get_result();
-        if ($result_promo->num_rows === 1) {
-            $user_promo = $result_promo->fetch_assoc();
-            if (strtolower($user_promo['role']) !== 'admin') {
-                $stmt_promo_check->close();
+        } elseif ($role_asli === 'pengelola') {
+            // Skenario B: User target aslinya adalah pengelola
+            if (!isset($_SESSION['role']) || strtolower($_SESSION['role']) !== 'admin') {
+                $stmt_role_check->close();
                 $conn->close();
                 http_response_code(403);
                 require __DIR__ . '/../../bootstrap/access_denied.php';
                 exit;
             }
         }
-        $stmt_promo_check->close();
+    }
+    $stmt_role_check->close();
+}
+
+// 3. Mencegah pembuatan role admin/pengelola baru atau promosi ilegal
+if ($role === 'admin' || $role === 'pengelola') {
+    if ($role === 'pengelola' && (!isset($_SESSION['role']) || strtolower($_SESSION['role']) !== 'admin')) {
+        // Non-admin mencoba memberikan role pengelola
+        $conn->close();
+        http_response_code(403);
+        require __DIR__ . '/../../bootstrap/access_denied.php';
+        exit;
+    }
+
+    if ($role === 'admin') {
+        if (!$is_edit_mode) {
+            // Mode tambah: Langsung blokir pembuatan admin baru
+            $conn->close();
+            http_response_code(403);
+            require __DIR__ . '/../../bootstrap/access_denied.php';
+            exit;
+        } else {
+            // Mode edit: Cek apakah role asli user di database memang admin.
+            // Jika aslinya bukan admin, tolak keras (mencegah promosi ilegal ke admin).
+            $user_id_check = (int)$_POST['user_id'];
+            $stmt_promo_check = $conn->prepare("SELECT role FROM users WHERE id = ?");
+            $stmt_promo_check->bind_param("i", $user_id_check);
+            $stmt_promo_check->execute();
+            $result_promo = $stmt_promo_check->get_result();
+            if ($result_promo->num_rows === 1) {
+                $user_promo = $result_promo->fetch_assoc();
+                if (strtolower($user_promo['role']) !== 'admin') {
+                    $stmt_promo_check->close();
+                    $conn->close();
+                    http_response_code(403);
+                    require __DIR__ . '/../../bootstrap/access_denied.php';
+                    exit;
+                }
+            }
+            $stmt_promo_check->close();
+        }
     }
 }
 

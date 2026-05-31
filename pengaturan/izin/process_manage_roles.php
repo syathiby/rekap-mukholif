@@ -3,19 +3,20 @@ require_once __DIR__ . '/../../bootstrap/init.php';
 guard('izin_manage');
 
 if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
-    header("Location: manage_roles.php");
-    exit();
+    http_response_code(403);
+    require __DIR__ . '/../../bootstrap/access_denied.php';
+    exit;
 }
 
 // Validasi CSRF Token
 if (!isset($_POST['csrf_token']) || !isset($_SESSION['csrf_token']) || !hash_equals($_SESSION['csrf_token'], $_POST['csrf_token'])) {
-    $_SESSION['error_message'] = "Error: Token keamanan tidak valid (CSRF). Silakan ulangi.";
-    header("Location: manage_roles.php");
-    exit();
+    http_response_code(403);
+    require __DIR__ . '/../../bootstrap/csrf_expired.php';
+    exit;
 }
 
 $action = $_POST['action'] ?? '';
-$protectedRoles = ['admin', 'pelihat', 'staff', 'pengelola'];
+$protectedRoles = ['admin', 'pelihat', 'pengelola'];
 
 // Fungsi Helper untuk membuat ID ramah sistem (Slugifier)
 function generateSlug($string) {
@@ -72,9 +73,9 @@ if ($action === 'add') {
     }
 
     if (in_array($id, $protectedRoles)) {
-        $_SESSION['error_message'] = "Nama role default sistem tidak bisa diedit demi keamanan.";
-        header("Location: manage_roles.php");
-        exit();
+        http_response_code(403);
+        require __DIR__ . '/../../bootstrap/access_denied.php';
+        exit;
     }
 
     $stmt = $conn->prepare("UPDATE roles SET role_name = ? WHERE id = ?");
@@ -98,9 +99,9 @@ if ($action === 'add') {
 
     // Perlindungan Ganda (meskipun di UI tombol hapusnya tidak ada)
     if (in_array($id, $protectedRoles)) {
-        $_SESSION['error_message'] = "Akses Ditolak: Anda mencoba menghapus role default sistem.";
-        header("Location: manage_roles.php");
-        exit();
+        http_response_code(403);
+        require __DIR__ . '/../../bootstrap/access_denied.php';
+        exit;
     }
 
     // Lakukan Delete

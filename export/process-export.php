@@ -9,9 +9,9 @@ guard('export_laporan');
 
 // 1. Validasi CSRF Token untuk Keamanan
 if (!isset($_POST['csrf_token']) || !isset($_SESSION['csrf_token']) || !hash_equals($_SESSION['csrf_token'], $_POST['csrf_token'])) {
-    set_flash_message('Akses ditolak: Token keamanan CSRF tidak valid atau telah kedaluwarsa.', 'danger');
-    header('Location: index.php');
-    exit();
+    http_response_code(403);
+    require __DIR__ . '/../bootstrap/csrf_expired.php';
+    exit;
 }
 
 use PhpOffice\PhpSpreadsheet\Spreadsheet;

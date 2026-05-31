@@ -61,7 +61,7 @@ $rolesResult = $conn->query("SELECT * FROM roles ORDER BY created_at ASC");
                         <?php 
                         $no = 1;
                         // Default roles tidak boleh dihapus/diedit ID-nya sembarangan
-                        $protectedRoles = ['admin', 'pelihat', 'staff', 'pengelola'];
+                        $protectedRoles = ['admin', 'pelihat', 'pengelola'];
                         while ($row = $rolesResult->fetch_assoc()): 
                             $isProtected = in_array($row['id'], $protectedRoles);
                         ?>
@@ -75,20 +75,30 @@ $rolesResult = $conn->query("SELECT * FROM roles ORDER BY created_at ASC");
                                 </td>
                                 <td><span class="badge bg-light text-dark border font-monospace"><?= htmlspecialchars($row['id']) ?></span></td>
                                 <td class="px-4 text-center">
-                                    <button class="btn btn-sm btn-outline-primary rounded-circle shadow-sm" onclick="editRole('<?= addslashes($row['id']) ?>', '<?= addslashes($row['role_name']) ?>')" title="Edit Nama Role">
-                                        <i class="fas fa-edit"></i>
-                                    </button>
-                                    
-                                    <?php if(!$isProtected): ?>
-                                        <form action="process_manage_roles.php" method="POST" class="d-inline">
-                                            <input type="hidden" name="action" value="delete">
-                                            <input type="hidden" name="id" value="<?= htmlspecialchars($row['id']) ?>">
-                                            <input type="hidden" name="csrf_token" value="<?= $_SESSION['csrf_token'] ?>">
-                                            <button type="button" class="btn btn-sm btn-outline-danger rounded-circle shadow-sm ms-1" onclick="confirmSubmit(event, this, 'Hapus Role?', 'User yang memiliki role ini mungkin akan kehilangan hak aksesnya. Lanjutkan?')" title="Hapus Role">
-                                                <i class="fas fa-trash"></i>
-                                            </button>
-                                        </form>
-                                    <?php endif; ?>
+                                    <div class="d-inline-flex gap-2 align-items-center justify-content-center">
+                                        <?php 
+                                        $is_admin = (isset($_SESSION['role']) && strtolower($_SESSION['role']) === 'admin');
+                                        $show_edit = true;
+                                        if (strtolower($row['id']) === 'pengelola' && !$is_admin) {
+                                            $show_edit = false;
+                                        }
+                                        ?>
+                                        <?php if($show_edit): ?>
+                                        <button class="btn btn-sm btn-outline-primary rounded-circle shadow-sm d-flex align-items-center justify-content-center" style="width: 34px; height: 34px; padding: 0;" onclick="editRole('<?= addslashes($row['id']) ?>', '<?= addslashes($row['role_name']) ?>')" title="Edit Nama Role">
+                                            <i class="fas fa-edit"></i>
+                                        </button>
+                                        <?php endif; ?>
+                                        <?php if(!$isProtected): ?>
+                                            <form action="process_manage_roles.php" method="POST" class="m-0 p-0">
+                                                <input type="hidden" name="action" value="delete">
+                                                <input type="hidden" name="id" value="<?= htmlspecialchars($row['id']) ?>">
+                                                <input type="hidden" name="csrf_token" value="<?= $_SESSION['csrf_token'] ?>">
+                                                <button type="button" class="btn btn-sm btn-outline-danger rounded-circle shadow-sm d-flex align-items-center justify-content-center" style="width: 34px; height: 34px; padding: 0;" onclick="confirmSubmit(event, this, 'Hapus Role?', 'User yang memiliki role ini mungkin akan kehilangan hak aksesnya. Lanjutkan?')" title="Hapus Role">
+                                                    <i class="fas fa-trash"></i>
+                                                </button>
+                                            </form>
+                                        <?php endif; ?>
+                                    </div>
                                 </td>
                             </tr>
                         <?php endwhile; ?>

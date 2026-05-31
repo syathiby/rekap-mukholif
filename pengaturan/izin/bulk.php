@@ -4,7 +4,10 @@ guard('izin_manage');
 require_once __DIR__ . '/../../layouts/header.php'; 
 
 $loggedInUserId = (int)($_SESSION['user_id'] ?? 0);
-$usersResult = $conn->query("SELECT id, nama_lengkap, username FROM users WHERE role != 'admin' AND id != $loggedInUserId ORDER BY nama_lengkap ASC");
+// --- LOGIKA BARU: Jika bukan admin, jangan tampilkan user dengan role 'pengelola' ---
+$is_admin = (isset($_SESSION['role']) && strtolower($_SESSION['role']) === 'admin');
+$role_condition = $is_admin ? "role != 'admin'" : "role NOT IN ('admin', 'pengelola')";
+$usersResult = $conn->query("SELECT id, nama_lengkap, username FROM users WHERE $role_condition AND id != $loggedInUserId ORDER BY nama_lengkap ASC");
 
 $permissions = [];
 $permResult = $conn->query("SELECT id, nama_izin, deskripsi, grup FROM permissions ORDER BY grup, nama_izin ASC");

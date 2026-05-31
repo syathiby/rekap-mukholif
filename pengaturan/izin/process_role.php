@@ -8,8 +8,8 @@ guard('izin_manage');
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     // Validasi CSRF Token
     if (!isset($_POST['csrf_token']) || !isset($_SESSION['csrf_token']) || !hash_equals($_SESSION['csrf_token'], $_POST['csrf_token'])) {
-        $_SESSION['error_message'] = "Error: Token keamanan tidak valid (CSRF). Silakan ulangi.";
-        header("Location: role.php");
+        http_response_code(403);
+        require __DIR__ . '/../../bootstrap/csrf_expired.php';
         exit;
     }
 
@@ -26,6 +26,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         http_response_code(403);
         require __DIR__ . '/../../bootstrap/access_denied.php';
         exit;
+    } elseif ($role === 'pengelola') {
+        if (!isset($_SESSION['role']) || strtolower($_SESSION['role']) !== 'admin') {
+            http_response_code(403);
+            require __DIR__ . '/../../bootstrap/access_denied.php';
+            exit;
+        }
     }
 
     $availableRoles = [];
@@ -49,7 +55,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $stmtDelete->execute();
         $stmtDelete->close();
 
-        // Tambah izin yang baru
+        // Tambah izin yang baru ke role_permissions
         if (!empty($permissions)) {
             $stmtInsert = $conn->prepare("INSERT INTO role_permissions (role, permission_id) VALUES (?, ?)");
             foreach ($permissions as $perm_id) {
@@ -58,6 +64,20 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 $stmtInsert->execute();
             }
             $stmtInsert->close();
+
+            // SINKRONISASI KE USER LAMA (SISTEM MENIMPA / MERGE)
+            // Tidak menghapus izin yang sudah ada, hanya menambahkan izin baru dari role
+            $stmtUserPerm = $conn->prepare("INSERT IGNORE INTO user_permissions (user_id, permission_id) VALUES (?, ?)");
+            $resUsers = $conn->query("SELECT id FROM users WHERE role = '" . $conn->real_escape_string($role) . "'");
+            while ($u = $resUsers->fetch_assoc()) {
+                $uid = (int)$u['id'];
+                foreach ($permissions as $perm_id) {
+                    $perm_id = (int)$perm_id;
+                    $stmtUserPerm->bind_param("ii", $uid, $perm_id);
+                    $stmtUserPerm->execute();
+                }
+            }
+            $stmtUserPerm->close();
         }
 
         $conn->commit();
@@ -78,7 +98,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     header("Location: role.php?role=" . urlencode($role));
     exit;
 } else {
-    header("Location: role.php");
+    http_response_code(403);
+    require __DIR__ . '/../../bootstrap/access_denied.php';
     exit;
 }
 ?>

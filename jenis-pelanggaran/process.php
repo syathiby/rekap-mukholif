@@ -5,9 +5,9 @@ require_once __DIR__ . '/../bootstrap/init.php';
 // Validasi CSRF Token secara global untuk semua operasi POST
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     if (!isset($_POST['csrf_token']) || !isset($_SESSION['csrf_token']) || !hash_equals($_SESSION['csrf_token'], $_POST['csrf_token'])) {
-        $_SESSION['message'] = ['type' => 'danger', 'text' => 'Error: Token keamanan tidak valid (CSRF). Silakan ulangi.'];
-        header("Location: index.php");
-        exit();
+        http_response_code(403);
+        require __DIR__ . '/../bootstrap/csrf_expired.php';
+        exit;
     }
 }
 // Definisikan nilai yang diizinkan untuk validasi
@@ -373,7 +373,8 @@ if (isset($_POST['delete'])) {
 }
 
 
-// Jika tidak ada aksi yang cocok, redirect
-header("Location: index.php");
-exit();
+// Jika tidak ada aksi yang cocok, anggap ilegal
+http_response_code(403);
+require __DIR__ . '/../bootstrap/access_denied.php';
+exit;
 ?>

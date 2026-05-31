@@ -90,6 +90,7 @@ if (function_exists('has_permission')) {
         'rekap_kebersihan', 
         'rekap_keterlambatan', 
         'rekap_santri_teladan',
+        'rekap_kamar',
         'rekap_view_statistik', 
         'rekap_view_tahfidz'
     ]);

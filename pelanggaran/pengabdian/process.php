@@ -6,7 +6,12 @@ require_once __DIR__ . '/../../bootstrap/init.php';
 guard('pelanggaran_pengabdian_input');
 
 // Pastikan form disubmit dengan benar
-if (isset($_POST['submit_pelanggaran'])) {
+if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['submit_pelanggaran'])) {
+    if (!isset($_POST['csrf_token']) || !isset($_SESSION['csrf_token']) || !hash_equals($_SESSION['csrf_token'], $_POST['csrf_token'])) {
+        http_response_code(403);
+        require __DIR__ . '/../../bootstrap/csrf_expired.php';
+        exit;
+    }
 
     $tipe_pelanggaran = $_POST['tipe_pelanggaran'] ?? '';
     $dicatat_oleh = $_SESSION['user_id'];
@@ -168,5 +173,6 @@ if (isset($_POST['submit_pelanggaran'])) {
 }
 
 // Jika file diakses langsung, tendang balik
-header("Location: create.php");
-exit();
+http_response_code(403);
+require __DIR__ . '/../../bootstrap/access_denied.php';
+exit;

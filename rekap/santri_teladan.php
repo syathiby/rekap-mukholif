@@ -629,7 +629,7 @@ body {
                     <div class="card-content">
                         <h3>
                             <?php if (has_permission('rekap_detail_santri')): ?>
-                                <a href="detail_umum.php?id=<?= $row['id'] ?>&start_date=<?= urlencode($start_date) ?>&end_date=<?= urlencode($end_date) ?>" class="stretched-link" style="color: inherit; text-decoration: none;">
+                                <a href="detail_karakter.php?id=<?= $row['id'] ?>&start_date=<?= urlencode($start_date) ?>&end_date=<?= urlencode($end_date) ?>" class="stretched-link" style="color: inherit; text-decoration: none;">
                                     <?= htmlspecialchars($row['nama']) ?>
                                 </a>
                             <?php else: ?>

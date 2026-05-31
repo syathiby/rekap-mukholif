@@ -1,4 +1,4 @@
-﻿<?php
+<?php
 if (session_status() === PHP_SESSION_NONE) { session_start(); }
 require_once __DIR__ . '/../bootstrap/init.php';
 guard('eksekusi_manage');
@@ -14,6 +14,11 @@ if (!$user_id) {
 }
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+    if (!isset($_POST['csrf_token']) || !isset($_SESSION['csrf_token']) || !hash_equals($_SESSION['csrf_token'], $_POST['csrf_token'])) {
+        http_response_code(403);
+        require __DIR__ . '/../bootstrap/csrf_expired.php';
+        exit;
+    }
     $pelanggaranList = $_POST['pelanggaran_id'] ?? [];
     $tanggal = $_POST['tanggal'] ?? date('Y-m-d H:i:s');
     $catatan = $_POST['catatan'] ?? '';
@@ -81,6 +86,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     exit();
 
 } else {
-    header("Location: index.php");
-    exit();
+    http_response_code(403);
+    require __DIR__ . '/../bootstrap/access_denied.php';
+    exit;
 }

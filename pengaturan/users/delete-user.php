@@ -38,6 +38,15 @@ if (isset($_GET['id']) && is_numeric($_GET['id'])) {
             http_response_code(403);
             require __DIR__ . '/../../bootstrap/access_denied.php';
             exit;
+        } elseif (strtolower($role_to_delete) === 'pengelola') {
+            // Kalau rolenya 'pengelola', hanya 'admin' yang boleh hapus
+            if (!isset($_SESSION['role']) || strtolower($_SESSION['role']) !== 'admin') {
+                $stmt_check->close();
+                $conn->close();
+                http_response_code(403);
+                require __DIR__ . '/../../bootstrap/access_denied.php';
+                exit;
+            }
         }
     } else {
         // User tidak ditemukan di database
@@ -70,7 +79,9 @@ if (isset($_GET['id']) && is_numeric($_GET['id'])) {
     $stmt->close();
 } else {
     // Kalo akses file ini tanpa ID, kasih notif error juga
-    $_SESSION['error_message'] = "❌ Aksi tidak valid.";
+    http_response_code(403);
+    require __DIR__ . '/../../bootstrap/access_denied.php';
+    exit;
 }
 
 $conn->close();

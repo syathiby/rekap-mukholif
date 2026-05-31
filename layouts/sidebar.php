@@ -81,7 +81,7 @@ if (function_exists('has_permission')) {
     </a>
     <?php endif; ?>
 
-    <?php if (has_permission(['rekap_pelanggaran_umum', 'rekap_detail_santri', 'rekap_kebersihan', 'rekap_keterlambatan', 'rekap_santri_teladan', 'rekap_view_statistik', 'rekap_view_tahfidz'])): ?>
+    <?php if (has_permission(['rekap_pelanggaran_umum', 'rekap_detail_santri', 'rekap_kebersihan', 'rekap_keterlambatan', 'rekap_santri_teladan', 'rekap_kamar', 'rekap_view_statistik', 'rekap_view_tahfidz'])): ?>
     <a href="<?= BASE_URL ?>/rekap" class="sb-link <?= strpos($req_path, '/rekap') === 0 ? 'active' : '' ?>">
         <i class="fas fa-chart-bar" style="color:#38bdf8;"></i>
         <span>Rekap Pelanggaran</span>
@@ -113,7 +113,7 @@ if (function_exists('has_permission')) {
     </a>
     <?php endif; ?>
     
-    <?php if (has_permission(['arsip_view', 'arsip_create', 'arsip_delete', 'export_laporan', 'user_manage', 'periode_aktif_manage', 'reset_poin_manage', 'izin_manage', 'history_manage'])): ?>
+    <?php if (has_permission(['arsip_view', 'arsip_create', 'arsip_delete', 'export_laporan', 'user_manage', 'periode_aktif_manage', 'reset_poin_manage', 'izin_manage', 'history_manage', 'backup_restore_manage', 'activity_log_manage', 'impor_data'])): ?>
     <div class="sb-section-label">SISTEM</div>
     <?php endif; ?>
 
@@ -131,7 +131,7 @@ if (function_exists('has_permission')) {
     </a>
     <?php endif; ?>
     
-    <?php if (has_permission(['user_manage', 'periode_aktif_manage', 'reset_poin_manage', 'izin_manage', 'history_manage'])): ?>
+    <?php if (has_permission(['user_manage', 'periode_aktif_manage', 'reset_poin_manage', 'izin_manage', 'history_manage', 'backup_restore_manage', 'activity_log_manage', 'impor_data'])): ?>
     <a href="<?= BASE_URL ?>/pengaturan" class="sb-link <?= strpos($req_path, '/pengaturan') === 0 ? 'active' : '' ?>">
         <i class="fas fa-cog"></i>
         <span>Pengaturan</span>

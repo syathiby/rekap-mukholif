@@ -9,14 +9,14 @@ guard('jenis_pelanggaran_delete');
 // Validasi CSRF Token
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     if (!isset($_POST['csrf_token']) || !isset($_SESSION['csrf_token']) || !hash_equals($_SESSION['csrf_token'], $_POST['csrf_token'])) {
-        $_SESSION['error_message'] = "Error: Token keamanan tidak valid (CSRF). Silakan ulangi.";
-        header("Location: index.php");
+        http_response_code(403);
+        require __DIR__ . '/../bootstrap/csrf_expired.php';
         exit;
     }
 } elseif ($_SERVER['REQUEST_METHOD'] === 'GET' && isset($_GET['id'])) {
     if (!isset($_GET['csrf_token']) || !isset($_SESSION['csrf_token']) || !hash_equals($_SESSION['csrf_token'], $_GET['csrf_token'])) {
-        $_SESSION['error_message'] = "Error: Token keamanan tidak valid (CSRF). Silakan ulangi.";
-        header("Location: index.php");
+        http_response_code(403);
+        require __DIR__ . '/../bootstrap/csrf_expired.php';
         exit;
     }
 }
@@ -72,8 +72,8 @@ if (isset($_GET['id']) && is_numeric($_GET['id'])) {
     // --- PERLINDUNGAN ---
     // Cek apakah ID ini termasuk yang dilindungi
     if (in_array($id, $protected_ids)) {
-        $_SESSION['error_message'] = "Gagal! Data dengan ID $id adalah data default dan tidak dapat dihapus.";
-        header("Location: index.php");
+        http_response_code(403);
+        require __DIR__ . '/../bootstrap/access_denied.php';
         exit; // Langsung hentikan script
     }
     // --- SELESAI ---
@@ -134,7 +134,9 @@ if (isset($_POST['ids']) && is_array($_POST['ids'])) {
         mysqli_stmt_close($stmt);
     } else {
         // Jika setelah difilter tidak ada ID yang bisa dihapus (misal cuma milih ID 1 dan 2)
-        $_SESSION['error_message'] = "Tidak ada data yang dihapus. Semua data yang dipilih adalah data default yang dilindungi.";
+        http_response_code(403);
+        require __DIR__ . '/../bootstrap/access_denied.php';
+        exit;
     }
 }
 

@@ -49,6 +49,14 @@ if (isset($_GET['id']) && is_numeric($_GET['id'])) {
                 require __DIR__ . '/../../bootstrap/access_denied.php';
                 exit;
             }
+        } elseif (strtolower($user_data['role']) === 'pengelola') {
+            // Hanya admin yang bisa mengedit user pengelola
+            if (!isset($_SESSION['role']) || strtolower($_SESSION['role']) !== 'admin') {
+                $stmt->close();
+                http_response_code(403);
+                require __DIR__ . '/../../bootstrap/access_denied.php';
+                exit;
+            }
         }
 
         $page_title = 'Edit User';
@@ -261,7 +269,9 @@ if ($result_roles) {
                             <select class="form-control" id="role" name="role" required>
                                 <option value="">-- Pilih Role --</option>
                                 <?php
-                                $resRoles = $conn->query("SELECT id, role_name FROM roles WHERE id != 'admin' ORDER BY created_at ASC");
+                                $is_admin = (isset($_SESSION['role']) && strtolower($_SESSION['role']) === 'admin');
+                                $role_condition = $is_admin ? "id != 'admin'" : "id NOT IN ('admin', 'pengelola')";
+                                $resRoles = $conn->query("SELECT id, role_name FROM roles WHERE $role_condition ORDER BY created_at ASC");
                                 while($r = $resRoles->fetch_assoc()) {
                                     $selected = (strtolower($user_data['role']) === strtolower($r['id'])) ? 'selected' : '';
                                     echo '<option value="' . htmlspecialchars($r['id']) . '" ' . $selected . '>' . htmlspecialchars($r['role_name']) . '</option>';

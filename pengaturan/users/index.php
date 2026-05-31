@@ -186,13 +186,25 @@ if ($result) {
                                 </td>
                                 <td class="text-center">
                                     <div class="d-inline-flex gap-2">
-                                        <?php if (strtolower($user['role']) != 'admin' || (isset($_SESSION['role']) && strtolower($_SESSION['role']) == 'admin')) : ?>
+                                        <?php 
+                                        $is_admin = (isset($_SESSION['role']) && strtolower($_SESSION['role']) === 'admin');
+                                        $user_role_str = strtolower($user['role']);
+                                        $can_edit = $is_admin || ($user_role_str !== 'admin' && $user_role_str !== 'pengelola');
+                                        $can_delete = $is_admin || ($user_role_str !== 'admin' && $user_role_str !== 'pengelola');
+                                        
+                                        // Admin tidak bisa menghapus dirinya sendiri dari sini, logic tambahan
+                                        if ($user_role_str === 'admin') {
+                                            $can_delete = false;
+                                        }
+                                        ?>
+
+                                        <?php if ($can_edit) : ?>
                                             <a href="form-user.php?id=<?= $user['id'] ?>" class="btn-action-edit" title="Edit User">
                                                 <i class="fas fa-pen-to-square"></i>
                                             </a>
                                         <?php endif; ?>
                                         
-                                        <?php if (strtolower($user['role']) != 'admin') : ?>
+                                        <?php if ($can_delete) : ?>
                                             <a href="delete-user.php?id=<?= $user['id'] ?>" class="btn-action-delete" title="Hapus User" onclick="confirmSubmit(event, this, 'Hapus User', 'Yakin mau hapus user <?= htmlspecialchars($user['username']) ?>? Tindakan ini tidak bisa dibatalkan!');">
                                                 <i class="fas fa-trash-alt"></i>
                                             </a>
