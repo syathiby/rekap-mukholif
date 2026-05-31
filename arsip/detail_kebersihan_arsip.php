@@ -1,4 +1,4 @@
-﻿<?php 
+<?php 
 // 1. Panggil 'Otak' aplikasi dulu
 require_once __DIR__ . '/../bootstrap/init.php';
 
@@ -54,29 +54,18 @@ $stmt_data->close();
 $total_pelanggaran = count($pelanggaran_list);
 
 ?>
-<!DOCTYPE html>
-<html lang="id">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Detail Kebersihan Kamar <?= htmlspecialchars($kamar) ?></title>
-    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
-    <style>
-        :root {
-            --primary: #4361ee;
-            --primary-light: #e0e7ff;
-            --danger: #f72585;
-            --light-bg: #f5f7fa;
-            --card-bg: #ffffff;
-            --text-dark: #212529;
-            --text-light: #6c757d;
-            --border-color: #e0e0e0;
-        }
-        body {
-            font-family: 'Poppins', sans-serif;
-            background-color: var(--light-bg);
-        }
-        .header-card {
+<style>
+    :root {
+        --primary: #4361ee;
+        --primary-light: #e0e7ff;
+        --danger: #f72585;
+        --light-bg: #f5f7fa;
+        --card-bg: #ffffff;
+        --text-dark: #212529;
+        --text-light: #6c757d;
+        --border-color: #e0e0e0;
+    }
+    .header-card {
             background: var(--card-bg);
             padding: 25px;
             border-radius: 12px;
@@ -241,5 +230,3 @@ $total_pelanggaran = count($pelanggaran_list);
 </div>
 
 <?php require_once __DIR__ . '/../layouts/footer.php'; ?>
-</body>
-</html>

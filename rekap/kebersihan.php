@@ -48,42 +48,27 @@ $result = $stmt->get_result();
 if (!$result) die("Query Error: " . $stmt->error);
 ?>
 
-<!DOCTYPE html>
-<html lang="id">
-<head>
-    <meta charset="UTF-8">
-    <title>Rekap Pelanggaran Kebersihan per Kamar</title>
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
-    <style>
-        :root {
-            --primary: #4361ee;
-            --secondary: #3f37c9;
-            --danger: #f72585;
-            --warning: #f8961e;
-            --success: #4cc9f0;
-            --light: #f8f9fa;
-            --dark: #212529;
-            /* Warna untuk piala */
-            --gold: #f59e0b;
-            --silver: #9ca3af;
-            --bronze: #a16207;
-        }
-        
-        body {
-            font-family: 'Poppins', sans-serif;
-            background-color: #f5f7fa;
-            color: var(--dark);
-            margin: 0; /* <<< Perbaikan kecil */
-        }
-        
-        .container {
-            padding: 30px;
-            max-width: 1200px;
-            margin: 0 auto;
-            animation: fadeIn 0.6s ease-out;
-        }
+<style>
+    :root {
+        --primary: #4361ee;
+        --secondary: #3f37c9;
+        --danger: #f72585;
+        --warning: #f8961e;
+        --success: #4cc9f0;
+        --light: #f8f9fa;
+        --dark: #212529;
+        /* Warna untuk piala */
+        --gold: #f59e0b;
+        --silver: #9ca3af;
+        --bronze: #a16207;
+    }
+    
+    .container {
+        padding: 30px;
+        max-width: 1200px;
+        margin: 0 auto;
+        animation: fadeIn 0.6s ease-out;
+    }
         
         .header-card {
             background: white;
@@ -288,8 +273,6 @@ if (!$result) die("Query Error: " . $stmt->error);
             }
         }
     </style>
-</head>
-<body>
     <div class="container">
         <div class="header-card">
             <h2><i class="fas fa-broom"></i> Rekap Kebersihan per Kamar</h2>
@@ -365,9 +348,7 @@ if (!$result) die("Query Error: " . $stmt->error);
                 ?>
             </tbody>
         </table>
-    </div>
-    
-</body>
-</html>
+    </div> <!-- .table-wrapper -->
+</div> <!-- .container -->
 
 <?php require_once __DIR__ . '/../layouts/footer.php'; ?>

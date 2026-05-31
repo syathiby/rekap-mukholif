@@ -194,6 +194,10 @@ $jenis_pelanggaran_list_result = mysqli_query($conn, trim($sql_query));
         font-weight: 600;
         padding: 0.5rem 1.25rem;
         transition: all 0.2s;
+        white-space: nowrap;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
     }
     .btn-back:hover {
         background: #f1f5f9;
@@ -223,7 +227,7 @@ $jenis_pelanggaran_list_result = mysqli_query($conn, trim($sql_query));
             <h3 class="fw-bolder text-dark mb-1"><i class="fas fa-language text-info me-2"></i>Input Bahasa</h3>
             <p class="text-muted mb-0">Perbarui level pelanggaran bahasa santri dengan sistem otomatis.</p>
         </div>
-        <div class="d-flex gap-2">
+        <div class="d-flex gap-2 flex-nowrap justify-content-center">
             <button class="btn-back shadow-sm text-decoration-none" type="button" data-bs-toggle="collapse" data-bs-target="#infoLogikaCollapse" aria-expanded="false">
                 <i class="fas fa-info-circle me-1 text-info"></i> Info Sistem
             </button>
@@ -252,25 +256,36 @@ $jenis_pelanggaran_list_result = mysqli_query($conn, trim($sql_query));
                 <i class="fas fa-lightbulb text-warning"></i> Bagaimana Sistem Bahasa Bekerja?
             </h6>
             <div class="row g-4">
-                <div class="col-md-6">
+                <div class="col-md-4">
                     <div class="d-flex gap-3">
                         <div class="info-icon-wrapper flex-shrink-0">
                             <i class="fas fa-sync-alt"></i>
                         </div>
                         <div>
                             <strong class="text-dark d-block mb-1">Otomatis Update Level</strong>
-                            <p class="small text-muted mb-0">Input baru akan langsung <strong>menggantikan</strong> level bahasa santri sebelumnya. Tidak perlu hapus manual.</p>
+                            <p class="small text-muted mb-0">Input level baru langsung <strong>menggantikan</strong> level sebelumnya. Level lama otomatis diarsipkan ke riwayat.</p>
                         </div>
                     </div>
                 </div>
-                <div class="col-md-6">
+                <div class="col-md-4">
                     <div class="d-flex gap-3">
                         <div class="info-icon-wrapper flex-shrink-0">
-                            <i class="fas fa-history"></i>
+                            <i class="fas fa-leaf text-success"></i>
                         </div>
                         <div>
-                            <strong class="text-dark d-block mb-1">Riwayat Tersimpan</strong>
-                            <p class="small text-muted mb-0">Data lama tidak hilang, tapi masuk ke <strong>Log Riwayat</strong> untuk memantau grafik perkembangan santri.</p>
+                            <strong class="text-dark d-block mb-1">Level 0 (Bersih)</strong>
+                            <p class="small text-muted mb-0">Santri yang <strong>tidak memiliki</strong> catatan aktif di tabel pelanggaran bahasa dianggap <strong>Level 0 (Bersih)</strong> dengan 0 Poin.</p>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-4">
+                    <div class="d-flex gap-3">
+                        <div class="info-icon-wrapper flex-shrink-0">
+                            <i class="fas fa-history text-info"></i>
+                        </div>
+                        <div>
+                            <strong class="text-dark d-block mb-1">Opsi Pembersihan & Log</strong>
+                            <p class="small text-muted mb-0">Gunakan opsi <strong>"Bersihkan"</strong> untuk menghapus status aktif dan mencatat titik 0 pada grafik riwayat perkembangan.</p>
                         </div>
                     </div>
                 </div>
@@ -296,6 +311,7 @@ $jenis_pelanggaran_list_result = mysqli_query($conn, trim($sql_query));
                             <label class="form-label-custom">LEVEL BAHASA BARU</label>
                             <select name="jenis_pelanggaran_id" id="jenis_pelanggaran_id" class="form-select" required>
                                 <option value="">Cari level bahasa...</option>
+                                <option value="clear" class="text-success fw-bold">🟢 Bersihkan dari Pelanggaran Bahasa (Level 0 - 0 Poin)</option>
                                 <?php
                                 if ($jenis_pelanggaran_list_result && mysqli_num_rows($jenis_pelanggaran_list_result) > 0) {
                                     while ($jp = mysqli_fetch_assoc($jenis_pelanggaran_list_result)) {
@@ -425,6 +441,10 @@ $(document).ready(function() {
         }
     })
     .autocomplete("instance")._renderItem = function(ul, item) {
+        let levelBadgeClass = item.level === 'Bersih' 
+            ? 'bg-success bg-opacity-10 text-success border border-success border-opacity-25' 
+            : 'bg-danger bg-opacity-10 text-danger border border-danger border-opacity-25';
+            
         return $("<li>")
             .append(`
                 <div class="ui-menu-item-wrapper gap-3">
@@ -433,9 +453,10 @@ $(document).ready(function() {
                     </div>
                     <div class="flex-grow-1">
                         <div class="fw-bold text-dark mb-1" style="font-size: 0.95rem;">${item.value}</div>
-                        <div class="d-flex gap-2">
+                        <div class="d-flex gap-2 align-items-center flex-wrap">
                             <span class="badge bg-light text-secondary border fw-normal"><i class="fas fa-chalkboard-teacher me-1"></i> ${item.kelas}</span>
                             <span class="badge bg-light text-secondary border fw-normal"><i class="fas fa-bed me-1"></i> ${item.kamar}</span>
+                            <span class="badge ${levelBadgeClass} fw-semibold" style="font-size: 0.75rem;"><i class="fas fa-language me-1"></i> ${item.level}</span>
                         </div>
                     </div>
                 </div>

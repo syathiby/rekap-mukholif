@@ -5,8 +5,13 @@ require_once __DIR__ . '/../../bootstrap/init.php';
 // 2. Jalankan 'SATPAM'
 guard('rekap_view_kesantrian');   
 
-// 3. Panggil Header
-require_once __DIR__ . '/../../layouts/header.php';
+// Deteksi AJAX
+$is_ajax = isset($_SERVER['HTTP_X_REQUESTED_WITH']) && strtolower($_SERVER['HTTP_X_REQUESTED_WITH']) === 'xmlhttprequest';
+
+if (!$is_ajax) {
+    // 3. Panggil Header
+    require_once __DIR__ . '/../../layouts/header.php';
+}
 
 $bagian = 'Kesantrian'; 
 
@@ -61,6 +66,7 @@ $stmt_stats = mysqli_prepare($conn, $sql_stats);
 mysqli_stmt_bind_param($stmt_stats, $base_types, ...$base_params);
 mysqli_stmt_execute($stmt_stats);
 $stats = mysqli_fetch_assoc(mysqli_stmt_get_result($stmt_stats));
+mysqli_stmt_close($stmt_stats);
 
 // --- QUERY 1: CHART SEBARAN KAMAR (Diurutkan dari Terbanyak) ---
 $sql_kamar = "
@@ -73,11 +79,11 @@ $sql_kamar = "
     GROUP BY s.kamar 
     ORDER BY total DESC
 ";
-// Note: ORDER BY total DESC bikin urutannya dari kasus terbanyak
 $stmt_kamar = mysqli_prepare($conn, $sql_kamar);
 mysqli_stmt_bind_param($stmt_kamar, $base_types, ...$base_params);
 mysqli_stmt_execute($stmt_kamar);
 $data_kamar = mysqli_fetch_all(mysqli_stmt_get_result($stmt_kamar), MYSQLI_ASSOC);
+mysqli_stmt_close($stmt_kamar);
 
 $json_kamar_chart = json_encode([
     'labels' => array_map(function($i) { return "Kamar " . $i; }, array_column($data_kamar, 'kamar')),
@@ -99,6 +105,7 @@ $stmt_kelas = mysqli_prepare($conn, $sql_kelas);
 mysqli_stmt_bind_param($stmt_kelas, $base_types, ...$base_params);
 mysqli_stmt_execute($stmt_kelas);
 $data_kelas = mysqli_fetch_all(mysqli_stmt_get_result($stmt_kelas), MYSQLI_ASSOC);
+mysqli_stmt_close($stmt_kelas);
 
 $json_kelas_chart = json_encode([
     'labels' => array_map(function($i) { return "Kelas " . $i; }, array_column($data_kelas, 'kelas')),
@@ -125,6 +132,60 @@ $stmt = mysqli_prepare($conn, $sql_peringkat);
 mysqli_stmt_bind_param($stmt, $base_types, ...$base_params);
 mysqli_stmt_execute($stmt);
 $peringkat_list = mysqli_fetch_all(mysqli_stmt_get_result($stmt), MYSQLI_ASSOC);
+mysqli_stmt_close($stmt);
+
+// Render body tabel
+ob_start();
+?>
+<?php if (empty($peringkat_list)): ?>
+    <tr><td colspan="5" class="text-center py-5 text-muted">Belum ada data pelanggaran.</td></tr>
+<?php else: ?>
+    <?php foreach ($peringkat_list as $index => $row): $no = $index + 1; ?>
+    <tr>
+        <td class="text-center py-3">
+            <div class="rank-badge mx-auto <?= ($no <= 3) ? 'rank-'.$no : 'rank-other' ?>">
+                <?= ($no <= 3) ? '<i class="fas fa-crown"></i>' : $no ?>
+            </div>
+        </td>
+        <td class="py-3">
+            <div class="fw-bold text-dark mb-1"><?= htmlspecialchars($row['nama']) ?></div>
+            <div class="d-flex gap-2">
+                <span class="badge bg-light text-secondary border">Kls <?= htmlspecialchars($row['kelas']) ?></span>
+                <span class="badge bg-light text-secondary border">Kmr <?= htmlspecialchars($row['kamar']) ?></span>
+            </div>
+        </td>
+        <td class="text-center py-3"><span class="poin-badge"><?= $row['total_poin'] ?></span></td>
+        <td class="text-center text-muted fw-bold py-3"><?= $row['total_pelanggaran'] ?></td>
+        <td class="text-end pe-4 py-3">
+            <a href="detail-kesantrian.php?santri_id=<?= $row['id'] ?>&start_date=<?= $start_date ?>&end_date=<?= $end_date ?>" class="btn btn-sm btn-outline-primary rounded-pill px-4 fw-bold">Detail <i class="fas fa-arrow-right ms-1"></i></a>
+        </td>
+    </tr>
+    <?php endforeach; ?>
+<?php endif; ?>
+<?php
+$table_tbody_html = ob_get_clean();
+
+// Kirim data JSON jika request berupa AJAX
+if ($is_ajax) {
+    header('Content-Type: application/json');
+    echo json_encode([
+        'tbody' => $table_tbody_html,
+        'stats' => [
+            'total_kasus' => number_format($stats['total_kasus']),
+            'total_poin' => number_format($stats['total_poin']),
+            'total_santri' => number_format($stats['total_santri'])
+        ],
+        'kamar_chart' => [
+            'labels' => array_map(function($i) { return "Kamar " . $i; }, array_column($data_kamar, 'kamar')),
+            'data' => array_column($data_kamar, 'total')
+        ],
+        'kelas_chart' => [
+            'labels' => array_map(function($i) { return "Kelas " . $i; }, array_column($data_kelas, 'kelas')),
+            'data' => array_column($data_kelas, 'total')
+        ]
+    ]);
+    exit;
+}
 ?>
 
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
@@ -158,7 +219,7 @@ $peringkat_list = mysqli_fetch_all(mysqli_stmt_get_result($stmt), MYSQLI_ASSOC);
                 </div>
                 <div>
                     <h6 class="text-muted mb-1 text-uppercase" style="font-size: 0.75rem; letter-spacing: 0.5px;">Total Pelanggaran</h6>
-                    <h3 class="mb-0 fw-bold text-dark"><?= number_format($stats['total_kasus']) ?></h3>
+                    <h3 class="mb-0 fw-bold text-dark" id="statsTotalKasus"><?= number_format($stats['total_kasus']) ?></h3>
                 </div>
             </div>
         </div>
@@ -169,7 +230,7 @@ $peringkat_list = mysqli_fetch_all(mysqli_stmt_get_result($stmt), MYSQLI_ASSOC);
                 </div>
                 <div>
                     <h6 class="text-muted mb-1 text-uppercase" style="font-size: 0.75rem; letter-spacing: 0.5px;">Total Poin</h6>
-                    <h3 class="mb-0 fw-bold text-dark"><?= number_format($stats['total_poin']) ?></h3>
+                    <h3 class="mb-0 fw-bold text-dark" id="statsTotalPoin"><?= number_format($stats['total_poin']) ?></h3>
                 </div>
             </div>
         </div>
@@ -180,7 +241,7 @@ $peringkat_list = mysqli_fetch_all(mysqli_stmt_get_result($stmt), MYSQLI_ASSOC);
                 </div>
                 <div>
                     <h6 class="text-muted mb-1 text-uppercase" style="font-size: 0.75rem; letter-spacing: 0.5px;">Santri Terlibat</h6>
-                    <h3 class="mb-0 fw-bold text-dark"><?= number_format($stats['total_santri']) ?></h3>
+                    <h3 class="mb-0 fw-bold text-dark" id="statsTotalSantri"><?= number_format($stats['total_santri']) ?></h3>
                 </div>
             </div>
         </div>
@@ -253,32 +314,8 @@ $peringkat_list = mysqli_fetch_all(mysqli_stmt_get_result($stmt), MYSQLI_ASSOC);
                         <th class="text-end pe-4 py-3">Aksi</th>
                     </tr>
                 </thead>
-                <tbody>
-                    <?php if (empty($peringkat_list)): ?>
-                        <tr><td colspan="5" class="text-center py-5 text-muted">Belum ada data pelanggaran.</td></tr>
-                    <?php else: ?>
-                        <?php foreach ($peringkat_list as $index => $row): $no = $index + 1; ?>
-                        <tr>
-                            <td class="text-center py-3">
-                                <div class="rank-badge mx-auto <?= ($no <= 3) ? 'rank-'.$no : 'rank-other' ?>">
-                                    <?= ($no <= 3) ? '<i class="fas fa-crown"></i>' : $no ?>
-                                </div>
-                            </td>
-                            <td class="py-3">
-                                <div class="fw-bold text-dark mb-1"><?= htmlspecialchars($row['nama']) ?></div>
-                                <div class="d-flex gap-2">
-                                    <span class="badge bg-light text-secondary border">Kls <?= htmlspecialchars($row['kelas']) ?></span>
-                                    <span class="badge bg-light text-secondary border">Kmr <?= htmlspecialchars($row['kamar']) ?></span>
-                                </div>
-                            </td>
-                            <td class="text-center py-3"><span class="poin-badge"><?= $row['total_poin'] ?></span></td>
-                            <td class="text-center text-muted fw-bold py-3"><?= $row['total_pelanggaran'] ?></td>
-                            <td class="text-end pe-4 py-3">
-                                <a href="detail-kesantrian.php?santri_id=<?= $row['id'] ?>&start_date=<?= $start_date ?>&end_date=<?= $end_date ?>" class="btn btn-sm btn-outline-primary rounded-pill px-4 fw-bold">Detail <i class="fas fa-arrow-right ms-1"></i></a>
-                            </td>
-                        </tr>
-                        <?php endforeach; ?>
-                    <?php endif; ?>
+                <tbody id="rekapTableBody">
+                    <?= $table_tbody_html ?>
                 </tbody>
             </table>
         </div>
@@ -286,25 +323,19 @@ $peringkat_list = mysqli_fetch_all(mysqli_stmt_get_result($stmt), MYSQLI_ASSOC);
 </div>
 
 <script>
-// Auto Submit Filter
-document.addEventListener('DOMContentLoaded', () => {
-    document.querySelectorAll('#filterForm select, #filterForm input').forEach(input => {
-        input.addEventListener('change', () => document.getElementById('filterForm').submit());
-    });
-});
+let chartKamar = null;
+let chartKelas = null;
 
-// Data JSON dari PHP
 const dataKamar = <?= $json_kamar_chart ?>;
 const dataKelas = <?= $json_kelas_chart ?>;
 const colorfulColors = ['#3b82f6', '#ef4444', '#f59e0b', '#10b981', '#8b5cf6', '#06b6d4', '#ec4899', '#6366f1'];
 
-// Common Options buat Chart (Legend Bottom biar gak kepotong)
 const commonOptions = {
     responsive: true, 
     maintainAspectRatio: false, 
     plugins: { 
         legend: { 
-            position: 'bottom', // INI KUNCINYA (Legend di bawah)
+            position: 'bottom', 
             labels: { 
                 usePointStyle: true, 
                 boxWidth: 8,
@@ -315,37 +346,97 @@ const commonOptions = {
     }
 };
 
-// Chart 1: Sebaran Kamar (Pie)
-if (dataKamar.labels.length > 0) {
-    new Chart(document.getElementById('chartKamar'), {
-        type: 'pie',
-        data: {
-            labels: dataKamar.labels,
-            datasets: [{
-                data: dataKamar.data,
-                backgroundColor: colorfulColors,
-                borderWidth: 2, borderColor: '#ffffff'
-            }]
-        },
-        options: commonOptions
-    });
-}
+document.addEventListener('DOMContentLoaded', () => {
+    // Chart 1: Sebaran Kamar (Pie)
+    if (document.getElementById('chartKamar')) {
+        chartKamar = new Chart(document.getElementById('chartKamar'), {
+            type: 'pie',
+            data: {
+                labels: dataKamar.labels || [],
+                datasets: [{
+                    data: dataKamar.data || [],
+                    backgroundColor: colorfulColors,
+                    borderWidth: 2, borderColor: '#ffffff'
+                }]
+            },
+            options: commonOptions
+        });
+    }
 
-// Chart 2: Sebaran Kelas (Doughnut)
-if (dataKelas.labels.length > 0) {
-    new Chart(document.getElementById('chartKelas'), {
-        type: 'doughnut',
-        data: {
-            labels: dataKelas.labels,
-            datasets: [{
-                data: dataKelas.data,
-                backgroundColor: colorfulColors,
-                borderWidth: 2, borderColor: '#ffffff'
-            }]
-        },
-        options: commonOptions
+    // Chart 2: Sebaran Kelas (Doughnut)
+    if (document.getElementById('chartKelas')) {
+        chartKelas = new Chart(document.getElementById('chartKelas'), {
+            type: 'doughnut',
+            data: {
+                labels: dataKelas.labels || [],
+                datasets: [{
+                    data: dataKelas.data || [],
+                    backgroundColor: colorfulColors,
+                    borderWidth: 2, borderColor: '#ffffff'
+                }]
+            },
+            options: commonOptions
+        });
+    }
+});
+
+document.addEventListener('DOMContentLoaded', () => {
+    const filterForm = document.getElementById('filterForm');
+    const tbody = document.getElementById('rekapTableBody');
+    const statsTotalKasus = document.getElementById('statsTotalKasus');
+    const statsTotalPoin = document.getElementById('statsTotalPoin');
+    const statsTotalSantri = document.getElementById('statsTotalSantri');
+
+    function updateData() {
+        const formData = new FormData(filterForm);
+        const params = new URLSearchParams(formData);
+        const url = '?' + params.toString();
+
+        tbody.style.opacity = '0.5';
+
+        fetch(url, {
+            headers: { 'X-Requested-With': 'XMLHttpRequest' }
+        })
+        .then(response => {
+            if (!response.ok) throw new Error('Network response was not ok');
+            return response.json();
+        })
+        .then(data => {
+            tbody.innerHTML = data.tbody;
+            tbody.style.opacity = '1';
+
+            if (statsTotalKasus) statsTotalKasus.innerText = data.stats.total_kasus;
+            if (statsTotalPoin) statsTotalPoin.innerText = data.stats.total_poin;
+            if (statsTotalSantri) statsTotalSantri.innerText = data.stats.total_santri;
+
+            if (chartKamar && data.kamar_chart) {
+                chartKamar.data.labels = data.kamar_chart.labels;
+                chartKamar.data.datasets[0].data = data.kamar_chart.data;
+                chartKamar.update();
+            }
+
+            if (chartKelas && data.kelas_chart) {
+                chartKelas.data.labels = data.kelas_chart.labels;
+                chartKelas.data.datasets[0].data = data.kelas_chart.data;
+                chartKelas.update();
+            }
+
+            window.history.pushState(null, '', url);
+        })
+        .catch(error => {
+            console.error('Error fetching data:', error);
+            tbody.style.opacity = '1';
+        });
+    }
+
+    document.querySelectorAll('#filterForm select, #filterForm input').forEach(input => {
+        input.addEventListener('change', updateData);
     });
-}
+});
 </script>
 
-<?php require_once __DIR__ . '/../../layouts/footer.php'; ?>
+<?php 
+if (!$is_ajax) {
+    require_once __DIR__ . '/../../layouts/footer.php'; 
+}
+?>

@@ -61,41 +61,28 @@ $rekap_kamar = $stmt_data->get_result()->fetch_all(MYSQLI_ASSOC);
 $stmt_data->close();
 
 ?>
-<!DOCTYPE html>
-<html lang="id">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Arsip Kebersihan: <?= htmlspecialchars($arsip['judul']) ?></title>
-    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
-    
-    <style>
-        :root {
-            --primary: #4361ee;
-            --secondary: #3f37c9;
-            --light-bg: #f5f7fa;
-            --card-bg: #ffffff;
-            --text-dark: #212529;
-            --text-light: #6c757d;
-            --border-color: #e0e0e0;
-            --gold: #f59e0b;
-            --silver: #9ca3af;
-            --bronze: #a16207;
-        }
-        body {
-            font-family: 'Poppins', sans-serif;
-            background-color: var(--light-bg);
-            color: var(--text-dark);
-        }
-        .header-card {
-            background: var(--card-bg);
-            padding: 25px;
-            border-radius: 12px;
-            box-shadow: 0 4px 12px rgba(0,0,0,0.05);
-            margin-bottom: 25px;
-            border-left: 5px solid var(--primary);
-        }
-        .header-card h1 {
+<style>
+    :root {
+        --primary: #4361ee;
+        --secondary: #3f37c9;
+        --light-bg: #f5f7fa;
+        --card-bg: #ffffff;
+        --text-dark: #212529;
+        --text-light: #6c757d;
+        --border-color: #e0e0e0;
+        --gold: #f59e0b;
+        --silver: #9ca3af;
+        --bronze: #a16207;
+    }
+    .header-card {
+        background: var(--card-bg);
+        padding: 25px;
+        border-radius: 12px;
+        box-shadow: 0 4px 12px rgba(0,0,0,0.05);
+        margin-bottom: 25px;
+        border-left: 5px solid var(--primary);
+    }
+    .header-card h1 {
             margin: 0;
             color: var(--primary);
             font-size: 24px;
@@ -249,5 +236,3 @@ $stmt_data->close();
 </div>
 
 <?php require_once __DIR__ . '/../layouts/footer.php'; ?>
-</body>
-</html>

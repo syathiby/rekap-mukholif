@@ -1,0 +1,665 @@
+<?php
+/**
+ * pengaturan/impor_data/index.php
+ * Halaman Sinkronisasi Data (Impor Massal dari Excel/CSV)
+ *
+ * Tipe data yang didukung:
+ *   - santri              → tabel santri
+ *   - jenis_pelanggaran   → tabel jenis_pelanggaran
+ *   - jenis_reward        → tabel jenis_reward
+ */
+require_once __DIR__ . '/../../bootstrap/init.php';
+guard('impor_data');
+
+require_once __DIR__ . '/smart_reader.php';
+
+// ── CSRF Token ───────────────────────────────────────────────────────────────
+if (empty($_SESSION['csrf_token'])) {
+    $_SESSION['csrf_token'] = bin2hex(random_bytes(32));
+}
+
+// ── Bersihkan file temp lama (> 1 jam) ────────────────────────────────────
+if ($_SERVER['REQUEST_METHOD'] === 'GET') {
+    $files = glob(sys_get_temp_dir() . '/sync_*') ?: [];
+    $now = time();
+    foreach ($files as $f) {
+        if (is_file($f) && ($now - filemtime($f)) > 3600) @unlink($f);
+    }
+}
+
+// ── Flash messages dari session ────────────────────────────────────────────
+$error_msg   = null;
+$error_type  = null;
+$success_msg = null;
+
+if (isset($_SESSION['sync_error_msg'])) {
+    $error_msg  = $_SESSION['sync_error_msg'];
+    $error_type = $_SESSION['sync_error_type'] ?? null;
+    unset($_SESSION['sync_error_msg'], $_SESSION['sync_error_type']);
+}
+if (isset($_SESSION['sync_success_msg'])) {
+    $success_msg = $_SESSION['sync_success_msg'];
+    unset($_SESSION['sync_success_msg']);
+}
+
+$preview_data = $_SESSION['sync_preview_data'] ?? null;
+$type         = $_SESSION['sync_type']         ?? null;
+
+// ── Helper format tampilan ─────────────────────────────────────────────────
+function fmt_kelas($k): string {
+    $s = trim((string)$k);
+    if ($s === '00' || $s === '0') return '<span class="sf-badge slate" style="font-size:.72rem">Staff/Umum</span>';
+    return '<span>' . htmlspecialchars($s) . '</span>';
+}
+function fmt_kamar($k): string {
+    $s = trim((string)$k);
+    if ($s === '00' || $s === '0') return '<span class="text-muted">—</span>';
+    return htmlspecialchars($s);
+}
+function fmt_bagian(string $b): string {
+    $colors = [
+        'Bahasa'     => '#2563eb',
+        'Diniyyah'   => '#d97706',
+        'Kesantrian' => '#475569',
+        'Pengabdian' => '#059669',
+        'Tahfidz'    => '#7c3aed',
+    ];
+    $c = $colors[$b] ?? '#475569';
+    return "<span style=\"background:rgba(0,0,0,.06);color:{$c};padding:2px 8px;border-radius:4px;font-size:.78rem;font-weight:600\">"
+         . htmlspecialchars($b) . "</span>";
+}
+function fmt_kategori(string $k): string {
+    $s = [
+        'Ringan'       => 'background:#dcfce7;color:#166534',
+        'Sedang'       => 'background:#fef9c3;color:#854d0e',
+        'Berat'        => 'background:#fee2e2;color:#991b1b',
+        'Sangat Berat' => 'background:#4c0519;color:#fecdd3',
+    ];
+    $style = $s[$k] ?? '';
+    return "<span style=\"{$style};padding:2px 9px;border-radius:4px;font-size:.78rem;font-weight:600\">"
+         . htmlspecialchars($k) . "</span>";
+}
+
+require_once __DIR__ . '/../../layouts/header.php';
+?>
+
+<style>
+/* ── Alerts ─────────────────────────────────────── */
+.sf-alert { border-radius:12px; padding:18px 20px; font-size:.9rem; margin-bottom:1.5rem;
+            border-left:4px solid; box-shadow:0 4px 6px -1px rgba(0,0,0,.05); }
+.sf-alert-danger  { background:#fff5f5; border-color:#f56565; color:#9b2c2c; }
+.sf-alert-success { background:#f0fdf4; border-color:#22c55e; color:#166534; }
+.sf-alert-title   { font-weight:700; font-size:.97rem; margin-bottom:6px;
+                    display:flex; align-items:center; gap:8px; }
+.sf-alert-action  { display:inline-flex; align-items:center; gap:6px;
+                    background:#fff; border:1px solid #feb2b2; color:#e53e3e;
+                    padding:7px 14px; border-radius:8px; font-weight:600;
+                    font-size:.82rem; cursor:pointer; transition:all .2s; margin-top:12px; }
+.sf-alert-action:hover { background:#e53e3e; color:#fff; }
+
+/* ── Cards ──────────────────────────────────────── */
+.sf-card { background:#fff; border-radius:12px; border:1px solid #e5e7eb;
+           box-shadow:0 4px 6px -1px rgba(0,0,0,.04); margin-bottom:24px; overflow:hidden; }
+.sf-card-header { background:#f8fafc; border-bottom:1px solid #e5e7eb;
+                  padding:14px 20px; font-weight:600; color:#1e293b;
+                  display:flex; align-items:center; gap:8px; font-size:.95rem; }
+.sf-card-body { padding:24px; }
+
+/* ── Badge aksi ─────────────────────────────────── */
+.act-badge { padding:3px 10px; border-radius:6px; font-size:.74rem; font-weight:700; letter-spacing:.4px; }
+.act-insert { background:#dcfce7; color:#166534; }
+.act-update { background:#fef9c3; color:#854d0e; }
+.act-delete { background:#fee2e2; color:#991b1b; }
+.act-fatal  { background:#fed7d7; color:#9b2c2c; border:1px solid #feb2b2; }
+
+.row-insert { background:#f0fdf4 !important; }
+.row-update { background:#fefce8 !important; }
+.row-delete { background:#fef2f2 !important; }
+.row-fatal  { background:#fff5f5 !important; border-left:4px solid #e53e3e !important; }
+
+.diff-old { font-size:.84rem; color:#94a3b8; text-decoration:line-through; margin-right:4px; }
+.diff-new { font-weight:600; color:#0f172a; }
+.fatal-reason { font-size:.77rem; color:#9b2c2c; line-height:1.4; margin-top:6px;
+                background:#fff; padding:7px 12px; border-radius:6px;
+                border:1px solid #feb2b2; display:block; }
+
+/* ── Fatal warning card ──────────────────────────── */
+.fatal-card { background:#fff5f5; border:1px solid #feb2b2; border-left:6px solid #e53e3e;
+              border-radius:12px; padding:22px; margin:12px 12px 0; }
+.fatal-icon { width:44px; height:44px; background:#fed7d7; border-radius:10px;
+              display:flex; align-items:center; justify-content:center; color:#e53e3e; }
+.pulse { animation:pulse 2s cubic-bezier(.4,0,.6,1) infinite; }
+@keyframes pulse { 0%,100%{opacity:1} 50%{opacity:.45} }
+
+/* ── Upload zone ─────────────────────────────────── */
+.upload-zone { position:relative; border:2px dashed #cbd5e1; border-radius:14px;
+               padding:44px 24px; text-align:center;
+               background:linear-gradient(145deg,#f8fafc,#f1f5f9);
+               transition:all .3s; cursor:pointer; }
+.upload-zone:hover { border-color:#3b82f6; background:linear-gradient(145deg,#eff6ff,#dbeafe);
+                     transform:translateY(-2px); }
+.upload-zone.dragover { border-color:#10b981; background:linear-gradient(145deg,#ecfdf5,#d1fae5); }
+.upload-zone input[type=file] { position:absolute; inset:0; opacity:0; cursor:pointer; }
+
+/* ── Template buttons ────────────────────────────── */
+.tpl-btn { display:inline-flex; align-items:center; gap:7px; padding:8px 16px;
+           border-radius:10px; font-size:.82rem; font-weight:600;
+           text-decoration:none; border:1.5px solid; transition:all .2s; }
+.tpl-btn:hover { transform:translateY(-1px); box-shadow:0 4px 12px rgba(0,0,0,.1); }
+.tpl-santri     { background:#f8fafc; border-color:#334155; color:#1e293b; }
+.tpl-santri:hover { background:#1e293b; color:#fff; }
+.tpl-pelanggaran{ background:#fff5f5; border-color:#991b1b; color:#7f1d1d; }
+.tpl-pelanggaran:hover { background:#991b1b; color:#fff; }
+.tpl-reward     { background:#f0fdf4; border-color:#064e3b; color:#052e16; }
+.tpl-reward:hover { background:#064e3b; color:#fff; }
+
+/* ── Archive warning ─────────────────────────────── */
+#archive-warn { display:none; margin-top:10px; background:#fffbeb;
+                border:1.5px solid #f59e0b; border-left:5px solid #d97706;
+                border-radius:10px; padding:12px 16px; font-size:.84rem; color:#78350f; }
+#archive-warn a { color:#b45309; font-weight:600; }
+</style>
+
+<div class="container-fluid py-4 px-4">
+
+    <!-- Breadcrumb -->
+    <div class="d-flex align-items-center gap-3 mb-4">
+        <a href="../index.php" class="btn btn-light rounded-circle shadow-sm"
+           style="width:38px;height:38px;display:flex;align-items:center;justify-content:center">
+            <i class="fas fa-arrow-left text-secondary"></i>
+        </a>
+        <div>
+            <h4 class="fw-bold mb-0 text-dark">Sinkronisasi Data</h4>
+            <p class="text-muted small mb-0">Impor data dari Excel / CSV sebagai sumber kebenaran (Source of Truth)</p>
+        </div>
+    </div>
+
+    <?php display_flash_message(); ?>
+
+    <!-- ── Flash: Error ──────────────────────────────────────────────────── -->
+    <?php if ($error_msg): ?>
+        <div class="sf-alert sf-alert-danger">
+            <?php if ($error_type === 'csrf'): ?>
+                <div class="sf-alert-title"><i class="bi bi-shield-exclamation-fill fs-5"></i> Sesi Keamanan Berakhir</div>
+                <div><?= htmlspecialchars($error_msg) ?></div>
+                <button onclick="location.reload()" class="sf-alert-action">
+                    <i class="bi bi-arrow-clockwise"></i> Muat Ulang
+                </button>
+            <?php else: ?>
+                <div class="sf-alert-title"><i class="bi bi-exclamation-triangle-fill fs-5"></i> Kendala Sinkronisasi</div>
+                <div><?= htmlspecialchars($error_msg) ?></div>
+            <?php endif; ?>
+        </div>
+    <?php endif; ?>
+
+    <!-- ── Flash: Sukses ──────────────────────────────────────────────────── -->
+    <?php if ($success_msg): ?>
+        <div class="alert alert-success d-none" id="successDataMsg"><?= htmlspecialchars($success_msg) ?></div>
+        <script>
+            document.addEventListener('DOMContentLoaded', function() {
+                Swal.fire({
+                    title: 'Sinkronisasi Berhasil!',
+                    text: <?= json_encode($success_msg) ?>,
+                    icon: 'success',
+                    confirmButtonColor: '#4f46e5',
+                    customClass: {
+                        popup: 'rounded-4 shadow-lg border-0 p-4',
+                        title: 'fw-bold fs-4'
+                    }
+                });
+            });
+        </script>
+    <?php endif; ?>
+
+    <!-- ── Panduan Mode ─────────────────────────────────────────────────── -->
+    <div class="sf-card" style="border-radius:14px">
+        <div class="sf-card-body p-0">
+            <div class="row g-0">
+                <div class="col-lg-auto bg-primary bg-opacity-10 d-none d-lg-flex align-items-center justify-content-center" style="min-width:72px">
+                    <i class="bi bi-info-circle-fill text-primary fs-3"></i>
+                </div>
+                <div class="col p-4">
+                    <h5 class="fw-bold text-dark mb-1">Panduan Mode Sinkronisasi</h5>
+                    <div class="row g-3 mt-1">
+                        <div class="col-md-6">
+                            <div class="d-flex gap-3">
+                                <div class="flex-shrink-0"><span class="badge bg-success rounded-circle p-2"><i class="bi bi-shield-check"></i></span></div>
+                                <div>
+                                    <div class="fw-bold text-success small">MODE AMAN (Update & Insert)</div>
+                                    <p class="mb-0 text-muted" style="font-size:.78rem;line-height:1.5">Hanya menambah data baru atau memperbarui yang berubah. Data lama yang tidak ada di Excel <strong>tetap aman</strong>.</p>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="d-flex gap-3">
+                                <div class="flex-shrink-0"><span class="badge bg-danger rounded-circle p-2"><i class="bi bi-exclamation-octagon"></i></span></div>
+                                <div>
+                                    <div class="fw-bold text-danger small">SINKRONISASI PENUH (+ Hapus)</div>
+                                    <p class="mb-0 text-muted" style="font-size:.78rem;line-height:1.5">File Excel jadi sumber acuan tunggal. Data yang <strong>tidak ada di Excel</strong> akan <strong>dihapus permanen</strong>.</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <?php if ($preview_data === null): ?>
+    <!-- ════════════════════════════════════════════════════════
+         FORM UNGGAH FILE
+    ═════════════════════════════════════════════════════════ -->
+
+        <!-- Unduh Template -->
+        <div class="sf-card">
+            <div class="sf-card-header"><i class="bi bi-file-earmark-arrow-down text-success"></i> Unduh Template Excel</div>
+            <div class="sf-card-body">
+                <p class="text-muted small mb-3">Unduh template berikut agar Anda tahu format kolom yang benar sebelum mengisi dan mengunggah file.</p>
+                <div class="d-flex flex-wrap gap-2">
+                    <a href="download_template.php?tipe=santri" class="tpl-btn tpl-santri" id="btn-tpl-santri">
+                        <i class="bi bi-people-fill"></i> Template Santri
+                    </a>
+                    <a href="download_template.php?tipe=jenis_pelanggaran" class="tpl-btn tpl-pelanggaran" id="btn-tpl-pelanggaran">
+                        <i class="bi bi-exclamation-octagon-fill"></i> Template Jenis Pelanggaran
+                    </a>
+                    <a href="download_template.php?tipe=jenis_reward" class="tpl-btn tpl-reward" id="btn-tpl-reward">
+                        <i class="bi bi-trophy-fill"></i> Template Jenis Reward
+                    </a>
+                </div>
+            </div>
+        </div>
+
+        <!-- Form Unggah -->
+        <div class="sf-card">
+            <div class="sf-card-header"><i class="bi bi-cloud-arrow-up text-primary"></i> Unggah File Sinkronisasi</div>
+            <div class="sf-card-body">
+                <form action="proses.php" method="post" enctype="multipart/form-data" id="uploadForm">
+                    <input type="hidden" name="csrf_token" value="<?= htmlspecialchars($_SESSION['csrf_token'] ?? '') ?>">
+                    <input type="hidden" name="action" value="preview">
+
+                    <div class="row mb-4">
+                        <div class="col-md-6 mb-3 mb-md-0">
+                            <label class="form-label fw-bold small" for="tipe_data">Tipe Data</label>
+                            <select name="tipe_data" id="tipe_data" class="form-select" required>
+                                <option value="santri">Data Santri</option>
+                                <option value="jenis_pelanggaran">Jenis Pelanggaran</option>
+                                <option value="jenis_reward">Jenis Reward</option>
+                            </select>
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label fw-bold small" for="mode_sinkronisasi">Mode Sinkronisasi</label>
+                            <select name="mode_sinkronisasi" id="mode_sinkronisasi" class="form-select" required>
+                                <option value="update_insert">Update &amp; Insert Saja (Aman)</option>
+                                <option value="full_sync">Sinkronisasi Penuh (+ Hapus Data)</option>
+                            </select>
+                            <div id="archive-warn">
+                                <i class="bi bi-exclamation-triangle-fill me-1"></i>
+                                <strong>Perhatian:</strong> Sebelum Sinkronisasi Penuh, pastikan Anda sudah melakukan
+                                <a href="../backup-restore/index.php"><i class="bi bi-archive me-1"></i>backup/arsip data</a>
+                                terlebih dahulu. Data yang tidak ada di file Excel akan dihapus permanen.
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="mb-4">
+                        <label class="form-label fw-bold small">Pilih File (.xlsx / .csv)</label>
+                        <div class="upload-zone" id="dropzone">
+                            <i class="bi bi-file-earmark-excel" style="font-size:2.8rem;color:#10b981" id="upload-icon"></i>
+                            <h5 class="mt-3 mb-1 fw-bold text-dark">Klik atau Seret File ke Sini</h5>
+                            <p class="text-muted mb-0 small" id="file-name-display">Mendukung format Excel (.xlsx) dan CSV (.csv)</p>
+                            <input type="file" name="file_impor" id="file_impor" accept=".xlsx,.xls,.csv" required>
+                        </div>
+                    </div>
+
+                    <div class="text-end">
+                        <button type="submit" class="btn btn-primary px-4">
+                            <i class="bi bi-search me-1"></i> Pratinjau Perbandingan
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+
+    <?php else: ?>
+    <!-- ════════════════════════════════════════════════════════
+         PANEL PRATINJAU
+    ═════════════════════════════════════════════════════════ -->
+
+        <?php
+        $type_label = match ($type) {
+            'jenis_pelanggaran' => 'Jenis Pelanggaran',
+            'jenis_reward'      => 'Jenis Reward',
+            default             => 'Santri',
+        };
+        $cnt_insert  = count(array_filter($preview_data, fn($d) => $d['action'] === 'INSERT' && empty($d['is_fatal'])));
+        $cnt_fatal   = count(array_filter($preview_data, fn($d) => !empty($d['is_fatal'])));
+        $cnt_update  = count(array_filter($preview_data, fn($d) => $d['action'] === 'UPDATE'));
+        $cnt_delete  = count(array_filter($preview_data, fn($d) => $d['action'] === 'DELETE'));
+        ?>
+
+        <div class="sf-card" style="border-color:#f59e0b">
+            <div class="sf-card-header bg-warning bg-opacity-10" style="border-color:#f59e0b;color:#78350f">
+                <i class="bi bi-eye-fill"></i>
+                Pratinjau Perbandingan Data — <?= htmlspecialchars($type_label) ?>
+            </div>
+
+            <?php if (empty($preview_data)): ?>
+                <div class="sf-card-body text-center py-5">
+                    <i class="bi bi-check-circle text-success" style="font-size:2.8rem"></i>
+                    <h5 class="mt-3 fw-bold">Data Sudah Sinkron</h5>
+                    <p class="text-muted">Tidak ada perbedaan antara file Excel dan Database.</p>
+                    <form action="proses.php" method="post" class="d-inline">
+                        <input type="hidden" name="csrf_token" value="<?= htmlspecialchars($_SESSION['csrf_token'] ?? '') ?>">
+                        <input type="hidden" name="action" value="cancel">
+                        <button type="submit" class="btn btn-outline-secondary mt-2">Kembali</button>
+                    </form>
+                </div>
+            <?php else: ?>
+
+                <!-- Ringkasan -->
+                <div class="px-3 pt-3 pb-2 border-bottom bg-light d-flex flex-wrap gap-2 align-items-center">
+                    <span class="act-badge act-insert">+ INSERT: <?= $cnt_insert ?></span>
+                    <span class="act-badge act-update">~ UPDATE: <?= $cnt_update ?></span>
+                    <span class="act-badge act-delete">– DELETE: <?= $cnt_delete ?></span>
+                    <?php if ($cnt_fatal): ?>
+                        <span class="act-badge act-fatal"><i class="bi bi-exclamation-octagon-fill me-1"></i>FATAL: <?= $cnt_fatal ?></span>
+                    <?php endif; ?>
+                </div>
+
+                <!-- Peringatan FATAL -->
+                <?php if ($cnt_fatal): ?>
+                <div class="fatal-card mb-0">
+                    <div class="d-flex gap-3 align-items-start">
+                        <div class="fatal-icon flex-shrink-0">
+                            <i class="bi bi-exclamation-octagon-fill fs-3 pulse"></i>
+                        </div>
+                        <div>
+                            <h6 class="fw-bold mb-2" style="color:#742a2a">Terdeteksi <?= $cnt_fatal ?> Konflik ID &amp; Nama</h6>
+                            <p class="mb-2" style="font-size:.86rem;color:#9b2c2c;line-height:1.5">
+                                ID di Excel sudah terdaftar dengan nama yang <strong>sangat berbeda</strong> di database.
+                                Sebagai langkah pengamanan, data lama <strong>tetap aman</strong> — baris konflik akan dibuat
+                                sebagai entri baru dengan ID otomatis.
+                            </p>
+                            <p class="mb-0" style="font-size:.82rem;color:#9b2c2c">
+                                <i class="bi bi-lightbulb-fill text-warning me-1"></i>
+                                <strong>Solusi:</strong> Kosongkan kolom <strong>"ID"</strong> pada baris bersangkutan di Excel,
+                                lalu unggah kembali.
+                            </p>
+                        </div>
+                    </div>
+                </div>
+                <?php endif; ?>
+
+                <!-- Tabel pratinjau -->
+                <div class="table-responsive" style="max-height:520px;overflow-y:auto">
+                    <table class="table table-hover table-bordered mb-0 align-middle" style="font-size:.88rem; white-space: nowrap;">
+                        <thead class="table-light" style="position:sticky;top:0;z-index:1">
+                            <tr>
+                                <th style="min-width:100px" class="text-center">Aksi</th>
+                                <th style="min-width:70px" class="text-center">ID</th>
+                                <?php if ($type === 'santri'): ?>
+                                    <th style="min-width:220px">Nama Santri</th><th style="min-width:100px">Kelas</th><th style="min-width:100px">Kamar</th>
+                                <?php elseif ($type === 'jenis_pelanggaran'): ?>
+                                    <th style="min-width:220px">Nama Pelanggaran</th><th style="min-width:140px">Bagian</th>
+                                    <th style="min-width:80px" class="text-center">Poin</th>
+                                    <th style="min-width:140px" class="text-center">Kategori</th>
+                                <?php elseif ($type === 'jenis_reward'): ?>
+                                    <th style="min-width:220px">Nama Reward</th><th style="min-width:120px" class="text-center">Poin</th><th style="min-width:200px">Deskripsi</th>
+                                <?php endif; ?>
+                            </tr>
+                        </thead>
+                        <tbody>
+                        <?php foreach ($preview_data as $row):
+                            $is_fatal = !empty($row['is_fatal']);
+                            $act      = $row['action'];
+                            $rowCls   = match(true) {
+                                $is_fatal           => 'row-fatal',
+                                $act === 'INSERT'   => 'row-insert',
+                                $act === 'UPDATE'   => 'row-update',
+                                $act === 'DELETE'   => 'row-delete',
+                                default             => '',
+                            };
+                            $badgeCls = match(true) {
+                                $is_fatal           => 'act-fatal',
+                                $act === 'INSERT'   => 'act-insert',
+                                $act === 'UPDATE'   => 'act-update',
+                                $act === 'DELETE'   => 'act-delete',
+                                default             => '',
+                            };
+                            $actLabel = $is_fatal ? 'FATAL' : $act;
+                            $d  = $row['data'];
+                            $od = $row['old_data'] ?? [];
+                        ?>
+                        <tr class="<?= $rowCls ?>">
+                            <td class="text-center"><span class="act-badge <?= $badgeCls ?>"><?= $actLabel ?></span></td>
+                            <td class="text-center fw-bold <?= $is_fatal ? 'text-danger' : 'text-muted' ?>"><?= htmlspecialchars($d['id'] ?? '—') ?></td>
+
+                            <?php if ($type === 'santri'): ?>
+                                <td>
+                                    <?php if ($is_fatal): ?>
+                                        <span class="diff-new"><?= htmlspecialchars($d['nama']) ?></span>
+                                        <span class="fatal-reason"><i class="bi bi-exclamation-octagon-fill me-1"></i><?= htmlspecialchars($row['fatal_reason']) ?></span>
+                                    <?php elseif ($act === 'UPDATE' && ($d['nama'] ?? '') !== ($od['nama'] ?? '')): ?>
+                                        <span class="diff-old"><?= htmlspecialchars($od['nama']) ?></span>
+                                        <span class="diff-new"><?= htmlspecialchars($d['nama']) ?></span>
+                                    <?php else: ?>
+                                        <?= htmlspecialchars($d['nama'] ?? '') ?>
+                                    <?php endif; ?>
+                                </td>
+                                <td>
+                                    <?php if ($act === 'UPDATE' && ($d['kelas'] ?? '') !== ($od['kelas'] ?? '')): ?>
+                                        <span class="diff-old"><?= fmt_kelas($od['kelas']) ?></span>
+                                        <span class="diff-new"><?= fmt_kelas($d['kelas']) ?></span>
+                                    <?php else: ?>
+                                        <?= fmt_kelas($d['kelas'] ?? '') ?>
+                                    <?php endif; ?>
+                                </td>
+                                <td>
+                                    <?php if ($act === 'UPDATE' && ($d['kamar'] ?? '') !== ($od['kamar'] ?? '')): ?>
+                                        <span class="diff-old"><?= fmt_kamar($od['kamar']) ?></span>
+                                        <i class="bi bi-arrow-right text-muted mx-1"></i>
+                                        <span class="diff-new"><?= fmt_kamar($d['kamar']) ?></span>
+                                    <?php else: ?>
+                                        <?= fmt_kamar($d['kamar'] ?? '') ?>
+                                    <?php endif; ?>
+                                </td>
+
+                            <?php elseif ($type === 'jenis_pelanggaran'): ?>
+                                <td>
+                                    <?php if ($is_fatal): ?>
+                                        <span class="diff-new"><?= htmlspecialchars($d['nama_pelanggaran']) ?></span>
+                                        <span class="fatal-reason"><i class="bi bi-exclamation-octagon-fill me-1"></i><?= htmlspecialchars($row['fatal_reason']) ?></span>
+                                    <?php elseif ($act === 'UPDATE' && ($d['nama_pelanggaran'] ?? '') !== ($od['nama_pelanggaran'] ?? '')): ?>
+                                        <span class="diff-old"><?= htmlspecialchars($od['nama_pelanggaran']) ?></span>
+                                        <span class="diff-new"><?= htmlspecialchars($d['nama_pelanggaran']) ?></span>
+                                    <?php else: ?>
+                                        <?= htmlspecialchars($d['nama_pelanggaran'] ?? '') ?>
+                                    <?php endif; ?>
+                                </td>
+                                <td>
+                                    <?php if ($act === 'UPDATE' && ($d['bagian'] ?? '') !== ($od['bagian'] ?? '')): ?>
+                                        <span class="diff-old"><?= fmt_bagian($od['bagian'] ?? '') ?></span>
+                                        <span class="diff-new"><?= fmt_bagian($d['bagian'] ?? '') ?></span>
+                                    <?php else: ?>
+                                        <?= fmt_bagian($d['bagian'] ?? '') ?>
+                                    <?php endif; ?>
+                                </td>
+                                <td class="text-center">
+                                    <?php if ($act === 'UPDATE' && ($d['poin'] ?? 0) != ($od['poin'] ?? 0)): ?>
+                                        <span class="diff-old"><?= (int)($od['poin'] ?? 0) ?></span>
+                                        <i class="bi bi-arrow-right text-muted mx-1"></i>
+                                        <span class="diff-new"><?= (int)($d['poin'] ?? 0) ?></span>
+                                    <?php else: ?>
+                                        <?= (int)($d['poin'] ?? 0) ?>
+                                    <?php endif; ?>
+                                </td>
+                                <td class="text-center">
+                                    <?php if ($act === 'UPDATE' && ($d['kategori'] ?? '') !== ($od['kategori'] ?? '')): ?>
+                                        <span class="diff-old"><?= fmt_kategori($od['kategori'] ?? '') ?></span>
+                                        <span class="diff-new"><?= fmt_kategori($d['kategori'] ?? '') ?></span>
+                                    <?php else: ?>
+                                        <?= fmt_kategori($d['kategori'] ?? '') ?>
+                                    <?php endif; ?>
+                                </td>
+
+                            <?php elseif ($type === 'jenis_reward'): ?>
+                                <td>
+                                    <?php if ($is_fatal): ?>
+                                        <span class="diff-new"><?= htmlspecialchars($d['nama_reward']) ?></span>
+                                        <span class="fatal-reason"><i class="bi bi-exclamation-octagon-fill me-1"></i><?= htmlspecialchars($row['fatal_reason']) ?></span>
+                                    <?php elseif ($act === 'UPDATE' && ($d['nama_reward'] ?? '') !== ($od['nama_reward'] ?? '')): ?>
+                                        <span class="diff-old"><?= htmlspecialchars($od['nama_reward']) ?></span>
+                                        <span class="diff-new"><?= htmlspecialchars($d['nama_reward']) ?></span>
+                                    <?php else: ?>
+                                        <?= htmlspecialchars($d['nama_reward'] ?? '') ?>
+                                    <?php endif; ?>
+                                </td>
+                                <td class="text-center">
+                                    <?php if ($act === 'UPDATE' && ($d['poin_reward'] ?? 0) != ($od['poin_reward'] ?? 0)): ?>
+                                        <span class="diff-old"><?= htmlspecialchars($od['poin_reward']) ?></span>
+                                        <i class="bi bi-arrow-right text-muted mx-1"></i>
+                                        <span class="diff-new"><?= htmlspecialchars($d['poin_reward']) ?></span>
+                                    <?php else: ?>
+                                        <?= htmlspecialchars($d['poin_reward'] ?? 0) ?>
+                                    <?php endif; ?>
+                                </td>
+                                <td style="font-size:.84rem;color:#475569">
+                                    <?php if ($act === 'UPDATE' && ($d['deskripsi'] ?? '') !== ($od['deskripsi'] ?? '')): ?>
+                                        <span class="diff-old"><?= htmlspecialchars($od['deskripsi'] ?? '') ?></span>
+                                        <span class="diff-new"><?= htmlspecialchars($d['deskripsi'] ?? '') ?></span>
+                                    <?php else: ?>
+                                        <?= $d['deskripsi'] !== '' ? htmlspecialchars($d['deskripsi']) : '<span class="text-muted fst-italic">—</span>' ?>
+                                    <?php endif; ?>
+                                </td>
+                            <?php endif; ?>
+                        </tr>
+                        <?php endforeach; ?>
+                        </tbody>
+                    </table>
+                </div>
+
+                <!-- Tombol aksi -->
+                <div class="p-3 p-md-4 border-top bg-white d-flex flex-column-reverse flex-md-row justify-content-end gap-2 gap-md-3">
+                    <form action="proses.php" method="post" class="m-0 d-grid d-md-block">
+                        <input type="hidden" name="csrf_token" value="<?= htmlspecialchars($_SESSION['csrf_token'] ?? '') ?>">
+                        <input type="hidden" name="action" value="cancel">
+                        <button type="submit" class="btn btn-outline-secondary py-2 w-100">Batal &amp; Kembali</button>
+                    </form>
+                    <form action="proses.php" method="post" class="m-0 d-grid d-md-block" id="syncConfirmForm">
+                        <input type="hidden" name="csrf_token" value="<?= htmlspecialchars($_SESSION['csrf_token'] ?? '') ?>">
+                        <input type="hidden" name="action" value="confirm">
+                        <button type="button" class="btn btn-primary fw-bold text-white py-2 w-100" id="btnConfirmSync" style="background-color: #4f46e5; border-color: #4f46e5;">
+                            <i class="bi bi-check-circle-fill me-1"></i> Konfirmasi &amp; Terapkan
+                        </button>
+                    </form>
+                </div>
+            <?php endif; ?>
+        </div>
+
+    <?php endif; ?>
+
+</div><!-- /container -->
+
+<script>
+<?php if ($preview_data !== null): ?>
+const syncStats = {
+    insert: <?= $cnt_insert ?>,
+    fatal:  <?= $cnt_fatal ?>,
+    update: <?= $cnt_update ?>,
+    delete: <?= $cnt_delete ?>
+};
+<?php else: ?>
+const syncStats = { insert:0, fatal:0, update:0, delete:0 };
+<?php endif; ?>
+
+// ── File name display ──────────────────────────────────────────────────────
+document.getElementById('file_impor')?.addEventListener('change', function(e) {
+    const display = document.getElementById('file-name-display');
+    const icon    = document.getElementById('upload-icon');
+    if (e.target.files.length > 0) {
+        display.textContent = e.target.files[0].name;
+        icon.className = 'bi bi-file-earmark-check-fill';
+        icon.style.color = '#3b82f6';
+    } else {
+        display.textContent = 'Mendukung format Excel (.xlsx) dan CSV (.csv)';
+        icon.className = 'bi bi-file-earmark-excel';
+        icon.style.color = '#10b981';
+    }
+});
+
+// ── Drag & drop ───────────────────────────────────────────────────────────
+const dz = document.getElementById('dropzone');
+if (dz) {
+    ['dragenter','dragover'].forEach(ev => dz.addEventListener(ev, e => { e.preventDefault(); dz.classList.add('dragover'); }));
+    ['dragleave','drop'].forEach(ev => dz.addEventListener(ev, e => { e.preventDefault(); dz.classList.remove('dragover'); }));
+}
+
+// ── Template button highlight ────────────────────────────────────────────
+const tipeSelect = document.getElementById('tipe_data');
+const modeSelect = document.getElementById('mode_sinkronisasi');
+const archWarn   = document.getElementById('archive-warn');
+const tplMap     = { santri:'#btn-tpl-santri', jenis_pelanggaran:'#btn-tpl-pelanggaran', jenis_reward:'#btn-tpl-reward' };
+
+function updateTpl() {
+    if (!tipeSelect) return;
+    document.querySelectorAll('.tpl-btn').forEach(b => b.style.outline = '');
+    const t = document.querySelector(tplMap[tipeSelect.value]);
+    if (t) t.style.outline = '3px solid rgba(59,130,246,.45)';
+}
+function updateArchWarn() {
+    if (!archWarn) return;
+    archWarn.style.display = (modeSelect?.value === 'full_sync' && tipeSelect?.value !== 'santri') ? 'block' : 'none';
+}
+
+tipeSelect?.addEventListener('change', () => { updateTpl(); updateArchWarn(); });
+modeSelect?.addEventListener('change', updateArchWarn);
+updateTpl(); updateArchWarn();
+
+// ── SweetAlert konfirmasi ─────────────────────────────────────────────────
+document.getElementById('btnConfirmSync')?.addEventListener('click', function(e) {
+    e.preventDefault();
+    let html = `<div class="text-start mb-2">
+        <p class="text-muted small mb-3">Ringkasan perubahan yang akan diterapkan ke database:</p>
+        <div class="d-flex flex-column gap-2">`;
+    if (syncStats.insert) html += `<div class="d-flex justify-content-between align-items-center p-2 rounded-3 bg-success bg-opacity-10 border border-success border-opacity-10"><span class="text-success fw-semibold"><i class="bi bi-plus-circle-fill me-2"></i>Data Baru (Insert)</span><span class="badge bg-success text-white rounded-pill px-3">${syncStats.insert}</span></div>`;
+    if (syncStats.update) html += `<div class="d-flex justify-content-between align-items-center p-2 rounded-3 bg-warning bg-opacity-10 border border-warning border-opacity-10"><span class="text-warning-emphasis fw-semibold"><i class="bi bi-pencil-square me-2"></i>Pembaruan (Update)</span><span class="badge bg-warning text-dark rounded-pill px-3">${syncStats.update}</span></div>`;
+    if (syncStats.delete) html += `<div class="d-flex justify-content-between align-items-center p-2 rounded-3 bg-danger bg-opacity-10 border border-danger border-opacity-10"><span class="text-danger fw-semibold"><i class="bi bi-trash-fill me-2"></i>Penghapusan (Delete)</span><span class="badge bg-danger text-white rounded-pill px-3">${syncStats.delete}</span></div>`;
+    if (syncStats.fatal) html += `<div class="d-flex justify-content-between align-items-center p-2 rounded-3 bg-danger bg-opacity-10 border border-danger border-opacity-20"><span class="text-danger fw-bold"><i class="bi bi-exclamation-octagon-fill me-2"></i>Konflik ID (Fatal)</span><span class="badge bg-danger text-white rounded-pill px-3">${syncStats.fatal}</span></div><p class="text-danger small mt-0 mb-0 px-1" style="font-size:.75rem"><i class="bi bi-info-circle-fill me-1"></i>Data konflik akan dibuat baru dengan ID otomatis (aman).</p>`;
+    if (!syncStats.insert && !syncStats.update && !syncStats.delete && !syncStats.fatal)
+        html += `<div class="text-center p-3 text-muted"><i class="bi bi-info-circle me-1"></i> Tidak ada perubahan data.</div>`;
+    html += `</div><p class="mt-4 mb-0 text-muted small text-center">Apakah Anda yakin ingin menerapkan seluruh perubahan?</p></div>`;
+
+    Swal.fire({
+        title: 'Terapkan Perubahan?',
+        html, icon: 'info',
+        showCancelButton: true, buttonsStyling: false,
+        confirmButtonText: '<i class="bi bi-check-circle-fill me-1"></i> Ya, Terapkan Sekarang',
+        cancelButtonText: 'Batal',
+        customClass: {
+            popup: 'rounded-4 shadow-lg border-0 p-3 p-md-4',
+            title: 'fw-bold text-dark mb-3 fs-5',
+            confirmButton: 'btn fw-bold px-4 py-2 rounded-3 text-white w-100 mb-2',
+            cancelButton:  'btn btn-light border px-4 py-2 rounded-3 text-secondary w-100 m-0',
+            actions: 'd-flex flex-column w-100 mt-3'
+        },
+        didOpen: () => {
+             const confirmBtn = Swal.getConfirmButton();
+             confirmBtn.style.backgroundColor = '#4f46e5';
+             confirmBtn.style.borderColor = '#4f46e5';
+        }
+    }).then(r => {
+        if (r.isConfirmed) {
+            Swal.fire({
+                title: 'Sedang Menyinkronisasi…',
+                text: 'Mohon tunggu, sistem sedang memproses dan mengamankan perubahan data.',
+                allowOutsideClick: false, showConfirmButton: false, buttonsStyling: false,
+                customClass: { popup: 'rounded-4 shadow-lg border border-light p-4' },
+                didOpen: () => Swal.showLoading(),
+            });
+            document.getElementById('syncConfirmForm').submit();
+        }
+    });
+});
+</script>
+
+<?php require_once __DIR__ . '/../../layouts/footer.php'; ?>

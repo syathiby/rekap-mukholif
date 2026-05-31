@@ -48,38 +48,23 @@ $stmt_pelanggaran->execute();
 $result_pelanggaran = $stmt_pelanggaran->get_result();
 
 ?>
-<!DOCTYPE html>
-<html lang="id">
-<head>
-    <meta charset="UTF-8">
-    <title>Detail Pelanggaran Kamar: <?= $nama_kamar ?></title>
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
-    <style>
-        :root {
-            --primary: #4361ee;
-            --secondary: #3f37c9;
-            --danger: #f72585;
-            --warning: #f8961e;
-            --success: #4cc9f0;
-            --light: #f8f9fa;
-            --dark: #212529;
-        }
+<style>
+    :root {
+        --primary: #4361ee;
+        --secondary: #3f37c9;
+        --danger: #f72585;
+        --warning: #f8961e;
+        --success: #4cc9f0;
+        --light: #f8f9fa;
+        --dark: #212529;
+    }
 
-        body {
-            font-family: 'Poppins', sans-serif;
-            background-color: #f5f7fa;
-            color: var(--dark);
-            margin: 0;
-        }
-
-        .container {
-            padding: 30px;
-            max-width: 1200px;
-            margin: 0 auto;
-            animation: fadeIn 0.6s ease-out;
-        }
+    .container {
+        padding: 30px;
+        max-width: 1200px;
+        margin: 0 auto;
+        animation: fadeIn 0.6s ease-out;
+    }
 
         .header-card {
             background: white;
@@ -246,8 +231,6 @@ $result_pelanggaran = $stmt_pelanggaran->get_result();
             .table-wrapper, .info-card { padding: 15px; }
         }
     </style>
-</head>
-<body>
 <div class="container">
     <div class="header-card">
         <h2><i class="fas fa-door-open"></i> Detail Kamar <?= $nama_kamar ?></h2>
@@ -308,9 +291,7 @@ $result_pelanggaran = $stmt_pelanggaran->get_result();
         </table>
     </div>
 
-</div>
-</body>
-</html>
+</div> <!-- .container -->
 
 <?php
 $stmt_pelanggaran->close();

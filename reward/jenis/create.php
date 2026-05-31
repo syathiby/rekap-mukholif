@@ -1,4 +1,4 @@
-﻿<?php
+<?php
 // 1. Panggil 'Otak' aplikasi
 require_once __DIR__ . '/../../bootstrap/init.php';
 
@@ -11,71 +11,153 @@ require_once __DIR__ . '/../../layouts/header.php';
 
 <style>
     :root {
-        --primary-reward: #11998e;
-        --secondary-reward: #38ef7d;
+        --primary-dark: #145c38;
+        --primary-soft: #e6f4ea;
+        --text-main: #344767;
+        --text-muted: #8392ab;
+        --radius-std: 12px;
     }
     
-    .page-header-block {
-        background: linear-gradient(135deg, var(--primary-reward), var(--secondary-reward));
-        padding: 1.5rem;
-        border-radius: 12px;
-        color: white;
-        margin-bottom: 2rem;
-        box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+    body {
+        color: var(--text-main);
     }
+
+    .header-minimal {
+        background: #fff;
+        padding: 20px 24px;
+        border-radius: var(--radius-std);
+        box-shadow: 0 2px 12px rgba(0,0,0,0.03);
+        margin-bottom: 24px;
+        border-left: 5px solid var(--primary-dark);
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        flex-wrap: wrap;
+        gap: 15px;
+    }
+
+    .header-title h4 { font-weight: 700; color: var(--text-main); margin: 0; font-size: 1.25rem; }
+    .header-title p { color: var(--text-muted); margin: 0; font-size: 0.85rem; }
 
     .form-card {
         border: none;
-        border-radius: 12px;
-        box-shadow: 0 2px 12px rgba(0,0,0,0.05);
+        border-radius: var(--radius-std);
+        box-shadow: 0 2px 12px rgba(0,0,0,0.03);
         overflow: hidden;
+        border: 1px solid rgba(0,0,0,0.02);
     }
 
     .form-label {
         font-weight: 600;
-        color: #495057;
+        color: var(--text-main);
+        font-size: 0.95rem;
+    }
+
+    .form-control, .form-select {
+        background: #f8f9fa;
+        border: 1px solid #e9ecef;
+        border-radius: 8px;
+        padding: 10px 15px;
+        font-size: 0.9rem;
+        transition: all 0.2s;
+    }
+    .form-control:focus, .form-select:focus {
+        background: #fff;
+        border-color: var(--primary-dark);
+        box-shadow: 0 0 0 3px rgba(20, 92, 56, 0.1);
     }
 
     .form-text {
-        font-size: 0.85em;
-        color: #8898aa;
+        font-size: 0.8em;
+        color: var(--text-muted);
     }
 
     .btn-submit {
-        background: var(--primary-reward);
+        background: var(--primary-dark);
         border: none;
-        padding: 10px 25px;
+        padding: 10px 24px;
         font-weight: 600;
+        border-radius: 30px;
         transition: all 0.3s;
+        color: white;
     }
     
     .btn-submit:hover {
-        background: #0d7a71;
-        transform: translateY(-2px);
-        box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+        background: #0b3d23;
+        transform: translateY(-1px);
+        box-shadow: 0 4px 10px rgba(20, 92, 56, 0.2);
+        color: white;
+    }
+
+    .nav-tabs {
+        display: flex !important;
+        flex-wrap: nowrap !important;
+        flex-direction: row !important;
+        border-bottom: 2px solid #f1f1f1;
+        overflow-x: auto;
+    }
+
+    .nav-tabs .nav-item {
+        flex: 1 1 auto;
+        text-align: center;
     }
 
     .nav-tabs .nav-link {
         font-weight: 600;
-        color: #495057;
+        color: var(--text-muted);
+        border: none;
+        border-bottom: 2px solid transparent;
+        padding: 10px 20px;
+        background: none;
+        transition: all 0.2s;
+        width: 100%;
+        text-align: center;
+        white-space: nowrap;
+    }
+    .nav-tabs .nav-link:hover {
+        color: var(--text-main);
+        border-bottom-color: #e9ecef;
     }
     .nav-tabs .nav-link.active {
-        color: var(--primary-reward);
-        border-color: var(--primary-reward);
+        color: var(--primary-dark);
+        border-color: var(--primary-dark);
+        background: none;
+    }
+
+    .content-wrapper {
+        padding: 24px;
+    }
+
+    /* Responsif HP */
+    @media (max-width: 768px) {
+        .content-wrapper { 
+            padding: 8px !important; 
+        }
+        .header-minimal { 
+            padding: 15px !important; 
+            margin-bottom: 16px !important;
+        }
+        .form-card .card-body { 
+            padding: 1.25rem !important; 
+        }
+        .nav-tabs .nav-link {
+            padding: 10px 12px !important;
+            font-size: 0.85rem !important;
+        }
     }
 </style>
 
-<div class="content-wrapper" style="padding: 20px;">
+<div class="content-wrapper">
     <div class="container-fluid">
         
-        <div class="d-flex align-items-center justify-content-between page-header-block">
-            <div>
-                <h3 class="mb-1 fw-bold"><i class="fas fa-plus-circle me-2"></i>Tambah Reward Baru</h3>
-                <p class="mb-0 opacity-75">Tambahkan jenis prestasi atau apresiasi ke dalam sistem — satu per satu atau sekaligus.</p>
+        <div class="header-minimal">
+            <div class="header-title">
+                <h4><i class="fas fa-plus-circle me-2 text-success" style="color: var(--primary-dark) !important;"></i>Tambah Reward Baru</h4>
+                <p>Tambahkan jenis prestasi atau apresiasi ke dalam sistem.</p>
             </div>
             <div>
-                <a href="index.php" class="btn btn-light text-success fw-bold shadow-sm">
-                    <i class="fas fa-arrow-left me-1"></i> Kembali
+                <a href="index.php" class="btn btn-outline-secondary btn-sm px-4 py-2 rounded-pill shadow-sm">
+                    <i class="fas fa-arrow-left me-2"></i>Kembali
                 </a>
             </div>
         </div>
@@ -102,7 +184,7 @@ require_once __DIR__ . '/../../layouts/header.php';
                                 <form action="process.php" method="POST">
                                     <div class="mb-4">
                                         <label for="nama_reward" class="form-label">Nama Reward / Prestasi <span class="text-danger">*</span></label>
-                                        <div class="input-group">
+                                        <div class="input-group shadow-sm" style="border-radius: 8px; overflow: hidden;">
                                             <span class="input-group-text bg-light border-end-0"><i class="fas fa-medal text-muted"></i></span>
                                             <input type="text" name="nama_reward" id="nama_reward" class="form-control border-start-0 ps-0" placeholder="Contoh: Juara Kelas, Puasa Sunnah" required>
                                         </div>
@@ -111,8 +193,8 @@ require_once __DIR__ . '/../../layouts/header.php';
                                     <div class="row">
                                         <div class="col-md-6 mb-4">
                                             <label for="poin_reward" class="form-label">Nilai Poin (Pengurang) <span class="text-danger">*</span></label>
-                                            <div class="input-group">
-                                                <span class="input-group-text bg-light border-end-0"><i class="fas fa-minus-circle text-success"></i></span>
+                                            <div class="input-group shadow-sm" style="border-radius: 8px; overflow: hidden;">
+                                                <span class="input-group-text bg-light border-end-0"><i class="fas fa-minus-circle text-success" style="color: var(--primary-dark) !important;"></i></span>
                                                 <input type="number" name="poin_reward" id="poin_reward" class="form-control border-start-0 ps-0" placeholder="0" min="1" required>
                                                 <span class="input-group-text bg-light">Poin</span>
                                             </div>
@@ -124,15 +206,15 @@ require_once __DIR__ . '/../../layouts/header.php';
 
                                     <div class="mb-4">
                                         <label for="deskripsi" class="form-label">Deskripsi / Keterangan (Opsional)</label>
-                                        <textarea name="deskripsi" id="deskripsi" class="form-control" rows="3" placeholder="Tuliskan detail kriteria..."></textarea>
+                                        <textarea name="deskripsi" id="deskripsi" class="form-control shadow-sm" rows="3" placeholder="Tuliskan detail kriteria..."></textarea>
                                     </div>
 
                                     <hr class="my-4" style="opacity: 0.1;">
 
                                     <div class="d-flex justify-content-end gap-2">
-                                        <a href="index.php" class="btn btn-light text-muted px-4 fw-bold">Batal</a>
-                                        <button type="submit" name="add_jenis" class="btn btn-success btn-submit text-white px-4">
-                                            <i class="fas fa-save me-2"></i> Simpan Data
+                                        <a href="index.php" class="btn btn-light text-muted px-4 py-2 rounded-pill fw-bold">Batal</a>
+                                        <button type="submit" name="add_jenis" class="btn btn-submit">
+                                            <i class="fas fa-save me-2"></i>Simpan Data
                                         </button>
                                     </div>
                                 </form>
@@ -155,9 +237,9 @@ require_once __DIR__ . '/../../layouts/header.php';
                                     <hr class="my-4" style="opacity: 0.1;">
 
                                     <div class="d-flex justify-content-end gap-2">
-                                        <a href="index.php" class="btn btn-light text-muted px-4 fw-bold">Batal</a>
-                                        <button type="submit" name="add_bulk" class="btn btn-success btn-submit text-white px-4">
-                                            <i class="fas fa-cloud-upload-alt me-2"></i> Simpan Semua
+                                        <a href="index.php" class="btn btn-light text-muted px-4 py-2 rounded-pill fw-bold">Batal</a>
+                                        <button type="submit" name="add_bulk" class="btn btn-submit">
+                                            <i class="fas fa-cloud-upload-alt me-2"></i>Simpan Semua
                                         </button>
                                     </div>
                                 </form>

@@ -61,7 +61,7 @@ if (function_exists('has_permission')) {
     <?php endif; ?>
 
     <?php if (has_permission(['jenis_reward_view', 'reward_input', 'reward_history'])): ?>
-    <a href="<?= BASE_URL ?>/reward" class="sb-link <?= strpos($req_path, '/reward') === 0 ? 'active' : '' ?>">
+    <a href="<?= BASE_URL ?>/reward" class="sb-link <?= (strpos($req_path, '/reward') === 0 && strpos($req_path, '/reward/jenis') !== 0) ? 'active' : '' ?>">
         <i class="fas fa-trophy" style="color:#34d399;"></i>
         <span>Reward & Prestasi</span>
     </a>
@@ -88,7 +88,7 @@ if (function_exists('has_permission')) {
     </a>
     <?php endif; ?>
     
-    <?php if (has_permission(['santri_view', 'jenis_pelanggaran_view', 'jenis_pelanggaran_create', 'jenis_pelanggaran_edit', 'jenis_pelanggaran_delete'])): ?>
+    <?php if (has_permission(['santri_view', 'jenis_pelanggaran_view', 'jenis_pelanggaran_create', 'jenis_pelanggaran_edit', 'jenis_pelanggaran_delete', 'jenis_reward_view', 'jenis_reward_create', 'jenis_reward_edit', 'jenis_reward_delete'])): ?>
     <div class="sb-section-label">MANAJEMEN</div>
     <?php endif; ?>
     
@@ -103,6 +103,13 @@ if (function_exists('has_permission')) {
     <a href="<?= BASE_URL ?>/jenis-pelanggaran" class="sb-link <?= strpos($req_path, '/jenis-pelanggaran') === 0 ? 'active' : '' ?>">
         <i class="fas fa-exclamation-triangle" style="color:#fbbf24;"></i>
         <span>Jenis Pelanggaran</span>
+    </a>
+    <?php endif; ?>
+
+    <?php if (has_permission(['jenis_reward_view', 'jenis_reward_create', 'jenis_reward_edit', 'jenis_reward_delete'])): ?>
+    <a href="<?= BASE_URL ?>/reward/jenis" class="sb-link <?= strpos($req_path, '/reward/jenis') === 0 ? 'active' : '' ?>">
+        <i class="fas fa-tags" style="color:#10b981;"></i>
+        <span>Jenis Reward</span>
     </a>
     <?php endif; ?>
     

@@ -185,6 +185,10 @@ $jenis_pelanggaran_result = $stmt->get_result();
         font-weight: 600;
         padding: 0.5rem 1.25rem;
         transition: all 0.2s;
+        white-space: nowrap;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
     }
     .btn-back:hover {
         background: #f1f5f9;

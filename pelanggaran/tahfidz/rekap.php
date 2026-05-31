@@ -1,12 +1,17 @@
-﻿<?php 
+<?php 
 // 1. Panggil 'Otak' aplikasi dulu
 require_once __DIR__ . '/../../bootstrap/init.php';
 
 // 2. Jalankan 'SATPAM' buat ngejaga halaman
 guard('rekap_view_tahfidz');  
 
-// 3. Kalau lolos, baru panggil Tampilan
-require_once __DIR__ . '/../../layouts/header.php';
+// Deteksi AJAX
+$is_ajax = isset($_SERVER['HTTP_X_REQUESTED_WITH']) && strtolower($_SERVER['HTTP_X_REQUESTED_WITH']) === 'xmlhttprequest';
+
+if (!$is_ajax) {
+    // 3. Kalau lolos, baru panggil Tampilan
+    require_once __DIR__ . '/../../layouts/header.php';
+}
 
 $bagian = 'Tahfidz';
 
@@ -21,13 +26,13 @@ if (!$periode_aktif) {
     die("<div class='container my-4'><div class='alert alert-warning'><strong>Peringatan:</strong> Periode aktif belum diatur. Silakan atur di Pengaturan.</div></div>");
 }
 
-// ✅ PERUBAHAN: Ambil data untuk semua filter dropdown
+// Ambil data untuk semua filter dropdown
 $kamars_result = mysqli_query($conn, "SELECT DISTINCT kamar FROM santri WHERE kamar IS NOT NULL AND kamar != '' ORDER BY CAST(kamar AS UNSIGNED) ASC");
 $kelas_list = mysqli_query($conn, "SELECT DISTINCT CAST(kelas AS UNSIGNED) AS kelas FROM santri WHERE kelas IS NOT NULL AND kelas != '' ORDER BY kelas ASC");
 
-// ✅ PERUBAHAN: Ambil semua filter dari URL
+// Ambil semua filter dari URL
 $filter_kamar = $_GET['kamar'] ?? '';
-$filter_kelas = $_GET['kelas'] ?? ''; // Tambahan filter kelas
+$filter_kelas = $_GET['kelas'] ?? ''; 
 $start_date = $_GET['start_date'] ?? $periode_aktif;
 $end_date = $_GET['end_date'] ?? date('Y-m-d');
 
@@ -36,7 +41,7 @@ $end_date = $_GET['end_date'] ?? date('Y-m-d');
 // BAGIAN 2: QUERY UTAMA (PERINGKAT & GRAFIK)
 // =======================================================
 
-// ✅ PERBAIKAN: Siapkan parameter sekali untuk semua query
+// Siapkan parameter sekali untuk semua query
 $base_params = [$bagian, $start_date, $end_date];
 $base_types = "sss";
 
@@ -73,6 +78,7 @@ mysqli_stmt_bind_param($stmt_peringkat, $base_types, ...$base_params);
 mysqli_stmt_execute($stmt_peringkat);
 $result_peringkat = mysqli_stmt_get_result($stmt_peringkat);
 $peringkat_list = mysqli_fetch_all($result_peringkat, MYSQLI_ASSOC);
+mysqli_stmt_close($stmt_peringkat);
 
 // Data untuk Grafik 1: Top 5 Santri
 $top_5_santri = array_slice($peringkat_list, 0, 5);
@@ -95,47 +101,86 @@ $stmt_kelas_chart = mysqli_prepare($conn, $sql_kelas_chart);
 mysqli_stmt_bind_param($stmt_kelas_chart, $base_types, ...$base_params);
 mysqli_stmt_execute($stmt_kelas_chart);
 $result_kelas_chart = mysqli_stmt_get_result($stmt_kelas_chart);
-$data_kelas_chart = mysqli_fetch_all($result_kelas_chart, MYSQLI_ASSOC);
+$data_kelas_chart = mysqli_fetch_all(result: $result_kelas_chart, mode: MYSQLI_ASSOC);
+mysqli_stmt_close($stmt_kelas_chart);
 
 $json_kelas_chart = json_encode([
     'labels' => array_column($data_kelas_chart, 'kelas'),
     'data' => array_column($data_kelas_chart, 'total')
 ]);
-?>
 
-<!DOCTYPE html>
-<html lang="id">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Rekap Pelanggaran Tahfidz</title>
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700&display=swap" rel="stylesheet">
-    <style>
-        :root {
-            --primary: #dc3545; --primary-light: #f8d7da; --primary-dark: #b02a37;
-            --secondary: #6c757d; --light-bg: #f8fafc; --card-bg: #ffffff;
-            --border-color: #e2e8f0; --text-dark: #1e293b; --text-light: #64748b;
-            --gold: #f59e0b; --silver: #9ca3af; --bronze: #a16207;
-        }
-        body { background-color: var(--light-bg); font-family: 'Poppins', sans-serif; }
-        .card { background-color: var(--card-bg); border: 1px solid var(--border-color); border-radius: 0.75rem; box-shadow: 0 1px 3px 0 rgb(0 0 0 / 0.05); }
-        .page-title { color: var(--text-dark); font-weight: 700; }
-        .form-control, .form-select { width: 100%; padding: 0.5rem 0.75rem; border: 1px solid var(--border-color); border-radius: 0.375rem; }
-        .table th { background-color: var(--light-bg); color: var(--text-light); text-transform: uppercase; font-size: 0.75rem; letter-spacing: 0.05em; }
-        .table td { vertical-align: middle; }
-        .rank-icon { font-size: 1.5rem; }
-        .rank-1 .rank-icon { color: var(--gold); }
-        .rank-2 .rank-icon { color: var(--silver); }
-        .rank-3 .rank-icon { color: var(--bronze); }
-        .total-poin { font-size: 1.25rem; font-weight: 700; color: var(--primary); }
-        .btn-detail { background-color: var(--primary-light); color: var(--primary); font-weight: 600; text-decoration: none; transition: all 0.2s; }
-        .btn-detail:hover { background-color: var(--primary); color: white; }
-    </style>
-</head>
-<body>
+// Render body tabel
+ob_start();
+?>
+<?php if (empty($peringkat_list)): ?>
+    <tr><td colspan="5" class="text-center p-5 text-muted"><i class="fas fa-check-circle fa-3x mb-3"></i><br>Alhamdulillah, tidak ada pelanggaran Tahfidz ditemukan.</td></tr>
+<?php else: ?>
+    <?php foreach ($peringkat_list as $index => $row): $no = $index + 1; ?>
+    <tr class="rank-<?= $no ?>">
+        <td class="text-center">
+            <?php if ($no <= 3): ?><i class="fas fa-trophy rank-icon"></i><?php else: ?><span class="fw-bold fs-5"><?= $no ?></span><?php endif; ?>
+        </td>
+        <td>
+            <div class="fw-bold"><?= htmlspecialchars($row['nama']) ?></div>
+            <small class="text-muted">Kls: <?= htmlspecialchars($row['kelas']) ?> | Kmr: <?= htmlspecialchars($row['kamar']) ?></small>
+        </td>
+        <td class="text-center">
+            <span class="total-poin"><?= $row['total_poin'] ?></span>
+        </td>
+        <td class="text-center">
+            <span class="badge bg-secondary rounded-pill"><?= $row['total_pelanggaran'] ?></span>
+        </td>
+        <td class="text-center">
+            <?php 
+            $detail_link = "detail-tahfidz.php?santri_id={$row['id']}&start_date=$start_date&end_date=$end_date&kamar=" . urlencode($filter_kamar) . "&kelas=" . urlencode($filter_kelas);
+            ?>
+            <a href="<?= $detail_link ?>" class="btn btn-sm btn-detail rounded-pill px-3">
+                <i class="fas fa-info-circle me-1"></i> Detail
+            </a>
+        </td>
+    </tr>
+    <?php endforeach; ?>
+<?php endif; ?>
+<?php
+$table_tbody_html = ob_get_clean();
+
+// Kirim data JSON jika request berupa AJAX
+if ($is_ajax) {
+    header('Content-Type: application/json');
+    echo json_encode([
+        'tbody' => $table_tbody_html,
+        'top_santri' => [
+            'labels' => array_column($top_5_santri, 'nama'),
+            'data' => array_column($top_5_santri, 'total_poin')
+        ],
+        'kelas_chart' => [
+            'labels' => array_column($data_kelas_chart, 'kelas'),
+            'data' => array_column($data_kelas_chart, 'total')
+        ]
+    ]);
+    exit;
+}
+?>
+<style>
+    :root {
+        --primary: #dc3545; --primary-light: #f8d7da; --primary-dark: #b02a37;
+        --secondary: #6c757d; --light-bg: #f8fafc; --card-bg: #ffffff;
+        --border-color: #e2e8f0; --text-dark: #1e293b; --text-light: #64748b;
+        --gold: #f59e0b; --silver: #9ca3af; --bronze: #a16207;
+    }
+    .card { background-color: var(--card-bg); border: 1px solid var(--border-color); border-radius: 0.75rem; box-shadow: 0 1px 3px 0 rgb(0 0 0 / 0.05); }
+    .page-title { color: var(--text-dark); font-weight: 700; }
+    .form-control, .form-select { width: 100%; padding: 0.5rem 0.75rem; border: 1px solid var(--border-color); border-radius: 0.375rem; }
+    .table th { background-color: var(--light-bg); color: var(--text-light); text-transform: uppercase; font-size: 0.75rem; letter-spacing: 0.05em; }
+    .table td { vertical-align: middle; }
+    .rank-icon { font-size: 1.5rem; }
+    .rank-1 .rank-icon { color: var(--gold); }
+    .rank-2 .rank-icon { color: var(--silver); }
+    .rank-3 .rank-icon { color: var(--bronze); }
+    .total-poin { font-size: 1.25rem; font-weight: 700; color: var(--primary); }
+    .btn-detail { background-color: var(--primary-light); color: var(--primary); font-weight: 600; text-decoration: none; transition: all 0.2s; }
+    .btn-detail:hover { background-color: var(--primary); color: white; }
+</style>
 <div class="container py-4">
     <h1 class="page-title mb-4"><i class="fas fa-book-reader me-3"></i>Rekap Pelanggaran Tahfidz</h1>
 
@@ -208,36 +253,8 @@ $json_kelas_chart = json_encode([
                         <th class="text-center">Aksi</th>
                     </tr>
                 </thead>
-                <tbody>
-                    <?php if (empty($peringkat_list)): ?>
-                        <tr><td colspan="5" class="text-center p-5 text-muted"><i class="fas fa-check-circle fa-3x mb-3"></i><br>Alhamdulillah, tidak ada pelanggaran Tahfidz ditemukan.</td></tr>
-                    <?php else: ?>
-                        <?php foreach ($peringkat_list as $index => $row): $no = $index + 1; ?>
-                        <tr class="rank-<?= $no ?>">
-                            <td class="text-center">
-                                <?php if ($no <= 3): ?><i class="fas fa-trophy rank-icon"></i><?php else: ?><span class="fw-bold fs-5"><?= $no ?></span><?php endif; ?>
-                            </td>
-                            <td>
-                                <div class="fw-bold"><?= htmlspecialchars($row['nama']) ?></div>
-                                <small class="text-muted">Kls: <?= htmlspecialchars($row['kelas']) ?> | Kmr: <?= htmlspecialchars($row['kamar']) ?></small>
-                            </td>
-                            <td class="text-center">
-                                <span class="total-poin"><?= $row['total_poin'] ?></span>
-                            </td>
-                            <td class="text-center">
-                                <span class="badge bg-secondary rounded-pill"><?= $row['total_pelanggaran'] ?></span>
-                            </td>
-                            <td class="text-center">
-                                <?php // ✅ PERUBAHAN: Link detail membawa semua filter
-                                $detail_link = "detail-tahfidz.php?santri_id={$row['id']}&start_date=$start_date&end_date=$end_date&kamar=" . urlencode($filter_kamar) . "&kelas=" . urlencode($filter_kelas);
-                                ?>
-                                <a href="<?= $detail_link ?>" class="btn btn-sm btn-detail rounded-pill px-3">
-                                    <i class="fas fa-info-circle me-1"></i> Detail
-                                </a>
-                            </td>
-                        </tr>
-                        <?php endforeach; ?>
-                    <?php endif; ?>
+                <tbody id="rekapTableBody">
+                    <?= $table_tbody_html ?>
                 </tbody>
             </table>
         </div>
@@ -246,31 +263,103 @@ $json_kelas_chart = json_encode([
 
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 <script>
-// Chart rendering script (tidak berubah)
-document.addEventListener('DOMContentLoaded', function () {
-    const dataTopSantri = <?= $json_top_santri ?>;
-    const ctxTopSantri = document.getElementById('chartTopSantri').getContext('2d');
-    if (dataTopSantri.labels.length > 0) {
-        new Chart(ctxTopSantri, { type: 'pie', data: { labels: dataTopSantri.labels, datasets: [{ label: 'Total Poin', data: dataTopSantri.data, backgroundColor: ['#dc3545', '#fd7e14', '#ffc107', '#198754', '#0dcaf0'], hoverOffset: 4 }] }, options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { position: 'top' } } } });
-    }
+let chartTop = null;
+let chartKelas = null;
 
-    const dataKelas = <?= $json_kelas_chart ?>;
+const dataTopSantri = <?= $json_top_santri ?>;
+const dataKelas = <?= $json_kelas_chart ?>;
+
+document.addEventListener('DOMContentLoaded', function () {
+    const ctxTopSantri = document.getElementById('chartTopSantri').getContext('2d');
+    chartTop = new Chart(ctxTopSantri, { 
+        type: 'pie', 
+        data: { 
+            labels: dataTopSantri.labels || [], 
+            datasets: [{ 
+                label: 'Total Poin', 
+                data: dataTopSantri.data || [], 
+                backgroundColor: ['#dc3545', '#fd7e14', '#ffc107', '#198754', '#0dcaf0'], 
+                hoverOffset: 4 
+            }] 
+        }, 
+        options: { 
+            responsive: true, 
+            maintainAspectRatio: false, 
+            plugins: { 
+                legend: { position: 'top' } 
+            } 
+        } 
+    });
+
     const ctxKelas = document.getElementById('chartKelas').getContext('2d');
-    if (dataKelas.labels.length > 0) {
-        new Chart(ctxKelas, { type: 'doughnut', data: { labels: dataKelas.labels, datasets: [{ data: dataKelas.data, backgroundColor: ['#6f42c1', '#d63384', '#198754', '#0dcaf0', '#fd7e14', '#0d6efd'], hoverOffset: 4 }] }, options: { responsive: true, maintainAspectRatio: false } });
-    }
+    chartKelas = new Chart(ctxKelas, { 
+        type: 'doughnut', 
+        data: { 
+            labels: dataKelas.labels || [], 
+            datasets: [{ 
+                data: dataKelas.data || [], 
+                backgroundColor: ['#6f42c1', '#d63384', '#198754', '#0dcaf0', '#fd7e14', '#0d6efd'], 
+                hoverOffset: 4 
+            }] 
+        }, 
+        options: { 
+            responsive: true, 
+            maintainAspectRatio: false 
+        } 
+    });
 });
 
-// ✅ TAMBAHAN: Script untuk auto-submit filter
 document.addEventListener('DOMContentLoaded', function() {
     const filterForm = document.getElementById('filterForm');
+    const tbody = document.getElementById('rekapTableBody');
+
+    function updateData() {
+        const formData = new FormData(filterForm);
+        const params = new URLSearchParams(formData);
+        const url = '?' + params.toString();
+
+        tbody.style.opacity = '0.5';
+
+        fetch(url, {
+            headers: { 'X-Requested-With': 'XMLHttpRequest' }
+        })
+        .then(response => {
+            if (!response.ok) throw new Error('Network response was not ok');
+            return response.json();
+        })
+        .then(data => {
+            tbody.innerHTML = data.tbody;
+            tbody.style.opacity = '1';
+
+            if (chartTop && data.top_santri) {
+                chartTop.data.labels = data.top_santri.labels;
+                chartTop.data.datasets[0].data = data.top_santri.data;
+                chartTop.update();
+            }
+
+            if (chartKelas && data.kelas_chart) {
+                chartKelas.data.labels = data.kelas_chart.labels;
+                chartKelas.data.datasets[0].data = data.kelas_chart.data;
+                chartKelas.update();
+            }
+
+            window.history.pushState(null, '', url);
+        })
+        .catch(error => {
+            console.error('Error fetching data:', error);
+            tbody.style.opacity = '1';
+        });
+    }
+
     const filterInputs = filterForm.querySelectorAll('select, input[type="date"]');
     filterInputs.forEach(input => {
-        input.addEventListener('change', () => filterForm.submit());
+        input.addEventListener('change', updateData);
     });
 });
 </script>
 
-<?php require_once __DIR__ . '/../../layouts/footer.php'; ?>
-</body>
-</html>
+<?php 
+if (!$is_ajax) {
+    require_once __DIR__ . '/../../layouts/footer.php'; 
+}
+?>

@@ -3,7 +3,7 @@
 require_once __DIR__ . '/../bootstrap/init.php';
 
 // 2. Jalankan 'SATPAM' buat ngejaga halaman
-guard(['user_manage', 'reset_poin_manage', 'periode_aktif_manage', 'izin_manage', 'history_manage', 'backup_restore_manage', 'activity_log_manage']); 
+guard(['user_manage', 'reset_poin_manage', 'periode_aktif_manage', 'izin_manage', 'history_manage', 'backup_restore_manage', 'activity_log_manage', 'impor_data']); 
 
 // 3. Kalau lolos, baru panggil Tampilan
 require_once __DIR__ . '/../layouts/header.php'; 
@@ -74,6 +74,10 @@ require_once __DIR__ . '/../layouts/header.php';
     .card-backup::before { background: linear-gradient(90deg, #3b82f6, #93c5fd); }
     .card-backup:hover { border-color: #3b82f6; }
     .card-backup .icon-box { background: rgba(59, 130, 246, 0.08); color: #2563eb; }
+
+    .card-impor::before { background: linear-gradient(90deg, #0891b2, #38bdf8); }
+    .card-impor:hover { border-color: #0891b2; }
+    .card-impor .icon-box { background: rgba(8, 145, 178, 0.08); color: #0e7490; }
 
     .card-log-aktifitas::before { background: #6366f1; }
     .card-log-aktifitas:hover { border-color: #6366f1; }
@@ -229,6 +233,20 @@ require_once __DIR__ . '/../layouts/header.php';
                 <p class="card-desc">Kembalikan poin pelanggaran santri ke nol, baik secara individu maupun keseluruhan.</p>
                 <a href="reset-poin/index.php" class="settings-link">
                     Reset Poin <i class="fas fa-arrow-right text-xs"></i>
+                </a>
+            </div>
+        </div>
+        <?php endif; ?>
+
+        <!-- KARTU: Sinkronisasi Data (Impor Massal) -->
+        <?php if (has_permission('impor_data')): ?>
+        <div class="col-xl-4 col-md-6">
+            <div class="settings-card card-impor">
+                <div class="icon-box"><i class="fas fa-file-import"></i></div>
+                <h5 class="card-title">Sinkronisasi Data</h5>
+                <p class="card-desc">Impor data santri, jenis pelanggaran, dan jenis reward secara massal dari file Excel. Mendukung mode aman (update/insert) dan sinkronisasi penuh.</p>
+                <a href="impor_data/index.php" class="settings-link">
+                    Mulai Impor <i class="fas fa-arrow-right text-xs"></i>
                 </a>
             </div>
         </div>

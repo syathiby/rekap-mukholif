@@ -4,7 +4,7 @@
  * Versi cache: naikkan angka ini setiap kali ada perubahan besar
  */
 
-const CACHE_VERSION = 'asuhtrack-v2';
+const CACHE_VERSION = 'asuhtrack-v3';
 const STATIC_CACHE  = `${CACHE_VERSION}-static`;
 const DYNAMIC_CACHE = `${CACHE_VERSION}-dynamic`;
 
@@ -135,13 +135,8 @@ async function fetchAndUpdate(request, cacheName) {
 // ─────────────────────────────────────────────
 async function networkFirst(request) {
   try {
-    // Selalu coba network dulu dengan timeout 10 detik
-    const networkPromise = fetch(request, { credentials: 'same-origin' });
-    const timeoutPromise = new Promise((_, reject) =>
-      setTimeout(() => reject(new Error('Network timeout')), 10000)
-    );
-
-    const response = await Promise.race([networkPromise, timeoutPromise]);
+    // Selalu coba network dulu langsung tanpa timeout manual
+    const response = await fetch(request, { credentials: 'same-origin' });
 
     if (response && response.ok) {
       // Simpan ke dynamic cache untuk fallback offline
@@ -151,7 +146,7 @@ async function networkFirst(request) {
     return response;
 
   } catch (err) {
-    // Network gagal atau timeout — coba dari cache
+    // Network gagal (benar-benar offline) — coba dari cache
     const cached = await caches.match(request);
     if (cached) {
       console.log('[SW] Network gagal, menggunakan cache untuk:', request.url);

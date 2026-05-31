@@ -12,8 +12,10 @@ $req_path = '/' . ltrim($req_path, '/');
 // Cek izin untuk menu bottom nav
 $can_input_violation = false;
 $can_input_reward = false;
+$can_create_rapot = false;
 $violation_url = BASE_URL . '/pelanggaran';
 $reward_url = BASE_URL . '/reward/input/create.php';
+$rapot_url = BASE_URL . '/rapot/index.php';
 
 if (function_exists('has_permission')) {
     $can_input_reward = has_permission('reward_input');
@@ -24,6 +26,7 @@ if (function_exists('has_permission')) {
         'pelanggaran_pengabdian_input', 
         'pelanggaran_tahfidz_input'
     ]);
+    $can_create_rapot = has_permission(['rapot_create', 'rapot_view']);
     
     if ($can_input_violation) {
         $permissions_list = [
@@ -47,6 +50,36 @@ if (function_exists('has_permission')) {
             }
         }
     }
+}
+
+// Bangun array FAB Item aktif berdasarkan izin akses
+$active_fab_items = [];
+if ($can_input_violation) {
+    $active_fab_items[] = [
+        'url' => $violation_url,
+        'label' => 'Pelanggaran',
+        'title' => 'Catat Pelanggaran',
+        'icon' => 'fas fa-exclamation-triangle',
+        'bg' => 'bg-danger'
+    ];
+}
+if ($can_input_reward) {
+    $active_fab_items[] = [
+        'url' => $reward_url,
+        'label' => 'Reward',
+        'title' => 'Tambah Reward',
+        'icon' => 'fas fa-trophy',
+        'bg' => 'bg-success'
+    ];
+}
+if ($can_create_rapot) {
+    $active_fab_items[] = [
+        'url' => $rapot_url,
+        'label' => 'Rapot',
+        'title' => 'Buat Rapot Baru',
+        'icon' => 'fas fa-file-invoice',
+        'bg' => 'bg-info'
+    ];
 }
 
 $can_view_rekap = false;
@@ -96,32 +129,26 @@ if (function_exists('has_permission')) {
 </nav>
 
 <!-- --- Floating Action Button (Mobile Only) --- -->
-<?php if ($can_input_violation && $can_input_reward): ?>
-    <!-- Speed Dial (Keduanya) -->
+<?php if (count($active_fab_items) > 1): ?>
+    <!-- Speed Dial (Multi Item) -->
     <div class="fab-container">
         <button class="fab-btn" id="fabToggle" title="Tambah Data">
             <i class="fas fa-plus"></i>
         </button>
         <div class="fab-menu" id="fabMenu">
-            <a href="<?= $reward_url ?>" class="fab-item" title="Tambah Reward">
-                <span class="fab-label">Reward</span>
-                <div class="fab-icon bg-success text-white"><i class="fas fa-trophy"></i></div>
-            </a>
-            <a href="<?= $violation_url ?>" class="fab-item" title="Catat Pelanggaran">
-                <span class="fab-label">Pelanggaran</span>
-                <div class="fab-icon bg-danger text-white"><i class="fas fa-exclamation-triangle"></i></div>
-            </a>
+            <?php foreach ($active_fab_items as $item): ?>
+                <a href="<?= $item['url'] ?>" class="fab-item" title="<?= $item['title'] ?>">
+                    <span class="fab-label"><?= $item['label'] ?></span>
+                    <div class="fab-icon <?= $item['bg'] ?> text-white"><i class="<?= $item['icon'] ?>"></i></div>
+                </a>
+            <?php endforeach; ?>
         </div>
     </div>
-<?php elseif ($can_input_violation): ?>
-    <!-- Hanya Pelanggaran -->
-    <a href="<?= $violation_url ?>" class="fab-btn single-fab" title="Catat Pelanggaran">
-        <i class="fas fa-plus"></i>
-    </a>
-<?php elseif ($can_input_reward): ?>
-    <!-- Hanya Reward -->
-    <a href="<?= $reward_url ?>" class="fab-btn single-fab" title="Tambah Reward" style="background: linear-gradient(135deg, var(--success) 0%, #047857 100%);">
-        <i class="fas fa-trophy"></i>
+<?php elseif (count($active_fab_items) === 1): ?>
+    <!-- Single FAB -->
+    <?php $single_item = $active_fab_items[0]; ?>
+    <a href="<?= $single_item['url'] ?>" class="fab-btn single-fab" title="<?= $single_item['title'] ?>" style="<?= $single_item['label'] === 'Reward' ? 'background: linear-gradient(135deg, var(--success) 0%, #047857 100%);' : ($single_item['label'] === 'Rapot' ? 'background: linear-gradient(135deg, var(--info) 0%, #0284c7 100%);' : '') ?>">
+        <i class="<?= $single_item['label'] === 'Reward' ? 'fas fa-trophy' : ($single_item['label'] === 'Rapot' ? 'fas fa-file-invoice' : 'fas fa-plus') ?>"></i>
     </a>
 <?php endif; ?>
 

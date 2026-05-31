@@ -1,10 +1,25 @@
-﻿<?php
+<?php
 // Kasih waktu 5 menit (300 detik) buat jaga-jaga
 set_time_limit(300);
 
 if (session_status() === PHP_SESSION_NONE) { session_start(); }
 require_once __DIR__ . '/../bootstrap/init.php';
 guard('jenis_pelanggaran_delete');
+
+// Validasi CSRF Token
+if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+    if (!isset($_POST['csrf_token']) || !isset($_SESSION['csrf_token']) || !hash_equals($_SESSION['csrf_token'], $_POST['csrf_token'])) {
+        $_SESSION['error_message'] = "Error: Token keamanan tidak valid (CSRF). Silakan ulangi.";
+        header("Location: index.php");
+        exit;
+    }
+} elseif ($_SERVER['REQUEST_METHOD'] === 'GET' && isset($_GET['id'])) {
+    if (!isset($_GET['csrf_token']) || !isset($_SESSION['csrf_token']) || !hash_equals($_SESSION['csrf_token'], $_GET['csrf_token'])) {
+        $_SESSION['error_message'] = "Error: Token keamanan tidak valid (CSRF). Silakan ulangi.";
+        header("Location: index.php");
+        exit;
+    }
+}
 
 // --- PERLINDUNGAN DIMULAI DI SINI ---
 // Definisikan ID yang tidak boleh dihapus sama sekali

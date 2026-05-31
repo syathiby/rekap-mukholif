@@ -1,4 +1,4 @@
-﻿<?php 
+<?php 
 // 1. Panggil 'Otak' aplikasi dulu
 require_once __DIR__ . '/../../bootstrap/init.php';
 
@@ -60,6 +60,7 @@ $sql_aktif = "
 $sql_history = "
     SELECT 
         l.tanggal_melanggar as tanggal,
+        l.diganti_pada,
         jp.nama_pelanggaran,
         l.poin_lama as poin,
         jp.kategori,
@@ -87,6 +88,26 @@ $data_history = mysqli_fetch_all($res_hist, MYSQLI_ASSOC);
 // C. GABUNGKAN DATA (Merge)
 $all_data = array_merge($data_aktif, $data_history);
 
+// Jika tidak ada pelanggaran bahasa aktif tetapi memiliki riwayat log, tambahkan rekor virtual "Level 0 (Bersih)" pada tanggal pembersihan terakhir
+if (empty($data_aktif) && !empty($data_history)) {
+    $latest_log = null;
+    foreach ($data_history as $log) {
+        if ($latest_log === null || strtotime($log['diganti_pada']) > strtotime($latest_log['diganti_pada'])) {
+            $latest_log = $log;
+        }
+    }
+    if ($latest_log !== null) {
+        $all_data[] = [
+            'tanggal' => $latest_log['diganti_pada'],
+            'diganti_pada' => $latest_log['diganti_pada'],
+            'nama_pelanggaran' => 'Bersih (Level 0)',
+            'poin' => 0,
+            'kategori' => 'Ringan',
+            'status_data' => 'Aktif' // Set Aktif agar posisinya paling atas di tabel rincian status terkini
+        ];
+    }
+}
+
 // D. URUTKAN DATA (Sort by Date ASCENDING untuk Grafik)
 usort($all_data, function($a, $b) {
     return strtotime($a['tanggal']) - strtotime($b['tanggal']);
@@ -109,8 +130,12 @@ $chart_colors = [];
 foreach ($all_data as $row) {
     $chart_labels[] = date('d M', strtotime($row['tanggal'])); // Format tgl: 29 Nov
     $chart_data[] = $row['poin'];
-    // Warna dot di grafik: Merah kalau aktif, Abu kalau riwayat
-    $chart_colors[] = ($row['status_data'] === 'Aktif') ? '#ef4444' : '#94a3b8';
+    // Warna dot di grafik: Hijau jika bersih, Merah jika aktif, Abu jika riwayat
+    if ($row['poin'] == 0) {
+        $chart_colors[] = '#10b981'; // Hijau emerald
+    } else {
+        $chart_colors[] = ($row['status_data'] === 'Aktif') ? '#e11d48' : '#94a3b8'; // Rose untuk aktif, Slate untuk riwayat
+    }
 }
 
 // =======================================================
@@ -138,45 +163,30 @@ usort($table_data, function($a, $b) {
 
 ?>
 
-<!DOCTYPE html>
-<html lang="id">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Detail Bahasa: <?= htmlspecialchars($santri['nama']) ?></title>
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<style>
+    :root {
+        --primary: #4f46e5; --primary-light: #e0e7ff; --primary-dark: #4338ca;
+        --secondary: #64748b; --light-bg: #f8fafc; --card-bg: #ffffff;
+        --border-color: #e2e8f0; --text-dark: #1e293b; --text-light: #64748b;
+    }
+    .card { background-color: var(--card-bg); border: 1px solid var(--border-color); border-radius: 0.75rem; box-shadow: 0 1px 3px 0 rgb(0 0 0 / 0.05); }
+    .page-title { color: var(--text-dark); font-weight: 700; }
+    .stat-card { background: linear-gradient(135deg, var(--primary) 0%, var(--primary-dark) 100%); }
+    .stat-number { font-size: 2.5rem; font-weight: 700; color: white; }
+    .stat-label { font-size: 1rem; color: rgba(255, 255, 255, 0.8); }
     
-    <!-- CSS & Font -->
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700&display=swap" rel="stylesheet">
-    
-    <!-- Chart.js CDN (Wajib buat grafik) -->
-    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    /* Badge Status */
+    .badge-aktif { background-color: #ffe4e6; color: #e11d48; border: 1px solid #fecdd3; }
+    .badge-bersih { background-color: #d1fae5; color: #065f46; border: 1px solid #a7f3d0; }
+    .badge-riwayat { background-color: #f1f5f9; color: #64748b; border: 1px solid #e2e8f0; text-decoration: line-through; }
 
-    <style>
-        :root {
-            --primary: #4f46e5; --primary-light: #e0e7ff; --primary-dark: #4338ca;
-            --secondary: #64748b; --light-bg: #f8fafc; --card-bg: #ffffff;
-            --border-color: #e2e8f0; --text-dark: #1e293b; --text-light: #64748b;
-        }
-        body { background-color: var(--light-bg); font-family: 'Poppins', sans-serif; }
-        .card { background-color: var(--card-bg); border: 1px solid var(--border-color); border-radius: 0.75rem; box-shadow: 0 1px 3px 0 rgb(0 0 0 / 0.05); }
-        .page-title { color: var(--text-dark); font-weight: 700; }
-        .stat-card { background: linear-gradient(135deg, var(--primary) 0%, var(--primary-dark) 100%); }
-        .stat-number { font-size: 2.5rem; font-weight: 700; color: white; }
-        .stat-label { font-size: 1rem; color: rgba(255, 255, 255, 0.8); }
-        
-        /* Badge Status */
-        .badge-aktif { background-color: #fee2e2; color: #991b1b; border: 1px solid #fecaca; }
-        .badge-riwayat { background-color: #f1f5f9; color: #64748b; border: 1px solid #e2e8f0; text-decoration: line-through; }
-
-        @media (max-width: 767.98px) {
-            .page-title { font-size: 1.5rem; }
-            .profile-card-info { text-align: center; }
-            .chart-container { height: 250px; }
-        }
-    </style>
-</head>
-<body>
+    @media (max-width: 767.98px) {
+        .page-title { font-size: 1.5rem; }
+        .profile-card-info { text-align: center; }
+        .chart-container { height: 250px; }
+    }
+</style>
 <div class="container py-4">
     
     <!-- HEADER -->
@@ -193,13 +203,13 @@ usort($table_data, function($a, $b) {
                     <h3 class="fw-bold mb-1"><?= htmlspecialchars($santri['nama']) ?></h3>
                     <p class="text-muted mb-0">Kelas: <strong><?= htmlspecialchars($santri['kelas']) ?></strong> | Kamar: <strong><?= htmlspecialchars($santri['kamar']) ?></strong></p>
                 </div>
-                <div class="col-md-6 text-md-end mt-3 mt-md-0">
-                    <form action="" method="GET" class="d-flex justify-content-md-end gap-2">
+                <div class="col-md-6 text-center text-md-end mt-3 mt-md-0">
+                    <form action="" method="GET" class="d-flex justify-content-center justify-content-md-end align-items-center gap-2 flex-wrap">
                         <input type="hidden" name="santri_id" value="<?= $santri_id ?>">
-                        <input type="date" name="start_date" class="form-control form-control-sm" style="width: auto;" value="<?= $start_date ?>">
-                        <span class="align-self-center">-</span>
-                        <input type="date" name="end_date" class="form-control form-control-sm" style="width: auto;" value="<?= $end_date ?>">
-                        <button type="submit" class="btn btn-sm btn-primary"><i class="fas fa-filter"></i></button>
+                        <input type="date" name="start_date" class="form-control form-control-sm" style="width: 135px;" value="<?= $start_date ?>">
+                        <span class="text-muted">-</span>
+                        <input type="date" name="end_date" class="form-control form-control-sm" style="width: 135px;" value="<?= $end_date ?>">
+                        <button type="submit" class="btn btn-sm btn-primary px-3"><i class="fas fa-filter"></i></button>
                     </form>
                 </div>
             </div>
@@ -269,7 +279,11 @@ usort($table_data, function($a, $b) {
                             </td>
                             <td>
                                 <?php if($row['status_data'] === 'Aktif'): ?>
-                                    <span class="badge badge-aktif px-3 rounded-pill">AKTIF</span>
+                                    <?php if($row['poin'] == 0): ?>
+                                        <span class="badge badge-bersih px-3 rounded-pill">BERSIH</span>
+                                    <?php else: ?>
+                                        <span class="badge badge-aktif px-3 rounded-pill">AKTIF</span>
+                                    <?php endif; ?>
                                 <?php else: ?>
                                     <span class="badge badge-riwayat px-3 rounded-pill">RIWAYAT</span>
                                 <?php endif; ?>
@@ -277,16 +291,16 @@ usort($table_data, function($a, $b) {
                             <td><?= htmlspecialchars($row['nama_pelanggaran']) ?></td>
                             <td class="text-center">
                                 <?php 
-                                    // Logic warna kategori sederhana
                                     $cat_color = 'bg-secondary';
-                                    if(strpos($row['nama_pelanggaran'], 'Level') !== false) {
-                                        // Kalau nama pelanggaran ada kata "Level", kasih warna beda
-                                        $cat_color = 'bg-info text-dark';
+                                    if ($row['poin'] == 0) {
+                                        $cat_color = 'bg-success'; // Hijau untuk bersih
+                                    } elseif (strpos($row['nama_pelanggaran'], 'Level') !== false) {
+                                        $cat_color = 'bg-danger'; // Merah untuk pelanggaran aktif
                                     }
                                 ?>
                                 <span class="badge <?= $cat_color ?>"><?= $row['kategori'] ?></span>
                             </td>
-                            <td class="text-center fw-bold fs-5 <?= $row['status_data'] === 'Aktif' ? 'text-danger' : 'text-secondary' ?>">
+                            <td class="text-center fw-bold fs-5 <?= ($row['status_data'] === 'Aktif' && $row['poin'] > 0) ? 'text-danger' : 'text-secondary' ?>">
                                 <?= $row['poin'] ?>
                             </td>
                         </tr>
@@ -350,6 +364,3 @@ usort($table_data, function($a, $b) {
         }
     });
 </script>
-
-</body>
-</html>

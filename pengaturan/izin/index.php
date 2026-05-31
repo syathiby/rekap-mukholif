@@ -50,25 +50,12 @@ if ($selectedUserId) {
 }
 ?>
 
-<!DOCTYPE html>
-<html lang="id">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Pengaturan Izin Akses</title>
-    <!-- Font Awesome -->
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
-    <!-- Select2 CSS -->
-    <link href="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/css/select2.min.css" rel="stylesheet" />
-    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/select2-bootstrap-5-theme@1.3.0/dist/select2-bootstrap-5-theme.min.css" />
-    <style>
-        .form-check-input:checked {
-            background-color: #f97316;
-            border-color: #f97316;
-        }
-    </style>
-</head>
-<body>
+<style>
+    .form-check-input:checked {
+        background-color: #f97316;
+        border-color: #f97316;
+    }
+</style>
     <div class="dashboard-wrapper container-fluid px-0 px-md-2 mt-2 mb-5">
         
         <!-- Header Page yang Dilepas dari Card Utama -->
@@ -82,7 +69,10 @@ if ($selectedUserId) {
                     <p class="text-muted mb-0" style="font-size: 0.95rem;">Atur "tiket" atau hak akses setiap pengguna secara fleksibel dan mendetail.</p>
                 </div>
             </div>
-            <div>
+            <div class="d-flex gap-2">
+                <a href="role.php" class="btn btn-outline-primary shadow-sm rounded-pill px-4" style="font-weight: 600; border-color: #8b5cf6; color: #8b5cf6;" onmouseover="this.style.backgroundColor='#8b5cf6'; this.style.color='white';" onmouseout="this.style.backgroundColor='transparent'; this.style.color='#8b5cf6';">
+                    <i class="fas fa-layer-group me-2"></i>Izin Default Role
+                </a>
                 <a href="bulk.php" class="btn btn-primary shadow-sm rounded-pill px-4" style="background: linear-gradient(135deg, #4f46e5, #3b82f6); border: none; font-weight: 600;">
                     <i class="fas fa-users-cog me-2"></i>Edit Izin Massal (Bulk)
                 </a>
@@ -164,8 +154,8 @@ if ($selectedUserId) {
                 </div>
 
                 <!-- Sticky Floating Save Button -->
-                <div class="position-sticky bottom-0 start-0 w-100 py-3 mt-5" style="background: linear-gradient(0deg, rgba(255,255,255,0.95) 40%, rgba(255,255,255,0) 100%); z-index: 100; backdrop-filter: blur(2px);">
-                    <div class="d-flex justify-content-center px-1">
+                <div class="position-sticky bottom-0 py-3 mt-5" style="background: linear-gradient(0deg, rgba(255,255,255,0.95) 40%, rgba(255,255,255,0) 100%); z-index: 100; backdrop-filter: blur(2px);">
+                    <div class="d-flex justify-content-center">
                         <button type="submit" class="btn btn-primary btn-lg rounded-pill px-5 shadow-sm fw-bold" style="background: linear-gradient(90deg, #f97316, #ea580c); border: none; transition: transform 0.2s;" onmouseover="this.style.transform='translateY(-2px)'" onmouseout="this.style.transform='none'">
                             <i class="fas fa-save me-2"></i>Simpan Perubahan Izin
                         </button>
@@ -200,7 +190,4 @@ if ($selectedUserId) {
             });
         });
     </script>
-</body>
-</html>
-
 <?php require_once __DIR__ . '/../../layouts/footer.php'; ?>

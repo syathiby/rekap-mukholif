@@ -52,6 +52,7 @@ if (!$data) {
                 
                 <div class="card-body p-4 p-md-5">
                     <form action="process.php" method="POST">
+                        <input type="hidden" name="csrf_token" value="<?= $_SESSION['csrf_token'] ?>">
                         <input type="hidden" name="id" value="<?php echo $data['id']; ?>">
                         
                         <div class="mb-4">

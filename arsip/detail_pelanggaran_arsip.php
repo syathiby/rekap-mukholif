@@ -1,4 +1,4 @@
-﻿<?php 
+<?php 
 // 1. Panggil 'Otak' aplikasi dulu
 require_once __DIR__ . '/../bootstrap/init.php';
 
@@ -68,35 +68,25 @@ while ($row = $pelanggaran_result->fetch_assoc()) {
 }
 
 ?>
-<!DOCTYPE html>
-<html lang="id">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Detail Pelanggaran: <?= htmlspecialchars($santri['santri_nama']) ?></title>
-    
-    <style>
-        /* CSS tetap sama, tidak ada perubahan */
-        :root {
-            --primary: #10b981; --primary-light: #d1fae5; --primary-dark: #059669;
-            --light-bg: #f8fafc; --card-bg: #ffffff; --border-color: #e2e8f0;
-            --text-dark: #1e293b; --text-light: #64748b; --danger: #ef4444;
-            --warning: #f59e0b;
-        }
-        body { background-color: var(--light-bg); font-family: 'Poppins', sans-serif; }
-        .page-title { color: var(--text-dark); font-weight: 700; }
-        .card { box-shadow: 0 1px 3px 0 rgb(0 0 0 / 0.05); }
-        .stat-card {
-            background-color: var(--card-bg); border: 1px solid var(--border-color);
-            border-radius: 0.75rem; padding: 1.5rem; text-align: center;
-        }
-        .stat-card .icon { font-size: 2rem; color: var(--primary); margin-bottom: 0.5rem; }
-        .stat-card .value { font-size: 2.25rem; font-weight: 700; color: var(--text-dark); }
-        .stat-card .label { font-size: 0.9rem; color: var(--text-light); font-weight: 500; }
-        .table th { background-color: #f1f5f9; }
-    </style>
-</head>
-<body>
+<style>
+    /* CSS tetap sama, tidak ada perubahan */
+    :root {
+        --primary: #10b981; --primary-light: #d1fae5; --primary-dark: #059669;
+        --light-bg: #f8fafc; --card-bg: #ffffff; --border-color: #e2e8f0;
+        --text-dark: #1e293b; --text-light: #64748b; --danger: #ef4444;
+        --warning: #f59e0b;
+    }
+    .page-title { color: var(--text-dark); font-weight: 700; }
+    .card { box-shadow: 0 1px 3px 0 rgb(0 0 0 / 0.05); }
+    .stat-card {
+        background-color: var(--card-bg); border: 1px solid var(--border-color);
+        border-radius: 0.75rem; padding: 1.5rem; text-align: center;
+    }
+    .stat-card .icon { font-size: 2rem; color: var(--primary); margin-bottom: 0.5rem; }
+    .stat-card .value { font-size: 2.25rem; font-weight: 700; color: var(--text-dark); }
+    .stat-card .label { font-size: 0.9rem; color: var(--text-light); font-weight: 500; }
+    .table th { background-color: #f1f5f9; }
+</style>
 
 <div class="container py-4">
 
@@ -186,5 +176,3 @@ while ($row = $pelanggaran_result->fetch_assoc()) {
 </div>
 
 <?php require_once __DIR__ . '/../layouts/footer.php'; ?>
-</body>
-</html>

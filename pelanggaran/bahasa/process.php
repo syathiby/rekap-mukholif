@@ -8,47 +8,57 @@ guard('pelanggaran_bahasa_input'); // Pastikan guard-nya sesuai permission lu
 $is_ajax = (!empty($_SERVER['HTTP_X_REQUESTED_WITH']) && strtolower($_SERVER['HTTP_X_REQUESTED_WITH']) === 'xmlhttprequest');
 
 if (isset($_POST['create_bulk_pelanggaran'])) {
-    $jenis_pelanggaran_id = (int)$_POST['jenis_pelanggaran_id'];
+    $jenis_pelanggaran_id_raw = $_POST['jenis_pelanggaran_id'] ?? '';
     $tanggal = $_POST['tanggal'];
     $santri_ids = isset($_POST['santri_ids']) ? $_POST['santri_ids'] : [];
     $dicatat_oleh = $_SESSION['user_id'];
 
+    $is_clear = ($jenis_pelanggaran_id_raw === 'clear');
+    $jenis_pelanggaran_id = $is_clear ? 0 : (int)$jenis_pelanggaran_id_raw;
+
     // 1. Validasi Input
-    if (empty($jenis_pelanggaran_id) || empty($tanggal) || empty($santri_ids) || !is_array($santri_ids)) {
+    if (empty($jenis_pelanggaran_id_raw) || empty($tanggal) || empty($santri_ids) || !is_array($santri_ids)) {
         if ($is_ajax) {
             header('Content-Type: application/json');
-            echo json_encode(['status' => 'error', 'message' => 'Data tidak lengkap. Pilih jenis pelanggaran, tanggal, dan minimal satu santri.']);
+            echo json_encode(['status' => 'error', 'message' => 'Data tidak lengkap. Pilih jenis pelanggaran atau opsi bersih, tanggal, dan minimal satu santri.']);
             exit();
         }
-        $_SESSION['message'] = ['type' => 'danger', 'text' => 'Data tidak lengkap. Pilih jenis pelanggaran, tanggal, dan minimal satu santri.'];
+        $_SESSION['message'] = ['type' => 'danger', 'text' => 'Data tidak lengkap. Pilih jenis pelanggaran atau opsi bersih, tanggal, dan minimal satu santri.'];
         header("Location: ../bahasa/create.php");
         exit();
     }
 
     // 2. Ambil Info Pelanggaran Baru (Poin & Bagian)
-    $query_get_info = "SELECT poin, bagian, nama_pelanggaran FROM jenis_pelanggaran WHERE id = ?";
-    $stmt_get_info = mysqli_prepare($conn, $query_get_info);
-    mysqli_stmt_bind_param($stmt_get_info, "i", $jenis_pelanggaran_id);
-    mysqli_stmt_execute($stmt_get_info);
-    $result_info = mysqli_stmt_get_result($stmt_get_info);
-    $data_pelanggaran = mysqli_fetch_assoc($result_info);
-    
-    // PENTING: Statement ini ditutup DISINI. Jangan ditutup lagi di bawah.
-    mysqli_stmt_close($stmt_get_info);
+    if ($is_clear) {
+        $bagian_pelanggaran = 'Bahasa';
+        $poin_baru = 0;
+        $nama_pelanggaran_baru = 'Bersih (Level 0)';
+    } else {
+        $query_get_info = "SELECT poin, bagian, nama_pelanggaran FROM jenis_pelanggaran WHERE id = ?";
+        $stmt_get_info = mysqli_prepare($conn, $query_get_info);
+        mysqli_stmt_bind_param($stmt_get_info, "i", $jenis_pelanggaran_id);
+        mysqli_stmt_execute($stmt_get_info);
+        $result_info = mysqli_stmt_get_result($stmt_get_info);
+        $data_pelanggaran = mysqli_fetch_assoc($result_info);
+        
+        // PENTING: Statement ini ditutup DISINI. Jangan ditutup lagi di bawah.
+        mysqli_stmt_close($stmt_get_info);
 
-    if (!$data_pelanggaran) {
-        if ($is_ajax) {
-            header('Content-Type: application/json');
-            echo json_encode(['status' => 'error', 'message' => 'Jenis pelanggaran tidak valid.']);
+        if (!$data_pelanggaran) {
+            if ($is_ajax) {
+                header('Content-Type: application/json');
+                echo json_encode(['status' => 'error', 'message' => 'Jenis pelanggaran tidak valid.']);
+                exit();
+            }
+            $_SESSION['message'] = ['type' => 'danger', 'text' => 'Jenis pelanggaran tidak valid.'];
+            header("Location: ../bahasa/create.php");
             exit();
         }
-        $_SESSION['message'] = ['type' => 'danger', 'text' => 'Jenis pelanggaran tidak valid.'];
-        header("Location: ../bahasa/create.php");
-        exit();
-    }
 
-    $bagian_pelanggaran = $data_pelanggaran['bagian']; 
-    $poin_baru = (int)$data_pelanggaran['poin'];
+        $bagian_pelanggaran = $data_pelanggaran['bagian']; 
+        $poin_baru = (int)$data_pelanggaran['poin'];
+        $nama_pelanggaran_baru = $data_pelanggaran['nama_pelanggaran'];
+    }
 
     // =================================================================
     // PERSIAPAN QUERY (PREPARED STATEMENTS)
@@ -134,17 +144,20 @@ if (isset($_POST['create_bulk_pelanggaran'])) {
             mysqli_free_result($result_lama);
         }
 
-        // --- STEP 2: INSERT DATA BARU ---
-        
-        // 2.1 Insert ke tabel pelanggaran
-        mysqli_stmt_bind_param($stmt_insert, "iisi", $santri_id_int, $jenis_pelanggaran_id, $tanggal, $dicatat_oleh);
-        $exec_insert = mysqli_stmt_execute($stmt_insert);
-
-        // 2.2 Update poin santri
+        // --- STEP 2: INSERT DATA BARU (Jika bukan pembersihan/clear) ---
+        $exec_insert = true;
         $exec_update = true;
-        if ($exec_insert && $poin_baru > 0) {
-            mysqli_stmt_bind_param($stmt_tambah_poin, "ii", $poin_baru, $santri_id_int);
-            $exec_update = mysqli_stmt_execute($stmt_tambah_poin);
+        
+        if (!$is_clear) {
+            // 2.1 Insert ke tabel pelanggaran
+            mysqli_stmt_bind_param($stmt_insert, "iisi", $santri_id_int, $jenis_pelanggaran_id, $tanggal, $dicatat_oleh);
+            $exec_insert = mysqli_stmt_execute($stmt_insert);
+
+            // 2.2 Update poin santri
+            if ($exec_insert && $poin_baru > 0) {
+                mysqli_stmt_bind_param($stmt_tambah_poin, "ii", $poin_baru, $santri_id_int);
+                $exec_update = mysqli_stmt_execute($stmt_tambah_poin);
+            }
         }
 
         if ($exec_insert && $exec_update) {
@@ -196,18 +209,30 @@ if (isset($_POST['create_bulk_pelanggaran'])) {
             }
         }
 
-        // Catat log input pelanggaran
-        write_activity_log('CREATE', 'pelanggaran', "Mencatat pelanggaran '" . htmlspecialchars($data_pelanggaran['nama_pelanggaran']) . "' (Poin: $poin_baru) untuk " . count($santri_names) . " santri: " . implode(', ', $santri_names), [
-            'santri_ids' => $santri_ids,
-            'santri_names' => $santri_names,
-            'jenis_pelanggaran_id' => $jenis_pelanggaran_id,
-            'nama_pelanggaran' => $data_pelanggaran['nama_pelanggaran'],
-            'bagian' => $data_pelanggaran['bagian'],
-            'poin' => $poin_baru,
-            'tanggal' => $tanggal
-        ]);
+        // Catat log input pelanggaran/pembersihan
+        if ($is_clear) {
+            write_activity_log('DELETE', 'pelanggaran', "Membersihkan pelanggaran bahasa (Reset ke Level 0) untuk " . count($santri_names) . " santri: " . implode(', ', $santri_names), [
+                'santri_ids' => $santri_ids,
+                'santri_names' => $santri_names,
+                'jenis_pelanggaran_id' => $jenis_pelanggaran_id,
+                'nama_pelanggaran' => 'Bersih (Level 0)',
+                'bagian' => 'Bahasa',
+                'poin' => 0,
+                'tanggal' => $tanggal
+            ]);
+        } else {
+            write_activity_log('CREATE', 'pelanggaran', "Mencatat pelanggaran '" . htmlspecialchars($nama_pelanggaran_baru) . "' (Poin: $poin_baru) untuk " . count($santri_names) . " santri: " . implode(', ', $santri_names), [
+                'santri_ids' => $santri_ids,
+                'santri_names' => $santri_names,
+                'jenis_pelanggaran_id' => $jenis_pelanggaran_id,
+                'nama_pelanggaran' => $nama_pelanggaran_baru,
+                'bagian' => $bagian_pelanggaran,
+                'poin' => $poin_baru,
+                'tanggal' => $tanggal
+            ]);
+        }
         
-        $msg_text = "Berhasil! $success_count data tersimpan.";
+        $msg_text = $is_clear ? "Berhasil! Status bahasa $success_count santri dibersihkan ke Level 0." : "Berhasil! $success_count data tersimpan.";
         if ($bagian_pelanggaran === 'Bahasa') {
             $msg_text .= " Data bahasa lama sudah diarsipkan ke Log.";
         }

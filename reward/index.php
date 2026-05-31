@@ -86,21 +86,6 @@ require_once __DIR__ . '/../layouts/header.php';
         </div>
         <?php endif; ?>
 
-        <?php if(has_permission('jenis_reward_view')): ?>
-        <div class="col-md-6 col-lg-4">
-            <a href="jenis/index.php" class="text-decoration-none">
-                <div class="card h-100 hover-up p-4 d-flex flex-row align-items-center gap-3 border-start border-4 border-success">
-                    <div class="icon-container text-success flex-shrink-0" style="background-color: rgba(25, 135, 84, 0.1);">
-                        <i class="fas fa-tags fs-4"></i>
-                    </div>
-                    <div>
-                        <h6 class="text-dark fw-bold mb-1">Jenis Reward</h6>
-                        <p class="text-muted small mb-0">Kelola master data reward dan bobot poin pengurang</p>
-                    </div>
-                </div>
-            </a>
-        </div>
-        <?php endif; ?>
     </div>
 </div>
 

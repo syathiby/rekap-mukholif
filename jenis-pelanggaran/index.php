@@ -114,6 +114,93 @@ if ($can_edit || $can_delete) $colspan++; // Tambah 1 untuk Aksi
         border: 1px solid var(--border);
     }
 
+    /* Styling Premium untuk Tombol Aksi */
+    .action-container {
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        gap: 0.5rem;
+    }
+
+    .btn-action-edit {
+        background-color: #e0e7ff; /* Soft Indigo */
+        color: #4f46e5;
+        border: none;
+        border-radius: 0.5rem;
+        width: 32px;
+        height: 32px;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        transition: all 0.2s ease;
+        text-decoration: none;
+    }
+    .btn-action-edit:hover {
+        background-color: #c7d2fe;
+        color: #3730a3;
+        transform: scale(1.05);
+    }
+    
+    .btn-action-delete {
+        background-color: #ffe4e6; /* Soft Rose */
+        color: #e11d48;
+        border: none;
+        border-radius: 0.5rem;
+        width: 32px;
+        height: 32px;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        transition: all 0.2s ease;
+        text-decoration: none;
+    }
+    .btn-action-delete:hover {
+        background-color: #fecdd3;
+        color: #9f1239;
+        transform: scale(1.05);
+    }
+
+    /* Bulk Action Buttons (Softer & More Human Colors) */
+    .btn-bulk-edit {
+        background-color: #e0e7ff !important;
+        color: #4f46e5 !important;
+        border: none !important;
+        font-weight: 600 !important;
+        border-radius: 0.5rem !important;
+        padding: 0.5rem 1rem !important;
+        transition: all 0.2s ease !important;
+    }
+    .btn-bulk-edit:hover:not(:disabled) {
+        background-color: #c7d2fe !important;
+        color: #3730a3 !important;
+        transform: translateY(-1px);
+    }
+    .btn-bulk-edit:disabled {
+        background-color: #f1f5f9 !important;
+        color: #cbd5e1 !important;
+        cursor: not-allowed;
+    }
+
+    .btn-bulk-delete {
+        background-color: #ffe4e6 !important;
+        color: #e11d48 !important;
+        border: none !important;
+        font-weight: 600 !important;
+        border-radius: 0.5rem !important;
+        padding: 0.5rem 1rem !important;
+        transition: all 0.2s ease !important;
+    }
+    .btn-bulk-delete:hover:not(:disabled) {
+        background-color: #fecdd3 !important;
+        color: #9f1239 !important;
+        transform: translateY(-1px);
+    }
+    .btn-bulk-delete:disabled {
+        background-color: #f1f5f9 !important;
+        color: #cbd5e1 !important;
+        cursor: not-allowed;
+    }
+
     @media (max-width: 767px) {
         .page-title-card {
             flex-direction: column;
@@ -140,11 +227,12 @@ if ($can_edit || $can_delete) $colspan++; // Tambah 1 untuk Aksi
             gap: 0.75rem;
             align-items: stretch !important;
         }
-        .card-action-bulk .btn-group {
+        .card-action-bulk .bulk-buttons-container {
             width: 100%;
-            display: flex; 
+            display: flex;
+            gap: 0.5rem;
         }
-        .card-action-bulk .btn-group .btn {
+        .card-action-bulk .bulk-buttons-container .btn {
             flex-grow: 1; /* Biar tombolnya sama rata */
         }
         .card-action-bulk .text-muted {
@@ -168,17 +256,17 @@ if ($can_edit || $can_delete) $colspan++; // Tambah 1 untuk Aksi
     </div>
 
     <?php if (isset($_SESSION['message'])): ?>
-        <div class="alert alert-<?php echo $_SESSION['message']['type']; ?> alert-dismissible fade show" role="alert">
-            <?php 
-                if ($_SESSION['message']['type'] == 'success') {
-                    echo '<i class="fas fa-check-circle me-2"></i>';
-                } elseif ($_SESSION['message']['type'] == 'danger') {
-                    echo '<i class="fas fa-times-circle me-2"></i>';
-                }
-                echo $_SESSION['message']['text']; 
-            ?>
-            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
-        </div>
+        <script>
+            document.addEventListener('DOMContentLoaded', function() {
+                <?php if ($_SESSION['message']['type'] == 'success'): ?>
+                    showToast('<?= addslashes($_SESSION['message']['text']) ?>', 'success');
+                <?php elseif ($_SESSION['message']['type'] == 'danger'): ?>
+                    showAlert('<?= addslashes($_SESSION['message']['text']) ?>', 'error');
+                <?php else: ?>
+                    showToast('<?= addslashes($_SESSION['message']['text']) ?>', 'info');
+                <?php endif; ?>
+            });
+        </script>
         <?php unset($_SESSION['message']); ?>
     <?php endif; ?>
     
@@ -220,19 +308,19 @@ if ($can_edit || $can_delete) $colspan++; // Tambah 1 untuk Aksi
     </div>
 
     <form method="POST" action="" id="bulkActionForm">
-
+        <input type="hidden" name="csrf_token" value="<?= $_SESSION['csrf_token'] ?>">
         <div class="card shadow-sm mb-3 card-action-bulk">
             <div class="d-flex justify-content-between align-items-center">
                 <div class="d-flex align-items-center">
-                    <div class="btn-group" role="group">
+                    <div class="bulk-buttons-container d-flex gap-2">
                         <?php if ($can_edit): ?>
-                            <button type="button" class="btn btn-warning" id="bulkEditBtn" disabled title="Edit Terpilih">
+                            <button type="button" class="btn btn-bulk-edit" id="bulkEditBtn" disabled title="Edit Terpilih">
                                 <i class="fas fa-edit me-1"></i> 
                                 <span class="d-none d-sm-inline">Edit Terpilih</span>
                             </button>
                         <?php endif; ?>
                         <?php if ($can_delete): ?>
-                            <button type="submit" class="btn btn-danger" id="bulkDeleteBtn" disabled title="Hapus Terpilih">
+                            <button type="submit" class="btn btn-bulk-delete" id="bulkDeleteBtn" disabled title="Hapus Terpilih">
                                 <i class="fas fa-trash-alt me-1"></i> 
                                 <span class="d-none d-sm-inline">Hapus Terpilih</span>
                             </button>
@@ -311,12 +399,12 @@ if ($can_edit || $can_delete) $colspan++; // Tambah 1 untuk Aksi
                             </td>
                             <?php if ($can_edit || $can_delete): ?>
                                 <td class="text-center align-middle">
-                                    <div class="btn-group" role="group">
+                                    <div class="action-container">
                                         <?php if ($can_edit): ?>
-                                            <a href="edit.php?id=<?= $row['id']; ?>" class="btn btn-sm btn-warning" title="Edit"><i class="fas fa-edit"></i></a>
+                                            <a href="edit.php?id=<?= $row['id']; ?>" class="btn-action-edit" title="Edit"><i class="fas fa-edit"></i></a>
                                         <?php endif; ?>
                                         <?php if ($can_delete && !$is_protected) : ?>
-                                            <a href="#" onclick="showConfirmDelete('delete.php?id=<?= $row['id']; ?>')" class="btn btn-sm btn-danger" title="Hapus"><i class="fas fa-trash"></i></a>
+                                            <a href="#" onclick="showConfirmDelete('delete.php?id=<?= $row['id']; ?>&csrf_token=<?= $_SESSION['csrf_token'] ?>')" class="btn-action-delete" title="Hapus"><i class="fas fa-trash"></i></a>
                                         <?php endif; ?>
                                     </div>
                                 </td>
@@ -459,7 +547,7 @@ document.addEventListener('DOMContentLoaded', function() {
         bulkEditBtn.addEventListener('click', function() {
             const selectedIds = getStoredIds();
             if (selectedIds.size > 0) {
-                 bulkActionForm.innerHTML = ''; 
+                 bulkActionForm.querySelectorAll('input[name="ids[]"]').forEach(el => el.remove()); 
                  selectedIds.forEach(id => {
                     const hiddenInput = document.createElement('input');
                     hiddenInput.type = 'hidden';
@@ -482,7 +570,7 @@ document.addEventListener('DOMContentLoaded', function() {
 
             const selectedIds = getStoredIds();
             if (selectedIds.size > 0) {
-                 bulkActionForm.innerHTML = '';
+                 bulkActionForm.querySelectorAll('input[name="ids[]"]').forEach(el => el.remove());
                  selectedIds.forEach(id => {
                     const hiddenInput = document.createElement('input');
                     hiddenInput.type = 'hidden';

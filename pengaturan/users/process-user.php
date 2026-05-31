@@ -162,6 +162,16 @@ if ($is_edit_mode) {
             'role' => $role,
             'password_changed' => !empty($password)
         ]);
+
+        // --- LOGIKA BARU: Update izin jika role berubah ---
+        if (isset($role_asli) && $role !== $role_asli && $role !== 'admin') {
+            $conn->query("DELETE FROM user_permissions WHERE user_id = $user_id");
+            $stmt_perms = $conn->prepare("INSERT INTO user_permissions (user_id, permission_id) SELECT ?, permission_id FROM role_permissions WHERE role = ?");
+            $stmt_perms->bind_param("is", $user_id, $role);
+            $stmt_perms->execute();
+            $stmt_perms->close();
+        }
+
         $_SESSION['success_message'] = "✅ Data user '".htmlspecialchars($username)."' berhasil diperbarui!";
     } else {
         $_SESSION['error_message'] = "❌ Gagal memperbarui data user.";
@@ -182,6 +192,15 @@ if ($is_edit_mode) {
             'username' => $username,
             'role' => $role
         ]);
+
+        // --- LOGIKA BARU: Insert izin default ---
+        if ($role !== 'admin') {
+            $stmt_perms = $conn->prepare("INSERT INTO user_permissions (user_id, permission_id) SELECT ?, permission_id FROM role_permissions WHERE role = ?");
+            $stmt_perms->bind_param("is", $new_user_id, $role);
+            $stmt_perms->execute();
+            $stmt_perms->close();
+        }
+
         $_SESSION['success_message'] = "✅ User '".htmlspecialchars($username)."' berhasil dibuat!";
         $redirect_url = "form-user.php"; // Redirect ke form kosong setelah berhasil
     } else {

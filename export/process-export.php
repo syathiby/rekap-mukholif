@@ -7,6 +7,13 @@ if (session_status() === PHP_SESSION_NONE) { session_start(); }
 require_once __DIR__ . '/../bootstrap/init.php';
 guard('export_laporan');
 
+// 1. Validasi CSRF Token untuk Keamanan
+if (!isset($_POST['csrf_token']) || !isset($_SESSION['csrf_token']) || !hash_equals($_SESSION['csrf_token'], $_POST['csrf_token'])) {
+    set_flash_message('Akses ditolak: Token keamanan CSRF tidak valid atau telah kedaluwarsa.', 'danger');
+    header('Location: index.php');
+    exit();
+}
+
 use PhpOffice\PhpSpreadsheet\Spreadsheet;
 use PhpOffice\PhpSpreadsheet\Writer\Xlsx;
 
@@ -37,9 +44,34 @@ $spreadsheet = new Spreadsheet();
 // ─────────────────────────────────────────────────────────────────────────────────
 if (isset($_POST['export'])) {
 
-    $tanggal_mulai   = $_POST['tanggal_mulai']   ?? date('Y-m-01');
-    $tanggal_selesai = $_POST['tanggal_selesai'] ?? date('Y-m-t');
+    $tanggal_mulai   = $_POST['tanggal_mulai']   ?? '';
+    $tanggal_selesai = $_POST['tanggal_selesai'] ?? '';
     $kamar           = $_POST['kamar']           ?? 'semua';
+
+    // Sanitasi input kamar
+    $kamar = filter_var($kamar, FILTER_SANITIZE_SPECIAL_CHARS);
+
+    // Fungsi pembantu validasi format tanggal Y-m-d
+    if (!function_exists('isValidDate')) {
+        function isValidDate($date, $format = 'Y-m-d') {
+            $d = DateTime::createFromFormat($format, $date);
+            return $d && $d->format($format) === $date;
+        }
+    }
+
+    // Validasi format tanggal
+    if (empty($tanggal_mulai) || empty($tanggal_selesai) || !isValidDate($tanggal_mulai) || !isValidDate($tanggal_selesai)) {
+        set_flash_message('Input tanggal tidak valid! Gunakan format tanggal yang benar.', 'danger');
+        header('Location: index.php');
+        exit();
+    }
+
+    // Validasi rentang logis tanggal (Mulai tidak boleh melampaui Selesai)
+    if (strtotime($tanggal_mulai) > strtotime($tanggal_selesai)) {
+        set_flash_message('Tanggal Mulai tidak boleh melewati Tanggal Selesai!', 'danger');
+        header('Location: index.php');
+        exit();
+    }
 
     // Format periode yang terbaca manusia untuk kop surat
     $periodeLabel = date('d M Y', strtotime($tanggal_mulai))
@@ -72,7 +104,7 @@ if (isset($_POST['export'])) {
         ['No', 'Nama Santri', 'Kelas', 'Kamar', 'Jumlah Pelanggaran', 'Total Poin Pelanggaran', 'Total Poin Reward', 'Poin Aktif'],
         NULL, 'A1'
     );
-    $sheetSantri->setAutoFilter('A1:H1');
+
 
     $sqlSantri = "SELECT s.id, s.nama, s.kelas, s.kamar, s.poin_aktif,
                          COUNT(p.id)    AS jumlah_pelanggaran,
@@ -147,7 +179,7 @@ if (isset($_POST['export'])) {
         ['No', 'Nama Santri', 'Kelas', 'Kamar', 'Nama Pelanggaran', 'Poin', 'Bagian', 'Tanggal'],
         NULL, 'A1'
     );
-    $sheetDetail->setAutoFilter('A1:H1');
+
 
     $sqlDetail = "SELECT s.nama, s.kelas, s.kamar, jp.nama_pelanggaran, jp.poin, jp.bagian, p.tanggal
                   FROM pelanggaran p
@@ -209,7 +241,7 @@ if (isset($_POST['export'])) {
         ['No', 'Kamar', 'Jumlah Pelanggaran', 'Catatan'],
         NULL, 'A1'
     );
-    $sheetRekapKamar->setAutoFilter('A1:D1');
+
 
     $sqlKamar = "SELECT s.kamar, COUNT(p.id) AS jumlah_pelanggaran
                  FROM pelanggaran p
@@ -269,7 +301,7 @@ if (isset($_POST['export'])) {
         ['No', 'Kamar', 'Jumlah Pelanggaran', 'Catatan'],
         NULL, 'A1'
     );
-    $sheetKebersihan->setAutoFilter('A1:D1');
+
 
     $sqlKebersihan = "SELECT kamar, COUNT(id) AS jumlah_pelanggaran
                       FROM pelanggaran_kebersihan
@@ -341,27 +373,25 @@ if (isset($_POST['export'])) {
     $sheet->setTitle('Data Santri');
 
     $sheet->fromArray(
-        ['ID Santri', 'Nama Lengkap', 'Kelas', 'Kamar', 'Poin Aktif'],
+        ['ID Santri', 'Nama Lengkap', 'Kelas', 'Kamar'],
         NULL, 'A1'
     );
 
-    $sql    = "SELECT id, nama, kelas, kamar, poin_aktif
+    $sql    = "SELECT id, nama, kelas, kamar
                FROM santri
                ORDER BY CAST(kamar AS UNSIGNED) ASC, kelas ASC, nama ASC";
     $result = $conn->query($sql);
 
     $totalSantri = 0;
-    $totalPoin   = 0;
 
     if ($result && $result->num_rows > 0) {
         $rowNum = 2;
         while ($row = $result->fetch_assoc()) {
             $sheet->fromArray(
-                [$row['id'], $row['nama'], $row['kelas'], $row['kamar'], $row['poin_aktif']],
+                [$row['id'], $row['nama'], $row['kelas'], $row['kamar']],
                 NULL, 'A' . $rowNum
             );
             $totalSantri++;
-            $totalPoin += (int) $row['poin_aktif'];
             $rowNum++;
         }
     }
@@ -378,7 +408,6 @@ if (isset($_POST['export'])) {
             'doc_number'   => 'ASUH/DATA/' . date('Y') . '/001',
             'summary_data' => [
                 ['label' => 'Total Santri Aktif',   'value' => $totalSantri . ' santri'],
-                ['label' => 'Akumulasi Poin Aktif', 'value' => $totalPoin . ' poin'],
                 ['label' => 'Status Data',          'value' => 'Terverifikasi'],
             ],
         ]
@@ -446,6 +475,60 @@ if (isset($_POST['export'])) {
     );
 
     $namaFile = 'Master_Data_Jenis_Pelanggaran_' . date('d-m-Y') . '.xlsx';
+
+
+// ─────────────────────────────────────────────────────────────────────────────────
+// OPSI 4: Export Master Data Jenis Reward
+// ─────────────────────────────────────────────────────────────────────────────────
+} elseif (isset($_POST['export_jenis_reward'])) {
+
+    $sheet = $spreadsheet->getActiveSheet();
+    $sheet->setTitle('Data Jenis Reward');
+
+    $sheet->fromArray(
+        ['ID', 'Nama Reward', 'Poin Reward', 'Deskripsi'],
+        NULL, 'A1'
+    );
+
+    $sql    = "SELECT id, nama_reward, poin_reward, deskripsi
+               FROM jenis_reward
+               ORDER BY poin_reward ASC, nama_reward ASC";
+    $result = $conn->query($sql);
+
+    $totalJenis = 0;
+    $totalPoin  = 0;
+
+    if ($result && $result->num_rows > 0) {
+        $rowNum = 2;
+        while ($row = $result->fetch_assoc()) {
+            $sheet->fromArray(
+                [$row['id'], $row['nama_reward'], (int)$row['poin_reward'], !empty($row['deskripsi']) ? $row['deskripsi'] : '-'],
+                NULL, 'A' . $rowNum
+            );
+            $totalJenis++;
+            $totalPoin += (int)$row['poin_reward'];
+            $rowNum++;
+        }
+    }
+
+    ExcelTemplate::applyExecutiveStyle(
+        $sheet,
+        'Data Master Klasifikasi Jenis Reward',
+        ExcelTemplate::THEME_REWARD,
+        [
+            'institution'  => LEMBAGA_NAMA,
+            'address'      => LEMBAGA_ALAMAT,
+            'period'       => LEMBAGA_PERIODE,
+            'printed_by'   => $printed_by,
+            'doc_number'   => 'ASUH/DATA/' . date('Y') . '/003',
+            'summary_data' => [
+                ['label' => 'Total Jenis Reward', 'value' => $totalJenis . ' jenis'],
+                ['label' => 'Akumulasi Poin',     'value' => $totalPoin . ' poin'],
+            ],
+        ]
+    );
+
+    $namaFile = 'Master_Data_Jenis_Reward_' . date('d-m-Y') . '.xlsx';
 
 
 // ─────────────────────────────────────────────────────────────────────────────────

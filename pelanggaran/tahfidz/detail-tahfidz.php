@@ -1,4 +1,4 @@
-﻿<?php 
+<?php 
 // 1. Panggil 'Otak' aplikasi dulu
 require_once __DIR__ . '/../../bootstrap/init.php';
 
@@ -56,54 +56,40 @@ $detail_list = mysqli_fetch_all($result_detail, MYSQLI_ASSOC);
 $total_pelanggaran = count($detail_list);
 $total_poin = array_sum(array_column($detail_list, 'poin'));
 ?>
+<style>
+    /* === PERUBAHAN TEMA WARNA (DISAMAKAN DENGAN REKAP) === */
+    :root {
+        --primary: #dc3545; /* Merah (danger) */
+        --primary-light: #f8d7da; /* Merah muda */
+        --primary-dark: #b02a37; /* Merah tua */
+        --secondary: #6c757d; 
+        --light-bg: #f8fafc; 
+        --card-bg: #ffffff;
+        --border-color: #e2e8f0; 
+        --text-dark: #1e293b; 
+        --text-light: #64748b;
+    }
+    .card { background-color: var(--card-bg); border: 1px solid var(--border-color); border-radius: 0.75rem; box-shadow: 0 1px 3px 0 rgb(0 0 0 / 0.05); }
+    .page-title { color: var(--text-dark); font-weight: 700; }
+    .table th { background-color: var(--light-bg); color: var(--text-light); text-transform: uppercase; font-size: 0.75rem; letter-spacing: 0.05em; }
+    .table td { vertical-align: middle; }
+    .stat-card { background: linear-gradient(135deg, var(--primary) 0%, var(--primary-dark) 100%); }
+    .stat-number { font-size: 2.5rem; font-weight: 700; color: white; }
+    .stat-label { font-size: 1rem; color: rgba(255, 255, 255, 0.8); }
 
-<!DOCTYPE html>
-<html lang="id">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Detail Pelanggaran: <?= htmlspecialchars($santri['nama']) ?></title>
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700&display=swap" rel="stylesheet">
-    <style>
-        /* === PERUBAHAN TEMA WARNA (DISAMAKAN DENGAN REKAP) === */
-        :root {
-            --primary: #dc3545; /* Merah (danger) */
-            --primary-light: #f8d7da; /* Merah muda */
-            --primary-dark: #b02a37; /* Merah tua */
-            --secondary: #6c757d; 
-            --light-bg: #f8fafc; 
-            --card-bg: #ffffff;
-            --border-color: #e2e8f0; 
-            --text-dark: #1e293b; 
-            --text-light: #64748b;
+    /* =============================================================
+    === PERBAIKAN 1: TAMBAHAN CSS RESPONSIVE ===
+    =============================================================
+    */
+    @media (max-width: 767.98px) {
+        .page-title {
+            font-size: 1.75rem; /* Kecilin font judul di HP */
         }
-        body { background-color: var(--light-bg); font-family: 'Poppins', sans-serif; }
-        .card { background-color: var(--card-bg); border: 1px solid var(--border-color); border-radius: 0.75rem; box-shadow: 0 1px 3px 0 rgb(0 0 0 / 0.05); }
-        .page-title { color: var(--text-dark); font-weight: 700; }
-        .table th { background-color: var(--light-bg); color: var(--text-light); text-transform: uppercase; font-size: 0.75rem; letter-spacing: 0.05em; }
-        .table td { vertical-align: middle; }
-        .stat-card { background: linear-gradient(135deg, var(--primary) 0%, var(--primary-dark) 100%); }
-        .stat-number { font-size: 2.5rem; font-weight: 700; color: white; }
-        .stat-label { font-size: 1rem; color: rgba(255, 255, 255, 0.8); }
-
-        /* =============================================================
-        === PERBAIKAN 1: TAMBAHAN CSS RESPONSIVE ===
-        =============================================================
-        */
-        @media (max-width: 767.98px) {
-            .page-title {
-                font-size: 1.75rem; /* Kecilin font judul di HP */
-            }
-            .profile-card-info {
-                text-align: center; /* Bikin info santri center di HP */
-            }
+        .profile-card-info {
+            text-align: center; /* Bikin info santri center di HP */
         }
-    </style>
-</head>
-<body>
+    }
+</style>
 <div class="container py-4">
     
     <div class="d-flex flex-column flex-md-row justify-content-md-between align-items-start align-items-md-center mb-4">
@@ -193,5 +179,3 @@ $total_poin = array_sum(array_column($detail_list, 'poin'));
 </div>
 
 <?php require_once __DIR__ . '/../../layouts/footer.php'; ?>
-</body>
-</html>

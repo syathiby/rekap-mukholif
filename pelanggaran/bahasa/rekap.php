@@ -1,12 +1,17 @@
-﻿<?php 
+<?php 
 // 1. Panggil 'Otak' aplikasi dulu
 require_once __DIR__ . '/../../bootstrap/init.php';
 
 // 2. Jalankan 'SATPAM' buat ngejaga halaman
 guard('rekap_view_bahasa'); 
 
-// 3. Kalau lolos, baru panggil Tampilan
-require_once __DIR__ . '/../../layouts/header.php';
+// Deteksi AJAX
+$is_ajax = isset($_SERVER['HTTP_X_REQUESTED_WITH']) && strtolower($_SERVER['HTTP_X_REQUESTED_WITH']) === 'xmlhttprequest';
+
+if (!$is_ajax) {
+    // 3. Kalau lolos dan bukan AJAX, baru panggil Tampilan
+    require_once __DIR__ . '/../../layouts/header.php';
+}
 
 $bagian = 'Bahasa';
 
@@ -37,108 +42,128 @@ $end_date = $_GET['end_date'] ?? date('Y-m-d');
 
 
 // =======================================================
-// BAGIAN 2: QUERY UTAMA (SNAPSHOT LOGIC)
+// BAGIAN 2: QUERY UTAMA & PROSES DATA (SNAPSHOT LOGIC - OPTIMIZED)
 // =======================================================
 
-$params = []; 
-$types = ""; 
-
-$sql_base = "SELECT id, nama, kelas, kamar FROM santri WHERE 1=1";
+$params = [$start_date, $end_date, $start_date, $end_date];
+$types = "ssss";
+$filter_sql = "";
 
 if (!empty($filter_kamar)) {
-    $sql_base .= " AND kamar = ?";
+    $filter_sql .= " AND s.kamar = ?";
     $params[] = $filter_kamar;
     $types .= "s";
 }
 if (!empty($filter_kelas)) {
-    $sql_base .= " AND kelas = ?";
+    $filter_sql .= " AND s.kelas = ?";
     $params[] = $filter_kelas;
     $types .= "s";
 }
 
-$stmt_base = mysqli_prepare($conn, $sql_base);
-if (!empty($params)) {
-    mysqli_stmt_bind_param($stmt_base, $types, ...$params);
-}
-mysqli_stmt_execute($stmt_base);
-$result_santri = mysqli_stmt_get_result($stmt_base);
+// Query teroptimasi untuk menarik data santri yang memiliki riwayat/aktifitas bahasa
+$sql_main = "
+    SELECT 
+        s.id AS santri_id,
+        s.nama,
+        s.kelas,
+        s.kamar,
+        p.tanggal AS active_tanggal,
+        jp_active.nama_pelanggaran AS active_level,
+        jp_active.poin AS active_poin,
+        jp_active.id AS active_level_id,
+        log.tanggal_melanggar AS log_tanggal,
+        jp_log.nama_pelanggaran AS log_level,
+        jp_log.poin AS log_poin
+    FROM santri s
+    LEFT JOIN pelanggaran p ON s.id = p.santri_id 
+        AND p.jenis_pelanggaran_id IN (SELECT id FROM jenis_pelanggaran WHERE bagian = 'Bahasa')
+    LEFT JOIN jenis_pelanggaran jp_active ON p.jenis_pelanggaran_id = jp_active.id
+    LEFT JOIN (
+        SELECT l1.santri_id, l1.jenis_pelanggaran_id, l1.tanggal_melanggar
+        FROM log_bahasa l1
+        INNER JOIN (
+            SELECT santri_id, MAX(tanggal_melanggar) as max_tgl
+            FROM log_bahasa
+            GROUP BY santri_id
+        ) l2 ON l1.santri_id = l2.santri_id AND l1.tanggal_melanggar = l2.max_tgl
+    ) log ON s.id = log.santri_id
+    LEFT JOIN jenis_pelanggaran jp_log ON log.jenis_pelanggaran_id = jp_log.id
+    WHERE (
+        s.id IN (
+            SELECT santri_id FROM pelanggaran 
+            WHERE jenis_pelanggaran_id IN (SELECT id FROM jenis_pelanggaran WHERE bagian = 'Bahasa')
+              AND DATE(tanggal) BETWEEN ? AND ?
+        )
+        OR s.id IN (
+            SELECT santri_id FROM log_bahasa 
+            WHERE DATE(tanggal_melanggar) BETWEEN ? AND ?
+        )
+    )
+    {$filter_sql}
+    ORDER BY s.id ASC
+";
+
+$stmt_main = mysqli_prepare($conn, $sql_main);
+mysqli_stmt_bind_param($stmt_main, $types, ...$params);
+mysqli_stmt_execute($stmt_main);
+$result_main = mysqli_stmt_get_result($stmt_main);
 
 $peringkat_list = [];
-
-// =======================================================
-// BAGIAN 3: PROSES DATA (Mencari Status Terakhir per Santri)
-// =======================================================
-
-$sql_snapshot = "
-    SELECT 
-        u.tanggal, 
-        jp.nama_pelanggaran, 
-        jp.poin, 
-        jp.id as level_id
-    FROM (
-        SELECT jenis_pelanggaran_id, tanggal, santri_id FROM pelanggaran 
-        UNION ALL
-        SELECT jenis_pelanggaran_id, tanggal_melanggar as tanggal, santri_id FROM log_bahasa
-    ) AS u
-    JOIN jenis_pelanggaran jp ON u.jenis_pelanggaran_id = jp.id
-    WHERE u.santri_id = ? 
-      AND jp.bagian = ?
-      AND DATE(u.tanggal) BETWEEN ? AND ?
-    ORDER BY u.tanggal DESC 
-    LIMIT 2
-";
-$stmt_snapshot = mysqli_prepare($conn, $sql_snapshot);
-
-while ($santri = mysqli_fetch_assoc($result_santri)) {
-    mysqli_stmt_bind_param($stmt_snapshot, "isss", $santri['id'], $bagian, $start_date, $end_date);
-    mysqli_stmt_execute($stmt_snapshot);
-    $res_snapshot = mysqli_stmt_get_result($stmt_snapshot);
+while ($row = mysqli_fetch_assoc($result_main)) {
+    $sid = $row['santri_id'];
     
-    $history_data = [];
-    while ($r = mysqli_fetch_assoc($res_snapshot)) {
-        $history_data[] = $r;
+    // Evaluasi Level & Poin Saat Ini
+    if ($row['active_level_id'] !== null) {
+        $level_sekarang = $row['active_level'];
+        $poin_sekarang = (int)$row['active_poin'];
+        $level_id = $row['active_level_id'];
+        $tanggal_terakhir = $row['active_tanggal'];
+        
+        $poin_sebelumnya = ($row['log_poin'] !== null) ? (int)$row['log_poin'] : null;
+    } else {
+        $level_sekarang = 'Level 0 (Bersih)';
+        $poin_sekarang = 0;
+        $level_id = 0; // Penanda Level 0
+        $tanggal_terakhir = $row['log_tanggal'] ?? '-';
+        
+        $poin_sebelumnya = ($row['log_poin'] !== null) ? (int)$row['log_poin'] : null;
     }
-    
-    $snapshot = $history_data[0] ?? null;       // Data Terbaru
-    $prev_snapshot = $history_data[1] ?? null;  // Data Sebelumnya
 
-    if ($snapshot) {
-        if (!empty($filter_level) && $snapshot['level_id'] != $filter_level) {
-            continue; 
+    // Filter Level dari URL
+    if ($filter_level !== '') {
+        if ($filter_level == '0') {
+            if ($row['active_level_id'] !== null) continue;
+        } else {
+            if ($row['active_level_id'] != $filter_level) continue;
         }
-
-        // --- LOGIC TREND (NAIK/TURUN) ---
-        // Default kosong (biar kalau stabil/baru gak muncul apa-apa)
-        $trend_html = ''; 
-
-        if ($prev_snapshot) {
-            $diff = $snapshot['poin'] - $prev_snapshot['poin'];
-            
-            if ($diff > 0) {
-                // NAIK (Merah) - Pakai margin-start (ms-1) biar ada jarak dikit dari angka
-                $trend_html = '<small class="text-danger ms-2" title="Naik '.$diff.' poin"><i class="fas fa-arrow-up"></i></small>';
-            } elseif ($diff < 0) {
-                // TURUN (Hijau)
-                $trend_html = '<small class="text-success ms-2" title="Turun '.abs($diff).' poin"><i class="fas fa-arrow-down"></i></small>';
-            }
-            // ELSE: Kalau 0 (Stabil), biarkan kosong
-        }
-        // ELSE: Kalau gak ada history (Data Baru), biarkan kosong
-
-        $peringkat_list[] = [
-            'id' => $santri['id'],
-            'nama' => $santri['nama'],
-            'kelas' => $santri['kelas'],
-            'kamar' => $santri['kamar'],
-            'total_poin' => $snapshot['poin'],
-            'level_sekarang' => $snapshot['nama_pelanggaran'],
-            'tanggal_terakhir' => $snapshot['tanggal'],
-            'trend_html' => $trend_html 
-        ];
     }
+
+    // Hitung Perubahan Tren Poin
+    $trend_html = '';
+    if ($poin_sebelumnya !== null) {
+        $diff = $poin_sekarang - $poin_sebelumnya;
+        if ($diff > 0) {
+            $trend_html = '<small class="text-danger ms-2" title="Naik ' . $diff . ' poin"><i class="fas fa-arrow-up"></i></small>';
+        } elseif ($diff < 0) {
+            $trend_html = '<small class="text-success ms-2" title="Turun ' . abs($diff) . ' poin"><i class="fas fa-arrow-down"></i></small>';
+        }
+    }
+
+    $peringkat_list[] = [
+        'id' => $sid,
+        'nama' => $row['nama'],
+        'kelas' => $row['kelas'],
+        'kamar' => $row['kamar'],
+        'total_poin' => $poin_sekarang,
+        'level_sekarang' => $level_sekarang,
+        'level_id' => $level_id,
+        'tanggal_terakhir' => $tanggal_terakhir,
+        'trend_html' => $trend_html
+    ];
 }
+mysqli_stmt_close($stmt_main);
 
-// Urutkan Array
+// Urutkan Array berdasarkan poin tertinggi
 usort($peringkat_list, function($a, $b) {
     if ($b['total_poin'] == $a['total_poin']) {
         return strcmp($a['nama'], $b['nama']); 
@@ -165,53 +190,121 @@ $json_kelas_chart = json_encode([
     'data' => array_values($kelas_stats)
 ]);
 
+// Render body tabel
+ob_start();
+?>
+<?php if (empty($peringkat_list)): ?>
+    <tr><td colspan="5" class="text-center p-5 text-muted"><i class="fas fa-check-circle fa-3x mb-3"></i><br>Alhamdulillah, tidak ada pelanggaran bahasa sesuai filter.</td></tr>
+<?php else: ?>
+    <?php foreach ($peringkat_list as $index => $row): 
+        $no = $index + 1; 
+        $level_singkat = str_ireplace(['(Bahasa)', '(bahasa)'], '', $row['level_sekarang']);
+        $level_singkat = trim($level_singkat); 
+    ?>
+    <tr class="rank-<?= $no ?>">
+        <td class="text-center">
+            <?php if ($no <= 3): ?>
+                <i class="fas fa-trophy rank-icon"></i>
+            <?php else: ?>
+                <span class="fw-bold fs-5"><?= $no ?></span>
+            <?php endif; ?>
+        </td>
+        <td>
+            <div class="fw-bold"><?= htmlspecialchars($row['nama']) ?></div>
+            <small class="text-muted">Kls: <?= htmlspecialchars($row['kelas']) ?> | Kmr: <?= htmlspecialchars($row['kamar']) ?></small>
+        </td>
+        <td class="text-center">
+            <div class="d-flex align-items-center justify-content-center">
+                <span class="total-poin">
+                    <?= $row['total_poin'] ?>
+                </span>
+                <?= $row['trend_html'] ?>
+            </div>
+        </td>
+        <td class="text-center">
+            <?php 
+                $is_clean = ($row['level_id'] == 0);
+                $badge_class = $is_clean ? 'level-badge-clean' : 'level-badge';
+            ?>
+            <span class="<?= $badge_class ?>">
+                <?= htmlspecialchars($level_singkat) ?>
+            </span>
+        </td>
+        <td class="text-center">
+            <?php 
+            $detail_link = "detail-bahasa.php?santri_id={$row['id']}&start_date=$start_date&end_date=$end_date&kamar=" . urlencode($filter_kamar) . "&kelas=" . urlencode($filter_kelas);
+            ?>
+            <a href="<?= $detail_link ?>" class="btn btn-sm btn-detail rounded-pill px-3">
+                <i class="fas fa-info-circle me-1"></i> Detail
+            </a>
+        </td>
+    </tr>
+    <?php endforeach; ?>
+<?php endif; ?>
+<?php
+$table_tbody_html = ob_get_clean();
+
+// Kirim data JSON jika request berupa AJAX
+if ($is_ajax) {
+    header('Content-Type: application/json');
+    echo json_encode([
+        'tbody' => $table_tbody_html,
+        'top_santri' => [
+            'labels' => array_column($top_5_santri, 'nama'),
+            'data' => array_column($top_5_santri, 'total_poin')
+        ],
+        'kelas_chart' => [
+            'labels' => array_keys($kelas_stats),
+            'data' => array_values($kelas_stats)
+        ]
+    ]);
+    exit;
+}
 ?>
 
-<!DOCTYPE html>
-<html lang="id">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Rekap Pelanggaran Bahasa</title>
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700&display=swap" rel="stylesheet">
-    <style>
-        :root {
-            --primary: #4f46e5; --primary-light: #e0e7ff; --primary-dark: #4338ca;
-            --secondary: #64748b; --light-bg: #f8fafc; --card-bg: #ffffff;
-            --border-color: #e2e8f0; --text-dark: #1e293b; --text-light: #64748b;
-            --gold: #f59e0b; --silver: #9ca3af; --bronze: #a16207;
-        }
-        body { background-color: var(--light-bg); font-family: 'Poppins', sans-serif; }
-        .card { background-color: var(--card-bg); border: 1px solid var(--border-color); border-radius: 0.75rem; box-shadow: 0 1px 3px 0 rgb(0 0 0 / 0.05); }
-        .page-title { color: var(--text-dark); font-weight: 700; }
-        .form-control, .form-select { width: 100%; padding: 0.5rem 0.75rem; border: 1px solid var(--border-color); border-radius: 0.375rem; }
-        .table th { background-color: var(--light-bg); color: var(--text-light); text-transform: uppercase; font-size: 0.75rem; letter-spacing: 0.05em; }
-        .table td { vertical-align: middle; }
-        .rank-icon { font-size: 1.5rem; }
-        .rank-1 .rank-icon { color: var(--gold); }
-        .rank-2 .rank-icon { color: var(--silver); }
-        .rank-3 .rank-icon { color: var(--bronze); }
-        .total-poin { font-size: 1.25rem; font-weight: 700; color: var(--primary); }
-        .btn-detail { background-color: var(--primary-light); color: var(--primary); font-weight: 600; text-decoration: none; transition: all 0.2s; }
-        .btn-detail:hover { background-color: var(--primary); color: white; }
-        
-        .level-badge {
-            background-color: #fee2e2; 
-            color: #991b1b; 
-            border: 1px solid #fecaca; 
-            font-weight: 600;
-            padding: 6px 16px;
-            border-radius: 50px;
-            font-size: 0.85rem;
-            display: inline-block;
-            white-space: nowrap;
-        }
-    </style>
-</head>
-<body>
+<style>
+    :root {
+        --primary: #4f46e5; --primary-light: #e0e7ff; --primary-dark: #4338ca;
+        --secondary: #64748b; --light-bg: #f8fafc; --card-bg: #ffffff;
+        --border-color: #e2e8f0; --text-dark: #1e293b; --text-light: #64748b;
+        --gold: #f59e0b; --silver: #9ca3af; --bronze: #a16207;
+    }
+    .card { background-color: var(--card-bg); border: 1px solid var(--border-color); border-radius: 0.75rem; box-shadow: 0 1px 3px 0 rgb(0 0 0 / 0.05); }
+    .page-title { color: var(--text-dark); font-weight: 700; }
+    .form-control, .form-select { width: 100%; padding: 0.5rem 0.75rem; border: 1px solid var(--border-color); border-radius: 0.375rem; }
+    .table th { background-color: var(--light-bg); color: var(--text-light); text-transform: uppercase; font-size: 0.75rem; letter-spacing: 0.05em; }
+    .table td { vertical-align: middle; }
+    .rank-icon { font-size: 1.5rem; }
+    .rank-1 .rank-icon { color: var(--gold); }
+    .rank-2 .rank-icon { color: var(--silver); }
+    .rank-3 .rank-icon { color: var(--bronze); }
+    .total-poin { font-size: 1.25rem; font-weight: 700; color: var(--primary); }
+    .btn-detail { background-color: var(--primary-light); color: var(--primary); font-weight: 600; text-decoration: none; transition: all 0.2s; }
+    .btn-detail:hover { background-color: var(--primary); color: white; }
+    
+    .level-badge {
+        background-color: #ffe4e6; 
+        color: #e11d48; 
+        border: 1px solid #fecdd3; 
+        font-weight: 600;
+        padding: 6px 16px;
+        border-radius: 50px;
+        font-size: 0.85rem;
+        display: inline-block;
+        white-space: nowrap;
+    }
+    .level-badge-clean {
+        background-color: #f0fdf4; 
+        color: #16a34a; 
+        border: 1px solid #dcfce7; 
+        font-weight: 600;
+        padding: 6px 16px;
+        border-radius: 50px;
+        font-size: 0.85rem;
+        display: inline-block;
+        white-space: nowrap;
+    }
+</style>
 <div class="container py-4">
     <h1 class="page-title mb-4"><i class="fas fa-crown me-3"></i>Rekap Pelanggaran Bahasa</h1>
 
@@ -253,9 +346,10 @@ $json_kelas_chart = json_encode([
                     <label for="level" class="form-label">Level Bahasa</label>
                     <select name="level" id="level" class="form-select">
                         <option value="">Semua Level</option>
+                        <option value="0" <?= ($filter_level === '0') ? 'selected' : '' ?>>Level 0 (Bersih)</option>
                         <?php mysqli_data_seek($levels_result, 0); while ($l = mysqli_fetch_assoc($levels_result)): ?>
                         <option value="<?= htmlspecialchars($l['id']) ?>" <?= ($filter_level == $l['id']) ? 'selected' : '' ?>>
-                            <?= htmlspecialchars($l['nama_pelanggaran']) ?>
+                            <?= htmlspecialchars(trim(str_ireplace(['(Bahasa)', '(bahasa)'], '', $l['nama_pelanggaran']))) ?>
                         </option>
                         <?php endwhile; ?>
                     </select>
@@ -295,51 +389,8 @@ $json_kelas_chart = json_encode([
                         <th class="text-center">Aksi</th>
                     </tr>
                 </thead>
-                <tbody>
-                    <?php if (empty($peringkat_list)): ?>
-                        <tr><td colspan="5" class="text-center p-5 text-muted"><i class="fas fa-check-circle fa-3x mb-3"></i><br>Alhamdulillah, tidak ada pelanggaran bahasa sesuai filter.</td></tr>
-                    <?php else: ?>
-                        <?php foreach ($peringkat_list as $index => $row): 
-                            $no = $index + 1; 
-                            $level_singkat = str_ireplace(['(Bahasa)', '(bahasa)'], '', $row['level_sekarang']);
-                            $level_singkat = trim($level_singkat); 
-                        ?>
-                        <tr class="rank-<?= $no ?>">
-                            <td class="text-center">
-                                <?php if ($no <= 3): ?>
-                                    <i class="fas fa-trophy rank-icon"></i>
-                                <?php else: ?>
-                                    <span class="fw-bold fs-5"><?= $no ?></span>
-                                <?php endif; ?>
-                            </td>
-                            <td>
-                                <div class="fw-bold"><?= htmlspecialchars($row['nama']) ?></div>
-                                <small class="text-muted">Kls: <?= htmlspecialchars($row['kelas']) ?> | Kmr: <?= htmlspecialchars($row['kamar']) ?></small>
-                            </td>
-                            <td class="text-center">
-                                <div class="d-flex align-items-center justify-content-center">
-                                    <span class="total-poin">
-                                        <?= $row['total_poin'] ?>
-                                    </span>
-                                    <?= $row['trend_html'] ?>
-                                </div>
-                            </td>
-                            <td class="text-center">
-                                <span class="level-badge">
-                                    <?= htmlspecialchars($level_singkat) ?>
-                                </span>
-                            </td>
-                            <td class="text-center">
-                                <?php 
-                                $detail_link = "detail-bahasa.php?santri_id={$row['id']}&start_date=$start_date&end_date=$end_date&kamar=" . urlencode($filter_kamar) . "&kelas=" . urlencode($filter_kelas);
-                                ?>
-                                <a href="<?= $detail_link ?>" class="btn btn-sm btn-detail rounded-pill px-3">
-                                    <i class="fas fa-info-circle me-1"></i> Detail
-                                </a>
-                            </td>
-                        </tr>
-                        <?php endforeach; ?>
-                    <?php endif; ?>
+                <tbody id="rekapTableBody">
+                    <?= $table_tbody_html ?>
                 </tbody>
             </table>
         </div>
@@ -348,29 +399,104 @@ $json_kelas_chart = json_encode([
 
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 <script>
+let chartTop = null;
+let chartKelas = null;
+
 document.addEventListener('DOMContentLoaded', function () {
     const dataTopSantri = <?= $json_top_santri ?>;
     const ctxTopSantri = document.getElementById('chartTopSantri').getContext('2d');
-    if (dataTopSantri.labels.length > 0) {
-        new Chart(ctxTopSantri, { type: 'pie', data: { labels: dataTopSantri.labels, datasets: [{ label: 'Total Poin', data: dataTopSantri.data, backgroundColor: ['#4f46e5', '#f59e0b', '#dc3545', '#198754', '#6c757d'], hoverOffset: 4 }] }, options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { position: 'top' } } } });
-    }
+    chartTop = new Chart(ctxTopSantri, { 
+        type: 'pie', 
+        data: { 
+            labels: dataTopSantri.labels || [], 
+            datasets: [{ 
+                label: 'Total Poin', 
+                data: dataTopSantri.data || [], 
+                backgroundColor: ['#4f46e5', '#f59e0b', '#dc3545', '#198754', '#6c757d'], 
+                hoverOffset: 4 
+            }] 
+        }, 
+        options: { 
+            responsive: true, 
+            maintainAspectRatio: false, 
+            plugins: { 
+                legend: { position: 'top' } 
+            } 
+        } 
+    });
 
     const dataKelas = <?= $json_kelas_chart ?>;
     const ctxKelas = document.getElementById('chartKelas').getContext('2d');
-    if (dataKelas.labels.length > 0) {
-        new Chart(ctxKelas, { type: 'doughnut', data: { labels: dataKelas.labels, datasets: [{ data: dataKelas.data, backgroundColor: ['#0d6efd', '#6f42c1', '#d63384', '#fd7e14', '#198754', '#0dcaf0'], hoverOffset: 4 }] }, options: { responsive: true, maintainAspectRatio: false } });
-    }
+    chartKelas = new Chart(ctxKelas, { 
+        type: 'doughnut', 
+        data: { 
+            labels: dataKelas.labels || [], 
+            datasets: [{ 
+                data: dataKelas.data || [], 
+                backgroundColor: ['#0d6efd', '#6f42c1', '#d63384', '#fd7e14', '#198754', '#0dcaf0'], 
+                hoverOffset: 4 
+            }] 
+        }, 
+        options: { 
+            responsive: true, 
+            maintainAspectRatio: false 
+        } 
+    });
 });
 
 document.addEventListener('DOMContentLoaded', function() {
     const filterForm = document.getElementById('filterForm');
+    const tbody = document.getElementById('rekapTableBody');
+
+    function updateData() {
+        const formData = new FormData(filterForm);
+        const params = new URLSearchParams(formData);
+        const url = '?' + params.toString();
+
+        tbody.style.opacity = '0.5';
+
+        fetch(url, {
+            headers: { 'X-Requested-With': 'XMLHttpRequest' }
+        })
+        .then(response => {
+            if (!response.ok) throw new Error('Network response was not ok');
+            return response.json();
+        })
+        .then(data => {
+            tbody.innerHTML = data.tbody;
+            tbody.style.opacity = '1';
+
+            if (chartTop) {
+                chartTop.data.labels = data.top_santri.labels;
+                chartTop.data.datasets[0].data = data.top_santri.data;
+                chartTop.update();
+            }
+
+            if (chartKelas) {
+                chartKelas.data.labels = data.kelas_chart.labels;
+                chartKelas.data.datasets[0].data = data.kelas_chart.data;
+                chartKelas.update();
+            }
+
+            window.history.pushState(null, '', url);
+        })
+        .catch(error => {
+            console.error('Error fetching data:', error);
+            tbody.style.opacity = '1';
+        });
+    }
+
     const filterInputs = filterForm.querySelectorAll('select, input[type="date"]');
     filterInputs.forEach(input => {
-        input.addEventListener('change', () => filterForm.submit());
+        input.addEventListener('change', updateData);
     });
 });
 </script>
 
-<?php require_once __DIR__ . '/../../layouts/footer.php'; ?>
+<?php 
+if (!$is_ajax) {
+    require_once __DIR__ . '/../../layouts/footer.php'; 
+}
+?>
 </body>
 </html>

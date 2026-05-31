@@ -68,40 +68,23 @@ if ($result_roles) {
 }
 ?>
 
-<!DOCTYPE html>
-<html lang="id">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title><?= $page_title ?></title> 
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
-    <style>
-        :root {
-            --primary-color: #198754;
-            --primary-hover: #157347;
-            --text-dark: #334155;
-            --text-light: #64748b;
-            --border-color: #e2e8f0;
-            --card-bg: #ffffff;
-            --body-bg: #f1f5f9;
-        }
-        
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
-        }
-
-        body {
-            font-family: 'Inter', sans-serif;
-            background-color: var(--body-bg);
-            color: var(--text-dark);
-        }
-
-        .main-container {
+<style>
+    :root {
+        --primary-color: #198754;
+        --primary-hover: #157347;
+        --text-dark: #334155;
+        --text-light: #64748b;
+        --border-color: #e2e8f0;
+        --card-bg: #ffffff;
+        --body-bg: #f1f5f9;
+    }
+    
+    * {
+        margin: 0;
+        padding: 0;
+        box-sizing: border-box;
+    }
+    .main-container {
             display: flex;
             justify-content: center;
             align-items: flex-start;
@@ -279,6 +262,7 @@ if ($result_roles) {
                                 <option value="">-- Pilih Jabatan/Role --</option>
                                 <option value="pengelola" <?= (strtolower($user_data['role']) === 'pengelola') ? 'selected' : '' ?>>Pengelola</option>
                                 <option value="staff" <?= (strtolower($user_data['role']) === 'staff') ? 'selected' : '' ?>>Staff</option>
+                                <option value="pelihat" <?= (strtolower($user_data['role']) === 'pelihat') ? 'selected' : '' ?>>Pelihat</option>
                             </select>
                         <?php endif; ?>
                     </div>
@@ -376,9 +360,6 @@ if ($result_roles) {
             }
         });
     </script>
-</body>
-</html>
-
 <?php
 require_once __DIR__ . '/../../layouts/footer.php';
 ob_end_flush(); // Kirim output yang tadi ditahan
