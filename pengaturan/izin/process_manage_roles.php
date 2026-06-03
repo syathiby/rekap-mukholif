@@ -72,11 +72,7 @@ if ($action === 'add') {
         exit();
     }
 
-    if (in_array($id, $protectedRoles)) {
-        http_response_code(403);
-        require __DIR__ . '/../../bootstrap/access_denied.php';
-        exit;
-    }
+    // Dihapus: role terlindungi kini boleh diedit NAMAnya, tetapi tidak boleh dihapus.
 
     $stmt = $conn->prepare("UPDATE roles SET role_name = ? WHERE id = ?");
     $stmt->bind_param("ss", $role_name, $id);

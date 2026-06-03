@@ -1,7 +1,14 @@
-﻿<?php
+<?php
 require_once __DIR__ . '/../../bootstrap/init.php';
 // Gunakan guard history atau permission khusus delete
 guard('reward_input'); 
+
+// Validasi CSRF token dari GET parameter
+if (!isset($_GET['csrf_token']) || !isset($_SESSION['csrf_token']) || !hash_equals($_SESSION['csrf_token'], $_GET['csrf_token'])) {
+    http_response_code(403);
+    require __DIR__ . '/../../bootstrap/csrf_expired.php';
+    exit;
+}
 
 if (isset($_GET['id'])) {
     $id = (int) $_GET['id'];

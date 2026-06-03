@@ -1,4 +1,4 @@
-﻿<?php
+<?php
 // Pastikan lu udah install PhpSpreadsheet lewat Composer
 // Jalankan: composer require phpoffice/phpspreadsheet
 require '../vendor/autoload.php';
@@ -6,6 +6,9 @@ require '../vendor/autoload.php';
 if (session_status() === PHP_SESSION_NONE) { session_start(); }
 require_once __DIR__ . '/../bootstrap/init.php';
 guard('arsip_export');
+
+// Validasi CSRF Token
+csrf_validate();
 
 use PhpOffice\PhpSpreadsheet\Spreadsheet;
 use PhpOffice\PhpSpreadsheet\Writer\Xlsx;

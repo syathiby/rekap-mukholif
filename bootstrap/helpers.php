@@ -155,4 +155,48 @@ function write_activity_log($aksi, $fitur, $deskripsi, $detail = null)
 
     return false;
 }
+
+/**
+ * =================================================================
+ * FUNGSI KEAMANAN CSRF
+ * =================================================================
+ */
+
+/**
+ * Generate CSRF token baru jika belum ada di session.
+ * Panggil fungsi ini di AWAL setiap halaman yang menampilkan form
+ * (sebelum require header.php).
+ *
+ * @return string Token CSRF yang aktif
+ */
+function csrf_generate(): string {
+    if (empty($_SESSION['csrf_token'])) {
+        $_SESSION['csrf_token'] = bin2hex(random_bytes(32));
+    }
+    return $_SESSION['csrf_token'];
+}
+
+/**
+ * Validasi CSRF token dari request POST.
+ * Langsung hentikan eksekusi dan tampilkan halaman error jika tidak valid.
+ * Gunakan ini di awal blok POST di file process.php atau handler lainnya.
+ */
+function csrf_validate(): void {
+    $token_post    = $_POST['csrf_token'] ?? '';
+    $token_session = $_SESSION['csrf_token'] ?? '';
+
+    if (empty($token_post) || empty($token_session) || !hash_equals($token_session, $token_post)) {
+        http_response_code(403);
+        // Cari path yang benar (bisa dipanggil dari berbagai kedalaman folder)
+        $csrf_page = __DIR__ . '/csrf_expired.php';
+        if (file_exists($csrf_page)) {
+            require $csrf_page;
+        } else {
+            // Fallback jika path tidak ditemukan
+            header('HTTP/1.1 403 Forbidden');
+            echo '<p>Token keamanan tidak valid. Silakan kembali dan coba lagi.</p>';
+        }
+        exit;
+    }
+}
 ?>

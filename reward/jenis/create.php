@@ -5,6 +5,9 @@ require_once __DIR__ . '/../../bootstrap/init.php';
 // 2. Security Gate
 guard('jenis_reward_create');
 
+// Generate CSRF token sebelum form ditampilkan
+$csrf_token = csrf_generate();
+
 // 3. Panggil Template Utama
 require_once __DIR__ . '/../../layouts/header.php';
 ?>
@@ -182,6 +185,7 @@ require_once __DIR__ . '/../../layouts/header.php';
                             <!-- === Tambah Satu === -->
                             <div class="tab-pane fade show active" id="single" role="tabpanel">
                                 <form action="process.php" method="POST">
+                                    <input type="hidden" name="csrf_token" value="<?= htmlspecialchars($csrf_token) ?>">
                                     <div class="mb-4">
                                         <label for="nama_reward" class="form-label">Nama Reward / Prestasi <span class="text-danger">*</span></label>
                                         <div class="input-group shadow-sm" style="border-radius: 8px; overflow: hidden;">
@@ -223,6 +227,7 @@ require_once __DIR__ . '/../../layouts/header.php';
                             <!-- === Tambah Banyak === -->
                             <div class="tab-pane fade" id="bulk" role="tabpanel">
                                 <form action="process.php" method="POST" id="bulkForm">
+                                    <input type="hidden" name="csrf_token" value="<?= htmlspecialchars($csrf_token) ?>">
                                     <p class="text-muted mb-3">
                                         <i class="fas fa-info-circle me-1"></i> Masukkan beberapa reward sekaligus. Setiap baris = 1 reward.<br>
                                         Format: <code>Nama,Poin,Deskripsi (opsional)</code><br>

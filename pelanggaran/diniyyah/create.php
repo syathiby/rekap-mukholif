@@ -5,6 +5,9 @@ require_once __DIR__ . '/../../bootstrap/init.php';
 // 2. Jalankan 'SATPAM' buat ngejaga halaman
 guard('pelanggaran_diniyyah_input'); 
 
+// Generate CSRF Token
+$csrf_token = csrf_generate();
+
 // 3. Kalau lolos, baru panggil Tampilan
 require_once __DIR__ . '/../../layouts/header.php';
 
@@ -229,6 +232,7 @@ $jenis_pelanggaran_list_result = mysqli_query($conn, trim($sql_query));
     <?php endif; ?>
 
     <form action="process.php" method="POST" id="form-pelanggaran">
+        <input type="hidden" name="csrf_token" value="<?= htmlspecialchars($csrf_token) ?>">
         <div class="row g-4">
             <!-- LEFT COLUMN: Config & Search -->
             <div class="col-lg-4 d-flex flex-column gap-4">

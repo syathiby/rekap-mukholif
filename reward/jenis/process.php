@@ -1,6 +1,11 @@
 <?php
 require_once __DIR__ . '/../../bootstrap/init.php'; // Load DB & Auth
 
+// --- Validasi CSRF terlebih dahulu sebelum memproses aksi apapun ---
+if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+    csrf_validate();
+}
+
 // --- 1. PROSES TAMBAH BARU ---
 if (isset($_POST['add_jenis'])) {
     guard('jenis_reward_create');

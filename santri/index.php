@@ -5,6 +5,9 @@ require_once __DIR__ . '/../bootstrap/init.php';
 // 2. Jalankan 'SATPAM' buat ngejaga halaman
 guard('santri_view');
 
+// Generate CSRF token untuk proteksi hapus santri
+$csrf_token = csrf_generate();
+
 // =================================================================
 // REVISI LOGIKA FILTER: DIPINDAH KE ATAS SEBELUM HEADER
 // =================================================================
@@ -286,6 +289,7 @@ mysqli_stmt_close($stmt_count);
     </div>
 
     <form method="POST" action="" id="bulkDeleteForm">
+        <input type="hidden" name="csrf_token" value="<?= htmlspecialchars($csrf_token) ?>">
         <div class="card shadow-sm mb-3 card-action-bulk">
             <div class="row g-2 align-items-center">
                 <!-- Group Kiri: Tambah & Bulk Input -->
@@ -384,7 +388,7 @@ mysqli_stmt_close($stmt_count);
                                             <a href="edit.php?id=<?= $row['id'] ?>" class="btn btn-sm btn-warning me-2" title="Edit"><i class="fas fa-edit"></i></a>
                                         <?php endif; ?>
                                         <?php if ($can_delete): ?>
-                                            <a href="#" onclick="showConfirmDelete('delete.php?id=<?= $row['id'] ?>')" class="btn btn-sm btn-danger" title="Hapus"><i class="fas fa-trash"></i></a>
+                                            <a href="#" onclick="showConfirmDelete('delete.php?id=<?= $row['id'] ?>&csrf_token=<?= $csrf_token ?>')" class="btn btn-sm btn-danger" title="Hapus"><i class="fas fa-trash"></i></a>
                                         <?php endif; ?>
                                     </div>
                                 </td>

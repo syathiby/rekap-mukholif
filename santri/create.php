@@ -2,10 +2,15 @@
 // BAGIAN 1: LOGIKA RUANG MESIN (SEMUA PROSES DI SINI)
 if (session_status() === PHP_SESSION_NONE) { session_start(); }
 require_once __DIR__ . '/../bootstrap/init.php';
-guard('santri_create'); 
+guard('santri_create');
+
+// Generate CSRF token sebelum form ditampilkan
+$csrf_token = csrf_generate();
 
 // [FIX] Logika POST yang sudah dibersihkan dan disatukan
 if ($_SERVER["REQUEST_METHOD"] == "POST") {
+    // Validasi CSRF token terlebih dahulu
+    csrf_validate();
     try {
         // Ambil data mentah dari form
         $nama_input = $_POST['nama'] ?? '';
@@ -75,6 +80,7 @@ require_once __DIR__ . '/../layouts/header.php';
                 
                 <div class="card-body p-4 p-md-5">
                     <form method="post" id="santriForm">
+                        <input type="hidden" name="csrf_token" value="<?= htmlspecialchars($csrf_token) ?>">
                         <div class="mb-4">
                             <label for="nama" class="form-label fw-medium text-secondary">Nama Lengkap</label>
                             <div class="input-group-modern">

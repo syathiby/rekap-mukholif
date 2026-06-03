@@ -14,7 +14,7 @@
 if (!function_exists('has_permission')) {
     function has_permission($requiredPermissions) {
         // Aturan Emas: Admin selalu punya akses ke semuanya.
-        if (isset($_SESSION['role']) && $_SESSION['role'] === 'admin') {
+        if (isset($_SESSION['role']) && strtolower(trim($_SESSION['role'])) === 'admin') {
             return true;
         }
         

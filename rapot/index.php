@@ -387,7 +387,7 @@ require_once __DIR__ . '/../layouts/header.php';
         <div class="card shadow-sm mb-3 card-action-bulk">
             <div class="row g-3 align-items-center">
                 <!-- Group Kiri: Create -->
-                <div class="col-12 col-lg-auto d-flex gap-2 flex-grow-1">
+                <div class="col-12 col-md-auto d-flex gap-2 mb-3 mb-md-0">
                     <?php if ($can_create): ?>
                         <a href="create.php?kamar=<?php echo urlencode($filter_kamar); ?>" class="btn btn-success flex-grow-1 flex-md-grow-0 fw-medium">
                             <i class="fas fa-plus-circle me-1"></i> Buat Rapot Baru
@@ -396,20 +396,20 @@ require_once __DIR__ . '/../layouts/header.php';
                 </div>
 
                 <!-- Group Kanan: Bulk Action -->
-                <div class="col-12 col-lg-auto d-flex gap-2 justify-content-lg-end align-items-center flex-wrap">
-                    <div id="selected-count-info" class="d-none w-100 w-sm-auto text-center text-sm-start mb-2 mb-sm-0">
+                <div class="col-12 col-md d-flex gap-2 justify-content-md-end align-items-center flex-wrap">
+                    <div id="selected-count-info" class="d-none">
                         <span class="badge bg-secondary px-3 py-2 rounded-pill shadow-sm" style="font-size:0.85rem;">0 data terpilih</span>
                     </div>
                     <?php if ($can_cetak): ?>
-                        <button type="button" id="bulk-download-pdf-btn" class="btn btn-primary flex-grow-1 flex-sm-grow-0 fw-medium shadow-sm" disabled>
+                        <button type="button" id="bulk-download-pdf-btn" class="btn btn-primary flex-grow-1 flex-md-grow-0 fw-medium shadow-sm" disabled>
                             <i class="fas fa-file-pdf me-1"></i> PDF (ZIP)
                         </button>
-                        <button type="button" id="bulk-download-png-btn" class="btn btn-info text-white flex-grow-1 flex-sm-grow-0 fw-medium shadow-sm" disabled>
+                        <button type="button" id="bulk-download-png-btn" class="btn btn-info text-white flex-grow-1 flex-md-grow-0 fw-medium shadow-sm" disabled>
                             <i class="fas fa-file-image me-1"></i> PNG (ZIP)
                         </button>
                     <?php endif; ?>
                     <?php if ($can_delete): ?>
-                        <button type="button" id="bulk-delete-btn" class="btn btn-danger flex-grow-1 flex-sm-grow-0 fw-medium shadow-sm" disabled>
+                        <button type="button" id="bulk-delete-btn" class="btn btn-danger flex-grow-1 flex-md-grow-0 fw-medium shadow-sm" disabled>
                             <i class="fas fa-trash-alt me-1"></i> Hapus
                         </button>
                     <?php endif; ?>

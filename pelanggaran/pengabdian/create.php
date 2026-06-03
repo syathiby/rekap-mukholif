@@ -5,6 +5,9 @@ require_once __DIR__ . '/../../bootstrap/init.php';
 // 2. Jalankan 'SATPAM' buat ngejaga halaman
 guard('pelanggaran_pengabdian_input');   
 
+// Generate CSRF Token
+$csrf_token = csrf_generate();
+
 // 3. Kalau lolos, baru panggil Tampilan
 require_once __DIR__ . '/../../layouts/header.php';
 
@@ -311,6 +314,7 @@ $kamarQuery = mysqli_query($conn, "
         <!-- ============================================= -->
         <div class="tab-pane fade show active" id="individu" role="tabpanel">
             <form action="process.php" method="POST" id="form-individu">
+                <input type="hidden" name="csrf_token" value="<?= htmlspecialchars($csrf_token) ?>">
                 <input type="hidden" name="tipe_pelanggaran" value="individu">
                 <div class="row g-4">
                     <!-- LEFT COLUMN: Config & Search -->
@@ -422,6 +426,7 @@ $kamarQuery = mysqli_query($conn, "
         <!-- ============================================= -->
         <div class="tab-pane fade" id="kamar" role="tabpanel">
             <form action="process.php" method="POST" id="form-kamar">
+                <input type="hidden" name="csrf_token" value="<?= htmlspecialchars($csrf_token) ?>">
                 <input type="hidden" name="tipe_pelanggaran" value="kamar">
                 <div class="row g-4">
                     <!-- LEFT COLUMN: Kamar Grid -->

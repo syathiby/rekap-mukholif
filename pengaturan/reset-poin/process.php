@@ -5,6 +5,11 @@ if (session_status() === PHP_SESSION_NONE) {
 require_once __DIR__ . '/../../bootstrap/init.php';
 guard('reset_poin_manage');
 
+// Validasi CSRF token sebelum proses apapun
+if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+    csrf_validate();
+}
+
 // Fungsi pembantu untuk me-reset poin satu santri
 // Sekarang juga akan menghapus riwayat pelanggaran non-permanen
 function resetPoinSantri($conn, $id_santri, $keterangan, $di_reset_oleh) {

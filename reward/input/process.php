@@ -3,6 +3,9 @@ require_once __DIR__ . '/../../bootstrap/init.php';
 
 if (isset($_POST['add_reward_bulk'])) {
     guard('reward_input');
+
+    // Validasi CSRF token sebelum proses apapun
+    csrf_validate();
     
     $reward_id  = (int) $_POST['jenis_reward_id'];
     $tanggal    = $_POST['tanggal'];
@@ -68,7 +71,7 @@ if (isset($_POST['add_reward_bulk'])) {
         ]);
 
         $_SESSION['message'] = ['type' => 'success', 'text' => count($santri_ids) . " santri berhasil diberi reward. Poin telah diperbarui."];
-        header("Location: ../history/index.php");
+        header("Location: ../input/create.php");
 
     } catch (Exception $e) {
         mysqli_rollback($conn);

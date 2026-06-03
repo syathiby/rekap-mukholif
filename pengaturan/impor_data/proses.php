@@ -23,7 +23,8 @@ if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
 
 // ── Verifikasi CSRF Token ───────────────────────────────────────────────────
 $csrf_token = $_POST['csrf_token'] ?? '';
-if (empty($csrf_token) || $csrf_token !== ($_SESSION['csrf_token'] ?? '')) {
+// Gunakan hash_equals() untuk perbandingan timing-safe (mencegah timing attack)
+if (empty($csrf_token) || empty($_SESSION['csrf_token']) || !hash_equals($_SESSION['csrf_token'], $csrf_token)) {
     $_SESSION['sync_error_type'] = 'csrf';
     $_SESSION['sync_error_msg']  = 'Sesi halaman Anda telah berakhir demi keamanan data. '
         . 'Cukup muat ulang (refresh) halaman ini untuk melanjutkan sinkronisasi.';

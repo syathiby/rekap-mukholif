@@ -9,6 +9,9 @@ require_once __DIR__ . '/../../bootstrap/init.php';
 // 2. Jalankan 'SATPAM' buat ngejaga halaman
 guard('reset_poin_manage');
 
+// Generate CSRF token sebelum form ditampilkan
+$csrf_token = csrf_generate();
+
 // 3. Ambil data santri yang punya poin untuk dropdown
 $santri_result = mysqli_query($conn, "SELECT id, nama, poin_aktif FROM santri WHERE poin_aktif > 0 ORDER BY nama ASC");
 
@@ -93,6 +96,7 @@ require_once __DIR__ . '/../../layouts/header.php';
             <div class="card border-0 shadow-sm rounded-4">
                 <div class="card-body p-4 p-lg-5">
                     <form action="process.php" method="POST" id="resetForm">
+                        <input type="hidden" name="csrf_token" value="<?= htmlspecialchars($csrf_token) ?>">
                         
                         <h4 class="mb-3">1. Reset Santri Terpilih</h4>
                         <div class="mb-4">

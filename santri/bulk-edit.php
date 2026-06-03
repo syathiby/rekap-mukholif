@@ -4,8 +4,13 @@ if (session_status() === PHP_SESSION_NONE) { session_start(); }
 require_once __DIR__ . '/../bootstrap/init.php';
 guard('santri_edit'); 
 
+// Generate CSRF token
+$csrf_token = csrf_generate();
+
 // Logika proses form HANYA jika ada request POST
 if ($_SERVER["REQUEST_METHOD"] == "POST" && isset($_POST['update'])) {
+    // Validasi CSRF
+    csrf_validate();
     $ids = $_POST['santri_ids'] ?? [];
     $kelasBaru_input = trim($_POST['kelas_baru'] ?? '');
     $kamarBaru_input = trim($_POST['kamar_baru'] ?? '');
@@ -184,6 +189,7 @@ $santri = $conn->query("SELECT * FROM santri ORDER BY nama ASC");
 
         <div class="card-footer bg-light">
             <form method="post" action="bulk-edit.php" id="updateForm">
+                <input type="hidden" name="csrf_token" value="<?= htmlspecialchars($csrf_token) ?>">
                 <div id="selectedIdsContainer"></div> 
                 
                 <div class="row align-items-end">

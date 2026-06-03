@@ -1,6 +1,10 @@
 <?php 
 require_once __DIR__ . '/../../bootstrap/init.php';
-guard('izin_manage');    
+guard('izin_manage');
+
+// Generate CSRF token sebelum form ditampilkan
+$csrf_token = csrf_generate();
+
 require_once __DIR__ . '/../../layouts/header.php'; 
 
 // Ambil semua role dari database

@@ -1,6 +1,10 @@
 <?php 
 require_once __DIR__ . '/../../bootstrap/init.php';
 guard('jenis_reward_view'); 
+
+// Generate CSRF token untuk form bulk dan hapus
+$csrf_token = csrf_generate();
+
 require_once __DIR__ . '/../../layouts/header.php';
 
 $can_create = has_permission('jenis_reward_create');
@@ -220,6 +224,7 @@ if ($can_edit || $can_delete) $colspan++;
 
     <div class="card border-0 shadow-sm" style="border-radius: var(--radius-std); overflow: hidden;">
         <form method="POST" action="" id="bulkForm">
+            <input type="hidden" name="csrf_token" value="<?= htmlspecialchars($csrf_token) ?>">
             <div class="table-responsive">
                 <table class="table table-clean mb-0">
                     <thead>
@@ -274,7 +279,7 @@ if ($can_edit || $can_delete) $colspan++;
                                                 <li><a class="dropdown-item small" href="edit.php?id=<?= $row['id'] ?>"><i class="fas fa-pen text-warning me-2"></i>Edit</a></li>
                                             <?php endif; ?>
                                             <?php if ($can_delete): ?>
-                                                <li><a class="dropdown-item small text-danger" href="delete.php?id=<?= $row['id'] ?>" onclick="confirmSubmit(event, this, 'Konfirmasi Hapus', 'Yakin hapus?');"><i class="fas fa-trash me-2"></i>Hapus</a></li>
+                                                <li><a class="dropdown-item small text-danger" href="delete.php?id=<?= $row['id'] ?>&csrf_token=<?= $csrf_token ?>" onclick="confirmSubmit(event, this, 'Konfirmasi Hapus', 'Yakin hapus?');"><i class="fas fa-trash me-2"></i>Hapus</a></li>
                                             <?php endif; ?>
                                         </ul>
                                     </div>

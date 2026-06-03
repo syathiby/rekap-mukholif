@@ -1,6 +1,10 @@
 <?php 
 require_once __DIR__ . '/../../bootstrap/init.php';
 guard('reward_input');  
+
+// Generate CSRF token sebelum form ditampilkan
+$csrf_token = csrf_generate();
+
 require_once __DIR__ . '/../../layouts/header.php'; 
 
 // Ambil data Reward
@@ -218,6 +222,7 @@ $jenis_reward_result = $stmt->get_result();
     <?php endif; ?>
 
     <form action="process.php" method="POST" id="form-reward">
+        <input type="hidden" name="csrf_token" value="<?= htmlspecialchars($csrf_token) ?>">
         <div class="row g-4">
             <!-- LEFT COLUMN: Config & Search -->
             <div class="col-lg-4 d-flex flex-column gap-4">

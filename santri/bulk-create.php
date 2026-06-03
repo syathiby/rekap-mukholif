@@ -4,8 +4,13 @@ if (session_status() === PHP_SESSION_NONE) { session_start(); }
 require_once __DIR__ . '/../bootstrap/init.php';
 guard('santri_create'); 
 
+// Generate CSRF token
+$csrf_token = csrf_generate();
+
 // Logika proses form HANYA jika ada request POST
 if ($_SERVER["REQUEST_METHOD"] == "POST") {
+    // Validasi CSRF
+    csrf_validate();
     // ... (Logika PHP kamu udah bener, gw gak ubah) ...
     $santri_list = explode("\n", $_POST['list_santri']);
     $success_count = 0;
@@ -143,6 +148,7 @@ require_once __DIR__ . '/../layouts/header.php';
 
     <div class="form-container">
         <form method="post" id="bulkForm">
+            <input type="hidden" name="csrf_token" value="<?= htmlspecialchars($csrf_token) ?>">
             <div class="mb-4">
                 <h5><i class="fas fa-info-circle text-primary me-2"></i>Petunjuk Format Data</h5>
                 <div class="example-box">

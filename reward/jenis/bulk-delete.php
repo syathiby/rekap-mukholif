@@ -1,6 +1,9 @@
-﻿<?php
+<?php
 require_once __DIR__ . '/../../bootstrap/init.php';
 guard('jenis_reward_delete');
+
+// Validasi CSRF sebelum proses hapus massal
+csrf_validate();
 
 if (isset($_POST['ids']) && is_array($_POST['ids'])) {
     $ids = array_map('intval', $_POST['ids']);

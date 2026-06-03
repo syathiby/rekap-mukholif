@@ -1,6 +1,10 @@
-﻿<?php
+<?php
 require_once __DIR__ . '/../../bootstrap/init.php';
 guard('reward_input');
+
+// Generate CSRF token sebelum form ditampilkan
+$csrf_token = csrf_generate();
+
 require_once __DIR__ . '/../../layouts/header.php';
 
 $id = (int) $_GET['id'];
@@ -32,6 +36,7 @@ $reward_list = mysqli_query($conn, "SELECT * FROM jenis_reward ORDER BY nama_rew
                     </div>
 
                     <form action="process.php" method="POST">
+                        <input type="hidden" name="csrf_token" value="<?= htmlspecialchars($csrf_token) ?>">
                         <input type="hidden" name="id" value="<?= $data['id'] ?>">
 
                         <div class="mb-4">

@@ -4,8 +4,13 @@ if (session_status() === PHP_SESSION_NONE) { session_start(); }
 require_once __DIR__ . '/../bootstrap/init.php';
 guard('santri_edit');
 
+// Generate CSRF token sebelum form ditampilkan
+$csrf_token = csrf_generate();
+
 // ---- SEMUA LOGIKA PEMROSESAN FORM PINDAH KE SINI ----
 if ($_SERVER["REQUEST_METHOD"] == "POST") {
+    // Validasi CSRF token terlebih dahulu
+    csrf_validate();
     try {
         // Ambil ID dari URL, karena form submit ke halaman ini lagi
         $id = isset($_GET['id']) ? intval($_GET['id']) : 0;
@@ -58,10 +63,7 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
                     ]
                 ]);
             }
-            $_SESSION['operation_result'] = [
-                'success' => true, 
-                'message' => "Data santri $nama berhasil diperbarui!"
-            ];
+            $_SESSION['success_message'] = "Data santri $nama berhasil diperbarui!";
             header("Location: index.php");
             exit;
         } else {
@@ -69,7 +71,7 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
         }
         
     } catch (Exception $e) {
-        $_SESSION['operation_result'] = ['success' => false, 'message' => $e->getMessage()];
+        $_SESSION['error_message'] = $e->getMessage();
         // Refresh halaman edit untuk menampilkan error
         // Pastikan $id sudah terdefinisi di sini
         $id_for_redirect = isset($_GET['id']) ? intval($_GET['id']) : 0;
@@ -87,7 +89,7 @@ require_once __DIR__ . '/../layouts/header.php';
 $id = isset($_GET['id']) ? intval($_GET['id']) : 0;
 
 if ($id === 0) {
-    $_SESSION['operation_result'] = ['success' => false, 'message' => "ID Santri tidak valid!"];
+    $_SESSION['error_message'] = "ID Santri tidak valid!";
     header("Location: index.php");
     exit;
 }
@@ -101,7 +103,7 @@ $row = mysqli_fetch_assoc($result);
 mysqli_stmt_close($stmt);
 
 if (!$row) {
-    $_SESSION['operation_result'] = ['success' => false, 'message' => "Santri dengan ID $id tidak ditemukan!"];
+    $_SESSION['error_message'] = "Santri dengan ID $id tidak ditemukan!";
     header("Location: index.php");
     exit;
 }
@@ -130,18 +132,18 @@ if (!$row) {
                 </div>
                 
                 <div class="card-body p-4 p-md-5">
-                    <?php if (isset($_SESSION['operation_result']) && !$_SESSION['operation_result']['success']): ?>
-                        <div class="alert alert-danger d-flex align-items-center mb-4" style="border-radius: 0.75rem; border: none; background: #fee2e2; color: #991b1b; font-weight: 500;">
-                            <i class="fas fa-exclamation-circle me-2"></i>
+                    <?php if (isset($_SESSION['error_message'])): ?>
+                        <div class="alert alert-danger d-flex align-items-center rounded-3 mb-4" role="alert">
+                            <i class="fas fa-exclamation-triangle fs-4 me-3"></i>
                             <div>
-                                <?= htmlspecialchars($_SESSION['operation_result']['message']) ?>
+                                <?= htmlspecialchars($_SESSION['error_message']) ?>
                             </div>
-                            <button type="button" class="btn-close ms-auto" data-bs-dismiss="alert" aria-label="Close"></button>
                         </div>
-                        <?php unset($_SESSION['operation_result']); ?>
+                        <?php unset($_SESSION['error_message']); ?>
                     <?php endif; ?>
 
                     <form method="post" id="editForm">
+                        <input type="hidden" name="csrf_token" value="<?= htmlspecialchars($csrf_token) ?>">
                         <div class="mb-4">
                             <label for="nama" class="form-label fw-medium text-secondary">Nama Lengkap</label>
                             <div class="input-group-modern">

@@ -5,6 +5,9 @@ require_once __DIR__ . '/../bootstrap/init.php';
 // 2. Jalankan 'SATPAM' buat ngejaga halaman
 guard('eksekusi_manage'); 
 
+// Generate CSRF Token
+$csrf_token = csrf_generate();
+
 // 3. Kalau lolos, baru panggil Tampilan
 require_once __DIR__ . '/../layouts/header.php'; 
 ?>
@@ -51,7 +54,7 @@ $pelanggaranQuery = mysqli_query($conn, "
     </div>
 
     <form action="process.php" method="POST">
-                
+                <input type="hidden" name="csrf_token" value="<?= htmlspecialchars($csrf_token) ?>">
                 <h5 class="fw-bold mb-3"><i class="fas fa-list-check text-primary me-2"></i>Daftar Pelanggaran (Belum Dieksekusi)</h5>
                 
                 <div class="card-premium mb-4 border rounded-3">

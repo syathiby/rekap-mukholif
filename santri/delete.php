@@ -4,6 +4,13 @@ if (session_status() === PHP_SESSION_NONE) { session_start(); }
 require_once __DIR__ . '/../bootstrap/init.php';
 guard('santri_delete');
 
+// Validasi CSRF: token wajib ada dan valid
+if (!isset($_GET['csrf_token']) || !isset($_SESSION['csrf_token']) || !hash_equals($_SESSION['csrf_token'], $_GET['csrf_token'])) {
+    http_response_code(403);
+    require __DIR__ . '/../bootstrap/csrf_expired.php';
+    exit;
+}
+
 // 1. Validasi ID
 $id = isset($_GET['id']) ? intval($_GET['id']) : 0;
 

@@ -2,10 +2,17 @@
 // Protokol Khusus Ruang Mesin
 if (session_status() === PHP_SESSION_NONE) { session_start(); }
 require_once __DIR__ . '/../bootstrap/init.php';
-guard('santri_delete'); 
+guard('santri_delete');
 
 // 1. Validasi Input Awal
 if ($_SERVER["REQUEST_METHOD"] == "POST" && isset($_POST['ids']) && is_array($_POST['ids'])) {
+
+    // Validasi CSRF token dulu sebelum proses apapun
+    if (!isset($_POST['csrf_token']) || !isset($_SESSION['csrf_token']) || !hash_equals($_SESSION['csrf_token'], $_POST['csrf_token'])) {
+        http_response_code(403);
+        require __DIR__ . '/../bootstrap/csrf_expired.php';
+        exit;
+    }
     
     // Sanitasi semua ID untuk memastikan hanya angka yang diproses
     $ids = array_map('intval', array_filter($_POST['ids'], 'is_numeric'));

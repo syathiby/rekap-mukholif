@@ -3,7 +3,10 @@
 require_once __DIR__ . '/../../bootstrap/init.php';
 
 // 2. Jalankan 'SATPAM' buat ngejaga halaman
-guard('izin_manage');    
+guard('izin_manage');
+
+// Generate CSRF token sebelum form ditampilkan
+$csrf_token = csrf_generate();
 
 // 3. Kalau lolos, baru panggil Tampilan
 require_once __DIR__ . '/../../layouts/header.php'; 

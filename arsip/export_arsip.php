@@ -1,9 +1,12 @@
-﻿<?php 
+<?php 
 // 1. Panggil 'Otak' aplikasi dulu
 require_once __DIR__ . '/../bootstrap/init.php';
 
 // 2. Jalankan 'SATPAM' buat ngejaga halaman
 guard('arsip_export'); 
+
+// Generate CSRF token untuk keamanan ekspor
+$csrf_token = csrf_generate();
 
 // 3. Kalau lolos, baru panggil Tampilan
 require_once __DIR__ . '/../layouts/header.php';
@@ -46,6 +49,7 @@ if ($result) {
                     <hr class="my-4">
                     
                     <form action="process_export_arsip.php" method="POST">
+                        <input type="hidden" name="csrf_token" value="<?= htmlspecialchars($csrf_token) ?>">
                         <div class="mb-3">
                             <label for="arsip_id" class="form-label fw-bold">Pilih Periode Arsip:</label>
                             <select class="form-select" id="arsip_id" name="arsip_id" required>

@@ -4,6 +4,9 @@ require_once __DIR__ . '/../../bootstrap/init.php';
 
 guard('user_manage');
 
+// Validasi CSRF token sebelum proses apapun
+csrf_validate();
+
 if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
     http_response_code(403);
     require __DIR__ . '/../../bootstrap/access_denied.php';

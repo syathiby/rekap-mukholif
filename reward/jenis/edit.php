@@ -3,10 +3,17 @@ require_once __DIR__ . '/../../bootstrap/init.php';
 
 guard('jenis_reward_edit'); 
 
+// Generate CSRF token sebelum form ditampilkan
+$csrf_token = csrf_generate();
+
 require_once __DIR__ . '/../../layouts/header.php';
 
 $id = (int)$_GET['id'];
-$data = mysqli_fetch_assoc(mysqli_query($conn, "SELECT * FROM jenis_reward WHERE id=$id"));
+$stmt_g = $conn->prepare("SELECT * FROM jenis_reward WHERE id = ?");
+$stmt_g->bind_param('i', $id);
+$stmt_g->execute();
+$data = $stmt_g->get_result()->fetch_assoc();
+$stmt_g->close();
 
 if(!$data) {
     echo "<script>alert('Data tidak ditemukan'); window.location='index.php';</script>";
@@ -133,6 +140,7 @@ if(!$data) {
                 <div class="card form-card bg-white">
                     <div class="card-body p-4 p-md-5">
                         <form action="process.php" method="POST">
+                            <input type="hidden" name="csrf_token" value="<?= htmlspecialchars($csrf_token) ?>">
                             <input type="hidden" name="id" value="<?= $data['id'] ?>">
                             
                             <div class="mb-4">

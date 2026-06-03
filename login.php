@@ -16,8 +16,9 @@ $style_v   = time();
 // ───────────────────────────────────────────────────
 
 $error = '';
+$info = '';
 if (isset($_GET['timeout'])) {
-    $error = "🔒 Sesi Anda telah berakhir demi keamanan (maksimal 1 jam). Silakan masuk kembali.";
+    $info = "Sesi Anda ter-logout otomatis sebagai bentuk keamanan karena login terlalu lama.";
 }
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
@@ -48,7 +49,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $_SESSION['user_id'] = $user['id'];
             $_SESSION['username'] = $user['username'];
             $_SESSION['nama_lengkap'] = $user['nama_lengkap'];
-            $_SESSION['role'] = $user['role']; // Kita simpen role buat ngecek admin
+            $_SESSION['role'] = strtolower(trim($user['role'])); // Pastikan role huruf kecil untuk validasi
             $_SESSION['login_time'] = time(); // Set login timestamp for 1 hour auto-logout
             
             // Buat "kantong tiket" buat user
@@ -162,6 +163,13 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             <div class="alert alert-danger d-flex align-items-center py-2 px-3 text-sm mb-4" style="border-radius: 0.75rem; border: none; background: #fee2e2; color: #991b1b; font-weight: 500;">
                 <i class="fas fa-exclamation-circle me-2"></i>
                 <?= htmlspecialchars($error) ?>
+            </div>
+        <?php endif; ?>
+
+        <?php if ($info): ?>
+            <div class="alert alert-info d-flex align-items-center py-2 px-3 text-sm mb-4" style="border-radius: 0.75rem; border: none; background: #e0f2fe; color: #075985; font-weight: 500;">
+                <i class="fas fa-info-circle me-2"></i>
+                <?= htmlspecialchars($info) ?>
             </div>
         <?php endif; ?>
 
