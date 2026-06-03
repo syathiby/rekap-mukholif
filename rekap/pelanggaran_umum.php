@@ -173,7 +173,14 @@ $query = $stmt->get_result();
 </style>
 
 <div class="container py-4">
-    <h1 class="page-title mb-4"><i class="fas fa-list-alt me-3"></i>Rekapitulasi Pelanggaran Umum</h1>
+    <h1 class="page-title mb-2"><i class="fas fa-list-alt me-3"></i>Rekapitulasi Pelanggaran Umum</h1>
+
+    <div style="margin-bottom: 25px; padding: 12px 18px; border-radius: 10px; font-size: 13.5px; display: flex; align-items: flex-start; gap: 12px; background-color: #fef2f2; color: #991b1b; border: 1px solid #fecaca;">
+        <i class="fas fa-exclamation-triangle" style="font-size: 18px; margin-top: 2px; color: #ef4444;"></i>
+        <div>
+            <strong>Info Halaman:</strong> Halaman ini adalah <strong>Daftar Hitam (Blacklist)</strong> khusus untuk evaluasi hukuman/pembinaan. Penghitungan murni HANYA didasarkan pada <strong>Total Poin Pelanggaran</strong> tanpa mempedulikan seberapa besar poin reward atau rapot santri tersebut. Peringkat 1 berarti santri tersebut adalah pelanggar terberat di periode yang difilter.
+        </div>
+    </div>
 
     <div class="card mb-4">
         <div class="card-body">

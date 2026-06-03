@@ -88,7 +88,7 @@ require_once __DIR__ . '/../layouts/header.php';
                     </div>
                     <div>
                         <h6 class="text-dark fw-bold mb-1">Keterlambatan Santri</h6>
-                        <p class="text-muted small mb-0">Laporan akumulasi poin dan denda keterlambatan</p>
+                        <p class="text-muted small mb-0">Laporan akumulasi poin dan keterlambatan</p>
                     </div>
                 </div>
             </a>
@@ -152,7 +152,7 @@ require_once __DIR__ . '/../layouts/header.php';
                     </div>
                     <div>
                         <h6 class="text-dark fw-bold mb-1">Pelanggaran Bahasa</h6>
-                        <p class="text-muted small mb-0">Rekapitulasi data denda kedisiplinan bahasa</p>
+                        <p class="text-muted small mb-0">Rekapitulasi data kedisiplinan bahasa</p>
                     </div>
                 </div>
             </a>

@@ -19,12 +19,14 @@ $sql_summary = "
     SELECT 
         COUNT(s.id) AS jumlah_santri,
         COALESCE(SUM(pel.total_pelanggaran), 0) / COUNT(s.id) AS avg_pelanggaran,
+        COALESCE(SUM(pel.kasus), 0) / COUNT(s.id) AS avg_kasus,
         COALESCE(SUM(rwd.total_reward), 0) / COUNT(s.id) AS avg_reward,
         COALESCE(SUM(rpt.avg_rapot), 0) / COUNT(s.id) AS avg_rapot,
+        COALESCE(SUM(s.poin_aktif), 0) / COUNT(s.id) AS avg_poin_aktif,
         COALESCE(kbs.total_kebersihan, 0) AS pelanggaran_kebersihan
     FROM santri s
     LEFT JOIN (
-        SELECT santri_id, SUM(poin) AS total_pelanggaran
+        SELECT santri_id, COUNT(p.id) AS kasus, SUM(poin) AS total_pelanggaran
         FROM pelanggaran p JOIN jenis_pelanggaran jp ON p.jenis_pelanggaran_id = jp.id
         WHERE tanggal BETWEEN ? AND ? GROUP BY santri_id
     ) pel ON s.id = pel.santri_id
@@ -61,13 +63,14 @@ $summary = mysqli_fetch_assoc(mysqli_stmt_get_result($stmt_sum));
 // 2. Ambil Data Santri Individu
 $sql_santri = "
     SELECT 
-        s.id, s.nama, s.kelas,
+        s.id, s.nama, s.kelas, s.poin_aktif,
         COALESCE(pel.total_pelanggaran, 0) AS total_pelanggaran,
+        COALESCE(pel.kasus, 0) AS kasus,
         COALESCE(rwd.total_reward, 0) AS total_reward,
         COALESCE(rpt.avg_rapot, 0) AS avg_rapot
     FROM santri s
     LEFT JOIN (
-        SELECT santri_id, SUM(poin) AS total_pelanggaran
+        SELECT santri_id, COUNT(p.id) AS kasus, SUM(poin) AS total_pelanggaran
         FROM pelanggaran p JOIN jenis_pelanggaran jp ON p.jenis_pelanggaran_id = jp.id
         WHERE tanggal BETWEEN ? AND ? GROUP BY santri_id
     ) pel ON s.id = pel.santri_id
@@ -88,7 +91,7 @@ $sql_santri = "
         GROUP BY santri_id
     ) rpt ON s.id = rpt.santri_id
     WHERE s.kamar = ?
-    ORDER BY total_pelanggaran ASC, avg_rapot DESC, total_reward DESC
+    ORDER BY ((COALESCE(rpt.avg_rapot, 0) * 20) + COALESCE(rwd.total_reward, 0) - (COALESCE(pel.total_pelanggaran, 0) * 2) - (COALESCE(pel.kasus, 0) * 5)) DESC
 ";
 $stmt_santri = mysqli_prepare($conn, $sql_santri);
 mysqli_stmt_bind_param($stmt_santri, "sssssss", $start_dt_time, $end_dt_time, $start_dt_time, $end_dt_time, $start_date, $end_date, $kamar);
@@ -165,24 +168,31 @@ body { background-color: #f8f9fa; font-family: 'Poppins', sans-serif; color: #33
             </div>
         </div>
         <div class="sum-card">
-            <div class="sum-icon" style="background: #fee2e2; color: #ef4444;"><i class="fas fa-exclamation-triangle"></i></div>
+            <div class="sum-icon" style="background: #d1fae5; color: #10b981;"><i class="fas fa-star"></i></div>
             <div class="sum-info">
-                <h4><?= round($summary['avg_pelanggaran'], 1) ?></h4>
-                <p>Avg Pelanggaran Individu</p>
+                <?php 
+                $avg_skor_teladan = ($summary['avg_rapot'] * 20) + $summary['avg_reward'] - ($summary['avg_pelanggaran'] * 2) - ($summary['avg_kasus'] * 5);
+                ?>
+                <h4><?= number_format($avg_skor_teladan, 1) ?></h4>
+                <p>Avg Skor Teladan</p>
             </div>
         </div>
         <div class="sum-card">
             <div class="sum-icon" style="background: #fef3c7; color: #d97706;"><i class="fas fa-broom"></i></div>
             <div class="sum-info">
                 <h4><?= $summary['pelanggaran_kebersihan'] ?></h4>
-                <p>Pelanggaran Kebersihan</p>
+                <p>Mukholif Kamar</p>
             </div>
         </div>
         <div class="sum-card">
-            <div class="sum-icon" style="background: #d1fae5; color: #10b981;"><i class="fas fa-trophy"></i></div>
+            <?php 
+            $avg_pa = (int)$summary['avg_poin_aktif'];
+            $display_pa = $avg_pa < 0 ? 0 : $avg_pa;
+            ?>
+            <div class="sum-icon" style="background: <?= $display_pa > 0 ? '#fee2e2' : '#d1fae5' ?>; color: <?= $display_pa > 0 ? '#ef4444' : '#10b981' ?>;"><i class="fas fa-balance-scale"></i></div>
             <div class="sum-info">
-                <h4>+<?= round($summary['avg_reward'], 1) ?></h4>
-                <p>Avg Reward</p>
+                <h4 class="<?= $display_pa > 0 ? 'text-danger' : 'text-success' ?>"><?= $display_pa ?></h4>
+                <p>Avg Poin Bersih</p>
             </div>
         </div>
     </div>
@@ -200,9 +210,8 @@ body { background-color: #f8f9fa; font-family: 'Poppins', sans-serif; color: #33
                         <th style="width: 50px; text-align: center;">No</th>
                         <th>Nama Santri</th>
                         <th>Kelas</th>
-                        <th style="text-align: center;">Pelanggaran</th>
-                        <th style="text-align: center;">Reward</th>
-                        <th style="text-align: center;">Rapot</th>
+                        <th style="text-align: center;">Poin Bersih</th>
+                        <th style="text-align: center;">Skor Teladan</th>
                         <th style="text-align: center;">Aksi</th>
                     </tr>
                 </thead>
@@ -216,28 +225,24 @@ body { background-color: #f8f9fa; font-family: 'Poppins', sans-serif; color: #33
                                 </td>
                                 <td><?= htmlspecialchars($s['kelas']) ?></td>
                                 
-                                <!-- Pelanggaran -->
+                                <!-- Poin Bersih -->
                                 <td style="text-align: center;">
-                                    <?php if ($s['total_pelanggaran'] > 0): ?>
-                                        <span class="pill pill-danger"><?= $s['total_pelanggaran'] ?></span>
+                                    <?php 
+                                    $pa = (int)$s['poin_aktif'];
+                                    $display_pa = $pa < 0 ? 0 : $pa;
+                                    if ($display_pa > 0): ?>
+                                        <span class="pill pill-danger"><?= $display_pa ?></span>
                                     <?php else: ?>
                                         <span class="pill pill-success">0</span>
                                     <?php endif; ?>
                                 </td>
                                 
-                                <!-- Reward -->
+                                <!-- Skor Teladan -->
                                 <td style="text-align: center;">
-                                    <?php if ($s['total_reward'] > 0): ?>
-                                        <span class="pill pill-success">+<?= $s['total_reward'] ?></span>
-                                    <?php else: ?>
-                                        <span class="pill pill-gray">0</span>
-                                    <?php endif; ?>
-                                </td>
-                                
-                                <!-- Rapot -->
-                                <td style="text-align: center;">
-                                    <?php if ($s['avg_rapot'] > 0): ?>
-                                        <span class="pill pill-primary"><i class="fas fa-star" style="font-size: 10px; margin-right: 3px;"></i><?= number_format($s['avg_rapot'], 1) ?></span>
+                                    <?php 
+                                    $st = ($s['avg_rapot'] * 20) + $s['total_reward'] - ($s['total_pelanggaran'] * 2) - ($s['kasus'] * 5);
+                                    if ($s['avg_rapot'] > 0): ?>
+                                        <span class="pill pill-primary" style="font-size: 15px; font-weight: 800;"><i class="fas fa-star text-warning" style="font-size: 11px; margin-right: 4px;"></i><?= number_format($st, 1) ?></span>
                                     <?php else: ?>
                                         <span class="pill pill-gray">-</span>
                                     <?php endif; ?>

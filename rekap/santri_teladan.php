@@ -32,6 +32,23 @@ $filter_kamar = $_GET['kamar'] ?? '';
 $filter_kelas = $_GET['kelas'] ?? ''; 
 $hide_violators = isset($_GET['hide_violators']) ? (int)$_GET['hide_violators'] : 1; // Default: Sembunyikan Pelanggar
 
+// 🔹 Optimisasi Query Rapot (Menghindari STR_TO_DATE pada kolom DB)
+$start_ts = strtotime($start_date);
+$end_ts = strtotime($end_date);
+$valid_months = [];
+$bulan_indo = ['1' => 'Januari', '2' => 'Februari', '3' => 'Maret', '4' => 'April', '5' => 'Mei', '6' => 'Juni', '7' => 'Juli', '8' => 'Agustus', '9' => 'September', '10' => 'Oktober', '11' => 'November', '12' => 'Desember'];
+// Set ke tanggal 1 agar iterasi bulan aman (tidak melompat jika bulan 31 hari)
+$current_ts = strtotime(date('Y-m-01', $start_ts));
+$end_ts_month = strtotime(date('Y-m-01', $end_ts));
+
+while ($current_ts <= $end_ts_month) {
+    $y = date('Y', $current_ts);
+    $m = date('n', $current_ts);
+    $valid_months[] = "(tahun = $y AND bulan = '{$bulan_indo[$m]}')";
+    $current_ts = strtotime("+1 month", $current_ts);
+}
+$where_rapot = empty($valid_months) ? "1=0" : implode(" OR ", $valid_months);
+
 // 🔹 QUERY UTAMA YANG DIOPTIMISASI
 // Jika hide_violators == 1, kita memotong perhitungan pelanggaran dengan langsung mengecualikan santri (NOT IN).
 // Ini menghemat pemrosesan rapot & reward subquery hingga 80%.
@@ -40,6 +57,7 @@ $sql = "
     SELECT 
         s.id, s.nama, s.kelas, s.kamar,
         " . ($hide_violators ? "0" : "COALESCE(pel.total_pelanggaran, 0)") . " AS total_pelanggaran,
+        " . ($hide_violators ? "0" : "COALESCE(pel.jml_pelanggaran, 0)") . " AS jml_pelanggaran,
         COALESCE(rwd.total_reward, 0) AS total_reward,
         COALESCE(rpt.avg_rapot, 0) AS avg_rapot
     FROM santri s
@@ -48,7 +66,7 @@ $sql = "
 if (!$hide_violators) {
     $sql .= "
     LEFT JOIN (
-        SELECT p.santri_id, SUM(jp.poin) AS total_pelanggaran
+        SELECT p.santri_id, COUNT(p.id) AS jml_pelanggaran, SUM(jp.poin) AS total_pelanggaran
         FROM pelanggaran p
         JOIN jenis_pelanggaran jp ON p.jenis_pelanggaran_id = jp.id
         WHERE p.tanggal BETWEEN ? AND ?
@@ -72,9 +90,7 @@ $sql .= "
                  AVG(tidur) + AVG(keterlambatan) + AVG(seragam) + AVG(makan) + AVG(arahan) + AVG(bahasa_arab) + 
                  AVG(mandi) + AVG(penampilan) + AVG(piket) + AVG(kerapihan_barang)) / 20) AS avg_rapot
         FROM rapot_kepengasuhan
-        WHERE STR_TO_DATE(CONCAT(tahun, '-', FIELD(bulan, 'Januari','Februari','Maret','April','Mei','Juni','Juli','Agustus','September','Oktober','November','Desember'), '-01'), '%Y-%c-%d') 
-              BETWEEN STR_TO_DATE(CONCAT(DATE_FORMAT(?, '%Y-%m'), '-01'), '%Y-%m-%d') 
-              AND LAST_DAY(?)
+        WHERE $where_rapot
         GROUP BY santri_id
     ) rpt ON s.id = rpt.santri_id
     WHERE 1=1
@@ -93,10 +109,6 @@ if (!$hide_violators) {
 
 // Param untuk Reward
 $params[] = $start_dt_time; $params[] = $end_dt_time;
-$types .= "ss";
-
-// Param untuk Rapot
-$params[] = $start_date; $params[] = $end_date;
 $types .= "ss";
 
 // Filter tambahan
@@ -125,36 +137,29 @@ mysqli_stmt_bind_param($stmt, $types, ...$params);
 mysqli_stmt_execute($stmt);
 $result = mysqli_stmt_get_result($stmt);
 
-// Logika Pemeringkatan dengan Bobot & Normalisasi
-$max_rapot = 0;
-$max_reward = 0;
-$max_pelanggaran = 0;
+// Logika Pemeringkatan Absolut
 $santri_data = [];
 
 while ($row = mysqli_fetch_assoc($result)) {
-    $pelanggaran = (int)$row['total_pelanggaran'];
-    $reward = (int)$row['total_reward'];
-    $rapot = (float)$row['avg_rapot'];
-
-    if ($pelanggaran > $max_pelanggaran) $max_pelanggaran = $pelanggaran;
-    if ($reward > $max_reward) $max_reward = $reward;
-    if ($rapot > $max_rapot) $max_rapot = $rapot;
-
     $santri_data[] = $row;
 }
 
-// Hitung skor teladan
+// Hitung skor teladan (Formula Absolut agar nilai konsisten)
 foreach ($santri_data as &$s) {
-    $pelanggaran = (int)$s['total_pelanggaran'];
+    $pelanggaran_poin = (int)$s['total_pelanggaran'];
+    $pelanggaran_jml = (int)$s['jml_pelanggaran'];
     $reward = (int)$s['total_reward'];
     $rapot = (float)$s['avg_rapot'];
 
-    $skor_rapot = ($max_rapot > 0) ? ($rapot / $max_rapot) * 100 : (($rapot == 0) ? 0 : 100);
-    $skor_reward = ($max_reward > 0) ? ($reward / $max_reward) * 100 : (($reward == 0) ? 0 : 100);
-    $skor_pelanggaran = ($max_pelanggaran > 0) ? 100 - (($pelanggaran / $max_pelanggaran) * 100) : (($pelanggaran == 0) ? 100 : 0);
-
-    // Bobot: 50% Rapot, 30% Reward, 20% Pelanggaran
-    $s['skor_teladan'] = ($skor_rapot * 0.50) + ($skor_reward * 0.30) + ($skor_pelanggaran * 0.20);
+    // 1. Rapot dikonversi ke skala 100 (karena rapot skala 1-5, dikali 20)
+    $skor_rapot = $rapot * 20;
+    
+    // 2. Pinalti Pelanggaran (Sangat memberatkan pelanggar)
+    // Setiap 1 poin pelanggaran mengurangi 2 skor. Setiap 1 kasus mengurangi 5 skor.
+    $pinalti = ($pelanggaran_poin * 2) + ($pelanggaran_jml * 5);
+    
+    // Skor Akhir: Rapot + Reward - Pinalti
+    $s['skor_teladan'] = $skor_rapot + $reward - $pinalti;
 }
 unset($s);
 
@@ -191,7 +196,6 @@ body {
     max-width: 1240px;
     margin: 20px auto;
     padding: 0 15px;
-    animation: fadeIn 0.4s ease-out;
 }
 
 /* --- Header Halaman --- */
@@ -338,9 +342,6 @@ body {
     overflow: hidden;
     transition: transform 0.25s ease, box-shadow 0.25s ease;
     border: 1px solid #f1f5f9;
-    opacity: 0;
-    transform: translateY(15px);
-    animation: cardFadeIn 0.4s ease-out forwards;
 }
 
 .santri-card:hover {
@@ -499,28 +500,17 @@ body {
     font-weight: 500;
 }
 
-/* --- Animasi --- */
-@keyframes fadeIn {
-    from { opacity: 0; transform: translateY(-8px); }
-    to { opacity: 1; transform: translateY(0); }
-}
-
-@keyframes cardFadeIn {
-    to {
-        opacity: 1;
-        transform: translateY(0);
-    }
-}
+/* CSS end */
 </style>
 
 <div class="container">
     <div class="page-header">
         <h2>Peringkat Santri Teladan</h2>
-        <p class="subtitle">Peringkat dihitung berdasarkan bobot: <strong>50% Rapot Kepengasuhan</strong>, <strong>30% Poin Reward</strong>, dan <strong>20% Poin Pelanggaran</strong>.</p>
+        <p class="subtitle">Peringkat dihitung dari: <strong>Nilai Rapot & Reward</strong> dikurangi <strong>Pinalti Pelanggaran</strong> secara absolut.</p>
         <div style="margin-top: 15px; padding: 12px 18px; border-radius: 10px; font-size: 13.5px; display: flex; align-items: flex-start; gap: 12px; background-color: #eff6ff; color: #1e3a8a; border: 1px solid #bfdbfe;">
             <i class="fas fa-info-circle" style="font-size: 18px; margin-top: 2px;"></i>
             <div>
-                <strong>Info Sistem Skor:</strong> Nilai dikonversi ke skala 0-100 berdasarkan nilai tertinggi pada periode terpilih, lalu dikalikan dengan bobot masing-masing untuk menghasilkan <strong>Skor Teladan</strong>. Angka poin pada kartu di bawah adalah poin asli santri.
+                <strong>Info Penilaian:</strong> Skor Keteladanan dihitung dari <strong>Nilai Rapot</strong> (skala 100) ditambah <strong>Total Poin Reward</strong>. Hati-hati, pelanggaran akan sangat mengurangi nilai! Setiap 1 poin pelanggaran memotong 2 skor, dan setiap 1 kali kasus pelanggaran memotong 5 skor. Sistem ini memastikan santri berprestasi tanpa pelanggaran akan selalu berada di puncak.
             </div>
         </div>
     </div>
@@ -599,8 +589,9 @@ body {
             </div>";
         } else {
             $no = 1;
-            foreach ($santri_data as $row) {
-                $animation_delay = min($no * 0.05, 1.5); // Cap delay at 1.5s
+            // Batasi render maksimal 100 kartu teratas untuk menghemat RAM browser
+            $limit_santri = array_slice($santri_data, 0, 100);
+            foreach ($limit_santri as $row) {
                 
                 $pelanggaran = (int)$row['total_pelanggaran'];
                 $reward = (int)$row['total_reward'];
@@ -623,7 +614,7 @@ body {
                 $str_rapot = ($rapot > 0) ? number_format($rapot, 1, '.', '') : '-';
                 $str_reward = ($reward > 0) ? '+' . $reward : '0';
         ?>
-                <div class="<?= $card_class ?>" style="animation-delay: <?= $animation_delay ?>s;">
+                <div class="<?= $card_class ?>">
                     <div class="card-rank <?= $rank_class ?>"><?= $no ?></div>
                     
                     <div class="card-content">
@@ -672,6 +663,13 @@ body {
         mysqli_stmt_close($stmt);
         ?>
         </div>
+
+        <?php if (count($santri_data) > 100): ?>
+        <div style="text-align: center; margin-top: 30px; color: #64748b; font-size: 14px;">
+            <i class="fas fa-bolt text-warning me-1"></i> Menampilkan <strong>Top 100</strong> dari total <?= count($santri_data) ?> santri untuk performa dan kecepatan render terbaik.
+        </div>
+        <?php endif; ?>
+
 <?php 
 if ($is_ajax) {
     $html = ob_get_clean();
@@ -702,14 +700,6 @@ document.addEventListener('DOMContentLoaded', function() {
             gridContainer.innerHTML = html;
             loadingOverlay.style.display = 'none';
             gridContainer.style.display = 'block';
-            
-            // Re-trigger animations
-            const cards = gridContainer.querySelectorAll('.santri-card');
-            cards.forEach(card => {
-                card.style.animation = 'none';
-                card.offsetHeight; /* trigger reflow */
-                card.style.animation = null; 
-            });
             
             // Update URL without reloading
             window.history.pushState({}, '', url);

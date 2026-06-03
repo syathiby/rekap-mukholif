@@ -5,8 +5,12 @@ require_once __DIR__ . '/../bootstrap/init.php';
 // 2. Jalankan 'SATPAM' buat ngejaga halaman
 guard('rekap_detail_santri');
 
+$is_ajax = isset($_SERVER['HTTP_X_REQUESTED_WITH']) && strtolower($_SERVER['HTTP_X_REQUESTED_WITH']) == 'xmlhttprequest';
+
 // 3. Kalau lolos, baru panggil Tampilan
-require_once __DIR__ . '/../layouts/header.php';
+if (!$is_ajax) {
+    require_once __DIR__ . '/../layouts/header.php';
+}
 
 // --- LOGIKA PHP ---
 
@@ -19,6 +23,7 @@ $filter_kamar = $_GET['kamar'] ?? null;
 $filter_kelas = $_GET['kelas'] ?? null;
 $start_date = $_GET['start_date'] ?? $periode_aktif;
 $end_date = $_GET['end_date'] ?? date("Y-m-d");
+$sort_order = $_GET['sort_order'] ?? 'terbaik';
 
 // Ambil daftar Kamar (statis)
 $kamars_result = mysqli_query($conn, "SELECT DISTINCT kamar FROM santri WHERE kamar IS NOT NULL AND kamar != '' ORDER BY CAST(REGEXP_REPLACE(kamar, '[^0-9]', '') AS UNSIGNED) ASC, REGEXP_REPLACE(kamar, '[0-9]', '') ASC");
@@ -85,12 +90,26 @@ if ($filter_kelas) {
 // Filter untuk memastikan hanya santri dengan aktivitas (pelanggaran/reward) di periode ini yang muncul
 $sql .= " AND (sub_p.total_poin_pelanggaran > 0 OR sub_r.total_poin_reward > 0)";
 
-// Urutkan berdasarkan total aktivitas terbesar
-$sql .= "
-ORDER BY
-    (COALESCE(sub_p.total_poin_pelanggaran, 0) + COALESCE(sub_r.total_poin_reward, 0)) DESC,
-    s.nama ASC
-";
+// Urutkan berdasarkan filter pilihan pengguna
+if ($sort_order === 'terburuk') {
+    // Terburuk: Poin aktif tertinggi (paling banyak pelanggaran)
+    $sql .= "
+    ORDER BY
+        s.poin_aktif DESC,
+        COALESCE(sub_p.total_pelanggaran_periode, 0) DESC,
+        s.nama ASC
+    ";
+} else {
+    // Terbaik: Poin aktif terkecil (bisa minus karena reward)
+    $sql .= "
+    ORDER BY
+        s.poin_aktif ASC,
+        COALESCE(sub_p.total_pelanggaran_periode, 0) ASC,
+        s.nama ASC
+    ";
+}
+// Batasi 200 data untuk menjaga performa
+$sql .= " LIMIT 200";
 
 $stmt = $conn->prepare($sql);
 if ($stmt === false) {
@@ -126,8 +145,16 @@ $query = $stmt->get_result();
     .poin-aktif-info { display: block; font-size: 0.75rem; color: #ef4444; font-weight: 500; margin-top: 2px; }
 </style>
 
+<?php if (!$is_ajax): ?>
 <div class="container py-4">
-    <h1 class="page-title mb-4"><i class="fas fa-list-alt me-3"></i>Rekapitulasi Umum (Pelanggaran & Reward)</h1>
+    <h1 class="page-title mb-2"><i class="fas fa-list-alt me-3"></i>Analisis Karakter Santri</h1>
+
+    <div style="margin-bottom: 25px; padding: 12px 18px; border-radius: 10px; font-size: 13.5px; display: flex; align-items: flex-start; gap: 12px; background-color: #f8fafc; color: #334155; border: 1px solid #e2e8f0;">
+        <i class="fas fa-info-circle" style="font-size: 18px; margin-top: 2px; color: #64748b;"></i>
+        <div>
+            <strong>Info Halaman:</strong> Halaman ini adalah <strong>Neraca Kedisiplinan</strong> murni (Reward vs Pelanggaran). Berbeda dengan Santri Teladan, halaman ini <strong>TIDAK mempertimbangkan Nilai Rapot</strong>. Peringkat disusun dari Poin Bersih (Reward dikurangi Pelanggaran) berdasarkan filter Urutan Peringkat pilihan Anda.
+        </div>
+    </div>
 
     <div class="card mb-4">
         <div class="card-body">
@@ -165,11 +192,29 @@ $query = $stmt->get_result();
                             <?php endwhile; ?>
                         </select>
                     </div>
+
+                    <div class="col-lg-3 col-md-6">
+                        <label for="sort_order" class="form-label">Urutan Peringkat</label>
+                        <select name="sort_order" id="sort_order" class="form-select bg-light fw-bold text-primary border-primary">
+                            <option value="terbaik" <?= ($sort_order == 'terbaik') ? 'selected' : '' ?>>🏆 Terbaik (Bersih dari Kasus)</option>
+                            <option value="terburuk" <?= ($sort_order == 'terburuk') ? 'selected' : '' ?>>🚨 Terburuk (Banyak Pelanggaran)</option>
+                        </select>
+                    </div>
                 </div>
             </form>
         </div>
     </div>
 
+    <!-- Overlay Loader (hidden by default) -->
+    <div id="loadingOverlay" style="display:none; text-align:center; padding: 40px;">
+        <i class="fas fa-circle-notch fa-spin fa-3x" style="color:#4f46e5;"></i>
+        <p class="mt-3 text-muted">Memuat data...</p>
+    </div>
+
+    <div id="gridContainer">
+<?php endif; // End if (!$is_ajax) for top parts ?>
+
+<?php if ($is_ajax) ob_start(); ?>
     <div class="row g-3">
         <?php if (mysqli_num_rows($query) === 0) : ?>
             <div class="col-12">
@@ -192,7 +237,12 @@ $query = $stmt->get_result();
                                     <div class="text-muted small">
                                         Kls: <?= htmlspecialchars($row['kelas']) ?> &bull; Kmr: <?= htmlspecialchars($row['kamar']) ?>
                                     </div>
-                                    <div class="poin-aktif-info mt-1" style="font-size: 0.7rem;">Poin Aktif: <?= $row['poin_aktif'] ?></div>
+                                    <?php 
+                                    $poin_aktif_val = (int)$row['poin_aktif'];
+                                    $display_poin = $poin_aktif_val < 0 ? 0 : $poin_aktif_val;
+                                    $pb_class = $display_poin > 0 ? 'text-danger' : 'text-success';
+                                    ?>
+                                    <div class="mt-1 <?= $pb_class ?>" style="font-size: 0.75rem; font-weight: 600;">Poin Bersih: <?= $display_poin ?></div>
                                 </div>
                             </div>
                             
@@ -226,19 +276,61 @@ $query = $stmt->get_result();
             <?php $no++; endwhile; ?>
         <?php endif; ?>
     </div>
+<?php 
+if ($is_ajax) {
+    echo ob_get_clean();
+    exit;
+} 
+?>
+    </div>
 </div>
 
 <script>
     document.addEventListener('DOMContentLoaded', function() {
         const filterForm = document.getElementById('filterForm');
         const filterInputs = filterForm.querySelectorAll('select, input[type="date"]');
+        const gridContainer = document.getElementById('gridContainer');
+        const loadingOverlay = document.getElementById('loadingOverlay');
+
+        function fetchGrid(url) {
+            gridContainer.style.display = 'none';
+            loadingOverlay.style.display = 'block';
+
+            fetch(url, {
+                headers: { 'X-Requested-With': 'XMLHttpRequest' }
+            })
+            .then(response => response.text())
+            .then(html => {
+                gridContainer.innerHTML = html;
+                loadingOverlay.style.display = 'none';
+                gridContainer.style.display = 'block';
+                window.history.pushState({}, '', url);
+            })
+            .catch(error => {
+                console.error('Error fetching data:', error);
+                loadingOverlay.innerHTML = '<div class="alert alert-danger">Gagal memuat data.</div>';
+            });
+        }
 
         filterInputs.forEach(function(input) {
             input.addEventListener('change', function() {
-                filterForm.submit();
+                const formData = new FormData(filterForm);
+                const params = new URLSearchParams(formData);
+                fetchGrid('?' + params.toString());
             });
+        });
+
+        filterForm.addEventListener('submit', function(e) {
+            e.preventDefault();
+            const formData = new FormData(filterForm);
+            const params = new URLSearchParams(formData);
+            fetchGrid('?' + params.toString());
         });
     });
 </script>
 
-<?php require_once __DIR__ . '/../layouts/footer.php'; ?>
+<?php 
+if (!$is_ajax) {
+    require_once __DIR__ . '/../layouts/footer.php'; 
+}
+?>

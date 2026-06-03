@@ -208,6 +208,21 @@ if ($total_rapot > 0) {
     }
 }
 
+// ─── 11.5. Hitung Skor Sinkronisasi (Untuk Info Banner) ──────────────────────
+$total_kasus = 0;
+foreach ($pelanggaran_kategori as $pk) {
+    $total_kasus += $pk['jumlah'];
+}
+$rata_rapot = 0;
+if ($total_rapot > 0) {
+    $rata_rapot = array_sum($radar_values) / 20;
+}
+$skor_teladan = ($rata_rapot * 20) + $total_poin_reward - ($total_poin_pelanggaran * 2) - ($total_kasus * 5);
+$skor_teladan_str = ($total_rapot > 0) ? number_format($skor_teladan, 1, '.', '') : '-';
+
+$poin_aktif_val = (int)$santri['poin_aktif'];
+$poin_bersih = $poin_aktif_val < 0 ? 0 : $poin_aktif_val;
+
 // ─── 12. JSON encode (hanya sekali) ──────────────────────────────────────────
 $json_labels_p      = json_encode($labels);
 $json_data_p        = json_encode($data_p);
@@ -341,27 +356,45 @@ require_once __DIR__ . '/../layouts/header.php';
         <p class="lead mb-0 <?= $karakter_class ?> fw-semibold"><?= $rasio ?></p>
     </div>
 
+    <!-- Info banner Sinkronisasi -->
+    <div style="margin-bottom: 25px; padding: 12px 18px; border-radius: 10px; font-size: 13.5px; display: flex; align-items: flex-start; gap: 12px; background-color: #eff6ff; color: #1e3a8a; border: 1px solid #bfdbfe;">
+        <i class="fas fa-link" style="font-size: 18px; margin-top: 2px;"></i>
+        <div>
+            <strong>Info Sinkronisasi:</strong> Halaman detail ini menyajikan data santri yang saling terhubung dengan ketiga halaman rekap utama. <strong>Skor Teladan</strong> untuk halaman Santri Teladan, <strong>Poin Bersih</strong> untuk halaman Rekap Karakter, dan poin <strong>Pelanggaran</strong> menjadi acuan di Daftar Hitam.
+        </div>
+    </div>
+
     <!-- Info cards poin -->
     <div class="row g-3 mb-4">
-        <div class="col-md-4">
-            <div class="info-card">
-                <div class="text-muted text-uppercase fw-bold" style="letter-spacing:1px;font-size:.8rem">Poin Aktif</div>
-                <div class="big-number text-dark"><?= max(0, (int)$santri['poin_aktif']) ?></div>
-                <div class="text-muted small mt-2">Sisa poin saat ini</div>
+        <div class="col-6 col-lg-3">
+            <div class="info-card" style="border-top-color:#3b82f6; padding: 1.1rem;">
+                <div class="text-muted text-uppercase fw-bold" style="letter-spacing:0.5px;font-size:.7rem">Skor Teladan</div>
+                <div class="big-number text-primary mt-1" style="font-size: 2rem;"><?= $skor_teladan_str ?></div>
+                <div class="text-muted small mt-1" style="font-size: 0.7rem; line-height: 1.1;">Acuan: Santri Teladan</div>
             </div>
         </div>
-        <div class="col-md-4">
-            <div class="info-card danger">
-                <div class="text-muted text-uppercase fw-bold" style="letter-spacing:1px;font-size:.8rem">Total Pelanggaran</div>
-                <div class="big-number text-danger"><?= $total_poin_pelanggaran ?></div>
-                <div class="text-muted small mt-2">Poin dalam periode difilter</div>
+        <div class="col-6 col-lg-3">
+            <div class="info-card" style="border-top-color:#0ea5e9; padding: 1.1rem;">
+                <div class="text-muted text-uppercase fw-bold" style="letter-spacing:0.5px;font-size:.7rem">Poin Bersih</div>
+                <div class="big-number mt-1 <?= $poin_bersih > 0 ? 'text-danger' : 'text-success' ?>" style="font-size: 2rem;"><?= $poin_bersih ?></div>
+                <div class="text-muted small mt-1" style="font-size: 0.7rem; line-height: 1.1;">Acuan: Rekap Karakter</div>
             </div>
         </div>
-        <div class="col-md-4">
-            <div class="info-card success">
-                <div class="text-muted text-uppercase fw-bold" style="letter-spacing:1px;font-size:.8rem">Total Reward</div>
-                <div class="big-number text-success">+<?= $total_poin_reward ?></div>
-                <div class="text-muted small mt-2">Poin dalam periode difilter</div>
+        <div class="col-6 col-lg-3">
+            <div class="info-card danger" style="padding: 1.1rem;">
+                <div class="text-muted text-uppercase fw-bold" style="letter-spacing:0.5px;font-size:.7rem">Pelanggaran</div>
+                <div class="big-number text-danger mt-1" style="font-size: 2rem;">
+                    <?= $total_poin_pelanggaran ?> 
+                    <span style="font-size: 0.9rem; font-weight: 500; color: #94a3b8;">(<?= $total_kasus ?>x)</span>
+                </div>
+                <div class="text-muted small mt-1" style="font-size: 0.7rem; line-height: 1.1;">Acuan: Daftar Hitam</div>
+            </div>
+        </div>
+        <div class="col-6 col-lg-3">
+            <div class="info-card success" style="padding: 1.1rem;">
+                <div class="text-muted text-uppercase fw-bold" style="letter-spacing:0.5px;font-size:.7rem">Total Reward</div>
+                <div class="big-number text-success mt-1" style="font-size: 2rem;">+<?= $total_poin_reward ?></div>
+                <div class="text-muted small mt-1" style="font-size: 0.7rem; line-height: 1.1;">Apresiasi periode ini</div>
             </div>
         </div>
     </div>

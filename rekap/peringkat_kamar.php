@@ -32,6 +32,7 @@ while ($row = mysqli_fetch_assoc($q_master)) {
         'kamar' => $row['kamar'],
         'jumlah_santri' => (int)$row['jumlah_santri'],
         'total_pelanggaran' => 0,
+        'total_kasus' => 0,
         'total_reward' => 0,
         'total_rapot' => 0,
         'pelanggaran_kebersihan' => 0
@@ -42,12 +43,15 @@ $start_dt_time = $start_date . ' 00:00:00';
 $end_dt_time   = $end_date . ' 23:59:59';
 
 // 🔹 Kueri 2: Total Pelanggaran Individu
-$stmt_pel = mysqli_prepare($conn, "SELECT s.kamar, SUM(jp.poin) AS total FROM pelanggaran p JOIN santri s ON p.santri_id = s.id JOIN jenis_pelanggaran jp ON p.jenis_pelanggaran_id = jp.id WHERE p.tanggal BETWEEN ? AND ? GROUP BY s.kamar");
+$stmt_pel = mysqli_prepare($conn, "SELECT s.kamar, COUNT(p.id) AS total_kasus, SUM(jp.poin) AS total_poin FROM pelanggaran p JOIN santri s ON p.santri_id = s.id JOIN jenis_pelanggaran jp ON p.jenis_pelanggaran_id = jp.id WHERE p.tanggal BETWEEN ? AND ? GROUP BY s.kamar");
 mysqli_stmt_bind_param($stmt_pel, "ss", $start_dt_time, $end_dt_time);
 mysqli_stmt_execute($stmt_pel);
 $res_pel = mysqli_stmt_get_result($stmt_pel);
 while ($r = mysqli_fetch_assoc($res_pel)) {
-    if (isset($raw_data[$r['kamar']])) $raw_data[$r['kamar']]['total_pelanggaran'] = (int)$r['total'];
+    if (isset($raw_data[$r['kamar']])) {
+        $raw_data[$r['kamar']]['total_pelanggaran'] = (int)$r['total_poin'];
+        $raw_data[$r['kamar']]['total_kasus'] = (int)$r['total_kasus'];
+    }
 }
 
 // 🔹 Kueri 3: Total Reward Individu
@@ -68,7 +72,7 @@ while ($r = mysqli_fetch_assoc($res_rpt)) {
     if (isset($raw_data[$r['kamar']])) $raw_data[$r['kamar']]['total_rapot'] = (float)$r['total'];
 }
 
-// 🔹 Kueri 5: Total Denda Kebersihan Kamar
+// 🔹 Kueri 5: Total Mukholif Kamar
 $stmt_kbs = mysqli_prepare($conn, "SELECT kamar, COUNT(*) AS total FROM pelanggaran_kebersihan WHERE DATE(tanggal) BETWEEN ? AND ? GROUP BY kamar");
 mysqli_stmt_bind_param($stmt_kbs, "ss", $start_date, $end_date);
 mysqli_stmt_execute($stmt_kbs);
@@ -78,49 +82,43 @@ while ($r = mysqli_fetch_assoc($res_kbs)) {
 }
 
 // 🔹 Merakit dan Menghitung Agregat Rata-rata per Kamar
-$max_rapot = 0;
-$max_reward = 0;
-$max_pelanggaran = 0;
-$max_kebersihan = 0;
 $kamar_data = [];
 
 foreach ($raw_data as $d) {
     if ($d['jumlah_santri'] == 0) continue;
 
     $avg_pel = $d['total_pelanggaran'] / $d['jumlah_santri'];
+    $avg_kasus = $d['total_kasus'] / $d['jumlah_santri'];
     $avg_rwd = $d['total_reward'] / $d['jumlah_santri'];
     $avg_rpt = $d['total_rapot'] / $d['jumlah_santri'];
     $kbs = $d['pelanggaran_kebersihan'];
-
-    if ($avg_pel > $max_pelanggaran) $max_pelanggaran = $avg_pel;
-    if ($avg_rwd > $max_reward) $max_reward = $avg_rwd;
-    if ($avg_rpt > $max_rapot) $max_rapot = $avg_rpt;
-    if ($kbs > $max_kebersihan) $max_kebersihan = $kbs;
 
     $kamar_data[] = [
         'kamar' => $d['kamar'],
         'jumlah_santri' => $d['jumlah_santri'],
         'avg_pelanggaran' => $avg_pel,
+        'avg_kasus' => $avg_kasus,
         'avg_reward' => $avg_rwd,
         'avg_rapot' => $avg_rpt,
         'pelanggaran_kebersihan' => $kbs
     ];
 }
 
-// Hitung skor teladan per kamar
+// Hitung skor kamar berdasarkan formula absolut (skor teladan rata-rata kamar)
 foreach ($kamar_data as &$k) {
     $pelanggaran = (float)$k['avg_pelanggaran'];
+    $kasus = (float)$k['avg_kasus'];
     $reward = (float)$k['avg_reward'];
     $rapot = (float)$k['avg_rapot'];
     $kebersihan = (int)$k['pelanggaran_kebersihan'];
 
-    $skor_rapot = ($max_rapot > 0) ? ($rapot / $max_rapot) * 100 : (($rapot == 0) ? 0 : 100);
-    $skor_reward = ($max_reward > 0) ? ($reward / $max_reward) * 100 : (($reward == 0) ? 0 : 100);
-    $skor_pelanggaran = ($max_pelanggaran > 0) ? 100 - (($pelanggaran / $max_pelanggaran) * 100) : (($pelanggaran == 0) ? 100 : 0);
-    $skor_kebersihan = ($max_kebersihan > 0) ? 100 - (($kebersihan / $max_kebersihan) * 100) : (($kebersihan == 0) ? 100 : 0);
-
-    // Bobot: 40% Rapot, 25% Reward, 15% Pel Individu, 20% Pel Kebersihan
-    $k['skor_kamar'] = ($skor_rapot * 0.40) + ($skor_reward * 0.25) + ($skor_pelanggaran * 0.15) + ($skor_kebersihan * 0.20);
+    // 1. Rata-rata Skor Teladan Santri
+    $avg_skor_teladan = ($rapot * 20) + $reward - ($pelanggaran * 2) - ($kasus * 5);
+    
+    // 2. Skor Kamar (Avg Skor Teladan dikurangi pinalti kotor kamar)
+    // Asumsi: Setiap mukholif kebersihan kamar memotong 10 poin
+    $k['skor_kamar'] = $avg_skor_teladan - ($kebersihan * 10);
+    $k['avg_skor_teladan'] = $avg_skor_teladan;
 }
 unset($k);
 
@@ -194,21 +192,15 @@ body { background-color: #f8f9fa; font-family: 'Poppins', sans-serif; color: #33
                 </div>
                 <strong style="color: #1e293b; font-size: 15px;">Formula Perhitungan Peringkat</strong>
             </div>
-            <p class="mb-3 ms-1" style="font-size: 13.5px; color: #64748b; line-height: 1.5;">Setiap kamar akan diberikan skor dari 0-100 berdasarkan performa rata-rata santri di dalamnya dengan pembobotan berikut:</p>
+            <p class="mb-3 ms-1" style="font-size: 13.5px; color: #64748b; line-height: 1.5;">Peringkat kamar diukur secara absolut, selaras dengan Formula Skor Keteladanan, sehingga terukur secara pasti performa aslinya.</p>
             
             <div class="d-flex flex-wrap align-items-center justify-content-between gap-3 ms-1">
                 <div class="d-flex flex-wrap gap-2">
                     <div style="background-color: #eff6ff; color: #1e40af; border: 1px solid #bfdbfe; border-radius: 8px; padding: 6px 12px; font-size: 12.5px; font-weight: 600;">
-                        <i class="fas fa-star me-1" style="color: #3b82f6;"></i> 40% Rata-rata Rapot
-                    </div>
-                    <div style="background-color: #ecfdf5; color: #065f46; border: 1px solid #a7f3d0; border-radius: 8px; padding: 6px 12px; font-size: 12.5px; font-weight: 600;">
-                        <i class="fas fa-trophy me-1" style="color: #10b981;"></i> 25% Poin Reward
-                    </div>
-                    <div style="background-color: #fef2f2; color: #991b1b; border: 1px solid #fecaca; border-radius: 8px; padding: 6px 12px; font-size: 12.5px; font-weight: 600;">
-                        <i class="fas fa-user-shield me-1" style="color: #ef4444;"></i> 15% Kedisiplinan Individu
+                        <i class="fas fa-star me-1" style="color: #3b82f6;"></i> Rata-rata Skor Teladan Santri
                     </div>
                     <div style="background-color: #fffbeb; color: #92400e; border: 1px solid #fde68a; border-radius: 8px; padding: 6px 12px; font-size: 12.5px; font-weight: 600;">
-                        <i class="fas fa-broom me-1" style="color: #f59e0b;"></i> 20% Kebersihan Kamar
+                        <i class="fas fa-minus-circle me-1" style="color: #f59e0b;"></i> Dikurangi Mukholif Kamar (-10)
                     </div>
                 </div>
                 
@@ -300,9 +292,9 @@ body { background-color: #f8f9fa; font-family: 'Poppins', sans-serif; color: #33
                                 <span class="stat-value text-primary"><i class="fas fa-star" style="font-size: 11px;"></i> <?= $rapot ?></span>
                                 <span class="stat-label">Avg Rapot</span>
                             </div>
-                            <div class="stat-item" title="Total denda kebersihan kamar">
+                            <div class="stat-item" title="Total mukholif kebersihan kamar">
                                 <span class="stat-value text-warning"><?= $kebersihan ?> x</span>
-                                <span class="stat-label">Denda Kotor</span>
+                                <span class="stat-label">Mukholif Kamar</span>
                             </div>
                         </div>
 
@@ -390,34 +382,28 @@ document.addEventListener('DOMContentLoaded', function() {
       </div>
       <div class="modal-body px-4 py-4">
         <p class="text-muted" style="font-size: 14.5px; line-height: 1.6;">
-            Halo! Biar adil, penilaian peringkat kamar ini dihitung menggunakan <strong>sistem rata-rata</strong>. Jadi, kamar yang penghuninya banyak ataupun sedikit punya kesempatan menang yang sama, kok!
+            Halo! Agar sistem penilaian 100% selaras dengan penobatan Santri Teladan, skor kamar dinilai secara adil berdasarkan akumulasi asli penghuninya, dengan formula absolut yang seragam.
         </p>
 
         <h6 class="fw-bold mt-4 mb-3 text-dark"><i class="fas fa-layer-group text-primary me-2"></i>Bagaimana Cara Hitungnya?</h6>
         
         <div class="card border-0 bg-light rounded-4 p-3 mb-3 shadow-sm">
-            <h6 class="fw-bold text-primary mb-2">1. Cari Rata-rata Dulu</h6>
-            <p class="text-muted small mb-0">Seluruh poin (Rapot, Reward, dan Pelanggaran) milik santri di satu kamar akan dijumlahkan, lalu <strong>dibagi dengan jumlah santri</strong> di kamar tersebut.</p>
+            <h6 class="fw-bold text-primary mb-2">1. Skor Keteladanan Absolut</h6>
+            <p class="text-muted small mb-0">Rata-rata Skor Teladan seluruh santri dihitung menggunakan formula aslinya: <strong>Nilai Rapot x 20 + Total Reward - (Poin Pelanggaran x 2) - (Kasus x 5)</strong>.</p>
         </div>
 
         <div class="card border-0 bg-light rounded-4 p-3 mb-3 shadow-sm">
-            <h6 class="fw-bold text-success mb-2">2. Diubah Jadi Nilai 0 - 100</h6>
+            <h6 class="fw-bold text-success mb-2">2. Digabung Menjadi Rata-rata Kamar</h6>
             <p class="text-muted small mb-0">
-                Nilai rata-rata tadi diubah jadi nilai rapot (skala 0 sampai 100) biar gampang dihitung: <br><br>
-                - <strong class="text-success">Hal Baik (Rapot & Reward):</strong> Makin besar poin aslinya, makin bagus! Nilainya akan mendekati 100.<br>
-                - <strong class="text-danger">Hal Buruk (Pelanggaran & Kotor):</strong> Ini kebalikannya. Makin banyak melanggar, nilainya makin jeblok mendekati 0. Kalau kamarnya bersih dan santrinya patuh (nol pelanggaran), mereka langsung dapat nilai sempurna 100!
+                Lalu, skor keteladanan semua penghuni dijumlahkan, dan <strong>dibagi dengan jumlah santri</strong> di kamar tersebut, sehingga mendapat skor rata-rata kamar yang adil (tidak masalah besar kecilnya kamar).
             </p>
         </div>
 
         <div class="card border-0 bg-light rounded-4 p-3 shadow-sm">
-            <h6 class="fw-bold text-warning mb-2" style="color:#d97706!important;">3. Gabungkan Menjadi Skor Akhir</h6>
-            <p class="text-muted small mb-0">Nah, keempat nilai tadi digabung sesuai porsi kepentingannya buat nentuin <strong>Skor Final Kamar</strong>:</p>
-            <ul class="list-unstyled text-muted small mt-2 mb-0 ms-2">
-                <li class="mb-1"><i class="fas fa-check-circle text-primary me-2"></i>Rata-rata Rapot Santri ➔ <strong>40%</strong></li>
-                <li class="mb-1"><i class="fas fa-check-circle text-success me-2"></i>Prestasi/Reward ➔ <strong>25%</strong></li>
-                <li class="mb-1"><i class="fas fa-check-circle text-warning me-2"></i>Kebersihan Kamar ➔ <strong>20%</strong></li>
-                <li class="mb-1"><i class="fas fa-check-circle text-danger me-2"></i>Pelanggaran Individu ➔ <strong>15%</strong></li>
-            </ul>
+            <h6 class="fw-bold text-warning mb-2" style="color:#d97706!important;">3. Pinalti Mukholif Kamar</h6>
+            <p class="text-muted small mb-0">
+                Dan yang terakhir, Rata-rata Skor Kamar akan <strong>dikurangi 10 skor</strong> untuk setiap kali kamar tersebut Mukholif kamar.
+            </p>
         </div>
         
         <div class="alert alert-info border-0 rounded-4 mt-4 mb-0 shadow-sm" style="background-color: #eff6ff; color: #1e40af; border-left: 4px solid #3b82f6 !important;">
