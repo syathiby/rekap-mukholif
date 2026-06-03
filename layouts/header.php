@@ -12,6 +12,22 @@ $_appicon_path = file_exists($_img_base . '/rekap-mukholif/assets/img/logo_aplik
 $favicon_v  = file_exists($_favicon_path) ? filemtime($_favicon_path) : '1';
 $appicon_v  = file_exists($_appicon_path) ? filemtime($_appicon_path) : '1';
 $style_v    = time(); // selalu fresh
+
+// --- AMBIL NAMA ROLE DINAMIS ---
+$current_role_id = $_SESSION['role'] ?? 'admin';
+$role_name_display = ucfirst($current_role_id);
+if (isset($conn)) {
+    $stmt_role_hdr = $conn->prepare("SELECT role_name FROM roles WHERE id = ?");
+    if ($stmt_role_hdr) {
+        $stmt_role_hdr->bind_param("s", $current_role_id);
+        $stmt_role_hdr->execute();
+        $res_role_hdr = $stmt_role_hdr->get_result();
+        if ($row_role_hdr = $res_role_hdr->fetch_assoc()) {
+            $role_name_display = $row_role_hdr['role_name'];
+        }
+        $stmt_role_hdr->close();
+    }
+}
 ?>
 <!DOCTYPE html>
 <html lang="id">
@@ -165,7 +181,7 @@ $style_v    = time(); // selalu fresh
                 </div>
                 <div class="overflow-hidden">
                     <div class="sb-user-name text-truncate"><?= htmlspecialchars($_SESSION['nama_lengkap'] ?? 'Pengguna') ?></div>
-                    <div class="sb-user-role text-truncate" style="color:#94a3b8;"><?= htmlspecialchars(ucfirst($_SESSION['role'] ?? 'Admin')) ?></div>
+                    <div class="sb-user-role text-truncate" style="color:#94a3b8;"><?= htmlspecialchars($role_name_display) ?></div>
                 </div>
             </div>
         </div>
@@ -215,7 +231,7 @@ $style_v    = time(); // selalu fresh
                         </div>
                         <div class="badge bg-primary text-white border px-3 py-2 rounded-3 fw-medium d-flex align-items-center">
                             <i class="fas fa-user-shield me-2"></i>
-                            <?= htmlspecialchars(ucfirst($_SESSION['role'] ?? 'Admin')) ?>
+                            <?= htmlspecialchars($role_name_display) ?>
                         </div>
                     </div>
                 </div>
