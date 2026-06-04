@@ -18,11 +18,8 @@ require_once __DIR__ . '/layouts/header.php';
 $start_date = $_GET['start_date'] ?? null;
 $end_date = $_GET['end_date'] ?? null;
 
-$q = mysqli_query($conn, "SELECT nilai FROM pengaturan WHERE nama = 'periode_aktif' LIMIT 1");
-$row = mysqli_fetch_assoc($q);
-$periode_aktif = $row['nilai'] ?? '2000-01-01';
-
-$start_date_sql = $periode_aktif;
+// Menggunakan konstanta global PERIODE_AKTIF dari init.php
+$start_date_sql = PERIODE_AKTIF;
 $end_date_sql = date('Y-m-d H:i:s');
 
 if (!empty($start_date)) {
@@ -67,12 +64,14 @@ $recent_violations = mysqli_query($conn, "
         JOIN santri s ON p.santri_id = s.id
         JOIN jenis_pelanggaran jp ON p.jenis_pelanggaran_id = jp.id
         LEFT JOIN users u ON p.dicatat_oleh = u.id
+        WHERE p.tanggal >= DATE_SUB(NOW(), INTERVAL 7 DAY)
     )
     UNION ALL
     (
         SELECT pk.id, 'Penghuni Kamar' AS nama, pk.kamar, 'Kebersihan Kamar' AS nama_pelanggaran, pk.tanggal, u.nama_lengkap AS pencatat
         FROM pelanggaran_kebersihan pk
         LEFT JOIN users u ON pk.dicatat_oleh = u.id
+        WHERE pk.tanggal >= DATE_SUB(NOW(), INTERVAL 7 DAY)
     )
     ORDER BY tanggal DESC
     LIMIT 7
@@ -98,10 +97,22 @@ $frequent_violation_query = mysqli_query($conn, "
 $frequent_violation = mysqli_fetch_assoc($frequent_violation_query);
 
 $top_violators = mysqli_query($conn, "
-    SELECT s.nama, s.kamar, s.poin_aktif, SUM(jp.poin) as total_poin 
+    SELECT 
+        s.nama, 
+        s.kamar, 
+        SUM(jp.poin) as total_poin,
+        COALESCE(rwd.total_reward, 0) as total_reward,
+        (SUM(jp.poin) - COALESCE(rwd.total_reward, 0)) AS poin_bersih_periode
     FROM pelanggaran p
     JOIN santri s ON p.santri_id = s.id
     JOIN jenis_pelanggaran jp ON p.jenis_pelanggaran_id = jp.id
+    LEFT JOIN (
+        SELECT dr.santri_id, SUM(jr.poin_reward) AS total_reward
+        FROM daftar_reward dr
+        JOIN jenis_reward jr ON dr.jenis_reward_id = jr.id
+        WHERE dr.tanggal BETWEEN '$start_date_sql' AND '$end_date_sql'
+        GROUP BY dr.santri_id
+    ) rwd ON s.id = rwd.santri_id
     WHERE p.tanggal BETWEEN '$start_date_sql' AND '$end_date_sql'
     GROUP BY s.id
     ORDER BY total_poin DESC, s.nama ASC
@@ -137,6 +148,14 @@ $best_students = mysqli_query($conn, "
         SELECT p.santri_id FROM pelanggaran p WHERE p.tanggal BETWEEN '$start_date_sql' AND '$end_date_sql'
     )
     ORDER BY total_reward DESC, avg_rapot DESC, CAST(s.kamar AS UNSIGNED) ASC, s.nama ASC
+    LIMIT 5
+");
+
+$top_histori = mysqli_query($conn, "
+    SELECT id, nama, kelas, kamar, poin_aktif
+    FROM santri
+    WHERE poin_aktif > 0
+    ORDER BY poin_aktif DESC, nama ASC
     LIMIT 5
 ");
 
@@ -429,14 +448,22 @@ $teladan_onclick = !$can_view_santri_teladan ? 'onclick="event.preventDefault();
                     </div>
                     <div class="card-body p-3">
                         <ul class="nav nav-pills custom-student-tabs w-100 mb-3" id="studentTabs" role="tablist">
-                            <li class="nav-item" role="presentation">
-                                <button class="nav-link active w-100" id="violators-tab" data-bs-toggle="tab" data-bs-target="#violators-panel" type="button" role="tab">
-                                    <i class="fas fa-exclamation-triangle"></i> Top Pelanggar
+                            <li class="nav-item d-flex" role="presentation">
+                                <button class="nav-link active w-100 d-flex flex-column flex-sm-row align-items-center justify-content-center gap-1 gap-sm-2 h-100 p-2" id="violators-tab" data-bs-toggle="tab" data-bs-target="#violators-panel" type="button" role="tab">
+                                    <i class="fas fa-exclamation-triangle"></i>
+                                    <span class="text-wrap" style="line-height: 1.2; font-size: 0.9em;">Top Pelanggar</span>
                                 </button>
                             </li>
-                            <li class="nav-item" role="presentation">
-                                <button class="nav-link w-100" id="teladan-tab" data-bs-toggle="tab" data-bs-target="#teladan-panel" type="button" role="tab">
-                                    <i class="fas fa-medal"></i> Santri Teladan
+                            <li class="nav-item d-flex" role="presentation">
+                                <button class="nav-link w-100 d-flex flex-column flex-sm-row align-items-center justify-content-center gap-1 gap-sm-2 h-100 p-2" id="teladan-tab" data-bs-toggle="tab" data-bs-target="#teladan-panel" type="button" role="tab">
+                                    <i class="fas fa-medal"></i>
+                                    <span class="text-wrap" style="line-height: 1.2; font-size: 0.9em;">Santri Teladan</span>
+                                </button>
+                            </li>
+                            <li class="nav-item d-flex" role="presentation">
+                                <button class="nav-link w-100 d-flex flex-column flex-sm-row align-items-center justify-content-center gap-1 gap-sm-2 h-100 p-2" id="histori-tab" data-bs-toggle="tab" data-bs-target="#histori-panel" type="button" role="tab" data-bs-toggle="tooltip" title="Total akumulasi poin seumur hidup (All-Time)">
+                                    <i class="fas fa-history"></i>
+                                    <span class="text-wrap" style="line-height: 1.2; font-size: 0.9em;">Top Histori</span>
                                 </button>
                             </li>
                         </ul>
@@ -461,7 +488,7 @@ $teladan_onclick = !$can_view_santri_teladan ? 'onclick="event.preventDefault();
                                                     </div>
                                                     <div class="mt-1">
                                                         <span class="badge bg-light text-secondary border px-2 py-1" style="font-size: 10px;">
-                                                            Poin Aktif: <strong class="text-dark"><?= max(0, (int)$violator['poin_aktif']) ?></strong>
+                                                            Poin Bersih: <strong class="text-dark"><?= max(0, (int)$violator['poin_bersih_periode']) ?></strong>
                                                         </span>
                                                     </div>
                                                 </div>
@@ -515,6 +542,34 @@ $teladan_onclick = !$can_view_santri_teladan ? 'onclick="event.preventDefault();
                                     <?php else: ?>
 
                                         <div class="text-center text-muted py-4"><i class="fas fa-info-circle fs-2 mb-2"></i><p>Belum ada santri tanpa pelanggaran</p></div>
+                                    <?php endif; ?>
+                                </div>
+                            </div>
+                            
+                            <div class="tab-pane fade" id="histori-panel" role="tabpanel">
+                                <div class="text-end mb-3">
+                                    <span class="text-muted small"><i class="fas fa-info-circle me-1"></i> Data akumulasi seumur hidup</span>
+                                </div>
+                                <div class="student-list d-flex flex-column gap-3">
+                                    <?php if(mysqli_num_rows($top_histori) > 0): ?>
+                                        <?php while($histori = mysqli_fetch_assoc($top_histori)): ?>
+                                            <div class="student-item d-flex align-items-center p-3 border rounded bg-white shadow-sm">
+                                                <div class="student-avatar rounded-circle text-white d-flex align-items-center justify-content-center me-3 fw-bold" style="background: linear-gradient(135deg, #64748b, #334155); box-shadow: 0 3px 8px rgba(100,116,139,0.2);">
+                                                    <?= htmlspecialchars(substr($histori['nama'], 0, 1)) ?>
+                                                </div>
+                                                <div class="flex-grow-1">
+                                                    <div class="fw-bold text-dark text-truncate" style="max-width: 180px;"><?= htmlspecialchars($histori['nama']) ?></div>
+                                                    <div class="text-muted" style="font-size: 11px;">
+                                                        <span class="me-2"><i class="fas fa-home opacity-75"></i> Km. <?= htmlspecialchars($histori['kamar']) ?></span>
+                                                    </div>
+                                                </div>
+                                                <div class="badge text-white rounded-pill px-3 py-2 fw-bold" style="background-color: #475569; font-size: 14px;" data-bs-toggle="tooltip" title="Poin Histori (All-Time)">
+                                                    <?= (int)$histori['poin_aktif'] ?>
+                                                </div>
+                                            </div>
+                                        <?php endwhile; ?>
+                                    <?php else: ?>
+                                        <div class="text-center text-muted py-4"><i class="fas fa-info-circle fs-2 mb-2"></i><p>Belum ada histori poin</p></div>
                                     <?php endif; ?>
                                 </div>
                             </div>

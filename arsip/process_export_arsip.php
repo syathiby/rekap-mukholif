@@ -238,9 +238,18 @@ $spreadsheet->setActiveSheetIndex(0); // Buka file Excel di sheet 'Rekap Per San
 $safe_title = preg_replace('/[^a-zA-Z0-9_-]/', '-', strtolower($arsip['judul']));
 $namaFile = 'Laporan_Lengkap_Arsip_' . $safe_title . '_' . date('d-m-Y') . '.xlsx';
 
+// Bersihkan output buffer sebelum mengirim file agar tidak ada karakter tersembunyi yang membuat file corrupt
+if (ob_get_length()) {
+    ob_end_clean();
+}
+
 header('Content-Type: application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
 header('Content-Disposition: attachment;filename="' . $namaFile . '"');
 header('Cache-Control: max-age=0');
+header('Expires: Mon, 26 Jul 1997 05:00:00 GMT'); 
+header('Last-Modified: ' . gmdate('D, d M Y H:i:s') . ' GMT'); 
+header('Cache-Control: cache, must-revalidate'); 
+header('Pragma: public'); 
 
 $writer = new Xlsx($spreadsheet);
 $writer->save('php://output');

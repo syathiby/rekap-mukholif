@@ -10,10 +10,8 @@ require_once __DIR__ . '/../../layouts/header.php';
 ?>
 
 <?php
-// Ambil periode aktif dari DB
-$q = mysqli_query($conn, "SELECT nilai FROM pengaturan WHERE nama = 'periode_aktif' LIMIT 1");
-$data = mysqli_fetch_assoc($q);
-$periode_aktif = $data ? $data['nilai'] : '';
+// Ambil periode aktif dari konstanta global
+$periode_aktif = PERIODE_AKTIF;
 ?>
 
 <style>

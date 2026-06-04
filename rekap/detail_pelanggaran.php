@@ -33,6 +33,21 @@ if (!$santri) {
     die("<div class='container my-4'><div class='alert alert-danger'>Data santri tidak ditemukan.</div></div>");
 }
 
+// Hitung Poin Bersih Dinamis
+$start_dt_time = $start_date ? $start_date . ' 00:00:00' : '1970-01-01 00:00:00';
+$end_dt_time   = $end_date   ? $end_date . ' 23:59:59' : '2099-12-31 23:59:59';
+$sql_pb = "
+    SELECT 
+        (SELECT COALESCE(SUM(jp.poin), 0) FROM pelanggaran p JOIN jenis_pelanggaran jp ON p.jenis_pelanggaran_id = jp.id WHERE p.santri_id = ? AND p.tanggal BETWEEN ? AND ?) -
+        (SELECT COALESCE(SUM(jr.poin_reward), 0) FROM daftar_reward dr JOIN jenis_reward jr ON dr.jenis_reward_id = jr.id WHERE dr.santri_id = ? AND dr.tanggal BETWEEN ? AND ?) 
+    AS poin_bersih
+";
+$stmt_pb = $conn->prepare($sql_pb);
+$stmt_pb->bind_param("ississ", $santri_id, $start_dt_time, $end_dt_time, $santri_id, $start_dt_time, $end_dt_time);
+$stmt_pb->execute();
+$poin_bersih_dinamis = (int)$stmt_pb->get_result()->fetch_assoc()['poin_bersih'];
+$poin_bersih_display = $poin_bersih_dinamis < 0 ? 0 : $poin_bersih_dinamis;
+
 // Query 2: Ambil detail pelanggaran
 $sql_detail = "
     SELECT p.tanggal, jp.nama_pelanggaran, jp.kategori, jp.poin
@@ -258,8 +273,8 @@ function getKategoriInfo($kategori) {
                         <div class="stat-label">Total Poin</div>
                     </div>
                     <div class="stat-item" style="grid-column: 1 / -1; padding-top: 1rem; border-top: 1px dashed var(--border-color);">
-                        <div class="stat-number text-danger"><?= $santri['poin_aktif'] ?></div>
-                        <div class="stat-label">Total Poin Aktif</div>
+                        <div class="stat-number <?= $poin_bersih_display > 0 ? 'text-danger' : 'text-success' ?>"><?= $poin_bersih_display ?></div>
+                        <div class="stat-label">Poin Bersih Periode</div>
                     </div>
                 </div>
             </div>

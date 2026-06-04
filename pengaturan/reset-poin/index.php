@@ -61,8 +61,8 @@ require_once __DIR__ . '/../../layouts/header.php';
         <div class="col-lg-8 col-md-10">
 
             <header class="text-center mb-5">
-                <h1 class="display-5 fw-bold">Reset Poin Pelanggaran</h1>
-                <p class="lead text-muted">Mulai lembaran baru dengan me-reset poin santri, baik secara spesifik maupun periodik.</p>
+                <h1 class="display-5 fw-bold">Tutup Buku Akhir Tahun</h1>
+                <p class="lead text-muted">Arsipkan data lama ke gudang dan mulai lembaran bersih untuk tahun ajaran baru.</p>
             </header>
 
             <?php
@@ -142,29 +142,39 @@ require_once __DIR__ . '/../../layouts/header.php';
 
                         <hr class="my-5">
 
-                        <h4 class="mb-3">2. Reset Periodik (Semua Santri)</h4>
+                        <h4 class="mb-3">2. Eksekusi Tutup Buku (Semua Santri)</h4>
                          <div class="card bg-danger-subtle border border-danger rounded-4 mb-4">
                             <div class="card-body p-4">
                                 <div class="d-flex">
                                     <div class="flex-shrink-0">
-                                        <i class="fas fa-exclamation-triangle fa-2x text-danger me-3"></i>
+                                        <i class="fas fa-archive fa-2x text-danger me-3"></i>
                                     </div>
                                     <div class="flex-grow-1">
-                                        <h5 class="card-title fw-bold text-danger-emphasis mb-2">Aksi Berisiko Tinggi</h5>
+                                        <h5 class="card-title fw-bold text-danger-emphasis mb-2">Aksi Tutup Buku Otomatis</h5>
                                         <p class="card-text mb-0">
-                                            Opsi ini akan me-reset poin semua santri (kecuali poin 'Sangat Berat'). <strong>Gunakan dengan hati-hati dan pastikan ini adalah jadwal reset periodik.</strong>
+                                            Fitur ini akan secara otomatis: <br>
+                                            1. <strong>Mengarsipkan</strong> seluruh data pelanggaran dan kebersihan (dari Periode Aktif s/d Hari Ini) ke Gudang Arsip.<br>
+                                            2. <strong>Menghapus</strong> seluruh pelanggaran ringan/sedang dan pelanggaran kebersihan dari laci utama.<br>
+                                            3. <strong>Mempertahankan</strong> pelanggaran Sangat Berat dan seluruh Surplus Poin Reward.<br>
+                                            4. <strong>Memperbarui</strong> Periode Aktif ke hari esok.
                                         </p>
                                     </div>
                                 </div>
                             </div>
                         </div>
+                        
                         <div class="mb-4">
-                            <label for="keterangan_semua" class="form-label">Keterangan Reset Massal</label>
-                            <input type="text" class="form-control" id="keterangan_semua" name="keterangan_semua" placeholder="Contoh: Reset Akhir Semester Ganjil 2025">
+                            <label for="judul_arsip" class="form-label">Judul Arsip Tahunan</label>
+                            <input type="text" class="form-control" id="judul_arsip" name="judul_arsip" placeholder="Contoh: Arsip Pelanggaran Tahun Ajaran 2025/2026" required>
+                        </div>
+
+                        <div class="mb-4">
+                            <label for="keterangan_semua" class="form-label">Keterangan Aktivitas</label>
+                            <input type="text" class="form-control" id="keterangan_semua" name="keterangan_semua" placeholder="Contoh: Tutup Buku Kenaikan Kelas 2026" required>
                         </div>
                         <div class="d-grid">
-                             <button type="submit" name="reset_semua_poin" class="btn btn-danger rounded-pill fw-bold">
-                                <i class="fas fa-bolt me-2"></i>Jalankan Reset Semua Santri
+                             <button type="submit" name="tutup_buku_massal" class="btn btn-danger rounded-pill fw-bold py-3">
+                                <i class="fas fa-power-off me-2"></i>JALANKAN TUTUP BUKU SEKARANG
                             </button>
                         </div>
                     </form>
@@ -205,7 +215,7 @@ $(document).ready(function() {
             .append(`
                 <div class='py-2 px-3 border-bottom'>
                     <div class='fw-semibold text-dark'>${item.value}</div>
-                    <small class='text-muted'>Kelas: ${item.kelas} • Kamar: ${item.kamar} • Poin: ${item.poin}</small>
+                    <small class='text-muted'>Kelas: ${item.kelas} • Kamar: ${item.kamar} • <span class='text-danger'>Poin: ${item.poin}</span></small>
                 </div>
             `)
             .appendTo(ul);
@@ -307,23 +317,30 @@ $(document).ready(function() {
                 });
             }
             
-            if (submitName === 'reset_semua_poin') {
+            if (submitName === 'tutup_buku_massal') {
                 const keteranganSemua = document.getElementById('keterangan_semua');
+                const judulArsip = document.getElementById('judul_arsip');
+
+                if (judulArsip.value.trim() === '') {
+                    showAlert('Judul Arsip tidak boleh kosong!', 'warning');
+                    judulArsip.focus();
+                    return;
+                }
 
                 if (keteranganSemua.value.trim() === '') {
-                    showAlert('Keterangan untuk reset massal tidak boleh kosong!', 'warning');
+                    showAlert('Keterangan aktivitas tidak boleh kosong!', 'warning');
                     keteranganSemua.focus();
                     return;
                 }
                 
                 Swal.fire({
                     title: 'PERINGATAN KERAS!',
-                    text: 'Anda akan me-reset SEMUA poin santri. Tindakan ini final dan tidak dapat diurungkan. Apakah Anda 100% yakin?',
+                    text: 'Anda akan mengeksekusi TUTUP BUKU. Data akan diarsipkan dan pelanggaran akan direset. Tindakan ini final dan tidak dapat diurungkan. Apakah Anda 100% yakin?',
                     icon: 'error',
                     showCancelButton: true,
                     confirmButtonColor: '#d33',
                     cancelButtonColor: '#6c757d',
-                    confirmButtonText: 'YA, SAYA YAKIN RESET SEMUA!'
+                    confirmButtonText: 'YA, JALANKAN TUTUP BUKU!'
                 }).then((result) => {
                     if(result.isConfirmed) {
                         let input = document.createElement('input');

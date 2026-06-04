@@ -78,6 +78,7 @@ if ($action === 'create') {
         $stmt_kebersihan_snapshot->close();
 
         $conn->commit();
+        write_activity_log('BACKUP', 'backup-restore', "Melakukan Arsip/Tutup Buku: '" . htmlspecialchars($judul) . "'", ['arsip_id' => $arsip_id, 'judul' => $judul, 'tgl_mulai' => $tgl_mulai, 'tgl_selesai' => $tgl_selesai]);
         $_SESSION['success_message'] = 'Arsip berhasil dibuat!';
         header('Location: view.php?id=' . $arsip_id);
         exit;
@@ -103,11 +104,22 @@ if ($action === 'delete') {
 
     // Cuma butuh ini doang!
     try {
+        // Ambil info arsip buat log
+        $stmt_info = $conn->prepare("SELECT judul FROM arsip WHERE id = ?");
+        $stmt_info->bind_param('i', $arsip_id);
+        $stmt_info->execute();
+        $info = $stmt_info->get_result()->fetch_assoc();
+        $stmt_info->close();
+
         // Hapus data induknya aja, anak-anaknya bakal ikut kehapus otomatis
         // berkat ON DELETE CASCADE di database lu.
         $stmt = $conn->prepare("DELETE FROM arsip WHERE id = ?");
         $stmt->bind_param('i', $arsip_id);
         $stmt->execute();
+        
+        if ($stmt->affected_rows > 0 && $info) {
+            write_activity_log('DELETE', 'backup-restore', "Menghapus data arsip permanen: '" . htmlspecialchars($info['judul']) . "'", ['arsip_id' => $arsip_id]);
+        }
         $stmt->close();
 
         $_SESSION['success_message'] = 'Arsip berhasil dihapus permanen!';

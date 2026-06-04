@@ -189,11 +189,29 @@ if ($result) {
                                         <?php 
                                         $is_admin = (isset($_SESSION['role']) && strtolower($_SESSION['role']) === 'admin');
                                         $user_role_str = strtolower($user['role']);
-                                        $can_edit = $is_admin || ($user_role_str !== 'admin' && $user_role_str !== 'pengelola');
-                                        $can_delete = $is_admin || ($user_role_str !== 'admin' && $user_role_str !== 'pengelola');
+                                        $is_self = (isset($_SESSION['user_id']) && $user['id'] == $_SESSION['user_id']);
                                         
-                                        // Admin tidak bisa menghapus dirinya sendiri dari sini, logic tambahan
-                                        if ($user_role_str === 'admin') {
+                                        $can_edit = false;
+                                        $can_delete = false;
+
+                                        if ($is_admin) {
+                                            if ($user_role_str === 'admin') {
+                                                if ($is_self) $can_edit = true; // Admin cuma bisa edit diri sendiri
+                                            } else {
+                                                $can_edit = true; // Admin bisa edit siapapun selain admin
+                                                $can_delete = true; // Admin bisa hapus siapapun
+                                            }
+                                        } else {
+                                            if ($is_self) {
+                                                $can_edit = true; // User bisa edit diri sendiri
+                                            } elseif ($user_role_str !== 'admin' && $user_role_str !== 'pengelola') {
+                                                $can_edit = true; // User bisa edit akun biasa
+                                                $can_delete = true; // User bisa hapus akun biasa
+                                            }
+                                        }
+
+                                        // Pastikan tidak ada yang bisa hapus akun diri sendiri
+                                        if ($is_self) {
                                             $can_delete = false;
                                         }
                                         ?>

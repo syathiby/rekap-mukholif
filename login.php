@@ -41,7 +41,31 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $result = $stmt->get_result();
 
     if ($user = $result->fetch_assoc()) {
-        if (hash('sha256', $password) === $user['password']) {
+        $password_correct = false;
+        $needs_rehash = false;
+
+        // Cek gaya Bcrypt (Baru) ATAU gaya SHA-256 (Lama)
+        if (password_verify($password, $user['password'])) {
+            $password_correct = true;
+            // Coba lihat apakah algoritma ini perlu rehash (misal dari bcrypt cost 10 ke 12 di masa depan)
+            if (password_needs_rehash($user['password'], PASSWORD_DEFAULT)) {
+                $needs_rehash = true;
+            }
+        } elseif (hash('sha256', $password) === $user['password']) {
+            $password_correct = true;
+            $needs_rehash = true; // Format lama, wajib convert!
+        }
+
+        if ($password_correct) {
+            // TRANSISI HALUS: Update password di database ke Bcrypt secara diam-diam!
+            if ($needs_rehash) {
+                $new_hash = password_hash($password, PASSWORD_DEFAULT);
+                $stmt_upd = $conn->prepare("UPDATE users SET password = ? WHERE id = ?");
+                $stmt_upd->bind_param("si", $new_hash, $user['id']);
+                $stmt_upd->execute();
+                $stmt_upd->close();
+            }
+
             // Regenerasi session ID untuk mencegah serangan Session Fixation
             session_regenerate_id(true);
             

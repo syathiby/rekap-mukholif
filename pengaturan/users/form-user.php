@@ -53,8 +53,12 @@ if (isset($_GET['id']) && is_numeric($_GET['id'])) {
                 exit;
             }
         } elseif (strtolower($user_data['role']) === 'pengelola') {
-            // Hanya admin yang bisa mengedit user pengelola
-            if (!isset($_SESSION['role']) || strtolower($_SESSION['role']) !== 'admin') {
+            $logged_in_user_id = $_SESSION['user_id'] ?? null;
+            $is_admin = (isset($_SESSION['role']) && strtolower($_SESSION['role']) === 'admin');
+            $is_self = ($user_id === (int)$logged_in_user_id);
+            
+            // Hanya admin atau pengelola itu sendiri yang bisa mengedit user pengelola
+            if (!$is_admin && !$is_self) {
                 $stmt->close();
                 http_response_code(403);
                 require __DIR__ . '/../../bootstrap/access_denied.php';
@@ -264,12 +268,21 @@ if ($result_roles) {
                     <label for="role" class="form-label">Jabatan (Role)</label>
                     <div class="input-group">
                         <span class="input-group-text"><i class="fas fa-shield-halved fa-fw"></i></span>
-                        <?php if ($is_edit_mode && strtolower($user_data['role']) === 'admin'): ?>
-                            <!-- Admin mengedit dirinya sendiri: role terkunci sebagai 'Admin' -->
-                            <input type="text" class="form-control" value="Admin" disabled style="background-color: #e9ecef; cursor: not-allowed;">
-                            <input type="hidden" id="role" name="role" value="admin">
+                        <?php 
+                        $is_editing_self = ($is_edit_mode && (int)$user_id === (int)($_SESSION['user_id'] ?? 0));
+                        if ($is_editing_self): 
+                            // Cari nama role untuk ditampilkan
+                            $display_role_name = $user_data['role'];
+                            $resRoleName = $conn->query("SELECT role_name FROM roles WHERE id = '" . $conn->real_escape_string($user_data['role']) . "'");
+                            if ($resRoleName && $resRoleName->num_rows > 0) {
+                                $display_role_name = $resRoleName->fetch_assoc()['role_name'];
+                            }
+                        ?>
+                            <!-- User mengedit dirinya sendiri: role terkunci -->
+                            <input type="text" class="form-control" value="<?= htmlspecialchars($display_role_name) ?>" disabled style="background-color: #e9ecef; cursor: not-allowed;">
+                            <input type="hidden" id="role" name="role" value="<?= htmlspecialchars($user_data['role']) ?>">
                         <?php else: ?>
-                            <!-- Tambah user baru ATAU edit user non-admin: Opsi 'Admin' disembunyikan sepenuhnya -->
+                            <!-- Tambah user baru ATAU edit user lain -->
                             <select class="form-control" id="role" name="role" required>
                                 <option value="">-- Pilih Role --</option>
                                 <?php

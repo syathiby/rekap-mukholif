@@ -1,4 +1,4 @@
-﻿<?php
+<?php
 // File: rekap-mukholif/rapot/bulk_delete.php
 
 // 1. Panggil 'Otak' aplikasi dulu
@@ -55,6 +55,7 @@ try {
     $stmt->close();
 
     if ($affected_rows > 0) {
+        write_activity_log('DELETE', 'rapot', "Menghapus $affected_rows rapot kepengasuhan secara masal", ['deleted_ids' => $sanitized_ids]);
         set_flash_message("Berhasil menghapus {$affected_rows} rapot.", 'success');
     } else {
         set_flash_message('Tidak ada rapot yang dihapus (mungkin sudah dihapus sebelumnya).', 'warning');

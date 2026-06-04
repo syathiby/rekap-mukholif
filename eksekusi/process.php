@@ -81,6 +81,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     mysqli_stmt_close($stmt_insert);
     mysqli_stmt_close($stmt_select);
 
+    if ($berhasil > 0) {
+        write_activity_log('CREATE', 'eksekusi', "Mencatat $berhasil eksekusi sanksi kebersihan (Jenis: $jenis_hukuman)", ['berhasil' => $berhasil, 'gagal' => $gagal, 'jenis_hukuman' => $jenis_hukuman, 'catatan' => $catatan]);
+    }
+
     $_SESSION['success_message'] = "Berhasil mencatat $berhasil eksekusi pelanggaran. Gagal: $gagal.";
     header("Location: index.php");
     exit();

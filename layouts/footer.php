@@ -26,7 +26,7 @@ if (function_exists('has_permission')) {
         'pelanggaran_pengabdian_input', 
         'pelanggaran_tahfidz_input'
     ]);
-    $can_create_rapot = has_permission(['rapot_create', 'rapot_view']);
+    $can_create_rapot = has_permission(['rapot_create', 'rapot_cetak']);
     
     if ($can_input_violation) {
         $permissions_list = [

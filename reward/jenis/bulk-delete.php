@@ -19,6 +19,10 @@ if (isset($_POST['ids']) && is_array($_POST['ids'])) {
         $deleted = mysqli_affected_rows($conn);
         $total = count($ids);
         
+        if ($deleted > 0) {
+            write_activity_log('DELETE', 'jenis_reward', "Menghapus $deleted jenis reward secara massal", ['deleted_count' => $deleted, 'requested_ids' => $ids]);
+        }
+        
         if ($deleted < $total) {
             $_SESSION['message'] = ['type' => 'warning', 'text' => "Berhasil hapus $deleted data. Sisanya ($total - $deleted) tidak dihapus karena masih dipakai di riwayat."];
         } else {

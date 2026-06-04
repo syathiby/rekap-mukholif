@@ -19,12 +19,7 @@ $bagian = 'Tahfidz';
 // BAGIAN 1: PERSIAPAN DATA & FILTER
 // =======================================================
 
-$q_periode = mysqli_query($conn, "SELECT nilai FROM pengaturan WHERE nama = 'periode_aktif' LIMIT 1");
-$periode_aktif = mysqli_fetch_assoc($q_periode)['nilai'] ?? null;
-
-if (!$periode_aktif) {
-    die("<div class='container my-4'><div class='alert alert-warning'><strong>Peringatan:</strong> Periode aktif belum diatur. Silakan atur di Pengaturan.</div></div>");
-}
+$periode_aktif = PERIODE_AKTIF;
 
 // Ambil data untuk semua filter dropdown
 $kamars_result = mysqli_query($conn, "SELECT DISTINCT kamar FROM santri WHERE kamar IS NOT NULL AND kamar != '' ORDER BY CAST(kamar AS UNSIGNED) ASC");

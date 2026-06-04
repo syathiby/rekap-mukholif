@@ -9,9 +9,7 @@ guard('rekap_keterlambatan');
 require_once __DIR__ . '/../layouts/header.php';
 
 // 🔹 Ambil periode aktif
-$q = mysqli_query($conn, "SELECT nilai FROM pengaturan WHERE nama = 'periode_aktif' LIMIT 1");
-$row = mysqli_fetch_assoc($q);
-$periode_aktif = $row['nilai'] ?? null;
+$periode_aktif = PERIODE_AKTIF;
 
 if (!$periode_aktif) {
     die("⚠️ Periode aktif belum diset. Silakan atur dulu di halaman pengaturan.");

@@ -23,7 +23,7 @@ if (!empty($_GET['dicatat_oleh'])) {
     $params[] = $_GET['dicatat_oleh']; $types .= "i";
 }
 
-$start = $_GET['start_date'] ?? date('Y-m-01');
+$start = $_GET['start_date'] ?? PERIODE_AKTIF;
 $end   = $_GET['end_date'] ?? date('Y-m-d');
 if ($start && $end) {
     $where_clauses[] = "DATE(dr.tanggal) BETWEEN ? AND ?";
@@ -61,7 +61,22 @@ while ($row = mysqli_fetch_assoc($result)) {
 
 $q_rewards = mysqli_query($conn, "SELECT DISTINCT jr.id, jr.nama_reward FROM daftar_reward dr JOIN jenis_reward jr ON dr.jenis_reward_id = jr.id ORDER BY jr.nama_reward ASC");
 $q_kelas = mysqli_query($conn, "SELECT DISTINCT kelas FROM santri WHERE kelas IS NOT NULL AND kelas != '' ORDER BY kelas ASC");
-$q_pencatat = mysqli_query($conn, "SELECT DISTINCT u.id, u.nama_lengkap FROM daftar_reward dr JOIN users u ON dr.dicatat_oleh = u.id ORDER BY u.nama_lengkap ASC");
+
+// Filter Dropdown Pencatat berdasarkan data yg tampil
+$p_where = ["1=1"]; $p_params = []; $p_types = "";
+if (!empty($_GET['search'])) { $p_where[] = "(s.nama LIKE ?)"; $p_params[] = "%".$_GET['search']."%"; $p_types .= "s"; }
+if (!empty($_GET['reward_id'])) { $p_where[] = "dr.jenis_reward_id = ?"; $p_params[] = $_GET['reward_id']; $p_types .= "i"; }
+if (!empty($_GET['kelas'])) { $p_where[] = "s.kelas = ?"; $p_params[] = $_GET['kelas']; $p_types .= "s"; }
+if ($start && $end) { $p_where[] = "DATE(dr.tanggal) BETWEEN ? AND ?"; $p_params[] = $start; $p_params[] = $end; $p_types .= "ss"; }
+
+$p_sql = "SELECT DISTINCT u.id, u.nama_lengkap FROM daftar_reward dr 
+          JOIN users u ON dr.dicatat_oleh = u.id 
+          JOIN santri s ON dr.santri_id = s.id 
+          WHERE " . implode(" AND ", $p_where) . " ORDER BY u.nama_lengkap ASC";
+$stmt_pencatat = mysqli_prepare($conn, $p_sql);
+if (!empty($p_params)) mysqli_stmt_bind_param($stmt_pencatat, $p_types, ...$p_params);
+mysqli_stmt_execute($stmt_pencatat);
+$q_pencatat = mysqli_stmt_get_result($stmt_pencatat);
 ?>
 
 <style>
@@ -396,5 +411,6 @@ document.addEventListener('DOMContentLoaded', function() {
 
 <?php 
 mysqli_stmt_close($stmt);
+if (isset($stmt_pencatat)) mysqli_stmt_close($stmt_pencatat);
 require_once __DIR__ . '/../../layouts/footer.php'; 
 ?>

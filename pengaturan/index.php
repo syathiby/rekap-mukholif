@@ -224,15 +224,15 @@ require_once __DIR__ . '/../layouts/header.php';
         </div>
         <?php endif; ?>
 
-        <!-- KARTU: Reset Poin Santri -->
+        <!-- KARTU: Tutup Buku Akhir Tahun -->
         <?php if (has_permission('reset_poin_manage')): ?>
         <div class="col-xl-4 col-md-6">
             <div class="settings-card card-reset">
-                <div class="icon-box"><i class="fas fa-sync-alt"></i></div>
-                <h5 class="card-title">Reset Poin Santri</h5>
-                <p class="card-desc">Kembalikan poin pelanggaran santri ke nol, baik secara individu maupun keseluruhan.</p>
+                <div class="icon-box"><i class="fas fa-archive"></i></div>
+                <h5 class="card-title">Tutup Buku Akhir Tahun</h5>
+                <p class="card-desc">Arsipkan data, hapus pelanggaran ringan, dan bersihkan laci utama untuk tahun ajaran baru.</p>
                 <a href="reset-poin/index.php" class="settings-link">
-                    Reset Poin <i class="fas fa-arrow-right text-xs"></i>
+                    Lakukan Tutup Buku <i class="fas fa-arrow-right text-xs"></i>
                 </a>
             </div>
         </div>

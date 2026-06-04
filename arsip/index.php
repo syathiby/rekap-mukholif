@@ -182,14 +182,10 @@ $res = $stmt->get_result();
 
 <div id="arsip-index-page" class="container-fluid mt-4">
     <div class="page-header">
-        <h1 class="page-title"><i class="fas fa-archive"></i>Manajemen Arsip</h1>
+        <h1 class="page-title"><i class="fas fa-box-open"></i>Gudang Data Arsip</h1>
         <div class="header-actions">
             <?php if (has_permission('arsip_export')): ?>
                 <a href="export_arsip.php" class="btn btn-export"><i class="fas fa-file-excel"></i> Export Arsip</a>
-            <?php endif; ?>
-
-            <?php if (has_permission('arsip_create')): ?>
-                <a href="create.php" class="btn btn-primary"><i class="fas fa-plus"></i> Buat Arsip Baru</a>
             <?php endif; ?>
         </div>
     </div>

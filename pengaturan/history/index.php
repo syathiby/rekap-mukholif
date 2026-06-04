@@ -10,9 +10,7 @@ guard('history_manage');
 define('ROWS_PER_PAGE', 25);
 
 // ─── AMBIL PARAMETER FILTER ─────────────────────────────────────────
-$q_periode = $conn->prepare("SELECT nilai FROM pengaturan WHERE nama = 'periode_aktif' LIMIT 1");
-$q_periode->execute();
-$periode_aktif = $q_periode->get_result()->fetch_assoc()['nilai'] ?? date('Y-m-d');
+$periode_aktif = PERIODE_AKTIF;
 
 $start_date        = $_GET['start_date']        ?? $periode_aktif;
 $end_date          = $_GET['end_date']          ?? date('Y-m-d');

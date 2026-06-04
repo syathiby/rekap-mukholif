@@ -34,13 +34,14 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         exit;
     }
     
-    // --- LOGIKA BARU: PROTEKSI ROLE PENGELOLA ---
+    // --- LOGIKA BARU: PROTEKSI ROLE PENGELOLA & ADMIN ---
     $stmt_check_role = $conn->prepare("SELECT role FROM users WHERE id = ?");
     $stmt_check_role->bind_param("i", $userId);
     $stmt_check_role->execute();
     $result_role = $stmt_check_role->get_result();
     if ($row_role = $result_role->fetch_assoc()) {
-        if (strtolower($row_role['role']) === 'pengelola') {
+        $targetRole = strtolower($row_role['role']);
+        if ($targetRole === 'admin' || $targetRole === 'pengelola') {
             if (!isset($_SESSION['role']) || strtolower($_SESSION['role']) !== 'admin') {
                 $stmt_check_role->close();
                 http_response_code(403);

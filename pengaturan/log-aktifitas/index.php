@@ -72,16 +72,7 @@ $stmt_data->execute();
 $logs = $stmt_data->get_result()->fetch_all(MYSQLI_ASSOC);
 $stmt_data->close();
 
-// 3. Fetch Statistik All-Time
-$q_stats = mysqli_query($conn, "
-    SELECT 
-        COUNT(*) as total_all,
-        COUNT(CASE WHEN aksi = 'LOGIN' THEN 1 END) as total_login,
-        COUNT(CASE WHEN aksi IN ('CREATE', 'UPDATE', 'DELETE') THEN 1 END) as total_crud,
-        COUNT(CASE WHEN aksi IN ('BACKUP', 'RESTORE') THEN 1 END) as total_db
-    FROM log_aktifitas
-");
-$stats = mysqli_fetch_assoc($q_stats);
+// 3. (Dipindahkan ke bawah AJAX check agar filter lebih cepat)
 
 // ─── BACK PARAM (dikirim ke detail_log agar tombol kembali ingat filter) ─
 $back_param = urlencode(http_build_query(array_filter([
@@ -120,7 +111,7 @@ function render_log_rows($logs, $offset, $back_param = '') {
             ?>
             <tr class="log-row" id="row-<?= $row['id'] ?>">
                 <td class="text-center text-muted" style="font-size:0.8rem; width:44px;"><?= $no++ ?></td>
-                <td style="width:115px;">
+                <td style="width:170px;">
                     <span class="log-badge <?= $cfg['cls'] ?>">
                         <i class="fas <?= $cfg['icon'] ?> me-1"></i><?= htmlspecialchars($row['aksi']) ?>
                     </span>
@@ -211,6 +202,17 @@ if ($is_ajax) {
     ]);
     exit;
 }
+
+// 3. Fetch Statistik All-Time (Hanya saat render halaman pertama, BUKAN saat AJAX filter)
+$q_stats = mysqli_query($conn, "
+    SELECT 
+        COUNT(*) as total_all,
+        COUNT(CASE WHEN aksi = 'LOGIN' THEN 1 END) as total_login,
+        COUNT(CASE WHEN aksi IN ('CREATE', 'UPDATE', 'DELETE') THEN 1 END) as total_crud,
+        COUNT(CASE WHEN aksi IN ('BACKUP', 'RESTORE') THEN 1 END) as total_db
+    FROM log_aktifitas
+");
+$stats = mysqli_fetch_assoc($q_stats);
 
 require_once __DIR__ . '/../../layouts/header.php';
 ?>
@@ -636,7 +638,7 @@ require_once __DIR__ . '/../../layouts/header.php';
                 <thead>
                     <tr>
                         <th class="text-center" style="width:44px;">No</th>
-                        <th style="width:115px;">Aksi</th>
+                        <th style="width:170px;">Aksi</th>
                         <th style="width:120px;">Fitur</th>
                         <th>Deskripsi</th>
                         <th style="width:140px;">Pengguna</th>

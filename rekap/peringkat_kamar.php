@@ -12,9 +12,7 @@ if (!$is_ajax) {
 }
 
 // 🔹 Ambil periode aktif
-$q_periode = mysqli_query($conn, "SELECT nilai FROM pengaturan WHERE nama = 'periode_aktif' LIMIT 1");
-$row_periode = mysqli_fetch_assoc($q_periode);
-$periode_aktif = $row_periode['nilai'] ?? null;
+$periode_aktif = PERIODE_AKTIF;
 
 if (!$periode_aktif) {
     die("<div class='container' style='padding-top:20px;'><div class='alert alert-danger'>⚠ Periode aktif belum diset. Silakan atur dulu di halaman pengaturan.</div></div>");

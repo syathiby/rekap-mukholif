@@ -128,7 +128,7 @@ $data_rekap = $stmt_data->get_result();
                     'jenis_pelanggaran' => $filter_jp // Tambahkan filter baru
                 ]);
             ?>
-            <a href="arsip_kebersihan.php?id=<?= $arsip_id ?>" class="btn btn-outline-info"><i class="fas fa-broom"></i> <span class="d-none d-sm-inline">Arsip Kebersihan</span></a>
+            <a href="arsip_kebersihan.php?id=<?= $arsip_id ?>" class="btn btn-info text-white shadow-sm"><i class="fas fa-broom"></i> <span class="d-none d-sm-inline">Arsip Kebersihan</span></a>
         </div>
     </div>
     

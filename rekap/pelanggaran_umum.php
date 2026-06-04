@@ -11,8 +11,7 @@ require_once __DIR__ . '/../layouts/header.php';
 // --- LOGIKA PHP ---
 
 // Ambil periode aktif
-$q_periode = mysqli_query($conn, "SELECT nilai FROM pengaturan WHERE nama = 'periode_aktif' LIMIT 1");
-$periode_aktif = mysqli_fetch_assoc($q_periode)['nilai'] ?? date('Y-m-d', strtotime('-1 year'));
+$periode_aktif = PERIODE_AKTIF;
 
 // Ambil filter dari URL
 $filter_kamar = $_GET['kamar'] ?? null;
@@ -166,7 +165,6 @@ $query = $stmt->get_result();
     .poin-aktif-info {
         display: block;
         font-size: 0.75rem;
-        color: #ef4444; /* Warna merah aksen biar keliatan */
         font-weight: 500;
         margin-top: 2px;
     }
@@ -289,7 +287,22 @@ $query = $stmt->get_result();
                                 <td>
                                     <div class="fw-bold"><?= htmlspecialchars($row['nama']) ?></div>
                                     <small class="text-muted">Kls: <?= htmlspecialchars($row['kelas']) ?> | Kmr: <?= htmlspecialchars($row['kamar']) ?></small>
-                                    <small class="poin-aktif-info">Poin Aktif: <?= $row['poin_aktif'] ?></small>
+                                    <?php 
+                                    $poin_histori = (int)$row['poin_aktif']; 
+                                    if ($poin_histori > 0): 
+                                    ?>
+                                        <small class="poin-aktif-info text-danger" data-bs-toggle="tooltip" title="Total poin pelanggaran seumur hidup (All-Time)">
+                                            <i class="fas fa-history"></i> Poin Histori: <?= $poin_histori ?>
+                                        </small>
+                                    <?php elseif ($poin_histori < 0): ?>
+                                        <small class="poin-aktif-info text-success" data-bs-toggle="tooltip" title="Surplus poin reward seumur hidup (All-Time)">
+                                            <i class="fas fa-star text-warning"></i> Surplus: <?= abs($poin_histori) ?> Poin Reward
+                                        </small>
+                                    <?php else: ?>
+                                        <small class="poin-aktif-info text-secondary" data-bs-toggle="tooltip" title="Total poin seumur hidup (All-Time)">
+                                            <i class="fas fa-history"></i> Poin Histori: 0 (Bersih)
+                                        </small>
+                                    <?php endif; ?>
                                 </td>
                                 <td class="text-center">
                                     <span class="poin-value"><?= $row['total_poin_periode'] ?></span>

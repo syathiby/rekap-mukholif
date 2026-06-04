@@ -118,6 +118,7 @@ if ($selectedUserId) {
 
         <?php if ($selectedUserId && !empty($permissions)): ?>
             <form action="process.php" method="POST">
+                <input type="hidden" name="csrf_token" value="<?= $_SESSION['csrf_token'] ?? csrf_generate() ?>">
                 <input type="hidden" name="user_id" value="<?= $selectedUserId ?>">
                 
                 <div class="d-flex align-items-center mb-4 mt-5 px-2">

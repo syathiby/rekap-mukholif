@@ -32,7 +32,7 @@ if (isset($_GET['duplicate_id'])) {
 // ==========================================================
 // AMBIL DATA SANTRI
 // ==========================================================
-$filter_kamar_create = $_GET['kamar'] ?? '';
+$filter_kamar_create = isset($_GET['kamar']) ? $_GET['kamar'] : ($_SESSION['filter_rapot']['kamar'] ?? '');
 try {
     $sql_santri = "SELECT id, nama, kamar FROM santri WHERE kamar IS NOT NULL AND kamar != '' AND kamar != '0'";
     $params_santri = [];
@@ -42,7 +42,7 @@ try {
         $params_santri[] = $filter_kamar_create;
         $types_santri .= "s";
     }
-    $sql_santri .= " ORDER BY CAST(kamar AS UNSIGNED), nama";
+    $sql_santri .= " ORDER BY kamar, nama";
     $stmt = $conn->prepare($sql_santri);
     if (!empty($params_santri)) {
         $stmt->bind_param($types_santri, ...$params_santri);

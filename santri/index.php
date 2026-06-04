@@ -146,7 +146,7 @@ $can_edit = has_permission('santri_edit');
 $can_delete = has_permission('santri_delete');
 
 // Hitung colspan dinamis untuk tabel
-$colspan = 4; // Kolom dasar: No, Nama, Kelas, Kamar
+$colspan = 5; // Kolom dasar: No, Nama, Kelas, Kamar, Poin Histori
 if ($can_delete) $colspan++; // Tambah 1 jika bisa hapus (untuk checkbox)
 if ($can_edit || $can_delete) $colspan++; // Tambah 1 jika bisa edit atau hapus (untuk kolom Aksi)
 
@@ -334,6 +334,10 @@ mysqli_stmt_close($stmt_count);
                             <th>Nama Santri</th>
                             <th>Kelas</th>
                             <th>Kamar</th>
+                            <th class="text-center">
+                                Poin Histori
+                                <i class="fas fa-question-circle text-muted ms-1" data-bs-toggle="tooltip" data-bs-placement="top" title="Total akumulasi pelanggaran dikurang reward santri semenjak masuk (Seumur Hidup). Tidak terpengaruh filter tanggal."></i>
+                            </th>
                             <?php if ($can_edit || $can_delete): ?>
                                 <th class="action-cell">Aksi</th>
                             <?php endif; ?>
@@ -380,6 +384,18 @@ mysqli_stmt_close($stmt_count);
                                     <i class="fas fa-door-open me-1"></i>
                                     <?= htmlspecialchars($row['kamar']) ?>
                                 </span>
+                            </td>
+                            <td class="align-middle text-center">
+                                <?php 
+                                $poin_histori = (int)$row['poin_aktif']; 
+                                if ($poin_histori > 0) {
+                                    echo '<span class="badge bg-danger rounded-pill px-2 py-1">' . $poin_histori . ' Poin</span>';
+                                } elseif ($poin_histori < 0) {
+                                    echo '<span class="badge bg-success rounded-pill px-2 py-1"><i class="fas fa-star me-1 text-warning"></i>' . abs($poin_histori) . ' Poin Reward</span>';
+                                } else {
+                                    echo '<span class="badge bg-secondary rounded-pill px-2 py-1">0 Poin (Bersih)</span>';
+                                }
+                                ?>
                             </td>
                             <?php if ($can_edit || $can_delete): ?>
                                 <td class="align-middle">
@@ -456,6 +472,12 @@ mysqli_stmt_close($stmt_count);
 
 <script>
 document.addEventListener('DOMContentLoaded', function() {
+    // Inisialisasi Tooltips
+    var tooltipTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggle="tooltip"]'));
+    var tooltipList = tooltipTriggerList.map(function (tooltipTriggerEl) {
+        return new bootstrap.Tooltip(tooltipTriggerEl);
+    });
+    
     
     // --- Bagian Modal Konfirmasi ---
     const confirmModalElement = document.getElementById('confirmDeleteModal');

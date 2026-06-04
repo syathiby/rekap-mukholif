@@ -1,4 +1,4 @@
-﻿<?php
+<?php
 // 1. Panggil 'Otak' aplikasi dulu
 require_once __DIR__ . '/../bootstrap/init.php';
 
@@ -9,9 +9,7 @@ guard('rekap_view_statistik');
 require_once __DIR__ . '/../layouts/header.php';
 
 // Ambil periode aktif dari pengaturan
-$q = mysqli_query($conn, "SELECT nilai FROM pengaturan WHERE nama = 'periode_aktif' LIMIT 1");
-$row = mysqli_fetch_assoc($q);
-$default_periode_aktif = $row['nilai'] ?? date('Y-m-d', strtotime('-1 year'));
+$default_periode_aktif = PERIODE_AKTIF;
 
 // Ambil tanggal mulai dan selesai dari URL atau set default
 $tgl_mulai = $_GET['tgl_mulai'] ?? $default_periode_aktif;
@@ -136,10 +134,17 @@ $json_per_bagian = json_encode(['labels' => array_column($data_per_bagian, 'bagi
     .chart-filters button.active { background-color: var(--primary-light); color: var(--primary); border-color: var(--primary); font-weight: 600; }
     .progress-bar-container { background-color: #e5e7eb; border-radius: 10px; height: 8px; width: 100px; overflow: hidden; }
     .progress-bar { background-color: var(--secondary); height: 100%; border-radius: 10px; }
-    .chart-container { position: relative; min-height: 380px; width: 100%; flex-grow: 1; display: flex; align-items: center; justify-content: center; }
-    .chart-container.chart-container-tall { min-height: 450px; }
-    .chart-scroll-container { position: relative; overflow-x: auto; -webkit-overflow-scrolling: touch; padding-bottom: 10px; width: 100%; }
-    .chart-scroll-container canvas { min-width: 500px; }
+    /* Pro chart card styles dari detail_karakter.php */
+    .pro-chart-card{background:#fff;border-radius:16px;box-shadow:0 2px 16px rgba(0,0,0,.07);padding:1.5rem 1.75rem 1.75rem;margin-bottom:1.5rem;border:1px solid #f1f5f9; height:100%}
+    .chart-title{font-size:1rem;font-weight:700;color:#1e293b;margin-bottom:2px;display:flex;align-items:center;gap:8px}
+    .chart-subtitle{font-size:.8rem;color:#94a3b8;margin-bottom:1.25rem;padding-left:28px}
+    .chart-icon-wrap{width:28px;height:28px;border-radius:8px;display:inline-flex;align-items:center;justify-content:center;font-size:.8rem;flex-shrink:0}
+    .chart-scroll-outer{overflow-x:auto;-webkit-overflow-scrolling:touch;scrollbar-width:thin;scrollbar-color:#cbd5e1 #f8fafc;border-radius:10px}
+    .chart-scroll-outer::-webkit-scrollbar{height:5px}
+    .chart-scroll-outer::-webkit-scrollbar-track{background:#f8fafc;border-radius:10px}
+    .chart-scroll-outer::-webkit-scrollbar-thumb{background:#cbd5e1;border-radius:10px}
+    .chart-scroll-inner{position:relative;height:300px}
+    .chart-scroll-inner.tall{height:360px}
     @media (max-width: 768px) {
         .dashboard-card { padding: 20px; }
         h2.dashboard-title { font-size: 22px; }
@@ -195,16 +200,20 @@ $json_per_bagian = json_encode(['labels' => array_column($data_per_bagian, 'bagi
         </div>
     </div>
 
-    <div class="card dashboard-card mb-4">
-        <h3 class="card-title"><i class="fa-solid fa-chart-line"></i> Tren Pelanggaran Harian</h3>
+    <div class="pro-chart-card mb-4">
+        <div class="chart-title">
+            <span class="chart-icon-wrap" style="background:#fef3c7"><i class="fas fa-chart-line" style="color:#d97706"></i></span>
+            Tren Pelanggaran Harian
+        </div>
+        <div class="chart-subtitle">Pergerakan jumlah pelanggaran berdasarkan rentang waktu</div>
         <div class="chart-filters">
             <button id="filter-7d" class="active">7 Hari</button>
             <button id="filter-1m">1 Bulan</button>
             <button id="filter-3m">3 Bulan</button>
             <button id="filter-1y">1 Tahun</button>
         </div>
-        <div class="chart-container chart-container-tall">
-            <div class="chart-scroll-container">
+        <div class="chart-scroll-outer">
+            <div class="chart-scroll-inner tall" style="min-width:600px">
                 <canvas id="chartTrenPelanggaran"></canvas>
             </div>
         </div>
@@ -283,27 +292,39 @@ $json_per_bagian = json_encode(['labels' => array_column($data_per_bagian, 'bagi
         </div>
 
         <div class="col-xl-4 mt-4">
-            <div class="card dashboard-card h-100">
-                <h3 class="card-title"><i class="fa-solid fa-tags"></i> Sebaran per Bagian</h3>
-                <div class="chart-container">
+            <div class="pro-chart-card">
+                <div class="chart-title">
+                    <span class="chart-icon-wrap" style="background:#f3e8ff"><i class="fas fa-tags" style="color:#7c3aed"></i></span>
+                    Sebaran per Bagian
+                </div>
+                <div class="chart-subtitle">Proporsi pelanggaran per bagian</div>
+                <div class="chart-scroll-inner" style="height:280px;max-width:340px;margin:0 auto">
                     <canvas id="chartPerBagian"></canvas>
                 </div>
             </div>
         </div>
 
         <div class="col-xl-4 mt-4">
-            <div class="card dashboard-card h-100">
-                <h3 class="card-title"><i class="fa-solid fa-chalkboard-user"></i> Sebaran per Kelas</h3>
-                <div class="chart-container">
+            <div class="pro-chart-card">
+                <div class="chart-title">
+                    <span class="chart-icon-wrap" style="background:#e0e7ff"><i class="fas fa-chalkboard-user" style="color:#4f46e5"></i></span>
+                    Sebaran per Kelas
+                </div>
+                <div class="chart-subtitle">Proporsi pelanggaran berdasarkan kelas</div>
+                <div class="chart-scroll-inner" style="height:280px;max-width:340px;margin:0 auto">
                     <canvas id="chartPerKelas"></canvas>
                 </div>
             </div>
         </div>
 
         <div class="col-xl-4 mt-4">
-            <div class="card dashboard-card h-100">
-                <h3 class="card-title"><i class="fa-solid fa-door-open"></i> Sebaran per Kamar (Kebersihan)</h3>
-                <div class="chart-container">
+            <div class="pro-chart-card">
+                <div class="chart-title">
+                    <span class="chart-icon-wrap" style="background:#dbeafe"><i class="fas fa-door-open" style="color:#3b82f6"></i></span>
+                    Sebaran per Kamar
+                </div>
+                <div class="chart-subtitle">Pelanggaran khusus kebersihan</div>
+                <div class="chart-scroll-inner" style="height:280px;max-width:340px;margin:0 auto">
                     <canvas id="chartPerKamar"></canvas>
                 </div>
             </div>
@@ -319,34 +340,31 @@ $json_per_bagian = json_encode(['labels' => array_column($data_per_bagian, 'bagi
         const dataKamar = <?= $json_per_kamar ?>;
         const dataBagian = <?= $json_per_bagian ?>;
 
+        const FONT = "'Poppins','Segoe UI',sans-serif";
+        const TOOLTIP = {
+            backgroundColor:'rgba(15,23,42,.92)', titleColor:'#f1f5f9', bodyColor:'#cbd5e1',
+            padding:12, cornerRadius:10, titleFont:{weight:'700',size:13},
+            bodyFont:{size:12}, displayColors:true, boxPadding:4
+        };
+        const GRID  = { color:'rgba(148,163,184,.12)', drawTicks:false };
+        const TICKS = { padding:8, font:{size:11, family:FONT} };
+
+        Chart.defaults.font.family = FONT;
+        Chart.defaults.color       = '#64748b';
+
+        function linGrad(ctx, h, r, g, b) {
+            const gr = ctx.createLinearGradient(0, 0, 0, h);
+            gr.addColorStop(0, `rgba(${r},${g},${b},.22)`);
+            gr.addColorStop(1, `rgba(${r},${g},${b},0)`);
+            return gr;
+        }
+
         const doughnutChartOptions = {
-            responsive: true,
-            maintainAspectRatio: false,
-            plugins: {
-                legend: {
-                    position: 'bottom',
-                    labels: {
-                        padding: 15,
-                        font: {
-                            family: "'Poppins', sans-serif"
-                        },
-                        usePointStyle: true,
-                        pointStyle: 'circle'
-                    }
-                },
-                tooltip: {
-                    backgroundColor: 'rgba(17, 24, 39, 0.9)',
-                    titleFont: {
-                        family: "'Poppins', sans-serif"
-                    },
-                    bodyFont: {
-                        family: "'Poppins', sans-serif"
-                    },
-                    padding: 12,
-                    cornerRadius: 8
-                }
-            },
-            cutout: '60%'
+            responsive:true, maintainAspectRatio:false, cutout:'62%',
+            plugins:{
+                legend:{ position:'bottom', labels:{ usePointStyle:true, pointStyle:'circle', padding:14, font:{size:11,family:FONT} } },
+                tooltip:TOOLTIP
+            }
         };
 
         function generateDistinctColors(count) {
@@ -410,6 +428,8 @@ $json_per_bagian = json_encode(['labels' => array_column($data_per_bagian, 'bagi
         }
 
         const ctxTren = document.getElementById('chartTrenPelanggaran').getContext('2d');
+        const hTren = document.getElementById('chartTrenPelanggaran').parentElement.offsetHeight || 360;
+
         const lineChart = new Chart(ctxTren, {
             type: 'line',
             data: {
@@ -417,30 +437,29 @@ $json_per_bagian = json_encode(['labels' => array_column($data_per_bagian, 'bagi
                 datasets: [{
                     label: 'Jumlah Pelanggaran',
                     data: [],
-                    backgroundColor: 'rgba(79, 70, 229, 0.1)',
-                    borderColor: 'rgba(79, 70, 229, 1)',
-                    borderWidth: 2,
-                    pointBackgroundColor: 'rgba(79, 70, 229, 1)',
-                    pointRadius: 4,
-                    tension: 0.3,
+                    backgroundColor: linGrad(ctxTren, hTren, 79, 70, 229),
+                    borderColor: '#4f46e5',
+                    borderWidth: 2.5,
+                    pointBackgroundColor: '#4f46e5',
+                    pointBorderColor: '#fff',
+                    pointBorderWidth: 2,
+                    pointRadius: 5,
+                    pointHoverRadius: 8,
+                    tension: 0.4,
                     fill: true
                 }]
             },
             options: {
-                responsive: true,
-                maintainAspectRatio: false,
-                scales: {
-                    y: {
-                        beginAtZero: true,
-                        ticks: {
-                            precision: 0
-                        }
-                    }
-                },
+                responsive:true, maintainAspectRatio:false,
+                layout: { padding: { top: 15 } },
+                interaction:{ mode:'index', intersect:false },
                 plugins: {
-                    legend: {
-                        display: false
-                    }
+                    legend:{ display:false },
+                    tooltip:TOOLTIP
+                },
+                scales: {
+                    y:{ beginAtZero:true, grid:GRID, ticks:{...TICKS, callback:v=>v+' kali'}, border:{display:false} },
+                    x:{ grid:{display:false}, ticks:TICKS, border:{display:false} }
                 }
             }
         });
@@ -458,6 +477,8 @@ $json_per_bagian = json_encode(['labels' => array_column($data_per_bagian, 'bagi
                 lineChart.data.labels = chartData.labels;
                 lineChart.data.datasets[0].data = chartData.data;
                 lineChart.update();
+                // Sesuaikan min-width container scroll agar grafik tidak squished saat banyak tanggal
+                document.getElementById('chartTrenPelanggaran').parentElement.style.minWidth = Math.max(chartData.labels.length * 50, 600) + 'px';
             } catch (error) {
                 console.error('Gagal fetch data:', error);
             }

@@ -122,10 +122,12 @@ if ($total_poin_reward == 0 && $total_poin_pelanggaran == 0) {
 }
 
 // ─── 9. Status peringatan SP ──────────────────────────────────────────────────
+$poin_bersih_val = $total_poin_pelanggaran - $total_poin_reward;
+
 $sp_status = $sp_class = '';
-if ($santri['poin_aktif'] >= 300)      { $sp_status = "PERINGATAN 3"; $sp_class = "bg-danger text-white"; }
-elseif ($santri['poin_aktif'] >= 200)  { $sp_status = "PERINGATAN 2"; $sp_class = "bg-warning text-dark"; }
-elseif ($santri['poin_aktif'] >= 100)  { $sp_status = "PERINGATAN 1"; $sp_class = "bg-info text-white"; }
+if ($poin_bersih_val >= 300)      { $sp_status = "PERINGATAN 3"; $sp_class = "bg-danger text-white"; }
+elseif ($poin_bersih_val >= 200)  { $sp_status = "PERINGATAN 2"; $sp_class = "bg-warning text-dark"; }
+elseif ($poin_bersih_val >= 100)  { $sp_status = "PERINGATAN 1"; $sp_class = "bg-info text-white"; }
 
 // ─── 10. Rapot: radar (1 query saja, cukup untuk radar + stat cards) ──────────
 // Query tren karakter HANYA dijalankan jika ada rapot (skip jika kosong)
@@ -220,8 +222,7 @@ if ($total_rapot > 0) {
 $skor_teladan = ($rata_rapot * 20) + $total_poin_reward - ($total_poin_pelanggaran * 2) - ($total_kasus * 5);
 $skor_teladan_str = ($total_rapot > 0) ? number_format($skor_teladan, 1, '.', '') : '-';
 
-$poin_aktif_val = (int)$santri['poin_aktif'];
-$poin_bersih = $poin_aktif_val < 0 ? 0 : $poin_aktif_val;
+$poin_bersih = $poin_bersih_val < 0 ? 0 : $poin_bersih_val;
 
 // ─── 12. JSON encode (hanya sekali) ──────────────────────────────────────────
 $json_labels_p      = json_encode($labels);
@@ -269,8 +270,51 @@ require_once __DIR__ . '/../layouts/header.php';
 .big-number{font-size:2.4rem;font-weight:800;line-height:1;margin-top:.5rem;letter-spacing:-1px}
 
 /* Hero */
-.character-summary{background:linear-gradient(135deg,#f8fafc,#eef2ff);border-radius:20px;padding:2rem;text-align:center;margin-bottom:2rem;border:1px solid #e0e7ff;box-shadow:0 4px 20px rgba(99,102,241,.07)}
-.character-icon{font-size:3rem;margin-bottom:1rem}
+.character-summary {
+    background: #ffffff;
+    border-radius: 24px;
+    padding: 2.5rem 2rem;
+    text-align: center;
+    margin-bottom: 2rem;
+    border: 1px solid #e2e8f0;
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.04);
+}
+.character-icon-wrapper {
+    width: 84px;
+    height: 84px;
+    background: #ffffff;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.06);
+    margin-bottom: 1.2rem;
+    border: 4px solid #ffffff;
+    margin-left: auto;
+    margin-right: auto;
+}
+.character-icon { font-size: 2.5rem; }
+.character-icon-wrapper.text-danger { color: #ef4444 !important; }
+.character-icon-wrapper.text-success { color: #10b981 !important; }
+.character-icon-wrapper.text-primary { color: #3b82f6 !important; }
+.character-icon-wrapper.text-warning { color: #f59e0b !important; }
+.character-icon-wrapper.text-info { color: #0ea5e9 !important; }
+.character-icon-wrapper.text-secondary { color: #64748b !important; }
+
+.summary-conclusion-box {
+    background: rgba(248, 250, 252, 0.8);
+    border-radius: 16px;
+    padding: 1.25rem 1.5rem;
+    max-width: 650px;
+    margin: 0 auto;
+    border: 1px solid rgba(226, 232, 240, 0.8);
+}
+.summary-conclusion-box.text-danger { background: rgba(254, 226, 226, 0.5); border-color: rgba(252, 165, 165, 0.6); color: #b91c1c !important; }
+.summary-conclusion-box.text-success { background: rgba(209, 250, 229, 0.5); border-color: rgba(110, 231, 183, 0.6); color: #047857 !important; }
+.summary-conclusion-box.text-primary { background: rgba(219, 234, 254, 0.5); border-color: rgba(147, 197, 253, 0.6); color: #1d4ed8 !important; }
+.summary-conclusion-box.text-warning { background: rgba(254, 243, 199, 0.5); border-color: rgba(252, 211, 77, 0.6); color: #b45309 !important; }
+.summary-conclusion-box.text-info { background: rgba(224, 242, 254, 0.5); border-color: rgba(125, 211, 252, 0.6); color: #0369a1 !important; }
+.summary-conclusion-box.text-secondary { background: rgba(241, 245, 249, 0.5); border-color: rgba(203, 213, 225, 0.6); color: #334155 !important; }
 
 /* Tabs */
 .analysis-tabs{margin-bottom:1.5rem;border-bottom:2px solid #e2e8f0;gap:4px;display:flex;flex-wrap:nowrap}
@@ -319,10 +363,11 @@ require_once __DIR__ . '/../layouts/header.php';
     .pro-chart-card{padding:1.25rem 1rem 1.5rem}
     .info-card{padding:1.1rem 1.1rem}
     .big-number{font-size:1.9rem}
-    .character-summary{padding:1.5rem 1rem;border-radius:14px}
-    .character-icon{font-size:2.2rem;margin-bottom:.6rem}
-    .character-summary h3{font-size:1.1rem}
-    .character-summary .lead{font-size:.9rem}
+    .character-summary{padding:1.5rem 1rem;border-radius:20px}
+    .character-icon-wrapper{width: 68px; height: 68px; margin-bottom: 1rem;}
+    .character-icon{font-size:2rem;}
+    .character-summary h2{font-size:1.5rem !important;}
+    .summary-conclusion-box{padding: 1rem; font-size: 0.9rem;}
     .analysis-tabs .nav-link{padding:.65rem .9rem;font-size:.82rem}
 }
 </style>
@@ -337,23 +382,48 @@ require_once __DIR__ . '/../layouts/header.php';
 
     <!-- Hero summary -->
     <div class="character-summary">
-        <i class="fas <?= $karakter_icon ?> character-icon <?= $karakter_class ?>"></i>
-        <h3 class="fw-bold mb-2"><?= htmlspecialchars($santri['nama']) ?></h3>
-        <p class="text-muted mb-2">Kelas: <?= htmlspecialchars($santri['kelas']) ?> &nbsp;|&nbsp; Kamar: <?= htmlspecialchars($santri['kamar']) ?></p>
-        
-        <div class="mb-3">
-            <span class="badge bg-white text-secondary border px-3 py-2 shadow-sm text-wrap" style="font-size: 0.85rem; font-weight: 500; border-radius: 8px; line-height: 1.5;">
-                <i class="far fa-calendar-alt me-1 text-primary"></i> Menampilkan data: <strong><?= date('d M Y', strtotime($start_date)) ?></strong> s/d <strong><?= date('d M Y', strtotime($end_date)) ?></strong>
-            </span>
+        <div>
+            <div class="character-icon-wrapper <?= $karakter_class ?>">
+                <i class="fas <?= $karakter_icon ?> character-icon"></i>
+            </div>
+            
+            <h2 class="fw-bold mb-1 text-dark" style="letter-spacing: -0.5px;"><?= htmlspecialchars($santri['nama']) ?></h2>
+            <div class="text-secondary fw-medium mb-3" style="font-size: 0.95rem;">
+                <i class="fas fa-user-graduate me-1 opacity-75"></i> Kelas <?= htmlspecialchars($santri['kelas']) ?> &nbsp;<span class="text-muted mx-1">•</span>&nbsp; 
+                <i class="fas fa-bed me-1 opacity-75"></i> Kamar <?= htmlspecialchars($santri['kamar']) ?>
+            </div>
+            
+            <div class="d-flex flex-wrap justify-content-center gap-2 mb-4">
+                <span class="badge bg-white text-secondary border shadow-sm d-flex align-items-center px-3 py-2" style="font-size: 0.8rem; font-weight: 500; border-radius: 30px;">
+                    <i class="far fa-calendar-alt me-2 text-primary fs-6"></i> 
+                    <?= date('d M Y', strtotime($start_date)) ?> &nbsp;-&nbsp; <?= date('d M Y', strtotime($end_date)) ?>
+                </span>
+
+                <?php if ($santri['poin_aktif'] > 0): ?>
+                    <span class="badge bg-danger bg-opacity-10 text-danger border border-danger border-opacity-25 shadow-sm d-flex align-items-center px-3 py-2" style="font-size: 0.8rem; border-radius: 30px;" data-bs-toggle="tooltip" title="Total poin seumur hidup (All-Time)">
+                        <i class="fas fa-history me-2 fs-6"></i> Histori: <?= $santri['poin_aktif'] ?> Poin
+                    </span>
+                <?php elseif ($santri['poin_aktif'] < 0): ?>
+                    <span class="badge bg-success bg-opacity-10 text-success border border-success border-opacity-25 shadow-sm d-flex align-items-center px-3 py-2" style="font-size: 0.8rem; border-radius: 30px;" data-bs-toggle="tooltip" title="Surplus Poin Reward (All-Time)">
+                        <i class="fas fa-star me-2 fs-6 text-warning"></i> Surplus: <?= abs($santri['poin_aktif']) ?> Poin
+                    </span>
+                <?php else: ?>
+                    <span class="badge bg-secondary bg-opacity-10 text-secondary border border-secondary border-opacity-25 shadow-sm d-flex align-items-center px-3 py-2" style="font-size: 0.8rem; border-radius: 30px;" data-bs-toggle="tooltip" title="Poin seumur hidup (All-Time). Saat ini poin bersih.">
+                        <i class="fas fa-history me-2 fs-6"></i> Histori: 0 Poin
+                    </span>
+                <?php endif; ?>
+
+                <?php if ($sp_status): ?>
+                    <span class="badge <?= $sp_class ?> shadow-sm d-flex align-items-center px-3 py-2" style="font-size: 0.8rem; border-radius: 30px; letter-spacing: 0.5px;">
+                        <i class="fas fa-exclamation-triangle me-2 fs-6"></i> <?= $sp_status ?>
+                    </span>
+                <?php endif; ?>
+            </div>
+            
+            <div class="summary-conclusion-box <?= $karakter_class ?>">
+                <p class="mb-0 fw-semibold" style="font-size: 0.95rem; line-height: 1.5;"><?= $rasio ?></p>
+            </div>
         </div>
-        <?php if ($sp_status): ?>
-        <div class="mb-3">
-            <span class="badge rounded-pill <?= $sp_class ?> px-4 py-2 shadow-sm" style="font-size:.9rem;letter-spacing:1px">
-                <i class="fas fa-exclamation-triangle me-2"></i><?= $sp_status ?>
-            </span>
-        </div>
-        <?php endif; ?>
-        <p class="lead mb-0 <?= $karakter_class ?> fw-semibold"><?= $rasio ?></p>
     </div>
 
     <!-- Info banner Sinkronisasi -->
@@ -381,21 +451,25 @@ require_once __DIR__ . '/../layouts/header.php';
             </div>
         </div>
         <div class="col-6 col-lg-3">
-            <div class="info-card danger" style="padding: 1.1rem;">
-                <div class="text-muted text-uppercase fw-bold" style="letter-spacing:0.5px;font-size:.7rem">Pelanggaran</div>
-                <div class="big-number text-danger mt-1" style="font-size: 2rem;">
-                    <?= $total_poin_pelanggaran ?> 
-                    <span style="font-size: 0.9rem; font-weight: 500; color: #94a3b8;">(<?= $total_kasus ?>x)</span>
+            <a href="detail_pelanggaran.php?id=<?= $santri_id ?>&start_date=<?= urlencode($start_date) ?>&end_date=<?= urlencode($end_date) ?>" class="text-decoration-none" style="display: block; height: 100%;">
+                <div class="info-card danger" style="padding: 1.1rem; transition: transform 0.2s, box-shadow 0.2s;" onmouseover="this.style.transform='translateY(-3px)'; this.style.boxShadow='0 6px 20px rgba(0,0,0,0.1)';" onmouseout="this.style.transform='none'; this.style.boxShadow='0 2px 12px rgba(0,0,0,.06)';">
+                    <div class="text-muted text-uppercase fw-bold" style="letter-spacing:0.5px;font-size:.7rem">Pelanggaran</div>
+                    <div class="big-number text-danger mt-1" style="font-size: 2rem;">
+                        <?= $total_poin_pelanggaran ?> 
+                        <span style="font-size: 0.9rem; font-weight: 500; color: #94a3b8;">(<?= $total_kasus ?>x)</span>
+                    </div>
+                    <div class="text-muted small mt-1" style="font-size: 0.7rem; line-height: 1.1;">Acuan: Daftar Hitam</div>
                 </div>
-                <div class="text-muted small mt-1" style="font-size: 0.7rem; line-height: 1.1;">Acuan: Daftar Hitam</div>
-            </div>
+            </a>
         </div>
         <div class="col-6 col-lg-3">
-            <div class="info-card success" style="padding: 1.1rem;">
-                <div class="text-muted text-uppercase fw-bold" style="letter-spacing:0.5px;font-size:.7rem">Total Reward</div>
-                <div class="big-number text-success mt-1" style="font-size: 2rem;">+<?= $total_poin_reward ?></div>
-                <div class="text-muted small mt-1" style="font-size: 0.7rem; line-height: 1.1;">Apresiasi periode ini</div>
-            </div>
+            <a href="../reward/history/index.php?search=<?= urlencode($santri['nama']) ?>&start_date=<?= urlencode($start_date) ?>&end_date=<?= urlencode($end_date) ?>" class="text-decoration-none" style="display: block; height: 100%;">
+                <div class="info-card success" style="padding: 1.1rem; transition: transform 0.2s, box-shadow 0.2s;" onmouseover="this.style.transform='translateY(-3px)'; this.style.boxShadow='0 6px 20px rgba(0,0,0,0.1)';" onmouseout="this.style.transform='none'; this.style.boxShadow='0 2px 12px rgba(0,0,0,.06)';">
+                    <div class="text-muted text-uppercase fw-bold" style="letter-spacing:0.5px;font-size:.7rem">Total Reward</div>
+                    <div class="big-number text-success mt-1" style="font-size: 2rem;">+<?= $total_poin_reward ?></div>
+                    <div class="text-muted small mt-1" style="font-size: 0.7rem; line-height: 1.1;">Apresiasi periode ini</div>
+                </div>
+            </a>
         </div>
     </div>
 

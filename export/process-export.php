@@ -101,7 +101,7 @@ if (isset($_POST['export'])) {
     $sheetSantri->setTitle('Detail Santri');
 
     $sheetSantri->fromArray(
-        ['No', 'Nama Santri', 'Kelas', 'Kamar', 'Jumlah Pelanggaran', 'Total Poin Pelanggaran', 'Total Poin Reward', 'Poin Aktif'],
+        ['No', 'Nama Santri', 'Kelas', 'Kamar', 'Jumlah Pelanggaran', 'Total Poin Pelanggaran', 'Total Poin Reward', 'Poin Bersih Periode'],
         NULL, 'A1'
     );
 
@@ -141,9 +141,10 @@ if (isset($_POST['export'])) {
     if ($resultSantri->num_rows > 0) {
         $rowNum = 2; $no = 1;
         while ($row = $resultSantri->fetch_assoc()) {
+            $poin_bersih = $row['total_poin_pelanggaran'] - $row['total_poin_reward'];
             $sheetSantri->fromArray(
                 [$no, $row['nama'], $row['kelas'], $row['kamar'],
-                 $row['jumlah_pelanggaran'], $row['total_poin_pelanggaran'], $row['total_poin_reward'], $row['poin_aktif']],
+                 $row['jumlah_pelanggaran'], $row['total_poin_pelanggaran'], $row['total_poin_reward'], $poin_bersih],
                 NULL, 'A' . $rowNum
             );
             $totalSantriTerlibat++;

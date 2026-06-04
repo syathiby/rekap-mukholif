@@ -12,9 +12,7 @@ require_once __DIR__ . '/../layouts/header.php';
 <?php
 
 // Ambil periode aktif dari pengaturan
-$q = mysqli_query($conn, "SELECT nilai FROM pengaturan WHERE nama = 'periode_aktif' LIMIT 1");
-$row = mysqli_fetch_assoc($q);
-$periode_aktif = $row ? $row['nilai'] : '2000-01-01';
+$periode_aktif = PERIODE_AKTIF;
 
 // Ambil data filter dari form
 $tanggal_awal = $_GET['tanggal_awal'] ?? $periode_aktif;

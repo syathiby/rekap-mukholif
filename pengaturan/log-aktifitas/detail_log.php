@@ -60,6 +60,20 @@ if (!empty($log['detail'])) {
     $detail_formatted = json_encode($detail_parsed, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
 }
 
+// Helper untuk render nilai array menjadi badge di tabel
+function render_payload_value($v) {
+    if (is_array($v)) {
+        $html = '<div class="d-flex flex-wrap gap-1">';
+        foreach ($v as $item) {
+            $val = is_array($item) ? json_encode($item) : (string)$item;
+            $html .= '<span class="badge" style="background:#e2e8f0; color:#334155; font-size:0.7rem; font-weight:600; padding:0.35em 0.6em; border-radius:4px;">' . htmlspecialchars($val) . '</span>';
+        }
+        $html .= '</div>';
+        return $html;
+    }
+    return htmlspecialchars((string)$v);
+}
+
 // ─── NAVIGASI PREV / NEXT dihapus ───────────────────────────────────
 
 // ─── PARSE USER AGENT ────────────────────────────────────────────────
@@ -385,6 +399,13 @@ require_once __DIR__ . '/../../layouts/header.php';
                         <span class="info-row-label">User ID</span>
                         <span class="info-row-value text-muted"><?= $log['user_id'] ?? '<em>Sistem</em>' ?></span>
                     </div>
+                    <?php if (!empty($log['username'])): ?>
+                    <div class="p-3 mt-1" style="background:#f9fafb; border-top:1px solid #f3f4f6;">
+                        <a href="index.php?search=<?= urlencode($log['username']) ?>" style="display:flex; align-items:center; justify-content:center; gap:0.4rem; padding:0.5rem; background:#fff; border:1px solid #d1d5db; border-radius:6px; color:#374151; font-size:0.8rem; font-weight:600; text-decoration:none; transition:all 0.2s;" onmouseover="this.style.borderColor='var(--p)'; this.style.color='var(--p)';" onmouseout="this.style.borderColor='#d1d5db'; this.style.color='#374151';">
+                            <i class="fas fa-search"></i> Lacak Riwayat User Ini
+                        </a>
+                    </div>
+                    <?php endif; ?>
                 </div>
             </div>
 
@@ -517,7 +538,7 @@ require_once __DIR__ . '/../../layouts/header.php';
                             <?php foreach ((array)$before_data as $k => $v): ?>
                             <tr>
                                 <td><?= htmlspecialchars($k) ?></td>
-                                <td><?= htmlspecialchars(is_array($v) ? json_encode($v) : (string)$v) ?></td>
+                                <td><?= render_payload_value($v) ?></td>
                             </tr>
                             <?php endforeach; ?>
                         </table>
@@ -532,7 +553,7 @@ require_once __DIR__ . '/../../layouts/header.php';
                             <?php foreach ((array)$after_data as $k => $v): ?>
                             <tr>
                                 <td><?= htmlspecialchars($k) ?></td>
-                                <td><?= htmlspecialchars(is_array($v) ? json_encode($v) : (string)$v) ?></td>
+                                <td><?= render_payload_value($v) ?></td>
                             </tr>
                             <?php endforeach; ?>
                         </table>
@@ -540,16 +561,36 @@ require_once __DIR__ . '/../../layouts/header.php';
                 </div>
                 <?php endif; ?>
             </div>
+            <?php else: ?>
+            <div class="diff-wrap mb-4">
+                <div class="diff-head" style="background:#f8fafc; color:#0f172a;"><i class="fas fa-list-ul"></i> Payload Data</div>
+                <table class="kv-table">
+                    <?php foreach ($detail_parsed as $k => $v): ?>
+                    <tr>
+                        <td><?= htmlspecialchars(str_replace('_', ' ', strtoupper($k))) ?></td>
+                        <td><?= render_payload_value($v) ?></td>
+                    </tr>
+                    <?php endforeach; ?>
+                </table>
+            </div>
             <?php endif; ?>
 
             <!-- Raw JSON -->
-            <div class="d-flex align-items-center gap-2 mb-2">
-                <span style="font-size:0.72rem; font-weight:700; color:var(--mu); text-transform:uppercase; letter-spacing:0.06em;">Raw JSON</span>
-                <button type="button" class="btn-copy" id="btnCopyJson" onclick="copyJson()">
-                    <i class="fas fa-copy"></i> Salin
+            <div class="mt-4 pt-4 border-top" style="border-color:#f3f4f6 !important;">
+                <button class="btn btn-sm btn-outline-secondary d-inline-flex align-items-center gap-2" type="button" data-bs-toggle="collapse" data-bs-target="#rawJsonCollapse" aria-expanded="false" aria-controls="rawJsonCollapse" style="font-size:0.8rem; font-weight:600; border-radius:6px;">
+                    <i class="fas fa-code"></i> Lihat Data Teknis (Untuk Developer)
                 </button>
+                
+                <div class="collapse mt-3" id="rawJsonCollapse">
+                    <div class="d-flex align-items-center gap-2 mb-2">
+                        <span style="font-size:0.72rem; font-weight:700; color:var(--mu); text-transform:uppercase; letter-spacing:0.06em;">Raw JSON Payload</span>
+                        <button type="button" class="btn-copy ms-auto" id="btnCopyJson" onclick="copyJson()">
+                            <i class="fas fa-copy"></i> Salin
+                        </button>
+                    </div>
+                    <pre class="json-viewer" id="jsonRaw"><?= htmlspecialchars($detail_formatted) ?></pre>
+                </div>
             </div>
-            <pre class="json-viewer" id="jsonRaw"><?= htmlspecialchars($detail_formatted) ?></pre>
         </div>
     </div>
     <?php endif; ?>

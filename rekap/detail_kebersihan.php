@@ -19,9 +19,7 @@ if (!isset($_GET['kamar']) || empty($_GET['kamar'])) {
 $nama_kamar = htmlspecialchars($_GET['kamar']);
 
 // Ambil periode aktif dari pengaturan sebagai default
-$q = mysqli_query($conn, "SELECT nilai FROM pengaturan WHERE nama = 'periode_aktif' LIMIT 1");
-$row = mysqli_fetch_assoc($q);
-$periode_aktif = $row ? $row['nilai'] : '2000-01-01';
+$periode_aktif = PERIODE_AKTIF;
 
 // Ambil filter tanggal dari URL, jika tidak ada, gunakan default
 $tanggal_awal = $_GET['tanggal_awal'] ?? $periode_aktif;

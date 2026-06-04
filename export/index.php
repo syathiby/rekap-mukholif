@@ -1,4 +1,4 @@
-﻿<?php 
+<?php 
 // 1. Panggil 'Otak' aplikasi dulu
 require_once __DIR__ . '/../bootstrap/init.php';
 
@@ -261,14 +261,14 @@ if ($result_kamar && $result_kamar->num_rows > 0) {
                         <label class="form-label form-label-custom">Tanggal Mulai</label>
                         <div class="input-group">
                             <span class="input-group-text input-group-text-custom border-end-0"><i class="far fa-calendar-alt"></i></span>
-                            <input type="date" name="tanggal_mulai" required class="form-control form-control-custom border-start-0" value="<?= date('Y-m-01') ?>">
+                            <input type="date" name="tanggal_mulai" required class="form-control form-control-custom border-start-0" value="<?= PERIODE_AKTIF ?>">
                         </div>
                     </div>
                     <div class="col-md-6 col-lg-4">
                         <label class="form-label form-label-custom">Tanggal Selesai</label>
                         <div class="input-group">
                             <span class="input-group-text input-group-text-custom border-end-0"><i class="far fa-calendar-alt"></i></span>
-                            <input type="date" name="tanggal_selesai" required class="form-control form-control-custom border-start-0" value="<?= date('Y-m-t') ?>">
+                            <input type="date" name="tanggal_selesai" required class="form-control form-control-custom border-start-0" value="<?= date('Y-m-d') ?>">
                         </div>
                     </div>
                     <div class="col-md-12 col-lg-4">

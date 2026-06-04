@@ -1,4 +1,4 @@
-﻿<?php
+<?php
 if (session_status() === PHP_SESSION_NONE) { session_start(); }
 require_once __DIR__ . '/../bootstrap/init.php';
 guard('rekap_view_statistik');
@@ -7,9 +7,7 @@ guard('rekap_view_statistik');
 <?php
 
 // Ambil periode aktif dari pengaturan
-$q_setting = $conn->prepare("SELECT nilai FROM pengaturan WHERE nama IN ('periode_aktif','periode_mulai') LIMIT 1");
-$q_setting->execute();
-$periode_awal = $q_setting->get_result()->fetch_assoc()['nilai'] ?? date('Y-m-d');
+$periode_awal = PERIODE_AKTIF;
 
 // Ambil parameter 'days' dari request, pastikan integer, default 7
 $days = isset($_GET['days']) ? intval($_GET['days']) : 7;

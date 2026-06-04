@@ -1,4 +1,4 @@
-﻿<?php 
+<?php 
 // 1. Panggil 'Otak' aplikasi dulu
 require_once __DIR__ . '/../bootstrap/init.php';
 
@@ -47,11 +47,9 @@ $sql = "
         s.santri_nama,
         s.santri_kelas,
         s.santri_kamar,
-        COALESCE(SUM(p.poin), 0) AS total_poin_pelanggaran
+        (SELECT COALESCE(SUM(poin), 0) FROM arsip_data_pelanggaran p WHERE p.santri_id = s.santri_id AND p.arsip_id = s.arsip_id) AS total_poin_pelanggaran
     FROM
         arsip_data_santri s
-    LEFT JOIN
-        arsip_data_pelanggaran p ON s.santri_id = p.santri_id AND s.arsip_id = p.arsip_id
 ";
 
 $conditions = ['s.arsip_id = ?'];
@@ -75,7 +73,6 @@ if (!empty($search_nama)) {
 }
 
 $sql .= " WHERE " . implode(' AND ', $conditions);
-$sql .= " GROUP BY s.id, s.santri_nama, s.santri_kelas, s.santri_kamar ";
 // Urutkan secara numerik untuk kelas dan kamar, lalu nama dan poin
 $sql .= " ORDER BY CAST(s.santri_kelas AS UNSIGNED) ASC, CAST(s.santri_kamar AS UNSIGNED) ASC, s.santri_nama ASC, total_poin_pelanggaran DESC";
 

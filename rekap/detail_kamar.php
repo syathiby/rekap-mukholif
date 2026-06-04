@@ -22,7 +22,7 @@ $sql_summary = "
         COALESCE(SUM(pel.kasus), 0) / COUNT(s.id) AS avg_kasus,
         COALESCE(SUM(rwd.total_reward), 0) / COUNT(s.id) AS avg_reward,
         COALESCE(SUM(rpt.avg_rapot), 0) / COUNT(s.id) AS avg_rapot,
-        COALESCE(SUM(s.poin_aktif), 0) / COUNT(s.id) AS avg_poin_aktif,
+        (COALESCE(SUM(pel.total_pelanggaran), 0) - COALESCE(SUM(rwd.total_reward), 0)) / NULLIF(COUNT(s.id), 0) AS avg_poin_bersih,
         COALESCE(kbs.total_kebersihan, 0) AS pelanggaran_kebersihan
     FROM santri s
     LEFT JOIN (
@@ -63,7 +63,8 @@ $summary = mysqli_fetch_assoc(mysqli_stmt_get_result($stmt_sum));
 // 2. Ambil Data Santri Individu
 $sql_santri = "
     SELECT 
-        s.id, s.nama, s.kelas, s.poin_aktif,
+        s.id, s.nama, s.kelas,
+        (COALESCE(pel.total_pelanggaran, 0) - COALESCE(rwd.total_reward, 0)) AS poin_bersih,
         COALESCE(pel.total_pelanggaran, 0) AS total_pelanggaran,
         COALESCE(pel.kasus, 0) AS kasus,
         COALESCE(rwd.total_reward, 0) AS total_reward,
@@ -186,7 +187,7 @@ body { background-color: #f8f9fa; font-family: 'Poppins', sans-serif; color: #33
         </div>
         <div class="sum-card">
             <?php 
-            $avg_pa = (int)$summary['avg_poin_aktif'];
+            $avg_pa = (int)$summary['avg_poin_bersih'];
             $display_pa = $avg_pa < 0 ? 0 : $avg_pa;
             ?>
             <div class="sum-icon" style="background: <?= $display_pa > 0 ? '#fee2e2' : '#d1fae5' ?>; color: <?= $display_pa > 0 ? '#ef4444' : '#10b981' ?>;"><i class="fas fa-balance-scale"></i></div>
@@ -228,7 +229,7 @@ body { background-color: #f8f9fa; font-family: 'Poppins', sans-serif; color: #33
                                 <!-- Poin Bersih -->
                                 <td style="text-align: center;">
                                     <?php 
-                                    $pa = (int)$s['poin_aktif'];
+                                    $pa = (int)$s['poin_bersih'];
                                     $display_pa = $pa < 0 ? 0 : $pa;
                                     if ($display_pa > 0): ?>
                                         <span class="pill pill-danger"><?= $display_pa ?></span>

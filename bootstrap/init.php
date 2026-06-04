@@ -55,6 +55,11 @@ require_once __DIR__ . '/../config/auth.php';
 // Protokol 4: Fungsi helper: set_flash_message(), display_flash_message().
 require_once __DIR__ . '/helpers.php';
 
+// Protokol 5: Ambil Pengaturan Global (Dieksekusi 1x per request, tersedia di semua halaman)
+$q_periode_global = mysqli_query($conn, "SELECT nilai FROM pengaturan WHERE nama = 'periode_aktif' LIMIT 1");
+$periode_aktif_row = mysqli_fetch_assoc($q_periode_global);
+define('PERIODE_AKTIF', $periode_aktif_row ? $periode_aktif_row['nilai'] : '2000-01-01');
+
 // ─────────────────────────────────────────────────────────────────────
 
 /**
@@ -64,8 +69,8 @@ require_once __DIR__ . '/helpers.php';
  * Tidak ada query database di sini — murni operasi session (RAM).
  */
 if (isset($_SESSION['user_id'], $_SESSION['login_time'])) {
-    // Batas inaktif: 1 jam (3600 detik)
-    if ((time() - $_SESSION['login_time']) > 3600) {
+    // Batas inaktif: 3 jam (10800 detik)
+    if ((time() - $_SESSION['login_time']) > 10800) {
         // Hancurkan session secara bersih
         $_SESSION = [];
         if (session_status() === PHP_SESSION_ACTIVE) {

@@ -4,7 +4,7 @@
 
 // 1. Panggil 'Otak' aplikasi dulu
 require_once __DIR__ . '/../bootstrap/init.php';
-guard('rapot_view');
+guard(['rapot_view', 'rapot_create', 'rapot_cetak', 'rapot_delete']);
 
 // === PENGECEKAN IZIN DI AWAL ===
 $can_create = has_permission('rapot_create');
@@ -16,8 +16,8 @@ $can_view = has_permission('rapot_view');
 try {
     $kamar_list_stmt = $conn->query("
         SELECT DISTINCT kamar FROM santri 
-        WHERE kamar IS NOT NULL AND kamar != '' AND kamar != '0'
-        ORDER BY CAST(kamar AS UNSIGNED)
+        WHERE kamar IS NOT NULL AND kamar != 0
+        ORDER BY kamar ASC
     ");
     $kamar_list = $kamar_list_stmt->fetch_all(MYSQLI_ASSOC);
     $bulan_list = ['Januari', 'Februari', 'Maret', 'April', 'Mei', 'Juni', 'Juli', 'Agustus', 'September', 'Oktober', 'November', 'Desember'];
@@ -64,7 +64,7 @@ try {
     $sql_count = "
         SELECT COUNT(r.id) AS total
         FROM rapot_kepengasuhan r
-        LEFT JOIN santri s ON r.santri_id = s.id
+        JOIN santri s ON r.santri_id = s.id
         WHERE 1=1 
     ";
     $params_count = []; $types_count = "";
@@ -85,7 +85,7 @@ try {
             s.nama AS nama_santri, s.kamar AS kamar_santri,
             u.nama_lengkap AS nama_musyrif
         FROM rapot_kepengasuhan r
-        LEFT JOIN santri s ON r.santri_id = s.id
+        JOIN santri s ON r.santri_id = s.id
         LEFT JOIN users u ON r.musyrif_id = u.id
         WHERE 1=1 
     "; 
@@ -95,7 +95,7 @@ try {
     if (!empty($filter_bulan)) { $sql .= " AND r.bulan = ?"; }
     if (!empty($filter_tahun)) { $sql .= " AND r.tahun = ?"; }
     
-    $sql .= " ORDER BY CAST(s.kamar AS UNSIGNED) ASC, s.nama ASC LIMIT ? OFFSET ?";
+    $sql .= " ORDER BY s.kamar ASC, s.nama ASC LIMIT ? OFFSET ?";
     $types .= "ii";
     $params[] = $limit;
     $params[] = $offset;
@@ -389,7 +389,7 @@ require_once __DIR__ . '/../layouts/header.php';
                 <!-- Group Kiri: Create -->
                 <div class="col-12 col-md-auto d-flex gap-2 mb-3 mb-md-0">
                     <?php if ($can_create): ?>
-                        <a href="create.php?kamar=<?php echo urlencode($filter_kamar); ?>" class="btn btn-success flex-grow-1 flex-md-grow-0 fw-medium">
+                        <a href="create.php?kamar=<?php echo urlencode($filter_kamar); ?>" id="btn-create-rapot" class="btn btn-success flex-grow-1 flex-md-grow-0 fw-medium">
                             <i class="fas fa-plus-circle me-1"></i> Buat Rapot Baru
                         </a>
                     <?php endif; ?>
@@ -787,6 +787,13 @@ document.addEventListener('DOMContentLoaded', function() {
     // Filter Change Listener
     document.querySelectorAll('#kamar, #bulan, #tahun').forEach(function(selectElement) {
         selectElement.addEventListener('change', function() {
+            // Update URL tombol Buat Rapot Baru agar mengikuti filter kamar secara instan
+            if (this.id === 'kamar') {
+                const btnCreate = document.getElementById('btn-create-rapot');
+                if (btnCreate) {
+                    btnCreate.href = 'create.php?kamar=' + encodeURIComponent(this.value);
+                }
+            }
             fetchRapotData(1);
         });
     });

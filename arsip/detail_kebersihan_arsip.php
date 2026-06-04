@@ -83,10 +83,14 @@ $total_pelanggaran = count($pelanggaran_list);
             background-color: var(--card-bg);
             border-radius: 12px;
             padding: 25px;
-            display: flex;
-            align-items: center;
+            display: flex !important;
+            flex-direction: row !important; /* Timpa global css style.css yang membuatnya column */
+            align-items: center !important;
+            justify-content: flex-start !important;
             gap: 20px;
             box-shadow: 0 4px 12px rgba(0,0,0,0.05);
+            text-align: left !important;
+            height: auto !important;
         }
         .stat-card .icon {
             font-size: 2rem;
@@ -98,16 +102,41 @@ $total_pelanggaran = count($pelanggaran_list);
             justify-content: center;
             color: var(--danger);
             background-color: #ffebee;
+            flex-shrink: 0;
         }
         .stat-card .stat-value {
             font-size: 2.5rem;
             font-weight: 700;
             color: var(--danger);
             line-height: 1;
+            margin-bottom: 5px;
         }
         .stat-card .stat-label {
             font-weight: 500;
             color: var(--text-dark);
+        }
+        @media (max-width: 576px) {
+            .header-card {
+                padding: 20px;
+            }
+            .header-card h1 {
+                font-size: 1.25rem;
+            }
+            .stat-card {
+                padding: 15px 20px;
+                gap: 15px;
+            }
+            .stat-card .icon {
+                width: 50px;
+                height: 50px;
+                font-size: 1.5rem;
+            }
+            .stat-card .stat-value {
+                font-size: 2rem;
+            }
+            .stat-card .stat-label {
+                font-size: 0.9rem;
+            }
         }
         .table-wrapper {
             background: var(--card-bg);
@@ -168,14 +197,14 @@ $total_pelanggaran = count($pelanggaran_list);
 
 <div class="container-fluid py-4">
 
-    <div class="header-card d-flex justify-content-between align-items-center flex-wrap">
+    <div class="header-card d-flex flex-column flex-md-row justify-content-between align-items-start align-items-md-center gap-3">
         <div>
             <h1><i class="fas fa-search-plus me-2"></i> Detail Pelanggaran Kamar <?= htmlspecialchars($kamar) ?></h1>
             <p class="text-muted mb-0">
                 Arsip: <strong><?= htmlspecialchars($arsip['judul']) ?></strong> 
             </p>
         </div>
-        <a href="<?= $link_kembali ?>" class="btn btn-light mt-2 mt-md-0">
+        <a href="<?= $link_kembali ?>" class="btn btn-light">
             <i class="fas fa-arrow-left me-2"></i>Kembali
         </a>
     </div>
@@ -192,9 +221,9 @@ $total_pelanggaran = count($pelanggaran_list);
         <table class="table table-hover">
             <thead>
                 <tr>
-                    <th style="width: 25%;">Tanggal & Waktu</th>
-                    <th style="width: 55%;">Catatan Pelanggaran</th>
-                    <th>Dicatat Oleh</th>
+                    <th style="min-width: 150px;">Tanggal & Waktu</th>
+                    <th style="min-width: 250px;">Catatan Pelanggaran</th>
+                    <th style="min-width: 150px;">Dicatat Oleh</th>
                 </tr>
             </thead>
             <tbody>

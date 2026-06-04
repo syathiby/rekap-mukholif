@@ -18,11 +18,8 @@ if (!$conn) {
     die("Koneksi database gagal: " . mysqli_connect_error());
 }
 
-// LANGKAH 1: Ambil periode aktif (copy dari dashboard)
-$q = mysqli_query($conn, "SELECT nilai FROM pengaturan WHERE nama = 'periode_aktif' LIMIT 1");
-$row = mysqli_fetch_assoc($q);
-$periode_aktif = $row ? $row['nilai'] : '2000-01-01'; // default biar gak error
-
+// LANGKAH 1: Ambil periode aktif (Menggunakan konstanta global dari init.php)
+$periode_aktif = PERIODE_AKTIF;
 
 // Ambil pelanggaran yang belum dieksekusi
 $pelanggaranQuery = mysqli_query($conn, "

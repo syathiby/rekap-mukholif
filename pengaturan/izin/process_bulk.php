@@ -38,8 +38,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     }
 
     if (empty($validUserIds)) {
-        $_SESSION['error_message'] = "❌ Tidak ada pengguna sasaran yang valid (Anda tidak dapat mengubah izin diri sendiri).";
-        header("Location: bulk.php");
+        http_response_code(403);
+        require __DIR__ . '/../../bootstrap/access_denied.php';
         exit;
     }
 
@@ -58,8 +58,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $validUserIds = $safeUserIds;
 
     if (empty($validUserIds)) {
-        $_SESSION['error_message'] = "❌ Tidak ada pengguna sasaran yang valid (Perubahan izin pada akun Administrator diblokir).";
-        header("Location: bulk.php");
+        http_response_code(403);
+        require __DIR__ . '/../../bootstrap/access_denied.php';
         exit;
     }
 

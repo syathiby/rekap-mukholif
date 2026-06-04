@@ -15,8 +15,7 @@ if (!$is_ajax) {
 // --- LOGIKA PHP ---
 
 // Ambil periode aktif
-$q_periode = mysqli_query($conn, "SELECT nilai FROM pengaturan WHERE nama = 'periode_aktif' LIMIT 1");
-$periode_aktif = mysqli_fetch_assoc($q_periode)['nilai'] ?? date('Y-m-d', strtotime('-1 year'));
+$periode_aktif = PERIODE_AKTIF;
 
 // Ambil filter dari URL
 $filter_kamar = $_GET['kamar'] ?? null;
@@ -40,6 +39,7 @@ SELECT
     s.kelas,
     s.kamar,
     s.poin_aktif,
+    (COALESCE(sub_p.total_poin_pelanggaran, 0) - COALESCE(sub_r.total_poin_reward, 0)) AS poin_bersih_periode,
     COALESCE(sub_p.total_pelanggaran_periode, 0) AS total_pelanggaran_periode,
     COALESCE(sub_p.total_poin_pelanggaran, 0) AS total_poin_pelanggaran,
     COALESCE(sub_r.total_reward_periode, 0) AS total_reward_periode,
@@ -92,18 +92,18 @@ $sql .= " AND (sub_p.total_poin_pelanggaran > 0 OR sub_r.total_poin_reward > 0)"
 
 // Urutkan berdasarkan filter pilihan pengguna
 if ($sort_order === 'terburuk') {
-    // Terburuk: Poin aktif tertinggi (paling banyak pelanggaran)
+    // Terburuk: Poin bersih tertinggi (paling banyak pelanggaran dikurangi reward)
     $sql .= "
     ORDER BY
-        s.poin_aktif DESC,
+        poin_bersih_periode DESC,
         COALESCE(sub_p.total_pelanggaran_periode, 0) DESC,
         s.nama ASC
     ";
 } else {
-    // Terbaik: Poin aktif terkecil (bisa minus karena reward)
+    // Terbaik: Poin bersih terkecil (bisa minus karena reward)
     $sql .= "
     ORDER BY
-        s.poin_aktif ASC,
+        poin_bersih_periode ASC,
         COALESCE(sub_p.total_pelanggaran_periode, 0) ASC,
         s.nama ASC
     ";
@@ -238,8 +238,8 @@ $query = $stmt->get_result();
                                         Kls: <?= htmlspecialchars($row['kelas']) ?> &bull; Kmr: <?= htmlspecialchars($row['kamar']) ?>
                                     </div>
                                     <?php 
-                                    $poin_aktif_val = (int)$row['poin_aktif'];
-                                    $display_poin = $poin_aktif_val < 0 ? 0 : $poin_aktif_val;
+                                    $poin_bersih_val = (int)$row['poin_bersih_periode'];
+                                    $display_poin = $poin_bersih_val < 0 ? 0 : $poin_bersih_val;
                                     $pb_class = $display_poin > 0 ? 'text-danger' : 'text-success';
                                     ?>
                                     <div class="mt-1 <?= $pb_class ?>" style="font-size: 0.75rem; font-weight: 600;">Poin Bersih: <?= $display_poin ?></div>

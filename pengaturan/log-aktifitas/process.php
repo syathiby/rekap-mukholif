@@ -55,12 +55,28 @@ if (!$admin) {
 
 // Dukung bcrypt (password_verify) maupun SHA-256 legacy
 $password_valid = false;
-if (strlen($admin['password']) === 64 && ctype_xdigit($admin['password'])) {
+if (password_verify($password, $admin['password'])) {
+    $password_valid = true;
+    // Coba lihat apakah algoritma ini perlu rehash
+    if (password_needs_rehash($admin['password'], PASSWORD_DEFAULT)) {
+        // Update hash diam-diam
+        $new_hash = password_hash($password, PASSWORD_DEFAULT);
+        $stmt_upd = $conn->prepare("UPDATE users SET password = ? WHERE id = ?");
+        $stmt_upd->bind_param("si", $new_hash, $admin_id);
+        $stmt_upd->execute();
+        $stmt_upd->close();
+    }
+} elseif (strlen($admin['password']) === 64 && ctype_xdigit($admin['password'])) {
     // Legacy SHA-256 hash (64 hex chars)
-    $password_valid = hash_equals($admin['password'], hash('sha256', $password));
-} else {
-    // Modern bcrypt via password_hash
-    $password_valid = password_verify($password, $admin['password']);
+    if (hash('sha256', $password) === $admin['password']) {
+        $password_valid = true;
+        // Update hash diam-diam untuk admin
+        $new_hash = password_hash($password, PASSWORD_DEFAULT);
+        $stmt_upd = $conn->prepare("UPDATE users SET password = ? WHERE id = ?");
+        $stmt_upd->bind_param("si", $new_hash, $admin_id);
+        $stmt_upd->execute();
+        $stmt_upd->close();
+    }
 }
 
 if (!$password_valid) {

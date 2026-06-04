@@ -1,4 +1,4 @@
-﻿<?php
+<?php
 // File: rekap-mukholif/rapot/delete.php
 
 // 1. Panggil 'Otak' aplikasi dulu
@@ -18,15 +18,25 @@ if (empty($_GET['id'])) {
 $rapot_id = (int)$_GET['id'];
 
 try {
-    // 4. Siapin query DELETE (Pake MySQLi)
+    // 4. Ambil info rapot sebelum dihapus untuk log
+    $stmt_info = $conn->prepare("SELECT r.bulan, r.tahun, s.nama FROM rapot_kepengasuhan r JOIN santri s ON r.santri_id = s.id WHERE r.id = ?");
+    $stmt_info->bind_param("i", $rapot_id);
+    $stmt_info->execute();
+    $info = $stmt_info->get_result()->fetch_assoc();
+    $stmt_info->close();
+
+    // 5. Siapin query DELETE (Pake MySQLi)
     $sql = "DELETE FROM rapot_kepengasuhan WHERE id = ?";
     
     $stmt = $conn->prepare($sql);
     $stmt->bind_param("i", $rapot_id);
     $stmt->execute();
 
-    // 5. Cek apakah beneran ada baris yang kehapus
+    // 6. Cek apakah beneran ada baris yang kehapus
     if ($stmt->affected_rows > 0) {
+        if ($info) {
+            write_activity_log('DELETE', 'rapot', "Menghapus rapot kepengasuhan santri '" . htmlspecialchars($info['nama']) . "' periode " . $info['bulan'] . " " . $info['tahun'], ['rapot_id' => $rapot_id, 'info' => $info]);
+        }
         set_flash_message('Rapot berhasil dihapus.', 'success');
     } else {
         set_flash_message('Gagal menghapus rapot atau rapot tidak ditemukan.', 'danger');

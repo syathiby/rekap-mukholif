@@ -1,4 +1,4 @@
-﻿<?php
+<?php
 // File: rekap-mukholif/rapot/process.php
 
 // 1. Panggil 'Otak' aplikasi dulu
@@ -143,7 +143,21 @@ if (isset($_POST['simpan_rapot'])) {
             throw new Exception("Execute failed: " . $stmt_insert->error);
         }
 
-        // 10. Kasih notif sukses & redirect
+        // 10. Catat Log Aktivitas
+        $nama_santri = "Unknown";
+        $q_santri = $conn->query("SELECT nama FROM santri WHERE id = $santri_id");
+        if ($q_santri && $r_santri = $q_santri->fetch_assoc()) {
+            $nama_santri = $r_santri['nama'];
+        }
+        write_activity_log('CREATE', 'rapot', "Menginput nilai rapot kepengasuhan untuk '" . htmlspecialchars($nama_santri) . "' periode $bulan $tahun", [
+            'santri_id' => $santri_id,
+            'nama_santri' => $nama_santri,
+            'bulan' => $bulan,
+            'tahun' => $tahun,
+            'catatan' => $catatan
+        ]);
+
+        // 11. Kasih notif sukses & redirect
         set_flash_message('Rapot baru berhasil disimpan dengan poin reward!', 'success');
         
         header('Location: index.php');

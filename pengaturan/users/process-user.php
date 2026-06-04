@@ -70,6 +70,15 @@ if ($is_edit_mode) {
     if ($result_role->num_rows === 1) {
         $user_asli = $result_role->fetch_assoc();
         $role_asli = strtolower($user_asli['role']);
+        $logged_in_user_id = $_SESSION['user_id'] ?? null;
+        
+        // Mencegah user mengubah rolenya sendiri
+        if ($user_id_check === (int)$logged_in_user_id) {
+            if ($role !== $role_asli) {
+                // Paksa role kembali ke role asli jika user memanipulasi form
+                $role = $role_asli;
+            }
+        }
         
         // Skenario A: User target aslinya adalah admin
         if ($role_asli === 'admin') {
@@ -92,7 +101,10 @@ if ($is_edit_mode) {
             }
         } elseif ($role_asli === 'pengelola') {
             // Skenario B: User target aslinya adalah pengelola
-            if (!isset($_SESSION['role']) || strtolower($_SESSION['role']) !== 'admin') {
+            $is_admin = (isset($_SESSION['role']) && strtolower($_SESSION['role']) === 'admin');
+            $is_self = ($user_id_check === (int)$logged_in_user_id);
+            // Yang boleh ngedit: Admin atau dirinya sendiri
+            if (!$is_admin && !$is_self) {
                 $stmt_role_check->close();
                 $conn->close();
                 http_response_code(403);
@@ -169,7 +181,7 @@ if ($is_edit_mode) {
     $user_id = (int)$_POST['user_id'];
 
     if (!empty($password)) {
-        $hashedPassword = hash('sha256', $password);
+        $hashedPassword = password_hash($password, PASSWORD_DEFAULT);
         $stmt_update = $conn->prepare("UPDATE users SET nama_lengkap = ?, username = ?, role = ?, password = ? WHERE id = ?");
         $stmt_update->bind_param("ssssi", $nama_lengkap, $username, $role, $hashedPassword, $user_id);
     } else {
@@ -202,7 +214,7 @@ if ($is_edit_mode) {
     $stmt_update->close();
 
 } else {
-    $hashedPassword = hash('sha256', $password);
+    $hashedPassword = password_hash($password, PASSWORD_DEFAULT);
     
     $stmt_insert = $conn->prepare("INSERT INTO users (nama_lengkap, username, password, role) VALUES (?, ?, ?, ?)");
     $stmt_insert->bind_param("ssss", $nama_lengkap, $username, $hashedPassword, $role); 

@@ -17,8 +17,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $permissions = isset($_POST['permissions']) ? $_POST['permissions'] : [];
 
     if (!$role) {
-        $_SESSION['error_message'] = "Error: Role tidak valid.";
-        header("Location: role.php");
+        http_response_code(403);
+        require __DIR__ . '/../../bootstrap/access_denied.php';
         exit;
     }
 
@@ -40,8 +40,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $availableRoles[] = $r['id'];
     }
     if (!in_array($role, $availableRoles)) {
-        $_SESSION['error_message'] = "Error: Role tidak dikenal.";
-        header("Location: role.php");
+        http_response_code(403);
+        require __DIR__ . '/../../bootstrap/access_denied.php';
         exit;
     }
 
