@@ -2,3 +2,5 @@
 .env.server
 .idea/
 vendor/
+database.sql
+prd_rombak_struktur.md
