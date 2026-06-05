@@ -2,8 +2,6 @@
 
 namespace PhpOffice\PhpSpreadsheet\Helper;
 
-use DateTimeImmutable;
-use DateTimeZone;
 use PhpOffice\PhpSpreadsheet\Exception;
 
 /**
@@ -41,7 +39,7 @@ class Downloader
 
         $filetype ??= pathinfo($this->filename, PATHINFO_EXTENSION);
         if (!array_key_exists(strtolower($filetype), self::CONTENT_TYPES)) {
-            throw new Exception('Invalid filetype: file cannot be downloaded');
+            throw new Exception('Invalid filetype: cannot be downloaded');
         }
         $this->filetype = strtolower($filetype);
     }
@@ -89,8 +87,7 @@ class Downloader
 
         // If you're serving to IE over SSL, then the following may be needed
         header('Expires: Mon, 26 Jul 1997 05:00:00 GMT'); // Date in the past
-        $dt = new DateTimeImmutable(timezone: new DateTimeZone('UTC'));
-        header('Last-Modified: ' . $dt->format('D, d M Y H:i:s') . ' GMT'); // always modified
+        header('Last-Modified: ' . gmdate('D, d M Y H:i:s') . ' GMT'); // always modified
         header('Cache-Control: cache, must-revalidate'); // HTTP/1.1
         header('Pragma: public'); // HTTP/1.0
     }

@@ -1,0 +1,14 @@
+<IfModule mod_rewrite.c>
+    RewriteEngine On
+
+    # Redirect root to public/index.php
+    RewriteRule ^$ public/index.php [L]
+
+    # If the file or directory exists (e.g., assets, plugins), serve it directly
+    RewriteCond %{REQUEST_FILENAME} -f [OR]
+    RewriteCond %{REQUEST_FILENAME} -d
+    RewriteRule ^ - [L]
+
+    # Everything else goes to public/index.php
+    RewriteRule ^(.*)$ public/index.php [L]
+</IfModule>

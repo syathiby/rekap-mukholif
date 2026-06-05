@@ -1,6 +1,9 @@
-.env
-.env.server
-.idea/
 vendor/
-database.sql
-prd_rombak_struktur.md
+.env
+.env.*
+!.env.example
+.idea/
+.vscode/
+uploads/*
+!uploads/.gitkeep
+node_modules/

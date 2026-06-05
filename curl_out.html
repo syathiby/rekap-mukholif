@@ -1,0 +1,967 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+    <title>AsuhTrack</title>
+
+    <link rel="manifest" href="http://localhost/rekap-mukholif/manifest.json">
+    <link rel="icon" type="image/png" sizes="16x16"  href="http://localhost/rekap-mukholif/assets/img/logo_favicon.png?v=1">
+    <link rel="icon" type="image/png" sizes="32x32"  href="http://localhost/rekap-mukholif/assets/img/logo_favicon.png?v=1">
+    <link rel="icon" type="image/png" sizes="48x48"  href="http://localhost/rekap-mukholif/assets/img/logo_favicon.png?v=1">
+    <link rel="icon" type="image/png" sizes="96x96"  href="http://localhost/rekap-mukholif/assets/img/logo_favicon.png?v=1">
+    <link rel="shortcut icon" type="image/png"       href="http://localhost/rekap-mukholif/assets/img/logo_favicon.png?v=1">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="apple-mobile-web-app-title" content="AsuhTrack">
+    <link rel="apple-touch-icon"              href="http://localhost/rekap-mukholif/assets/img/logo_aplikasi.png?v=1">
+    
+    <meta name="theme-color" content="#16a34a">
+    <meta name="mobile-web-app-capable" content="yes">
+    
+    <!-- HTMX -->
+    <script src="https://unpkg.com/htmx.org@1.9.11"></script>
+
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css">
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700&display=swap" rel="stylesheet">
+    
+    <link rel="stylesheet" href="http://localhost/rekap-mukholif/assets/css/style.css?v=1780653309">
+    <style>
+    #sidebarOverlay {
+        display: none;
+        position: fixed;
+        inset: 0;
+        background: rgba(0,0,0,0.5);
+        z-index: 1039;
+        backdrop-filter: blur(2px);
+        opacity: 0;
+        transition: opacity 0.25s ease;
+    }
+    #sidebarOverlay.visible { opacity: 1; }
+    </style>
+</head>
+<body hx-boost="true">
+    <div id="sidebarOverlay" onclick="closeSidebarMobile()"></div>
+
+    <nav id="sidebar">
+        <button class="d-md-none btn btn-sm text-white position-absolute end-0 top-0 me-2"
+                id="sidebarCloseBtn"
+                style="margin-top: calc(1rem + env(safe-area-inset-top, 0px)); background: rgba(255,255,255,0.1); border: none; border-radius: 50%; width: 32px; height: 32px; display: flex; align-items: center; justify-content: center; z-index: 1050;"
+                onclick="closeSidebarMobile()">
+            <i class="fas fa-times"></i>
+        </button>
+
+        <a href="http://localhost/rekap-mukholif/" class="sb-brand">
+            <div class="sb-brand-icon"><i class="fas fa-shield-alt"></i></div>
+            <div class="sb-brand-name">Asuh<span>Track</span></div>
+        </a>
+
+        
+<!-- Nav Menu (SyathibyFood Style) -->
+<div class="sb-nav">
+
+    <div class="sb-section-label">MENU UTAMA</div>
+    
+    <a href="http://localhost/rekap-mukholif/index.php" class="sb-link active">
+        <i class="fas fa-home"></i>
+        <span>Dashboard</span>
+    </a>
+
+    
+    
+    
+    
+        
+        
+    
+    
+        
+    
+    
+        
+        
+</div>
+
+        <div class="sb-footer">
+            <a href="http://localhost/rekap-mukholif/logout" onclick="confirmLogout(event)" class="sb-link" style="margin-bottom:6px; background:rgba(239,68,68,0.08); border-color:rgba(239,68,68,0.12);">
+                <i class="fas fa-sign-out-alt" style="color:#f87171;"></i>
+                <span style="color:#f87171;">Logout</span>
+            </a>
+            <a href="http://localhost/rekap-mukholif/pengaturan/users/profil" class="sb-footer-info overflow-hidden text-decoration-none" style="display:flex; color:inherit; transition: background 0.2s;" onmouseover="this.style.background='rgba(255,255,255,0.05)'" onmouseout="this.style.background='transparent'">
+                <div class="sb-avatar" style="background: #7c3aed;">
+                    <i class="fas fa-user-shield"></i>
+                </div>
+                <div class="overflow-hidden">
+                    <div class="sb-user-name text-truncate">Pengguna</div>
+                    <div class="sb-user-role text-truncate" style="color:#94a3b8;">Developer</div>
+                </div>
+            </a>
+        </div>
+    </nav>
+
+    <main class="main-content d-flex flex-column min-vh-100">
+        <header class="header sticky-top bg-white mb-4" style="border-bottom: 1px solid var(--border-color); z-index: 1020;">
+            <nav class="navbar h-100 px-lg-4 px-3 py-2">
+                <div class="container-fluid d-flex align-items-center justify-content-between p-0">
+                    <div class="d-flex align-items-center">
+                        <button class="btn btn-light d-lg-none me-3" type="button" onclick="openSidebarMobile()">
+                            <i class="fas fa-bars"></i>
+                        </button>
+                        
+                        <div class="d-flex flex-column">
+                            <h5 class="mb-0 fw-bold text-dark" style="font-size: 1.15rem;" id="header-page-title">
+                                Dashboard                            </h5>
+                            <span class="text-muted d-none d-sm-block" style="font-size: 0.8rem;">Sistem Informasi Kepengasuhan Santri</span>
+                        </div>
+                    </div>
+                    
+                    <div class="d-none d-lg-flex align-items-center gap-2">
+                        <div class="badge bg-white text-secondary border px-3 py-2 rounded-3 fw-medium d-flex align-items-center">
+                            <i class="far fa-calendar-alt me-2 text-muted"></i>
+                            05 Jun 2026                        </div>
+                        <div class="badge bg-primary text-white border px-3 py-2 rounded-3 fw-medium d-flex align-items-center">
+                            <i class="fas fa-user-shield me-2"></i>
+                            Developer                        </div>
+                    </div>
+                </div>
+            </nav>
+        </header>
+
+        <script>
+        function openSidebarMobile() {
+            var side = document.getElementById('sidebar');
+            var overlay = document.getElementById('sidebarOverlay');
+            if(side) side.classList.add('toggled');
+            if(overlay) {
+                overlay.style.display = 'block';
+                requestAnimationFrame(() => overlay.classList.add('visible'));
+            }
+            document.body.style.overflow = 'hidden';
+        }
+
+        function closeSidebarMobile() {
+            var side = document.getElementById('sidebar');
+            var overlay = document.getElementById('sidebarOverlay');
+            if(side) side.classList.remove('toggled');
+            if(overlay) {
+                overlay.classList.remove('visible');
+                setTimeout(() => { overlay.style.display = 'none'; }, 250);
+            }
+            document.body.style.overflow = '';
+        }
+
+        function confirmLogout(event) {
+            event.preventDefault();
+            const logoutUrl = event.currentTarget.href;
+            if (confirm('Apakah Anda yakin ingin keluar? Sesi Anda akan berakhir.')) {
+                window.location.href = logoutUrl;
+            }
+        }
+        </script>
+
+        <div id="flash-message-container" class="px-4">
+                </div>
+
+<div id="page-content">
+    <div class="dashboard-wrapper">
+        
+        <div class="row g-4 mb-4">
+            <!-- Card 1: Total Santri -->
+            <div class="col-xl-3 col-md-6">
+                <div class="card h-100 shadow-sm border-0 rounded-4 overflow-hidden position-relative" style="background: linear-gradient(145deg, #ffffff, #f8fafc);">
+                    <div class="card-body p-4">
+                        <div class="d-flex justify-content-between align-items-start mb-2">
+                            <div>
+                                <h6 class="text-muted fw-semibold mb-1">Total Santri</h6>
+                                <h3 class="fw-bold mb-0 text-dark" style="font-size: 2.2rem; letter-spacing:-0.5px;">200</h3>
+                            </div>
+                            <div class="d-flex align-items-center justify-content-center rounded-3" style="width: 48px; height: 48px; background: rgba(16, 185, 129, 0.1); color: #10b981;">
+                                <i class="fas fa-user-graduate fa-lg"></i>
+                            </div>
+                        </div>
+                        <div class="text-muted small mt-2 d-flex justify-content-between align-items-center">
+                            <span>Santri aktif terdaftar</span>
+                                                            <i class="fas fa-lock opacity-50"></i>
+                                                    </div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Card 2: Jenis Pelanggaran -->
+            <div class="col-xl-3 col-md-6">
+                <div class="card h-100 shadow-sm border-0 rounded-4 overflow-hidden position-relative" style="background: linear-gradient(145deg, #ffffff, #fffbeb);">
+                    <div class="card-body p-4">
+                        <div class="d-flex justify-content-between align-items-start mb-2">
+                            <div>
+                                <h6 class="text-muted fw-semibold mb-1">Kategori Aturan</h6>
+                                <h3 class="fw-bold mb-0 text-dark" style="font-size: 2.2rem; letter-spacing:-0.5px;">174</h3>
+                            </div>
+                            <div class="d-flex align-items-center justify-content-center rounded-3" style="width: 48px; height: 48px; background: rgba(245, 158, 11, 0.1); color: #f59e0b;">
+                                <i class="fas fa-clipboard-list fa-lg"></i>
+                            </div>
+                        </div>
+                        <div class="text-muted small mt-2 d-flex justify-content-between align-items-center">
+                            <span>Macam-macam aturan</span>
+                                                            <i class="fas fa-lock opacity-50"></i>
+                                                    </div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Card 3: Total Pelanggaran -->
+            <div class="col-xl-3 col-md-6">
+                <div class="card h-100 shadow-sm border-0 rounded-4 overflow-hidden position-relative" style="background: linear-gradient(145deg, #ffffff, #fef2f2);">
+                    <div class="card-body p-4">
+                        <div class="d-flex justify-content-between align-items-start mb-2">
+                            <div>
+                                <h6 class="text-muted fw-semibold mb-1">Pelanggaran Tercatat</h6>
+                                <h3 class="fw-bold mb-0 text-dark" style="font-size: 2.2rem; letter-spacing:-0.5px;">1,912</h3>
+                            </div>
+                            <div class="d-flex align-items-center justify-content-center rounded-3" style="width: 48px; height: 48px; background: rgba(239, 68, 68, 0.1); color: #ef4444;">
+                                <i class="fas fa-exclamation-circle fa-lg"></i>
+                            </div>
+                        </div>
+                        
+                        <div class="text-muted small mt-2 d-flex justify-content-between align-items-end">
+                            <div>
+                                Total kasus tercatat
+                                                                    <br><span class="text-danger fw-medium d-inline-block mt-1" style="font-size: 0.75rem;"><i class="fas fa-fire me-1"></i>Sering: TELAT SHOLAT</span>
+                                                            </div>
+                                                            <i class="fas fa-lock opacity-50 mb-1"></i>
+                                                    </div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Card 4: Santri Teladan -->
+            <div class="col-xl-3 col-md-6">
+                <div class="card h-100 shadow-sm border-0 rounded-4 overflow-hidden position-relative" style="background: linear-gradient(145deg, #ffffff, #f0fdf4);">
+                    <div class="card-body p-4">
+                        <div class="d-flex justify-content-between align-items-start mb-2">
+                            <div>
+                                <h6 class="text-muted fw-semibold mb-1">Santri Prestasi</h6>
+                                <h3 class="fw-bold mb-0 text-dark" style="font-size: 2.2rem; letter-spacing:-0.5px;">21</h3>
+                            </div>
+                            <div class="d-flex align-items-center justify-content-center rounded-3" style="width: 48px; height: 48px; background: rgba(59, 130, 246, 0.1); color: #3b82f6;">
+                                <i class="fas fa-award fa-lg"></i>
+                            </div>
+                        </div>
+                        <div class="text-muted small mt-2 d-flex justify-content-between align-items-center">
+                            <span>Tanpa catatan kasus</span>
+                                                            <i class="fas fa-lock opacity-50"></i>
+                                                    </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="row g-4 mb-4">
+            <div class="col-xl-8 col-lg-7">
+                <!-- Pelanggaran Terkini -->
+                <div class="card-premium h-100">
+                    <div class="card-header-premium">
+                        <h2 class="card-title"><i class="fas fa-history text-primary"></i> Pelanggaran Terkini</h2>
+                                            </div>
+                    
+                    <div class="p-0">
+                        <div class="table-responsive d-none d-md-block">
+                            <table class="table-premium w-100 mb-0">
+                                <thead>
+                                    <tr>
+                                        <th style="width: 5%;">No</th>
+                                        <th style="width: 25%;">Nama Santri</th>
+                                        <th style="width: 30%;">Pelanggaran</th>
+                                        <th style="width: 20%;">Waktu</th>
+                                        <th style="width: 20%;">Pencatat</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                                                            <br />
+<b>Warning</b>:  Undefined array key 0 in <b>C:\laragon\www\rekap-mukholif\app\Helpers\FormatHelper.php</b> on line <b>84</b><br />
+                                            <tr>
+                                                <td>1</td>
+                                                <td>
+                                                    <div class="fw-medium text-dark">Ahmad khairun nurmansyah</div>
+                                                    <div class="text-muted small"><i class="fas fa-home"></i> Km. 3</div>
+                                                </td>
+                                                <td>
+                                                    <span class="badge bg-light text-dark border text-wrap text-start">
+                                                        Bahasa Level 2                                                    </span>
+                                                </td>
+                                                <td>
+                                                    <div class="text-dark small">04 Jun 2026 13:59</div>
+                                                    <div class="text-muted text-xs"> lalu</div>
+                                                </td>
+                                                <td><span class="text-muted small"><i class="fas fa-user-edit"></i> Divisi Bahasa</span></td>
+                                            </tr>
+                                        <br />
+<b>Warning</b>:  Undefined array key 0 in <b>C:\laragon\www\rekap-mukholif\app\Helpers\FormatHelper.php</b> on line <b>84</b><br />
+                                            <tr>
+                                                <td>2</td>
+                                                <td>
+                                                    <div class="fw-medium text-dark">Abdurrahman Andra Al-Hanif</div>
+                                                    <div class="text-muted small"><i class="fas fa-home"></i> Km. 6</div>
+                                                </td>
+                                                <td>
+                                                    <span class="badge bg-light text-dark border text-wrap text-start">
+                                                        Bahasa Level 3                                                    </span>
+                                                </td>
+                                                <td>
+                                                    <div class="text-dark small">04 Jun 2026 13:19</div>
+                                                    <div class="text-muted text-xs"> lalu</div>
+                                                </td>
+                                                <td><span class="text-muted small"><i class="fas fa-user-edit"></i> Divisi Bahasa</span></td>
+                                            </tr>
+                                        <br />
+<b>Warning</b>:  Undefined array key 0 in <b>C:\laragon\www\rekap-mukholif\app\Helpers\FormatHelper.php</b> on line <b>84</b><br />
+                                            <tr>
+                                                <td>3</td>
+                                                <td>
+                                                    <div class="fw-medium text-dark">Fauzan al fadli</div>
+                                                    <div class="text-muted small"><i class="fas fa-home"></i> Km. 2</div>
+                                                </td>
+                                                <td>
+                                                    <span class="badge bg-light text-dark border text-wrap text-start">
+                                                        Bahasa Level 3                                                    </span>
+                                                </td>
+                                                <td>
+                                                    <div class="text-dark small">04 Jun 2026 10:28</div>
+                                                    <div class="text-muted text-xs"> lalu</div>
+                                                </td>
+                                                <td><span class="text-muted small"><i class="fas fa-user-edit"></i> Divisi Bahasa</span></td>
+                                            </tr>
+                                        <br />
+<b>Warning</b>:  Undefined array key 0 in <b>C:\laragon\www\rekap-mukholif\app\Helpers\FormatHelper.php</b> on line <b>84</b><br />
+                                            <tr>
+                                                <td>4</td>
+                                                <td>
+                                                    <div class="fw-medium text-dark">Muhammad Syafiq Agami</div>
+                                                    <div class="text-muted small"><i class="fas fa-home"></i> Km. 7</div>
+                                                </td>
+                                                <td>
+                                                    <span class="badge bg-light text-dark border text-wrap text-start">
+                                                        TELAT SHOLAT                                                    </span>
+                                                </td>
+                                                <td>
+                                                    <div class="text-dark small">31 May 2026 17:56</div>
+                                                    <div class="text-muted text-xs"> lalu</div>
+                                                </td>
+                                                <td><span class="text-muted small"><i class="fas fa-user-edit"></i> Pengabdian</span></td>
+                                            </tr>
+                                        <br />
+<b>Warning</b>:  Undefined array key 0 in <b>C:\laragon\www\rekap-mukholif\app\Helpers\FormatHelper.php</b> on line <b>84</b><br />
+                                            <tr>
+                                                <td>5</td>
+                                                <td>
+                                                    <div class="fw-medium text-dark">Tarra Adhyla Arkaleon</div>
+                                                    <div class="text-muted small"><i class="fas fa-home"></i> Km. 9</div>
+                                                </td>
+                                                <td>
+                                                    <span class="badge bg-light text-dark border text-wrap text-start">
+                                                        TELAT SHOLAT                                                    </span>
+                                                </td>
+                                                <td>
+                                                    <div class="text-dark small">31 May 2026 17:56</div>
+                                                    <div class="text-muted text-xs"> lalu</div>
+                                                </td>
+                                                <td><span class="text-muted small"><i class="fas fa-user-edit"></i> Pengabdian</span></td>
+                                            </tr>
+                                        <br />
+<b>Warning</b>:  Undefined array key 0 in <b>C:\laragon\www\rekap-mukholif\app\Helpers\FormatHelper.php</b> on line <b>84</b><br />
+                                            <tr>
+                                                <td>6</td>
+                                                <td>
+                                                    <div class="fw-medium text-dark">Ghany Ilmi Mubarak</div>
+                                                    <div class="text-muted small"><i class="fas fa-home"></i> Km. 10</div>
+                                                </td>
+                                                <td>
+                                                    <span class="badge bg-light text-dark border text-wrap text-start">
+                                                        TELAT SHOLAT                                                    </span>
+                                                </td>
+                                                <td>
+                                                    <div class="text-dark small">31 May 2026 17:56</div>
+                                                    <div class="text-muted text-xs"> lalu</div>
+                                                </td>
+                                                <td><span class="text-muted small"><i class="fas fa-user-edit"></i> Pengabdian</span></td>
+                                            </tr>
+                                        <br />
+<b>Warning</b>:  Undefined array key 0 in <b>C:\laragon\www\rekap-mukholif\app\Helpers\FormatHelper.php</b> on line <b>84</b><br />
+                                            <tr>
+                                                <td>7</td>
+                                                <td>
+                                                    <div class="fw-medium text-dark">Abdullah Bin Novan Teguh Setyawan</div>
+                                                    <div class="text-muted small"><i class="fas fa-home"></i> Km. 8</div>
+                                                </td>
+                                                <td>
+                                                    <span class="badge bg-light text-dark border text-wrap text-start">
+                                                        TELAT SHOLAT                                                    </span>
+                                                </td>
+                                                <td>
+                                                    <div class="text-dark small">31 May 2026 12:04</div>
+                                                    <div class="text-muted text-xs"> lalu</div>
+                                                </td>
+                                                <td><span class="text-muted small"><i class="fas fa-user-edit"></i> Pengabdian</span></td>
+                                            </tr>
+                                                                                                            </tbody>
+                            </table>
+                        </div>
+
+                        <!-- Mobile Cards -->
+                        <div class="d-md-none p-3">
+                                                                                            <div class="mobile-violations-list">
+                                    <br />
+<b>Warning</b>:  Undefined array key 0 in <b>C:\laragon\www\rekap-mukholif\app\Helpers\FormatHelper.php</b> on line <b>84</b><br />
+                                        <div class="mobile-violation-card mb-3 p-3 border rounded shadow-sm bg-white">
+                                            <div class="mobile-violation-avatar rounded-circle d-flex align-items-center justify-content-center fw-bold" style="background-color: #eef2ff; color: #4f46e5;">
+                                                A                                            </div>
+                                            <div class="mobile-violation-content flex-grow-1">
+                                                <div class="d-flex justify-content-between align-items-start mb-1">
+                                                    <div class="fw-bold text-dark text-break pe-2">Ahmad khairun nurmansyah</div>
+                                                    <div class="text-muted text-xs text-end flex-shrink-0"> lalu</div>
+                                                </div>
+                                                <div class="mobile-violation-title fw-medium text-danger mb-2">
+                                                    Bahasa Level 2                                                </div>
+                                                <div class="d-flex flex-wrap gap-3 text-muted small">
+                                                    <span><i class="fas fa-home"></i> Km. 3</span>
+                                                    <span><i class="fas fa-user-edit"></i> Divisi Bahasa</span>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    <br />
+<b>Warning</b>:  Undefined array key 0 in <b>C:\laragon\www\rekap-mukholif\app\Helpers\FormatHelper.php</b> on line <b>84</b><br />
+                                        <div class="mobile-violation-card mb-3 p-3 border rounded shadow-sm bg-white">
+                                            <div class="mobile-violation-avatar rounded-circle d-flex align-items-center justify-content-center fw-bold" style="background-color: #eef2ff; color: #4f46e5;">
+                                                A                                            </div>
+                                            <div class="mobile-violation-content flex-grow-1">
+                                                <div class="d-flex justify-content-between align-items-start mb-1">
+                                                    <div class="fw-bold text-dark text-break pe-2">Abdurrahman Andra Al-Hanif</div>
+                                                    <div class="text-muted text-xs text-end flex-shrink-0"> lalu</div>
+                                                </div>
+                                                <div class="mobile-violation-title fw-medium text-danger mb-2">
+                                                    Bahasa Level 3                                                </div>
+                                                <div class="d-flex flex-wrap gap-3 text-muted small">
+                                                    <span><i class="fas fa-home"></i> Km. 6</span>
+                                                    <span><i class="fas fa-user-edit"></i> Divisi Bahasa</span>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    <br />
+<b>Warning</b>:  Undefined array key 0 in <b>C:\laragon\www\rekap-mukholif\app\Helpers\FormatHelper.php</b> on line <b>84</b><br />
+                                        <div class="mobile-violation-card mb-3 p-3 border rounded shadow-sm bg-white">
+                                            <div class="mobile-violation-avatar rounded-circle d-flex align-items-center justify-content-center fw-bold" style="background-color: #eef2ff; color: #4f46e5;">
+                                                F                                            </div>
+                                            <div class="mobile-violation-content flex-grow-1">
+                                                <div class="d-flex justify-content-between align-items-start mb-1">
+                                                    <div class="fw-bold text-dark text-break pe-2">Fauzan al fadli</div>
+                                                    <div class="text-muted text-xs text-end flex-shrink-0"> lalu</div>
+                                                </div>
+                                                <div class="mobile-violation-title fw-medium text-danger mb-2">
+                                                    Bahasa Level 3                                                </div>
+                                                <div class="d-flex flex-wrap gap-3 text-muted small">
+                                                    <span><i class="fas fa-home"></i> Km. 2</span>
+                                                    <span><i class="fas fa-user-edit"></i> Divisi Bahasa</span>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    <br />
+<b>Warning</b>:  Undefined array key 0 in <b>C:\laragon\www\rekap-mukholif\app\Helpers\FormatHelper.php</b> on line <b>84</b><br />
+                                        <div class="mobile-violation-card mb-3 p-3 border rounded shadow-sm bg-white">
+                                            <div class="mobile-violation-avatar rounded-circle d-flex align-items-center justify-content-center fw-bold" style="background-color: #f1f5f9; color: #475569;">
+                                                M                                            </div>
+                                            <div class="mobile-violation-content flex-grow-1">
+                                                <div class="d-flex justify-content-between align-items-start mb-1">
+                                                    <div class="fw-bold text-dark text-break pe-2">Muhammad Syafiq Agami</div>
+                                                    <div class="text-muted text-xs text-end flex-shrink-0"> lalu</div>
+                                                </div>
+                                                <div class="mobile-violation-title fw-medium text-danger mb-2">
+                                                    TELAT SHOLAT                                                </div>
+                                                <div class="d-flex flex-wrap gap-3 text-muted small">
+                                                    <span><i class="fas fa-home"></i> Km. 7</span>
+                                                    <span><i class="fas fa-user-edit"></i> Pengabdian</span>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    <br />
+<b>Warning</b>:  Undefined array key 0 in <b>C:\laragon\www\rekap-mukholif\app\Helpers\FormatHelper.php</b> on line <b>84</b><br />
+                                        <div class="mobile-violation-card mb-3 p-3 border rounded shadow-sm bg-white">
+                                            <div class="mobile-violation-avatar rounded-circle d-flex align-items-center justify-content-center fw-bold" style="background-color: #f1f5f9; color: #475569;">
+                                                T                                            </div>
+                                            <div class="mobile-violation-content flex-grow-1">
+                                                <div class="d-flex justify-content-between align-items-start mb-1">
+                                                    <div class="fw-bold text-dark text-break pe-2">Tarra Adhyla Arkaleon</div>
+                                                    <div class="text-muted text-xs text-end flex-shrink-0"> lalu</div>
+                                                </div>
+                                                <div class="mobile-violation-title fw-medium text-danger mb-2">
+                                                    TELAT SHOLAT                                                </div>
+                                                <div class="d-flex flex-wrap gap-3 text-muted small">
+                                                    <span><i class="fas fa-home"></i> Km. 9</span>
+                                                    <span><i class="fas fa-user-edit"></i> Pengabdian</span>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    <br />
+<b>Warning</b>:  Undefined array key 0 in <b>C:\laragon\www\rekap-mukholif\app\Helpers\FormatHelper.php</b> on line <b>84</b><br />
+                                        <div class="mobile-violation-card mb-3 p-3 border rounded shadow-sm bg-white">
+                                            <div class="mobile-violation-avatar rounded-circle d-flex align-items-center justify-content-center fw-bold" style="background-color: #f1f5f9; color: #475569;">
+                                                G                                            </div>
+                                            <div class="mobile-violation-content flex-grow-1">
+                                                <div class="d-flex justify-content-between align-items-start mb-1">
+                                                    <div class="fw-bold text-dark text-break pe-2">Ghany Ilmi Mubarak</div>
+                                                    <div class="text-muted text-xs text-end flex-shrink-0"> lalu</div>
+                                                </div>
+                                                <div class="mobile-violation-title fw-medium text-danger mb-2">
+                                                    TELAT SHOLAT                                                </div>
+                                                <div class="d-flex flex-wrap gap-3 text-muted small">
+                                                    <span><i class="fas fa-home"></i> Km. 10</span>
+                                                    <span><i class="fas fa-user-edit"></i> Pengabdian</span>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    <br />
+<b>Warning</b>:  Undefined array key 0 in <b>C:\laragon\www\rekap-mukholif\app\Helpers\FormatHelper.php</b> on line <b>84</b><br />
+                                        <div class="mobile-violation-card mb-3 p-3 border rounded shadow-sm bg-white">
+                                            <div class="mobile-violation-avatar rounded-circle d-flex align-items-center justify-content-center fw-bold" style="background-color: #f1f5f9; color: #475569;">
+                                                A                                            </div>
+                                            <div class="mobile-violation-content flex-grow-1">
+                                                <div class="d-flex justify-content-between align-items-start mb-1">
+                                                    <div class="fw-bold text-dark text-break pe-2">Abdullah Bin Novan Teguh Setyawan</div>
+                                                    <div class="text-muted text-xs text-end flex-shrink-0"> lalu</div>
+                                                </div>
+                                                <div class="mobile-violation-title fw-medium text-danger mb-2">
+                                                    TELAT SHOLAT                                                </div>
+                                                <div class="d-flex flex-wrap gap-3 text-muted small">
+                                                    <span><i class="fas fa-home"></i> Km. 8</span>
+                                                    <span><i class="fas fa-user-edit"></i> Pengabdian</span>
+                                                </div>
+                                            </div>
+                                        </div>
+                                                                    </div>
+                                                    </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="col-xl-4 col-lg-5">
+                <!-- Sorotan Santri -->
+                <div class="card-premium h-100">
+                    <div class="card-header-premium">
+                        <h2 class="card-title"><i class="fas fa-star text-warning"></i> Sorotan Santri</h2>
+                    </div>
+                    <div class="card-body p-3">
+                        <ul class="nav nav-pills custom-student-tabs w-100 mb-3" id="studentTabs" role="tablist">
+                            <li class="nav-item d-flex" role="presentation">
+                                <button class="nav-link active w-100 d-flex flex-column flex-sm-row align-items-center justify-content-center gap-1 gap-sm-2 h-100 p-2" id="violators-tab" data-bs-toggle="tab" data-bs-target="#violators-panel" type="button" role="tab">
+                                    <i class="fas fa-exclamation-triangle"></i>
+                                    <span class="text-wrap" style="line-height: 1.2; font-size: 0.9em;">Top Pelanggar</span>
+                                </button>
+                            </li>
+                            <li class="nav-item d-flex" role="presentation">
+                                <button class="nav-link w-100 d-flex flex-column flex-sm-row align-items-center justify-content-center gap-1 gap-sm-2 h-100 p-2" id="teladan-tab" data-bs-toggle="tab" data-bs-target="#teladan-panel" type="button" role="tab">
+                                    <i class="fas fa-medal"></i>
+                                    <span class="text-wrap" style="line-height: 1.2; font-size: 0.9em;">Santri Teladan</span>
+                                </button>
+                            </li>
+                            <li class="nav-item d-flex" role="presentation">
+                                <button class="nav-link w-100 d-flex flex-column flex-sm-row align-items-center justify-content-center gap-1 gap-sm-2 h-100 p-2" id="histori-tab" data-bs-toggle="tab" data-bs-target="#histori-panel" type="button" role="tab" data-bs-toggle="tooltip" title="Total akumulasi poin seumur hidup (All-Time)">
+                                    <i class="fas fa-history"></i>
+                                    <span class="text-wrap" style="line-height: 1.2; font-size: 0.9em;">Top Histori</span>
+                                </button>
+                            </li>
+                        </ul>
+
+                        <div class="tab-content" id="studentTabsContent">
+                            <div class="tab-pane fade show active" id="violators-panel" role="tabpanel">
+                                                                
+                                <div class="student-list d-flex flex-column gap-3">
+                                                                                                                        <div class="student-item d-flex align-items-center p-3 border rounded bg-white shadow-sm">
+                                                <div class="student-avatar rounded-circle text-white d-flex align-items-center justify-content-center me-3 fw-bold" style="background: linear-gradient(135deg, #ef4444, #b91c1c); box-shadow: 0 3px 8px rgba(239,68,68,0.2);">
+                                                    L                                                </div>
+                                                <div class="flex-grow-1">
+                                                    <div class="fw-bold text-dark text-truncate" style="max-width: 180px;">Labib Keysha Taat</div>
+                                                    <div class="text-muted" style="font-size: 11px;">
+                                                        <span class="me-2"><i class="fas fa-home opacity-75"></i> Km. 9</span>
+                                                    </div>
+                                                    <div class="mt-1">
+                                                        <span class="badge bg-light text-secondary border px-2 py-1" style="font-size: 10px;">
+                                                            Poin Bersih: <strong class="text-dark">334</strong>
+                                                        </span>
+                                                    </div>
+                                                </div>
+                                                <div class="badge text-white rounded-pill px-3 py-2 fw-bold" style="background-color: #ef4444; font-size: 14px;">
+                                                    341                                                </div>
+                                            </div>
+                                                                                    <div class="student-item d-flex align-items-center p-3 border rounded bg-white shadow-sm">
+                                                <div class="student-avatar rounded-circle text-white d-flex align-items-center justify-content-center me-3 fw-bold" style="background: linear-gradient(135deg, #ef4444, #b91c1c); box-shadow: 0 3px 8px rgba(239,68,68,0.2);">
+                                                    H                                                </div>
+                                                <div class="flex-grow-1">
+                                                    <div class="fw-bold text-dark text-truncate" style="max-width: 180px;">Hamka Hamzah</div>
+                                                    <div class="text-muted" style="font-size: 11px;">
+                                                        <span class="me-2"><i class="fas fa-home opacity-75"></i> Km. 8</span>
+                                                    </div>
+                                                    <div class="mt-1">
+                                                        <span class="badge bg-light text-secondary border px-2 py-1" style="font-size: 10px;">
+                                                            Poin Bersih: <strong class="text-dark">316</strong>
+                                                        </span>
+                                                    </div>
+                                                </div>
+                                                <div class="badge text-white rounded-pill px-3 py-2 fw-bold" style="background-color: #ef4444; font-size: 14px;">
+                                                    316                                                </div>
+                                            </div>
+                                                                                    <div class="student-item d-flex align-items-center p-3 border rounded bg-white shadow-sm">
+                                                <div class="student-avatar rounded-circle text-white d-flex align-items-center justify-content-center me-3 fw-bold" style="background: linear-gradient(135deg, #ef4444, #b91c1c); box-shadow: 0 3px 8px rgba(239,68,68,0.2);">
+                                                    M                                                </div>
+                                                <div class="flex-grow-1">
+                                                    <div class="fw-bold text-dark text-truncate" style="max-width: 180px;">Muhammad Aditya Ridza</div>
+                                                    <div class="text-muted" style="font-size: 11px;">
+                                                        <span class="me-2"><i class="fas fa-home opacity-75"></i> Km. 10</span>
+                                                    </div>
+                                                    <div class="mt-1">
+                                                        <span class="badge bg-light text-secondary border px-2 py-1" style="font-size: 10px;">
+                                                            Poin Bersih: <strong class="text-dark">297</strong>
+                                                        </span>
+                                                    </div>
+                                                </div>
+                                                <div class="badge text-white rounded-pill px-3 py-2 fw-bold" style="background-color: #ef4444; font-size: 14px;">
+                                                    297                                                </div>
+                                            </div>
+                                                                                    <div class="student-item d-flex align-items-center p-3 border rounded bg-white shadow-sm">
+                                                <div class="student-avatar rounded-circle text-white d-flex align-items-center justify-content-center me-3 fw-bold" style="background: linear-gradient(135deg, #ef4444, #b91c1c); box-shadow: 0 3px 8px rgba(239,68,68,0.2);">
+                                                    M                                                </div>
+                                                <div class="flex-grow-1">
+                                                    <div class="fw-bold text-dark text-truncate" style="max-width: 180px;">Muhammad Nabil Ubadah</div>
+                                                    <div class="text-muted" style="font-size: 11px;">
+                                                        <span class="me-2"><i class="fas fa-home opacity-75"></i> Km. 6</span>
+                                                    </div>
+                                                    <div class="mt-1">
+                                                        <span class="badge bg-light text-secondary border px-2 py-1" style="font-size: 10px;">
+                                                            Poin Bersih: <strong class="text-dark">262</strong>
+                                                        </span>
+                                                    </div>
+                                                </div>
+                                                <div class="badge text-white rounded-pill px-3 py-2 fw-bold" style="background-color: #ef4444; font-size: 14px;">
+                                                    286                                                </div>
+                                            </div>
+                                                                                    <div class="student-item d-flex align-items-center p-3 border rounded bg-white shadow-sm">
+                                                <div class="student-avatar rounded-circle text-white d-flex align-items-center justify-content-center me-3 fw-bold" style="background: linear-gradient(135deg, #ef4444, #b91c1c); box-shadow: 0 3px 8px rgba(239,68,68,0.2);">
+                                                    G                                                </div>
+                                                <div class="flex-grow-1">
+                                                    <div class="fw-bold text-dark text-truncate" style="max-width: 180px;">Gahtan Shiddiq Al-Faruq</div>
+                                                    <div class="text-muted" style="font-size: 11px;">
+                                                        <span class="me-2"><i class="fas fa-home opacity-75"></i> Km. 10</span>
+                                                    </div>
+                                                    <div class="mt-1">
+                                                        <span class="badge bg-light text-secondary border px-2 py-1" style="font-size: 10px;">
+                                                            Poin Bersih: <strong class="text-dark">277</strong>
+                                                        </span>
+                                                    </div>
+                                                </div>
+                                                <div class="badge text-white rounded-pill px-3 py-2 fw-bold" style="background-color: #ef4444; font-size: 14px;">
+                                                    277                                                </div>
+                                            </div>
+                                                                                                            </div>
+                            </div>
+                            
+                            <div class="tab-pane fade" id="teladan-panel" role="tabpanel">
+                                                                
+                                <div class="student-list d-flex flex-column gap-3">
+                                                                                                                        <div class="student-item d-flex align-items-center p-3 border rounded bg-white shadow-sm position-relative">
+                                                <div class="student-avatar rounded-circle text-white d-flex align-items-center justify-content-center me-3 fw-bold" style="background: linear-gradient(135deg, #10b981, #059669); box-shadow: 0 3px 8px rgba(16,185,129,0.2);">
+                                                    S                                                </div>
+                                                <div class="flex-grow-1">
+                                                    <div class="fw-bold text-dark text-truncate" style="max-width: 180px;">SYAMIL ZIAD AT TAMIMI</div>
+                                                    <div class="text-muted" style="font-size: 11px;">
+                                                        <span class="me-2"><i class="fas fa-home opacity-75"></i> Km. 12</span>
+                                                        <span><i class="fas fa-graduation-cap opacity-75"></i> Kls 7</span>
+                                                    </div>
+                                                    <div class="mini-stats">
+                                                        <div class="mini-stat text-success"><i class="fas fa-plus-circle"></i> <span style="font-size: 12px;"> 7</span></div>
+                                                        <div class="mini-stat text-primary"><i class="fas fa-star"></i> <span style="font-size: 12px;"> 4.8</span></div>
+                                                    </div>
+                                                </div>
+                                                <div class="rank-badge-sm rank-1">1</div>
+                                            </div>
+                                                                                    <div class="student-item d-flex align-items-center p-3 border rounded bg-white shadow-sm position-relative">
+                                                <div class="student-avatar rounded-circle text-white d-flex align-items-center justify-content-center me-3 fw-bold" style="background: linear-gradient(135deg, #10b981, #059669); box-shadow: 0 3px 8px rgba(16,185,129,0.2);">
+                                                    A                                                </div>
+                                                <div class="flex-grow-1">
+                                                    <div class="fw-bold text-dark text-truncate" style="max-width: 180px;">ASHAR NAUFAL ABDURRAHMAN</div>
+                                                    <div class="text-muted" style="font-size: 11px;">
+                                                        <span class="me-2"><i class="fas fa-home opacity-75"></i> Km. 13</span>
+                                                        <span><i class="fas fa-graduation-cap opacity-75"></i> Kls 7</span>
+                                                    </div>
+                                                    <div class="mini-stats">
+                                                        <div class="mini-stat text-success"><i class="fas fa-plus-circle"></i> <span style="font-size: 12px;"> 5</span></div>
+                                                        <div class="mini-stat text-primary"><i class="fas fa-star"></i> <span style="font-size: 12px;"> 4.9</span></div>
+                                                    </div>
+                                                </div>
+                                                <div class="rank-badge-sm rank-2">2</div>
+                                            </div>
+                                                                                    <div class="student-item d-flex align-items-center p-3 border rounded bg-white shadow-sm position-relative">
+                                                <div class="student-avatar rounded-circle text-white d-flex align-items-center justify-content-center me-3 fw-bold" style="background: linear-gradient(135deg, #10b981, #059669); box-shadow: 0 3px 8px rgba(16,185,129,0.2);">
+                                                    A                                                </div>
+                                                <div class="flex-grow-1">
+                                                    <div class="fw-bold text-dark text-truncate" style="max-width: 180px;">ARDRAZEVA PRANAJA WICAKSONO</div>
+                                                    <div class="text-muted" style="font-size: 11px;">
+                                                        <span class="me-2"><i class="fas fa-home opacity-75"></i> Km. 13</span>
+                                                        <span><i class="fas fa-graduation-cap opacity-75"></i> Kls 7</span>
+                                                    </div>
+                                                    <div class="mini-stats">
+                                                        <div class="mini-stat text-success"><i class="fas fa-plus-circle"></i> <span style="font-size: 12px;"> 5</span></div>
+                                                        <div class="mini-stat text-primary"><i class="fas fa-star"></i> <span style="font-size: 12px;"> 4.7</span></div>
+                                                    </div>
+                                                </div>
+                                                <div class="rank-badge-sm rank-3">3</div>
+                                            </div>
+                                                                                    <div class="student-item d-flex align-items-center p-3 border rounded bg-white shadow-sm position-relative">
+                                                <div class="student-avatar rounded-circle text-white d-flex align-items-center justify-content-center me-3 fw-bold" style="background: linear-gradient(135deg, #10b981, #059669); box-shadow: 0 3px 8px rgba(16,185,129,0.2);">
+                                                    K                                                </div>
+                                                <div class="flex-grow-1">
+                                                    <div class="fw-bold text-dark text-truncate" style="max-width: 180px;">KAFIE HAMIZAN AHZA</div>
+                                                    <div class="text-muted" style="font-size: 11px;">
+                                                        <span class="me-2"><i class="fas fa-home opacity-75"></i> Km. 11</span>
+                                                        <span><i class="fas fa-graduation-cap opacity-75"></i> Kls 7</span>
+                                                    </div>
+                                                    <div class="mini-stats">
+                                                        <div class="mini-stat text-success"><i class="fas fa-plus-circle"></i> <span style="font-size: 12px;"> 5</span></div>
+                                                        <div class="mini-stat text-primary"><i class="fas fa-star"></i> <span style="font-size: 12px;"> 4.2</span></div>
+                                                    </div>
+                                                </div>
+                                                <div class="rank-badge-sm rank-other">4</div>
+                                            </div>
+                                                                                    <div class="student-item d-flex align-items-center p-3 border rounded bg-white shadow-sm position-relative">
+                                                <div class="student-avatar rounded-circle text-white d-flex align-items-center justify-content-center me-3 fw-bold" style="background: linear-gradient(135deg, #10b981, #059669); box-shadow: 0 3px 8px rgba(16,185,129,0.2);">
+                                                    D                                                </div>
+                                                <div class="flex-grow-1">
+                                                    <div class="fw-bold text-dark text-truncate" style="max-width: 180px;">Dzulqarnain Abdurrahman El-Mahdits</div>
+                                                    <div class="text-muted" style="font-size: 11px;">
+                                                        <span class="me-2"><i class="fas fa-home opacity-75"></i> Km. 4</span>
+                                                        <span><i class="fas fa-graduation-cap opacity-75"></i> Kls 10</span>
+                                                    </div>
+                                                    <div class="mini-stats">
+                                                        <div class="mini-stat text-success"><i class="fas fa-plus-circle"></i> <span style="font-size: 12px;"> 0</span></div>
+                                                        <div class="mini-stat text-primary"><i class="fas fa-star"></i> <span style="font-size: 12px;"> 4.9</span></div>
+                                                    </div>
+                                                </div>
+                                                <div class="rank-badge-sm rank-other">5</div>
+                                            </div>
+                                                                                                            </div>
+                            </div>
+                            
+                            <div class="tab-pane fade" id="histori-panel" role="tabpanel">
+                                <div class="text-end mb-3">
+                                    <span class="text-muted small"><i class="fas fa-info-circle me-1"></i> Data akumulasi seumur hidup</span>
+                                </div>
+                                <div class="student-list d-flex flex-column gap-3">
+                                                                                                                        <div class="student-item d-flex align-items-center p-3 border rounded bg-white shadow-sm">
+                                                <div class="student-avatar rounded-circle text-white d-flex align-items-center justify-content-center me-3 fw-bold" style="background: linear-gradient(135deg, #64748b, #334155); box-shadow: 0 3px 8px rgba(100,116,139,0.2);">
+                                                    L                                                </div>
+                                                <div class="flex-grow-1">
+                                                    <div class="fw-bold text-dark text-truncate" style="max-width: 180px;">Labib Keysha Taat</div>
+                                                    <div class="text-muted" style="font-size: 11px;">
+                                                        <span class="me-2"><i class="fas fa-home opacity-75"></i> Km. 9</span>
+                                                    </div>
+                                                </div>
+                                                <div class="badge text-white rounded-pill px-3 py-2 fw-bold" style="background-color: #475569; font-size: 14px;" data-bs-toggle="tooltip" title="Poin Histori (All-Time)">
+                                                    334                                                </div>
+                                            </div>
+                                                                                    <div class="student-item d-flex align-items-center p-3 border rounded bg-white shadow-sm">
+                                                <div class="student-avatar rounded-circle text-white d-flex align-items-center justify-content-center me-3 fw-bold" style="background: linear-gradient(135deg, #64748b, #334155); box-shadow: 0 3px 8px rgba(100,116,139,0.2);">
+                                                    H                                                </div>
+                                                <div class="flex-grow-1">
+                                                    <div class="fw-bold text-dark text-truncate" style="max-width: 180px;">Hamka Hamzah</div>
+                                                    <div class="text-muted" style="font-size: 11px;">
+                                                        <span class="me-2"><i class="fas fa-home opacity-75"></i> Km. 8</span>
+                                                    </div>
+                                                </div>
+                                                <div class="badge text-white rounded-pill px-3 py-2 fw-bold" style="background-color: #475569; font-size: 14px;" data-bs-toggle="tooltip" title="Poin Histori (All-Time)">
+                                                    316                                                </div>
+                                            </div>
+                                                                                    <div class="student-item d-flex align-items-center p-3 border rounded bg-white shadow-sm">
+                                                <div class="student-avatar rounded-circle text-white d-flex align-items-center justify-content-center me-3 fw-bold" style="background: linear-gradient(135deg, #64748b, #334155); box-shadow: 0 3px 8px rgba(100,116,139,0.2);">
+                                                    M                                                </div>
+                                                <div class="flex-grow-1">
+                                                    <div class="fw-bold text-dark text-truncate" style="max-width: 180px;">Muhammad Aditya Ridza</div>
+                                                    <div class="text-muted" style="font-size: 11px;">
+                                                        <span class="me-2"><i class="fas fa-home opacity-75"></i> Km. 10</span>
+                                                    </div>
+                                                </div>
+                                                <div class="badge text-white rounded-pill px-3 py-2 fw-bold" style="background-color: #475569; font-size: 14px;" data-bs-toggle="tooltip" title="Poin Histori (All-Time)">
+                                                    297                                                </div>
+                                            </div>
+                                                                                    <div class="student-item d-flex align-items-center p-3 border rounded bg-white shadow-sm">
+                                                <div class="student-avatar rounded-circle text-white d-flex align-items-center justify-content-center me-3 fw-bold" style="background: linear-gradient(135deg, #64748b, #334155); box-shadow: 0 3px 8px rgba(100,116,139,0.2);">
+                                                    G                                                </div>
+                                                <div class="flex-grow-1">
+                                                    <div class="fw-bold text-dark text-truncate" style="max-width: 180px;">Gahtan Shiddiq Al-Faruq</div>
+                                                    <div class="text-muted" style="font-size: 11px;">
+                                                        <span class="me-2"><i class="fas fa-home opacity-75"></i> Km. 10</span>
+                                                    </div>
+                                                </div>
+                                                <div class="badge text-white rounded-pill px-3 py-2 fw-bold" style="background-color: #475569; font-size: 14px;" data-bs-toggle="tooltip" title="Poin Histori (All-Time)">
+                                                    277                                                </div>
+                                            </div>
+                                                                                    <div class="student-item d-flex align-items-center p-3 border rounded bg-white shadow-sm">
+                                                <div class="student-avatar rounded-circle text-white d-flex align-items-center justify-content-center me-3 fw-bold" style="background: linear-gradient(135deg, #64748b, #334155); box-shadow: 0 3px 8px rgba(100,116,139,0.2);">
+                                                    M                                                </div>
+                                                <div class="flex-grow-1">
+                                                    <div class="fw-bold text-dark text-truncate" style="max-width: 180px;">Muhammad Nabil Ubadah</div>
+                                                    <div class="text-muted" style="font-size: 11px;">
+                                                        <span class="me-2"><i class="fas fa-home opacity-75"></i> Km. 6</span>
+                                                    </div>
+                                                </div>
+                                                <div class="badge text-white rounded-pill px-3 py-2 fw-bold" style="background-color: #475569; font-size: 14px;" data-bs-toggle="tooltip" title="Poin Histori (All-Time)">
+                                                    262                                                </div>
+                                            </div>
+                                                                                                            </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    
+</div>
+
+<footer class="mt-auto mb-5 text-center text-muted small pb-4">
+    &copy; 2025 Built by <a href="https://ajsk.vercel.app/" target="_blank" rel="noopener noreferrer" class="text-decoration-none text-primary">AJSK.</a>
+</footer>
+</main>
+
+
+<!-- --- Bottom Navigation Bar (Mobile Only) --- -->
+<nav class="bottom-nav">
+    <div class="bottom-nav-item">
+        <a class="bottom-nav-link active" href="http://localhost/rekap-mukholif/index.php">
+            <i class="fas fa-home"></i>
+            <span>Beranda</span>
+        </a>
+    </div>
+            <div class="bottom-nav-item">
+        <button class="bottom-nav-link" type="button" onclick="openSidebarMobile()">
+            <i class="fas fa-bars"></i>
+            <span>Lainnya</span>
+        </button>
+    </div>
+</nav>
+
+<!-- --- Floating Action Button (Mobile Only) --- -->
+
+<script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+
+<script>
+    // Fungsi Global untuk Konfirmasi Aksi (Hapus, dll) menggunakan SweetAlert2
+    function confirmSubmit(event, element, titleText, textMessage) {
+        event.preventDefault();
+        
+        let formToSubmit = null;
+        if (element.tagName.toLowerCase() === 'form') {
+            formToSubmit = element;
+        } else if (element.closest('form')) {
+            formToSubmit = element.closest('form');
+        }
+        
+        Swal.fire({
+            title: titleText || 'Apakah Anda Yakin?',
+            text: textMessage || "Tindakan ini tidak dapat dibatalkan!",
+            icon: 'warning',
+            showCancelButton: true,
+            confirmButtonColor: '#d33',
+            cancelButtonColor: '#6c757d',
+            confirmButtonText: 'Ya, Lanjutkan!',
+            cancelButtonText: 'Batal',
+            reverseButtons: true
+        }).then((result) => {
+            if (result.isConfirmed) {
+                if (formToSubmit) {
+                    formToSubmit.submit();
+                } else {
+                    if (element.href) window.location.href = element.href;
+                }
+            }
+        });
+    }
+
+    // Fungsi Global untuk Alert Pengganti native alert()
+    function showAlert(textMessage, iconType = 'info') {
+        let titleText = 'Informasi';
+        if (iconType === 'error') titleText = 'Oops...';
+        else if (iconType === 'success') titleText = 'Berhasil!';
+        else if (iconType === 'warning') titleText = 'Peringatan!';
+
+        Swal.fire({
+            title: titleText,
+            text: textMessage,
+            icon: iconType,
+            confirmButtonColor: '#4f46e5'
+        });
+    }
+
+    // Fungsi Global untuk Toast
+    function showToast(textMessage, iconType = 'success') {
+        const Toast = Swal.mixin({
+            toast: true,
+            position: 'top-end',
+            showConfirmButton: false,
+            timer: 4000,
+            timerProgressBar: true,
+            didOpen: (toast) => {
+                toast.onmouseenter = Swal.stopTimer;
+                toast.onmouseleave = Swal.resumeTimer;
+            }
+        });
+        Toast.fire({
+            icon: iconType,
+            title: textMessage
+        });
+    }
+
+    function updateLiveTime() {
+        const timeEl = document.getElementById('live-time');
+        if (timeEl) {
+            const now = new Date();
+            timeEl.textContent = now.toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit', second: '2-digit' });
+        }
+    }
+    if (document.getElementById('live-time')) {
+        setInterval(updateLiveTime, 1000);
+        updateLiveTime();
+    }
+
+    // FAB Speed Dial Toggle Logic
+    const fabToggle = document.getElementById('fabToggle');
+    const fabMenu = document.getElementById('fabMenu');
+    
+    if (fabToggle && fabMenu) {
+        fabToggle.addEventListener('click', function(e) {
+            e.stopPropagation();
+            fabMenu.classList.toggle('active');
+            fabToggle.classList.toggle('active');
+        });
+
+        // Close menu when clicking outside
+        document.addEventListener('click', function(e) {
+            if (fabMenu.classList.contains('active') && !fabMenu.contains(e.target) && e.target !== fabToggle) {
+                fabMenu.classList.remove('active');
+                fabToggle.classList.remove('active');
+            }
+        });
+    }
+
+    // Global Fix: Mencegah error accessibility 'aria-hidden' di DevTools Chrome
+    // saat menutup modal Bootstrap dan elemen di dalamnya masih memiliki fokus.
+    document.addEventListener('hide.bs.modal', function () {
+        if (document.activeElement && document.activeElement !== document.body) {
+            document.activeElement.blur();
+        }
+    });
+</script>
+</body>
+</html>
+
