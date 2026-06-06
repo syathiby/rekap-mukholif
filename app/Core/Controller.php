@@ -45,9 +45,9 @@ abstract class Controller {
         $fullUrl = ($_ENV['APP_URL'] ?? '') . $url;
         if ($this->isHtmxRequest()) {
             header('HX-Redirect: ' . $fullUrl);
-        } else {
-            header('Location: ' . $fullUrl);
+            exit;
         }
+        header("Location: " . $fullUrl);
         exit;
     }
 

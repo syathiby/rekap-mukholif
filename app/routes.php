@@ -26,3 +26,14 @@ $router->post('/santri/bulk-create', 'SantriController', 'bulkStore');
 $router->get('/santri/bulk-edit', 'SantriController', 'bulkEdit');
 $router->post('/santri/bulk-edit', 'SantriController', 'bulkUpdate');
 $router->post('/santri/bulk-delete', 'SantriController', 'bulkDestroy');
+
+// Jenis Pelanggaran Routes
+$router->get('/jenis-pelanggaran', 'JenisPelanggaranController', 'index');
+$router->get('/jenis-pelanggaran/create', 'JenisPelanggaranController', 'create');
+$router->post('/jenis-pelanggaran/store', 'JenisPelanggaranController', 'store');
+$router->get('/jenis-pelanggaran/edit/{id}', 'JenisPelanggaranController', 'edit');
+$router->post('/jenis-pelanggaran/update/{id}', 'JenisPelanggaranController', 'update');
+$router->post('/jenis-pelanggaran/delete/{id}', 'JenisPelanggaranController', 'delete');
+$router->post('/jenis-pelanggaran/bulk-edit', 'JenisPelanggaranController', 'bulkEdit');
+$router->post('/jenis-pelanggaran/bulk-update', 'JenisPelanggaranController', 'bulkUpdate');
+$router->post('/jenis-pelanggaran/bulk-delete', 'JenisPelanggaranController', 'bulkDelete');

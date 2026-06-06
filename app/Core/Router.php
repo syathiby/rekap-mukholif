@@ -39,6 +39,10 @@ class Router {
         $parsedUrl = parse_url($requestUri);
         $path = $parsedUrl['path'] ?? '/';
         
+        if ($path !== '/') {
+            $path = rtrim($path, '/');
+        }
+        
         if (empty($path)) {
             $path = '/';
         }

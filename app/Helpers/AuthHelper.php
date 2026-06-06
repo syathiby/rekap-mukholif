@@ -45,4 +45,43 @@ class AuthHelper {
 
         return false;
     }
+
+    /**
+     * Pastikan user memiliki izin, jika tidak langsung lempar 403 Forbidden.
+     * Mendukung deteksi request HTMX.
+     *
+     * @param string|array $namaIzin
+     */
+    public static function requirePermission(string|array $namaIzin): void {
+        if (!self::hasPermission($namaIzin)) {
+            http_response_code(403);
+            
+            $isHtmx = isset($_SERVER['HTTP_HX_REQUEST']) && $_SERVER['HTTP_HX_REQUEST'] === 'true';
+            $viewFile = defined('VIEW_PATH') ? VIEW_PATH . '/errors/403.php' : __DIR__ . '/../../views/errors/403.php';
+            
+            if ($isHtmx) {
+                if (file_exists($viewFile)) {
+                    require $viewFile;
+                } else {
+                    echo "<h2>403 Forbidden</h2><p>Anda tidak memiliki akses.</p>";
+                }
+            } else {
+                if (file_exists($viewFile)) {
+                    ob_start();
+                    require $viewFile;
+                    $content = ob_get_clean();
+                    
+                    $layoutFile = defined('VIEW_PATH') ? VIEW_PATH . '/layouts/main.php' : __DIR__ . '/../../views/layouts/main.php';
+                    if (file_exists($layoutFile)) {
+                        require $layoutFile;
+                    } else {
+                        echo $content;
+                    }
+                } else {
+                    echo "<h2>403 Forbidden</h2><p>Anda tidak memiliki akses.</p>";
+                }
+            }
+            exit;
+        }
+    }
 }
