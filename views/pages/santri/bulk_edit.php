@@ -22,7 +22,7 @@ $csrf_token = csrf_generate();
     }
 </style>
 
-<div class="container-fluid p-3 p-md-4">
+<div>
     <div class="card shadow-sm">
         <div class="card-header bg-primary text-white">
             <div class="d-flex justify-content-between align-items-center">
@@ -62,7 +62,7 @@ $csrf_token = csrf_generate();
                             <?php foreach ($santri as $row): ?>
                             <tr>
                                 <td class="text-center">
-                                    <input type="checkbox" name="santri_ids_dummy[]" value="<?= $row['id'] ?>" class="form-check-input santri-checkbox">
+                                    <input type="checkbox" name="santri_ids_dummy[]" value="<?= $row['id'] ?>" class="form-check-input santri-checkbox" <?= in_array($row['id'], $selected_ids ?? []) ? 'checked' : '' ?>>
                                 </td>
                                 <td><?= htmlspecialchars($row['nama']) ?></td>
                                 <td><span class="badge bg-info text-dark"><?= htmlspecialchars($row['kelas']) ?></span></td>
@@ -188,23 +188,7 @@ document.addEventListener('DOMContentLoaded', function() {
         input.addEventListener('keyup', filterTable);
     });
 
+    // Tidak ada yang dipilih saat pertama buka — user memilih sendiri
     updateSelectedCount();
-
-    // Check pre-selected ids from sessionStorage if redirected from index bulk edit
-    const STORAGE_KEY = 'selectedSantriIds';
-    const storedIdsJson = sessionStorage.getItem(STORAGE_KEY);
-    if (storedIdsJson) {
-        const selectedIds = new Set(JSON.parse(storedIdsJson));
-        if (selectedIds.size > 0) {
-            checkboxes.forEach(cb => {
-                if (selectedIds.has(parseInt(cb.value))) {
-                    cb.checked = true;
-                }
-            });
-            updateSelectedCount();
-            // Clear storage after applying
-            sessionStorage.removeItem(STORAGE_KEY);
-        }
-    }
 });
 </script>

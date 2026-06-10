@@ -13,7 +13,7 @@ $kamar = $isEdit ? $santri['kamar'] : '';
 $csrf_token = csrf_generate();
 ?>
 
-<div class="container-fluid py-4">
+<div>
     <div class="row justify-content-center">
         <div class="col-12 col-md-8 col-lg-6">
             <div class="card shadow-sm border-0" style="border-radius: 1rem;">

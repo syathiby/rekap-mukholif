@@ -24,6 +24,7 @@ $router->post('/santri/{id}/delete', 'SantriController', 'destroy');
 $router->get('/santri/bulk-create', 'SantriController', 'bulkCreate');
 $router->post('/santri/bulk-create', 'SantriController', 'bulkStore');
 $router->get('/santri/bulk-edit', 'SantriController', 'bulkEdit');
+$router->post('/santri/bulk-edit-prepare', 'SantriController', 'bulkEdit');
 $router->post('/santri/bulk-edit', 'SantriController', 'bulkUpdate');
 $router->post('/santri/bulk-delete', 'SantriController', 'bulkDestroy');
 
@@ -34,6 +35,7 @@ $router->post('/jenis-pelanggaran/store', 'JenisPelanggaranController', 'store')
 $router->get('/jenis-pelanggaran/edit/{id}', 'JenisPelanggaranController', 'edit');
 $router->post('/jenis-pelanggaran/update/{id}', 'JenisPelanggaranController', 'update');
 $router->post('/jenis-pelanggaran/delete/{id}', 'JenisPelanggaranController', 'delete');
+$router->post('/jenis-pelanggaran/bulk-store', 'JenisPelanggaranController', 'bulkStore');
 $router->post('/jenis-pelanggaran/bulk-edit', 'JenisPelanggaranController', 'bulkEdit');
 $router->post('/jenis-pelanggaran/bulk-update', 'JenisPelanggaranController', 'bulkUpdate');
 $router->post('/jenis-pelanggaran/bulk-delete', 'JenisPelanggaranController', 'bulkDelete');

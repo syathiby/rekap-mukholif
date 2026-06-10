@@ -4,27 +4,25 @@ $can_edit = AuthHelper::hasPermission('jenis_pelanggaran_edit');
 $can_delete = AuthHelper::hasPermission('jenis_pelanggaran_delete');
 $can_create = AuthHelper::hasPermission('jenis_pelanggaran_create');
 ?>
-<div class="d-flex flex-column flex-md-row justify-content-between align-items-start align-items-md-center mb-4 gap-3">
+<div class="d-flex flex-column flex-md-row justify-content-between align-items-md-center mb-4 gap-3">
     <div>
-        <h4 class="mb-1 text-dark fw-bold">
-            <span class="text-primary me-1"><i class="fas fa-exclamation-triangle"></i></span> 
-            Data Jenis Pelanggaran
-        </h4>
-        <p class="text-muted small mb-0">Daftar klasifikasi pelanggaran dan poin</p>
+        <h3 class="fw-bolder text-dark mb-1">
+            <i class="fas fa-exclamation-triangle text-primary me-2"></i>Data Jenis Pelanggaran
+        </h3>
+        <p class="text-muted mb-0">Daftar klasifikasi pelanggaran dan poin</p>
     </div>
-    <div class="d-flex gap-2 w-100 w-md-auto justify-content-end">
-        <?php if($can_create): ?>
-            <a href="<?= BASE_URL ?>/jenis-pelanggaran/create" class="btn btn-primary shadow-sm text-nowrap" style="background-color: #6366f1; border-color: #6366f1; border-radius: 20px; padding: 8px 20px;" hx-boost="true">
-                <i class="fas fa-plus me-1"></i> Tambah Baru
-            </a>
-        <?php endif; ?>
+    <div class="d-flex align-items-center">
+        <span class="badge bg-white border text-dark fs-6 px-3 py-2 rounded-pill shadow-sm">
+            <i class="fas fa-database me-1 text-primary"></i>
+            <span id="total-data">Total Data: <?= number_format($total_data ?? count($jenis_pelanggaran)) ?></span>
+        </span>
     </div>
 </div>
 
 <div class="card shadow-sm border-0 rounded-4 mb-4">
     <div class="card-body p-4">
         <!-- Filter and Search -->
-        <form method="GET" action="<?= BASE_URL ?>/jenis-pelanggaran" class="row g-3 mb-4" hx-boost="true" hx-target="#page-content" hx-push-url="true" id="filterForm">
+        <form method="GET" action="<?= BASE_URL ?>/jenis-pelanggaran" class="row g-3 mb-4" hx-boost="true" hx-target="#bulkForm" hx-select="#bulkForm" hx-swap="outerHTML" hx-push-url="true" id="filterForm">
             <div class="col-md-4">
                 <label class="form-label text-muted small fw-medium">Cari Nama Pelanggaran</label>
                 <input type="text" name="q" class="form-control bg-light border-0" placeholder="Ketik di sini..." value="<?= htmlspecialchars($search ?? '') ?>" onkeyup="submitFilterDelay()">
@@ -60,24 +58,32 @@ $can_create = AuthHelper::hasPermission('jenis_pelanggaran_create');
 
         <!-- Form for Bulk Edit & Delete -->
         <form id="bulkForm" method="POST" action="<?= BASE_URL ?>/jenis-pelanggaran/bulk-edit" hx-boost="true">
-            <div class="d-flex flex-column flex-md-row justify-content-between align-items-start align-items-md-center mb-3 gap-3">
-                <div class="d-flex flex-wrap gap-2 w-100 w-md-auto justify-content-center justify-content-md-start">
-                    <?php if($can_edit): ?>
-                    <button type="submit" class="btn btn-light border bg-white text-muted shadow-sm rounded-3 text-nowrap" id="btnBulkEdit" disabled>
-                        <i class="fas fa-edit me-1"></i> Edit Terpilih
-                    </button>
-                    <?php endif; ?>
-                    
-                    <?php if($can_delete): ?>
-                    <button type="button" class="btn btn-light border bg-white text-muted shadow-sm rounded-3 text-nowrap" id="btnBulkDelete" onclick="confirmBulkDelete()" disabled>
-                        <i class="fas fa-trash-alt me-1"></i> Hapus Terpilih
-                    </button>
-                    <?php endif; ?>
-                </div>
-                <div class="text-muted fw-medium text-nowrap text-end w-100 w-md-auto">
-                    Total Data: <?= number_format($total_data ?? count($jenis_pelanggaran)) ?>
-                </div>
+            <input type="hidden" name="csrf_token" value="<?= htmlspecialchars($_SESSION['csrf_token'] ?? '') ?>">
+        <div class="d-flex flex-nowrap justify-content-between align-items-center mb-3 gap-3 overflow-x-auto pb-2" style="-webkit-overflow-scrolling: touch;">
+            <!-- Kiri: Tambah -->
+            <div class="d-flex flex-nowrap gap-2">
+                <?php if($can_create): ?>
+                    <a href="<?= BASE_URL ?>/jenis-pelanggaran/create" class="btn btn-success shadow-sm text-nowrap" style="border-radius: 20px; padding: 8px 20px;" hx-boost="true">
+                        <i class="fas fa-plus me-1"></i> Tambah Baru
+                    </a>
+                <?php endif; ?>
             </div>
+
+            <!-- Kanan: Bulk Edit & Hapus Terpilih -->
+            <div class="d-flex flex-nowrap gap-2 align-items-center">
+                <?php if($can_edit): ?>
+                <button type="submit" class="btn btn-warning text-dark shadow-sm text-nowrap" id="btnBulkEdit" disabled style="border-radius: 20px; padding: 8px 20px;">
+                    <i class="fas fa-edit me-1"></i> Edit Terpilih
+                </button>
+                <?php endif; ?>
+                
+                <?php if($can_delete): ?>
+                <button type="button" class="btn btn-danger shadow-sm text-nowrap" id="btnBulkDelete" onclick="confirmBulkDelete()" disabled style="border-radius: 20px; padding: 8px 20px;">
+                    <i class="fas fa-trash-alt me-1"></i> Hapus Terpilih
+                </button>
+                <?php endif; ?>
+            </div>
+        </div>
 
             <div class="table-responsive">
                 <table class="table table-hover align-middle border">
@@ -214,26 +220,14 @@ $can_create = AuthHelper::hasPermission('jenis_pelanggaran_create');
         const btnBulkEdit = document.getElementById('btnBulkEdit');
         const btnBulkDelete = document.getElementById('btnBulkDelete');
         
-        if(btnBulkEdit) {
+        if (btnBulkEdit) {
             btnBulkEdit.disabled = !hasChecked;
-            if(hasChecked) {
-                btnBulkEdit.classList.remove('text-muted');
-                btnBulkEdit.classList.add('text-primary', 'border-primary');
-            } else {
-                btnBulkEdit.classList.add('text-muted');
-                btnBulkEdit.classList.remove('text-primary', 'border-primary');
-            }
+            btnBulkEdit.style.opacity = hasChecked ? '1' : '0.55';
         }
         
-        if(btnBulkDelete) {
+        if (btnBulkDelete) {
             btnBulkDelete.disabled = !hasChecked;
-            if(hasChecked) {
-                btnBulkDelete.classList.remove('text-muted');
-                btnBulkDelete.classList.add('text-danger', 'border-danger');
-            } else {
-                btnBulkDelete.classList.add('text-muted');
-                btnBulkDelete.classList.remove('text-danger', 'border-danger');
-            }
+            btnBulkDelete.style.opacity = hasChecked ? '1' : '0.55';
         }
     }
 
@@ -251,7 +245,8 @@ $can_create = AuthHelper::hasPermission('jenis_pelanggaran_create');
             if (result.isConfirmed) {
                 htmx.ajax('POST', `<?= BASE_URL ?>/jenis-pelanggaran/delete/${id}`, {
                     target: 'body',
-                    swap: 'outerHTML'
+                    swap: 'outerHTML',
+                    values: { csrf_token: '<?= htmlspecialchars($_SESSION['csrf_token'] ?? '') ?>' }
                 });
             }
         });

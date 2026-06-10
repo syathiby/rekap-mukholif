@@ -19,12 +19,16 @@ class AuthController extends Controller {
             $this->redirect('/');
         }
         
+        $csrf_token = $this->generateCsrfToken();
+        
         // This view uses a special layout without sidebar, or we just load it directly
         // Let's create a specific view that contains full HTML since it's a login page
-        $this->partial('auth/login');
+        $this->partial('auth/login', ['csrf_token' => $csrf_token]);
     }
 
     public function loginProcess(): void {
+        $this->validateCsrfToken();
+        
         $username = trim($_POST['username'] ?? '');
         $password = $_POST['password'] ?? '';
 

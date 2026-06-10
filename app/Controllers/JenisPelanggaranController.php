@@ -85,6 +85,7 @@ class JenisPelanggaranController extends Controller {
 
     public function store(): void {
         AuthHelper::requirePermission('jenis_pelanggaran_create');
+        $this->validateCsrfToken();
 
         $nama_pelanggaran = $_POST['nama_pelanggaran'] ?? '';
         $poin = (int)($_POST['poin'] ?? 0);
@@ -92,7 +93,7 @@ class JenisPelanggaranController extends Controller {
         $bagian = $_POST['bagian'] ?? 'Kesantrian';
 
         if (empty($nama_pelanggaran)) {
-            $_SESSION['flash_error'] = 'Nama Pelanggaran wajib diisi.';
+            $_SESSION['flash_message'] = ['type' => 'error', 'message' => 'Nama Pelanggaran wajib diisi.'];
             $this->redirect('/jenis-pelanggaran/create');
             return;
         }
@@ -104,7 +105,58 @@ class JenisPelanggaranController extends Controller {
             'bagian' => $bagian
         ]);
 
-        $_SESSION['flash_success'] = 'Jenis Pelanggaran berhasil ditambahkan.';
+        $_SESSION['flash_message'] = ['type' => 'success', 'message' => 'Jenis Pelanggaran berhasil ditambahkan.'];
+        $this->redirect('/jenis-pelanggaran');
+    }
+
+    public function bulkStore(): void {
+        AuthHelper::requirePermission('jenis_pelanggaran_create');
+        $this->validateCsrfToken();
+
+        $bulkData = trim($_POST['bulk_data'] ?? '');
+        if (empty($bulkData)) {
+            $_SESSION['flash_message'] = ['type' => 'error', 'message' => 'Data bulk kosong.'];
+            $this->redirect('/jenis-pelanggaran/create');
+            return;
+        }
+
+        $lines = explode("\n", str_replace("\r", "", $bulkData));
+        $successCount = 0;
+        $errors = [];
+        $db = \App\Core\Database::getInstance()->getConnection();
+        $db->beginTransaction();
+
+        try {
+            foreach ($lines as $line) {
+                $line = trim($line);
+                if (empty($line)) continue;
+
+                $parts = array_map('trim', explode(',', $line));
+                if (count($parts) < 4) {
+                    $errors[] = "Format salah pada baris: $line";
+                    continue;
+                }
+
+                $this->jpModel->create([
+                    'nama_pelanggaran' => $parts[0],
+                    'bagian' => $parts[1],
+                    'poin' => (int)$parts[2],
+                    'kategori' => $parts[3]
+                ]);
+                $successCount++;
+            }
+            $db->commit();
+
+            if (count($errors) > 0) {
+                $_SESSION['flash_message'] = ['type' => 'warning', 'message' => "$successCount data berhasil ditambahkan. Ada " . count($errors) . " baris gagal."];
+            } else {
+                $_SESSION['flash_message'] = ['type' => 'success', 'message' => "$successCount jenis pelanggaran berhasil ditambahkan secara massal."];
+            }
+        } catch (\Exception $e) {
+            $db->rollBack();
+            $_SESSION['flash_message'] = ['type' => 'error', 'message' => 'Gagal menyimpan bulk data: ' . $e->getMessage()];
+        }
+
         $this->redirect('/jenis-pelanggaran');
     }
 
@@ -113,7 +165,7 @@ class JenisPelanggaranController extends Controller {
 
         $jp = $this->jpModel->findById($id);
         if (!$jp) {
-            $_SESSION['flash_error'] = 'Data tidak ditemukan.';
+            $_SESSION['flash_message'] = ['type' => 'error', 'message' => 'Data tidak ditemukan.'];
             $this->redirect('/jenis-pelanggaran');
             return;
         }
@@ -130,6 +182,7 @@ class JenisPelanggaranController extends Controller {
 
     public function update(int $id): void {
         AuthHelper::requirePermission('jenis_pelanggaran_edit');
+        $this->validateCsrfToken();
 
         $nama_pelanggaran = $_POST['nama_pelanggaran'] ?? '';
         $poin = (int)($_POST['poin'] ?? 0);
@@ -137,7 +190,7 @@ class JenisPelanggaranController extends Controller {
         $bagian = $_POST['bagian'] ?? 'Kesantrian';
 
         if (empty($nama_pelanggaran)) {
-            $_SESSION['flash_error'] = 'Nama Pelanggaran wajib diisi.';
+            $_SESSION['flash_message'] = ['type' => 'error', 'message' => 'Nama Pelanggaran wajib diisi.'];
             $this->redirect("/jenis-pelanggaran/edit/$id");
             return;
         }
@@ -149,18 +202,19 @@ class JenisPelanggaranController extends Controller {
             'bagian' => $bagian
         ]);
 
-        $_SESSION['flash_success'] = 'Jenis Pelanggaran berhasil diperbarui.';
+        $_SESSION['flash_message'] = ['type' => 'success', 'message' => 'Jenis Pelanggaran berhasil diperbarui.'];
         $this->redirect('/jenis-pelanggaran');
     }
 
     public function delete(int $id): void {
         AuthHelper::requirePermission('jenis_pelanggaran_delete');
+        $this->validateCsrfToken();
 
         try {
             $this->jpModel->delete($id);
-            $_SESSION['flash_success'] = 'Jenis Pelanggaran berhasil dihapus.';
+            $_SESSION['flash_message'] = ['type' => 'success', 'message' => 'Jenis Pelanggaran berhasil dihapus.'];
         } catch (\Exception $e) {
-            $_SESSION['flash_error'] = $e->getMessage();
+            $_SESSION['flash_message'] = ['type' => 'error', 'message' => $e->getMessage()];
         }
 
         $this->redirect('/jenis-pelanggaran');
@@ -172,7 +226,7 @@ class JenisPelanggaranController extends Controller {
         AuthHelper::requirePermission('jenis_pelanggaran_edit');
 
         if ($_SERVER['REQUEST_METHOD'] !== 'POST' || empty($_POST['ids'])) {
-            $_SESSION['flash_error'] = 'Tidak ada data yang dipilih.';
+            $_SESSION['flash_message'] = ['type' => 'error', 'message' => 'Tidak ada data yang dipilih.'];
             $this->redirect('/jenis-pelanggaran');
             return;
         }
@@ -202,6 +256,7 @@ class JenisPelanggaranController extends Controller {
 
     public function bulkUpdate(): void {
         AuthHelper::requirePermission('jenis_pelanggaran_edit');
+        $this->validateCsrfToken();
 
         if ($_SERVER['REQUEST_METHOD'] !== 'POST' || empty($_POST['ids'])) {
             $this->redirect('/jenis-pelanggaran');
@@ -237,10 +292,10 @@ class JenisPelanggaranController extends Controller {
                 }
             }
             $db->commit();
-            $_SESSION['flash_success'] = 'Data jenis pelanggaran berhasil diperbarui secara massal.';
+            $_SESSION['flash_message'] = ['type' => 'success', 'message' => 'Data jenis pelanggaran berhasil diperbarui secara massal.'];
         } catch (\Exception $e) {
             $db->rollBack();
-            $_SESSION['flash_error'] = 'Terjadi kesalahan saat update massal: ' . $e->getMessage();
+            $_SESSION['flash_message'] = ['type' => 'error', 'message' => 'Terjadi kesalahan saat update massal: ' . $e->getMessage()];
         }
 
         $this->redirect('/jenis-pelanggaran');
@@ -248,6 +303,7 @@ class JenisPelanggaranController extends Controller {
 
     public function bulkDelete(): void {
         AuthHelper::requirePermission('jenis_pelanggaran_delete');
+        $this->validateCsrfToken();
 
         if ($_SERVER['REQUEST_METHOD'] !== 'POST' || empty($_POST['ids'])) {
             $this->redirect('/jenis-pelanggaran');
@@ -278,13 +334,13 @@ class JenisPelanggaranController extends Controller {
             $db->commit();
             
             if ($skippedCount > 0) {
-                $_SESSION['flash_warning'] = "$deletedCount dihapus. $skippedCount aturan dilewati karena sudah pernah dipakai santri.";
+                $_SESSION['flash_message'] = ['type' => 'warning', 'message' => "$deletedCount dihapus. $skippedCount aturan dilewati karena sudah pernah dipakai santri."];
             } else {
-                $_SESSION['flash_success'] = "$deletedCount aturan berhasil dihapus secara massal.";
+                $_SESSION['flash_message'] = ['type' => 'success', 'message' => "$deletedCount aturan berhasil dihapus secara massal."];
             }
         } catch (\Exception $e) {
             $db->rollBack();
-            $_SESSION['flash_error'] = 'Terjadi kesalahan: ' . $e->getMessage();
+            $_SESSION['flash_message'] = ['type' => 'error', 'message' => 'Terjadi kesalahan: ' . $e->getMessage()];
         }
 
         $this->redirect('/jenis-pelanggaran');

@@ -48,7 +48,7 @@ if (class_exists('App\Helpers\AuthHelper')) {
 
     <div class="sb-section-label">MENU UTAMA</div>
     
-    <a href="<?= BASE_URL ?>/index.php" class="sb-link <?= ($req_path === '/' || $req_path === '/index.php' || $req_path === '') ? 'active' : '' ?>">
+    <a href="<?= BASE_URL ?>/" class="sb-link <?= ($req_path === '/' || $req_path === '/index.php' || $req_path === '') ? 'active' : '' ?>">
         <i class="fas fa-home"></i>
         <span>Dashboard</span>
     </a>

@@ -3,7 +3,7 @@ $can_create = \App\Helpers\AuthHelper::hasPermission('santri_create');
 $can_edit = \App\Helpers\AuthHelper::hasPermission('santri_edit');
 $can_delete = \App\Helpers\AuthHelper::hasPermission('santri_delete');
 
-$csrf_token = csrf_generate(); // pastikan fungsi ini dipanggil
+$csrf_token = $_SESSION['csrf_token'] ?? '';
 ?>
 <style>
     :root {
@@ -46,7 +46,7 @@ $csrf_token = csrf_generate(); // pastikan fungsi ini dipanggil
     }
 </style>
 
-<div class="container-fluid py-4 px-4">
+<div>
     <!-- Header Page -->
     <div class="d-flex flex-column flex-md-row justify-content-between align-items-md-center mb-4 gap-3">
         <div>
@@ -92,34 +92,38 @@ $csrf_token = csrf_generate(); // pastikan fungsi ini dipanggil
 
     <form method="POST" action="<?= BASE_URL ?>/santri/bulk-delete" id="bulkDeleteForm">
         <input type="hidden" name="csrf_token" value="<?= htmlspecialchars($csrf_token) ?>">
-        <div class="card-action-bulk">
-            <div class="row g-2 align-items-center">
-                <!-- Group Kiri: Tambah & Bulk Input -->
-                <div class="col-12 col-md-auto d-flex gap-2 flex-grow-1">
-                    <?php if ($can_create): ?>
-                        <a href="<?= BASE_URL ?>/santri/create" class="btn btn-success flex-grow-1 flex-md-grow-0 fw-medium">
-                            <i class="fas fa-user-plus me-1"></i> Tambah Santri
-                        </a>
-                        <a href="<?= BASE_URL ?>/santri/bulk-create" class="btn btn-info text-white flex-grow-1 flex-md-grow-0 fw-medium">
-                            <i class="fas fa-file-import me-1"></i> Bulk Input
-                        </a>
-                    <?php endif; ?>
-                </div>
+        
+        <!-- Action Bar -->
+        <div class="d-flex flex-nowrap justify-content-between align-items-center mb-3 gap-3 overflow-x-auto pb-2" style="-webkit-overflow-scrolling: touch;">
+            <!-- Kiri: Tambah & Bulk Input -->
+            <div class="d-flex flex-nowrap gap-2">
+                <?php if ($can_create): ?>
+                    <a href="<?= BASE_URL ?>/santri/create" class="btn btn-success shadow-sm text-nowrap" style="border-radius: 20px; padding: 8px 20px;">
+                        <i class="fas fa-user-plus me-1"></i> Tambah Santri
+                    </a>
+                    <a href="<?= BASE_URL ?>/santri/bulk-create" class="btn btn-info text-white shadow-sm text-nowrap" style="border-radius: 20px; padding: 8px 20px;">
+                        <i class="fas fa-file-import me-1"></i> Bulk Input
+                    </a>
+                <?php endif; ?>
+            </div>
 
-                <!-- Group Kanan: Bulk Edit & Hapus -->
-                <div class="col-12 col-md-auto d-flex gap-2 justify-content-md-end align-items-center">
-                    <div id="selected-count-info" class="d-none me-2"></div>
-                    <?php if ($can_edit): ?>
-                        <button type="button" class="btn btn-warning flex-grow-1 flex-md-grow-0 fw-medium text-dark" id="bulkEditBtn" disabled>
-                            <i class="fas fa-pen-to-square me-1"></i> Bulk Edit
-                        </button>
-                    <?php endif; ?>
-                    <?php if ($can_delete): ?>
-                        <button type="button" class="btn btn-danger flex-grow-1 flex-md-grow-0 fw-medium" id="bulkDeleteBtn" disabled>
-                            <i class="fas fa-user-minus me-1"></i> Hapus Terpilih
-                        </button>
-                    <?php endif; ?>
+            <!-- Kanan: Bulk Edit & Hapus Terpilih -->
+            <div class="d-flex flex-nowrap gap-2 align-items-center">
+                <div id="selected-count-info" class="d-none">
+                    <span class="badge bg-secondary fs-6 px-3 py-2 rounded-pill"></span>
                 </div>
+                <?php if ($can_edit): ?>
+                    <!-- Bulk Edit bisa dipencet kapan saja -->
+                    <button type="button" class="btn btn-warning text-dark shadow-sm text-nowrap" style="border-radius: 20px; padding: 8px 20px;" onclick="goToBulkEdit()">
+                        <i class="fas fa-pen-to-square me-1"></i> Bulk Edit
+                    </button>
+                <?php endif; ?>
+                <?php if ($can_delete): ?>
+                    <!-- Hapus Terpilih: hanya aktif jika ada yang diceklis -->
+                    <button type="button" class="btn btn-danger shadow-sm text-nowrap" id="bulkDeleteBtn" disabled style="border-radius: 20px; padding: 8px 20px;" onclick="confirmBulkDeleteSantri()">
+                        <i class="fas fa-user-minus me-1"></i> Hapus Terpilih
+                    </button>
+                <?php endif; ?>
             </div>
         </div>
 
@@ -152,14 +156,9 @@ $csrf_token = csrf_generate(); // pastikan fungsi ini dipanggil
 
 <script>
 document.addEventListener('DOMContentLoaded', function() {
-    // Inisialisasi Checkbox Pinter (bisa menggunakan alpine.js atau JS vanilla seperti sebelumnya)
-    // Di sini kita biarkan HTMX handle AJAX, tapi JS handle Checkbox UI.
-    
     const STORAGE_KEY = 'selectedSantriIds'; 
-    let rowCheckboxes = document.querySelectorAll('.row-checkbox');
     const selectAllCheckbox = document.getElementById('selectAll');
     const bulkDeleteBtn = document.getElementById('bulkDeleteBtn');
-    const bulkEditBtn = document.getElementById('bulkEditBtn');
     const selectedCountInfo = document.getElementById('selected-count-info');
     
     function getStoredIds() {
@@ -194,12 +193,14 @@ document.addEventListener('DOMContentLoaded', function() {
         const selectedIds = getStoredIds();
         const count = selectedIds.size;
         
+        // Hapus Terpilih: aktif jika ada yang dipilih
         if (bulkDeleteBtn) bulkDeleteBtn.disabled = count === 0;
-        if (bulkEditBtn) bulkEditBtn.disabled = count === 0;
 
+        // Badge hitung terpilih
         if (selectedCountInfo) {
+            const badge = selectedCountInfo.querySelector('span');
             if (count > 0) {
-                selectedCountInfo.innerHTML = `<span class="badge bg-secondary">${count} data terpilih</span>`;
+                if (badge) badge.textContent = count + ' terpilih';
                 selectedCountInfo.classList.remove('d-none');
             } else {
                 selectedCountInfo.classList.add('d-none');
@@ -210,13 +211,8 @@ document.addEventListener('DOMContentLoaded', function() {
         if (selectAllCheckbox && allVisible.length > 0) {
              const checkedVisible = document.querySelectorAll('.row-checkbox:checked').length;
              selectAllCheckbox.checked = allVisible.length === checkedVisible;
+             selectAllCheckbox.indeterminate = checkedVisible > 0 && checkedVisible < allVisible.length;
         }
-    }
-
-    if (bulkEditBtn) {
-        bulkEditBtn.addEventListener('click', function() {
-            window.location.href = '<?= BASE_URL ?>/santri/bulk-edit';
-        });
     }
 
     document.body.addEventListener('change', function(e) {
@@ -236,8 +232,6 @@ document.addEventListener('DOMContentLoaded', function() {
         if (e.detail.target.id === 'table-data-wrapper') {
             loadSelections();
             toggleActionButtons();
-            
-            // update total badge
             const newTotal = e.detail.target.querySelector('#new-total');
             if (newTotal) {
                 document.getElementById('total-santri').innerText = newTotal.value + ' Santri';
@@ -251,7 +245,66 @@ document.addEventListener('DOMContentLoaded', function() {
     if (document.getElementById('resetFilterBtn')) {
         document.getElementById('resetFilterBtn').addEventListener('click', function() {
             sessionStorage.removeItem(STORAGE_KEY);
+    window.goToBulkEdit = function() {
+        const selectedIds = getStoredIds();
+        if (selectedIds.size > 0) {
+            // Buat input tersembunyi untuk ids karena ids ditaruh di sessionStorage
+            const form = document.getElementById('bulkDeleteForm');
+            form.action = '<?= BASE_URL ?>/santri/bulk-edit-prepare';
+            
+            // Hapus input hidden 'ids[]' lama agar tidak duplikat
+            form.querySelectorAll('input[name="ids[]"]').forEach(el => el.remove());
+            
+            // Tambahkan input hidden untuk semua ID yang dipilih
+            selectedIds.forEach(id => {
+                const input = document.createElement('input');
+                input.type = 'hidden';
+                input.name = 'ids[]';
+                input.value = id;
+                form.appendChild(input);
+            });
+            form.submit();
+        } else {
+            // Jika kosong, langsung ke halaman bulk edit tanpa ids
+            window.location.href = '<?= BASE_URL ?>/santri/bulk-edit';
+        }
+    };
+
+    window.confirmBulkDeleteSantri = function() {
+        const selectedIds = getStoredIds();
+        if (selectedIds.size === 0) return;
+        
+        Swal.fire({
+            title: 'Hapus Terpilih?',
+            text: `Anda akan menghapus ${selectedIds.size} santri terpilih. Data yang dihapus tidak dapat dikembalikan. Lanjutkan?`,
+            icon: 'warning',
+            showCancelButton: true,
+            confirmButtonColor: '#e11d48',
+            cancelButtonColor: '#6c757d',
+            confirmButtonText: 'Ya, Hapus Terpilih!',
+            cancelButtonText: 'Batal'
+        }).then((result) => {
+            if (result.isConfirmed) {
+                const form = document.getElementById('bulkDeleteForm');
+                form.action = '<?= BASE_URL ?>/santri/bulk-delete';
+                
+                // Hapus input hidden lama
+                form.querySelectorAll('input[name="ids[]"]').forEach(el => el.remove());
+                
+                // Tambahkan dari session storage
+                selectedIds.forEach(id => {
+                    const input = document.createElement('input');
+                    input.type = 'hidden';
+                    input.name = 'ids[]';
+                    input.value = id;
+                    form.appendChild(input);
+                });
+                
+                form.submit();
+            }
         });
-    }
+    };
 });
 </script>
+    
+

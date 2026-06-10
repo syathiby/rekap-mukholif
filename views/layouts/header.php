@@ -57,6 +57,9 @@ if (empty($req_path)) $req_path = '/';
     
     <!-- HTMX -->
     <script src="https://unpkg.com/htmx.org@1.9.11"></script>
+    
+    <!-- SweetAlert2 -->
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
 
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css">
@@ -77,7 +80,7 @@ if (empty($req_path)) $req_path = '/';
     #sidebarOverlay.visible { opacity: 1; }
     </style>
 </head>
-<body hx-boost="true">
+<body>
     <div id="sidebarOverlay" onclick="closeSidebarMobile()"></div>
 
     <nav id="sidebar">
@@ -189,17 +192,31 @@ if (empty($req_path)) $req_path = '/';
         }
         </script>
 
-        <div id="flash-message-container" class="px-4">
+        <div id="flash-message-container">
         <?php
         if (isset($_SESSION['flash_message'])) {
-            $type = $_SESSION['flash_message']['type'] === 'success' ? 'success' : 'danger';
-            $icon = $type === 'success' ? 'fa-check-circle' : 'fa-times-circle';
+            $type = $_SESSION['flash_message']['type'] === 'success' ? 'success' : 'error';
             $msg = htmlspecialchars($_SESSION['flash_message']['message']);
             echo "
-            <div class='alert alert-{$type} alert-dismissible fade show' role='alert'>
-                <i class='fas {$icon} me-2'></i> {$msg}
-                <button type='button' class='btn-close' data-bs-dismiss='alert' aria-label='Close'></button>
-            </div>
+            <script>
+            document.addEventListener('DOMContentLoaded', function() {
+                const Toast = Swal.mixin({
+                    toast: true,
+                    position: 'top-end',
+                    showConfirmButton: false,
+                    timer: 3000,
+                    timerProgressBar: true,
+                    didOpen: (toast) => {
+                        toast.onmouseenter = Swal.stopTimer;
+                        toast.onmouseleave = Swal.resumeTimer;
+                    }
+                });
+                Toast.fire({
+                    icon: '{$type}',
+                    title: '{$msg}'
+                });
+            });
+            </script>
             ";
             unset($_SESSION['flash_message']);
         }

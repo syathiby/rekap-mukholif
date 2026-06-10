@@ -95,6 +95,27 @@ class SantriModel extends Model {
         $stmt = $this->db->prepare('DELETE FROM ' . $this->table . ' WHERE id = ?');
         return $stmt->execute([$id]);
     }
+
+    public function getAllWithPoin(): array {
+        $stmt = $this->db->prepare('SELECT *, poin_aktif FROM ' . $this->table . ' ORDER BY poin_aktif DESC');
+        $stmt->execute();
+        return $stmt->fetchAll();
+    }
+
+    public function updatePoinAktif(int $santriId, int $poin): bool {
+        $stmt = $this->db->prepare('UPDATE ' . $this->table . ' SET poin_aktif = ? WHERE id = ?');
+        return $stmt->execute([$poin, $santriId]);
+    }
+
+    public function addPoin(int $santriId, int $tambah): bool {
+        $stmt = $this->db->prepare('UPDATE ' . $this->table . ' SET poin_aktif = poin_aktif + ? WHERE id = ?');
+        return $stmt->execute([$tambah, $santriId]);
+    }
+
+    public function reducePoin(int $santriId, int $kurang): bool {
+        $stmt = $this->db->prepare('UPDATE ' . $this->table . ' SET poin_aktif = poin_aktif - ? WHERE id = ?');
+        return $stmt->execute([$kurang, $santriId]);
+    }
 }
 
 

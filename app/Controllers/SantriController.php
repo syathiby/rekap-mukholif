@@ -49,8 +49,8 @@ class SantriController extends Controller {
         ];
 
         // If it's an HTMX request for the table only (from search form)
-        if ($this->isHtmx()) {
-            $this->partial('santri/_table', $data);
+        if ($this->isHtmxRequest()) {
+            $this->partial('pages/santri/_table', $data);
             return;
         }
 
@@ -72,7 +72,7 @@ class SantriController extends Controller {
             return;
         }
 
-        csrf_validate();
+        $this->validateCsrfToken();
 
         try {
             $nama = trim($_POST['nama'] ?? '');
@@ -96,12 +96,12 @@ class SantriController extends Controller {
                     'kelas' => $kelas,
                     'kamar' => $kamar
                 ]);
-                $_SESSION['success_message'] = 'Santri ' . $nama . ' berhasil ditambahkan!';
+                $_SESSION['flash_message'] = ['type' => 'success', 'message' => 'Santri ' . $nama . ' berhasil ditambahkan!'];
             } else {
                 throw new \Exception('Gagal menambahkan santri');
             }
         } catch (\Exception $e) {
-            $_SESSION['error_message'] = $e->getMessage();
+            $_SESSION['flash_message'] = ['type' => 'error', 'message' => $e->getMessage()];
         }
 
         $this->redirect('/santri');
@@ -115,7 +115,7 @@ class SantriController extends Controller {
 
         $santri = $this->santriModel->findById($id);
         if (!$santri) {
-            $_SESSION['error_message'] = 'Santri tidak ditemukan!';
+            $_SESSION['flash_message'] = ['type' => 'error', 'message' => 'Santri tidak ditemukan!'];
             $this->redirect('/santri');
             return;
         }
@@ -129,7 +129,7 @@ class SantriController extends Controller {
             return;
         }
 
-        csrf_validate();
+        $this->validateCsrfToken();
 
         try {
             $nama = trim($_POST['nama'] ?? '');
@@ -155,14 +155,14 @@ class SantriController extends Controller {
                     'old' => $old_data,
                     'new' => ['nama' => $nama, 'kelas' => $kelas, 'kamar' => $kamar]
                 ]);
-                $_SESSION['success_message'] = 'Data santri ' . $nama . ' berhasil diperbarui!';
+                $_SESSION['flash_message'] = ['type' => 'success', 'message' => 'Data santri ' . $nama . ' berhasil diperbarui!'];
             } else {
                 throw new \Exception('Gagal memperbarui data santri');
             }
             $this->redirect('/santri');
             return;
         } catch (\Exception $e) {
-            $_SESSION['error_message'] = $e->getMessage();
+            $_SESSION['flash_message'] = ['type' => 'error', 'message' => $e->getMessage()];
             $this->redirect('/santri/' . $id . '/edit');
         }
     }
@@ -173,7 +173,7 @@ class SantriController extends Controller {
             return;
         }
 
-        csrf_validate();
+        $this->validateCsrfToken();
 
         $old_data = $this->santriModel->findById($id);
         if ($old_data) {
@@ -182,9 +182,9 @@ class SantriController extends Controller {
                     'id' => $id,
                     'nama' => $old_data['nama']
                 ]);
-                $_SESSION['success_message'] = 'Data santri berhasil dihapus!';
+                $_SESSION['flash_message'] = ['type' => 'success', 'message' => 'Data santri berhasil dihapus!'];
             } else {
-                $_SESSION['error_message'] = 'Gagal menghapus santri!';
+                $_SESSION['flash_message'] = ['type' => 'error', 'message' => 'Gagal menghapus santri!'];
             }
         }
         $this->redirect('/santri');
@@ -204,7 +204,7 @@ class SantriController extends Controller {
             return;
         }
 
-        csrf_validate();
+        $this->validateCsrfToken();
 
         $santri_list = explode("\n", $_POST['list_santri'] ?? '');
         $success_count = 0;
@@ -258,9 +258,23 @@ class SantriController extends Controller {
             $this->respond('errors/403');
             return;
         }
-        
-        $santri = $this->santriModel->getFiltered([]); // Get all
-        $this->respond('pages/santri/bulk_edit', ['santri' => $santri]);
+
+        // Jika ada ids dari POST (dipilih dari index), tampilkan hanya yang dipilih
+        $ids = $_POST['ids'] ?? [];
+        $ids = array_filter(array_map('intval', (array)$ids));
+
+        if (!empty($ids)) {
+            $placeholders = implode(',', array_fill(0, count($ids), '?'));
+            $db = \App\Core\Database::getInstance()->getConnection();
+            $stmt = $db->prepare("SELECT * FROM santri WHERE id IN ($placeholders) ORDER BY CAST(kamar AS UNSIGNED) ASC, nama ASC");
+            $stmt->execute(array_values($ids));
+            $santri = $stmt->fetchAll();
+        } else {
+            // GET tanpa ids: tampilkan semua santri (user memilih di halaman bulk edit)
+            $santri = $this->santriModel->getFiltered([]);
+        }
+
+        $this->respond('pages/santri/bulk_edit', ['santri' => $santri, 'selected_ids' => $ids]);
     }
 
     public function bulkUpdate(): void {
@@ -269,7 +283,7 @@ class SantriController extends Controller {
             return;
         }
 
-        csrf_validate();
+        $this->validateCsrfToken();
 
         $ids = $_POST['santri_ids'] ?? [];
         $kelasBaru_input = trim($_POST['kelas_baru'] ?? '');
@@ -299,12 +313,12 @@ class SantriController extends Controller {
                     'jumlah_santri' => $updated_count,
                     'perubahan'     => $perubahan
                 ]);
-                $_SESSION['success_message'] = "Berhasil update data untuk $updated_count santri!";
+                $_SESSION['flash_message'] = ['type' => 'success', 'message' => "Berhasil update data untuk $updated_count santri!"];
             } else {
-                $_SESSION['error_message'] = "Terjadi kesalahan, tidak ada data santri yang diperbarui.";
+                $_SESSION['flash_message'] = ['type' => 'error', 'message' => "Terjadi kesalahan, tidak ada data santri yang diperbarui."];
             }
         } else {
-            $_SESSION['error_message'] = "Pilih santri dan isi minimal salah satu kolom (kelas atau kamar)!";
+            $_SESSION['flash_message'] = ['type' => 'error', 'message' => "Pilih santri dan isi minimal salah satu kolom (kelas atau kamar)!"];
         }
 
         $this->redirect('/santri/bulk-edit');
@@ -316,7 +330,7 @@ class SantriController extends Controller {
             return;
         }
 
-        csrf_validate();
+        $this->validateCsrfToken();
 
         $ids = $_POST['ids'] ?? [];
         $deleted_count = 0;
@@ -330,9 +344,9 @@ class SantriController extends Controller {
 
         if ($deleted_count > 0) {
             write_activity_log('DELETE', 'santri', "Bulk delete $deleted_count santri");
-            $_SESSION['success_message'] = "Berhasil menghapus $deleted_count santri!";
+            $_SESSION['flash_message'] = ['type' => 'success', 'message' => "Berhasil menghapus $deleted_count santri!"];
         } else {
-            $_SESSION['error_message'] = "Gagal menghapus santri atau tidak ada santri yang dipilih.";
+            $_SESSION['flash_message'] = ['type' => 'error', 'message' => "Gagal menghapus santri atau tidak ada santri yang dipilih."];
         }
 
         $this->redirect('/santri');

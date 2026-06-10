@@ -22,6 +22,9 @@ define('BASE_URL', $_ENV['APP_URL'] ?? '');
 // 2. Require composer autoloader
 require ROOT_PATH . '/vendor/autoload.php';
 
+// 2b. Load global helper functions (csrf_generate, write_activity_log, etc.)
+require ROOT_PATH . '/bootstrap/helpers.php';
+
 // 3. Set exception handler global
 set_exception_handler(function (Throwable $e) {
     // Log error
