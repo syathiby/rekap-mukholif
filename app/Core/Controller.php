@@ -98,8 +98,7 @@ abstract class Controller {
         $token = $_POST['csrf_token'] ?? '';
         if (empty($token) || !hash_equals($_SESSION['csrf_token'] ?? '', $token)) {
             http_response_code(419);
-            echo "CSRF token mismatch. Please refresh the page.";
-            exit;
+            die("CSRF token mismatch. Please refresh the page.");
         }
     }
 

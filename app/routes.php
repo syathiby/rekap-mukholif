@@ -39,3 +39,12 @@ $router->post('/jenis-pelanggaran/bulk-store', 'JenisPelanggaranController', 'bu
 $router->post('/jenis-pelanggaran/bulk-edit', 'JenisPelanggaranController', 'bulkEdit');
 $router->post('/jenis-pelanggaran/bulk-update', 'JenisPelanggaranController', 'bulkUpdate');
 $router->post('/jenis-pelanggaran/bulk-delete', 'JenisPelanggaranController', 'bulkDelete');
+
+// Pelanggaran Routes (5 Bidang)
+$router->get('/pelanggaran', 'PelanggaranController', 'index');
+$router->get('/pelanggaran/search-santri', 'PelanggaranController', 'searchSantri');
+$router->get('/pelanggaran/{bagian}', 'PelanggaranController', 'rekap');
+$router->get('/pelanggaran/{bagian}/create', 'PelanggaranController', 'create');
+$router->post('/pelanggaran/{bagian}/store', 'PelanggaranController', 'store');
+$router->get('/pelanggaran/{bagian}/detail/{id}', 'PelanggaranController', 'detail');
+$router->post('/pelanggaran/delete/{id}', 'PelanggaranController', 'delete');

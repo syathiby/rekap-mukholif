@@ -88,6 +88,7 @@ $style_v   = time();
         <?php unset($_SESSION['flash_message']); ?>
 
         <form method="post" action="<?= BASE_URL ?>/login">
+            <input type="hidden" name="csrf_token" value="<?= htmlspecialchars($csrf_token ?? '') ?>">
             <div class="mb-4">
                 <label for="username" class="form-label text-sm fw-medium text-secondary mb-1">Username</label>
                 <div class="input-group-modern">
