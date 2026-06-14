@@ -199,4 +199,22 @@ function csrf_validate(): void {
         exit;
     }
 }
+
+/**
+ * =================================================================
+ * FUNGSI FORMATTING
+ * =================================================================
+ */
+
+/**
+ * Menyelaraskan (capitalize) format teks untuk dropdown, label, dan tabel.
+ * Mengubah "DINIYYAH" -> "Diniyyah", "BAHASA" -> "Bahasa".
+ * 
+ * @param string $string Teks yang ingin diformat
+ * @return string Teks yang sudah diformat konsisten
+ */
+function format_typing($string) {
+    if (empty($string)) return $string;
+    return ucwords(strtolower(trim($string)));
+}
 ?>

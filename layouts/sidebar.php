@@ -48,7 +48,7 @@ if (function_exists('has_permission')) {
 
     <div class="sb-section-label">MENU UTAMA</div>
     
-    <a href="<?= BASE_URL ?>/index.php" class="sb-link <?= ($req_path === '/' || $req_path === '/index.php' || $req_path === '') ? 'active' : '' ?>">
+    <a href="<?= BASE_URL ?>/dashboard.php" class="sb-link <?= ($req_path === '/' || $req_path === '/dashboard.php' || $req_path === '') ? 'active' : '' ?>">
         <i class="fas fa-home"></i>
         <span>Dashboard</span>
     </a>
@@ -81,7 +81,7 @@ if (function_exists('has_permission')) {
     </a>
     <?php endif; ?>
 
-    <?php if (has_permission(['rekap_pelanggaran_umum', 'rekap_detail_santri', 'rekap_kebersihan', 'rekap_keterlambatan', 'rekap_santri_teladan', 'rekap_kamar', 'rekap_view_statistik', 'rekap_view_tahfidz'])): ?>
+    <?php if (has_permission(['rekap_per_santri', 'rekap_detail_santri', 'rekap_kebersihan', 'rekap_kamar', 'rekap_view_statistik', 'rekap_view_tahfidz'])): ?>
     <a href="<?= BASE_URL ?>/rekap" class="sb-link <?= strpos($req_path, '/rekap') === 0 ? 'active' : '' ?>">
         <i class="fas fa-chart-bar" style="color:#38bdf8;"></i>
         <span>Rekap Pelanggaran</span>

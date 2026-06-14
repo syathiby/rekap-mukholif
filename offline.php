@@ -163,10 +163,12 @@
             btn.disabled = true;
             statusEl.textContent = 'Mencoba menghubungkan...';
 
-            fetch('./index.php', { method: 'HEAD', cache: 'no-store' })
-                .then(() => {
-                    statusEl.textContent = 'Koneksi berhasil! Mengalihkan...';
-                    window.location.href = './index.php';
+            fetch('./dashboard.php', { method: 'HEAD', cache: 'no-store' })
+                .then(response => {
+                    if (response.ok) {
+                        statusEl.textContent = 'Koneksi berhasil! Mengalihkan...';
+                        window.location.href = './dashboard.php';
+                    }
                 })
                 .catch(() => {
                     retryCount++;
@@ -181,7 +183,7 @@
             document.getElementById('status-text').textContent = 'Koneksi terdeteksi! Mengalihkan...';
             document.querySelector('.dot').style.background = '#4ade80';
             setTimeout(() => {
-                window.location.href = './index.php';
+                window.location.href = './dashboard.php';
             }, 800);
         });
 

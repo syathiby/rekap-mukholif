@@ -160,7 +160,7 @@ if (isset($conn)) {
         </button>
 
         <!-- Brand -->
-        <a href="<?= BASE_URL ?>/index.php" class="sb-brand">
+        <a href="<?= BASE_URL ?>/dashboard.php" class="sb-brand">
             <div class="sb-brand-icon"><i class="fas fa-shield-alt"></i></div>
             <div class="sb-brand-name">Asuh<span>Track</span></div>
         </a>

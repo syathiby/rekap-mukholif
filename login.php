@@ -83,7 +83,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             write_activity_log('LOGIN', 'auth', "User '" . $user['username'] . "' berhasil login ke sistem");
 
             // REVISI: Arahkan ke halaman index pake BASE_URL
-            header("Location: " . BASE_URL . "/index.php");
+            header("Location: " . BASE_URL . "/dashboard.php");
             exit;
         } else {
             $error = "❌ Password salah!";

@@ -3,18 +3,27 @@
 require_once __DIR__ . '/../bootstrap/init.php';
 
 // 2. Jalankan 'SATPAM'
-guard('rekap_detail_santri');
+guard('rekap_per_santri');
 
 // 3. Ambil Parameter
 $santri_id = (int)($_GET['id'] ?? 0);
 if ($santri_id <= 0) {
     $_SESSION['flash_error'] = "Data santri tidak valid.";
-    header("Location: karakter.php");
+    header("Location: rekap_per_santri.php");
     exit;
 }
 
 $start_date = $_GET['start_date'] ?? date('Y-m-d', strtotime('-1 year'));
 $end_date   = $_GET['end_date']   ?? date('Y-m-d');
+
+$filter_bagian = $_GET['bagian'] ?? '';
+$filter_kategori = $_GET['kategori'] ?? '';
+$filter_jp = $_GET['jenis_pelanggaran'] ?? '';
+
+$filter_qs = "";
+if (!empty($filter_bagian)) $filter_qs .= "&bagian=" . urlencode($filter_bagian);
+if (!empty($filter_kategori)) $filter_qs .= "&kategori=" . urlencode($filter_kategori);
+if (!empty($filter_jp)) $filter_qs .= "&jenis_pelanggaran=" . urlencode($filter_jp);
 
 // ─── 4. Info Santri ───────────────────────────────────────────────────────────
 $stmt_santri = $conn->prepare("SELECT id, nama, kelas, kamar, poin_aktif FROM santri WHERE id = ?");
@@ -23,26 +32,48 @@ $stmt_santri->execute();
 $santri = $stmt_santri->get_result()->fetch_assoc();
 if (!$santri) { die("Data santri tidak ditemukan."); }
 
-// ─── 5. Pelanggaran per kategori ──────────────────────────────────────────────
-// Pakai p.tanggal >= ? AND p.tanggal < ? agar index dapat dipakai (tidak wrap DATE())
+// ─── 3.5 Build Filter Query ───────────────────────────────────────────────────
 $start_dt = $start_date . ' 00:00:00';
 $end_dt   = $end_date   . ' 23:59:59';
 
+$where_p = "p.santri_id = ? AND p.tanggal BETWEEN ? AND ?";
+$params_p = [$santri_id, $start_dt, $end_dt];
+$types_p = "iss";
+
+if ($filter_bagian) {
+    $where_p .= " AND jp.bagian = ?";
+    $params_p[] = $filter_bagian;
+    $types_p .= "s";
+}
+if ($filter_kategori) {
+    $where_p .= " AND jp.kategori = ?";
+    $params_p[] = $filter_kategori;
+    $types_p .= "s";
+}
+if ($filter_jp) {
+    $where_p .= " AND p.jenis_pelanggaran_id = ?";
+    $params_p[] = $filter_jp;
+    $types_p .= "i";
+}
+
+// ─── 5. Pelanggaran per kategori ──────────────────────────────────────────────
 $stmt_pk = $conn->prepare(
     "SELECT jp.kategori, COUNT(p.id) as jumlah, SUM(jp.poin) as total_poin
      FROM pelanggaran p
      JOIN jenis_pelanggaran jp ON p.jenis_pelanggaran_id = jp.id
-     WHERE p.santri_id = ? AND p.tanggal BETWEEN ? AND ?
+     WHERE $where_p
      GROUP BY jp.kategori"
 );
-$stmt_pk->bind_param("iss", $santri_id, $start_dt, $end_dt);
+$stmt_pk->bind_param($types_p, ...$params_p);
 $stmt_pk->execute();
 $res_pk = $stmt_pk->get_result();
 $pelanggaran_kategori  = [];
 $total_poin_pelanggaran = 0;
+$total_kasus = 0;
 while ($row = $res_pk->fetch_assoc()) {
     $pelanggaran_kategori[] = $row;
     $total_poin_pelanggaran += $row['total_poin'];
+    $total_kasus += $row['jumlah'];
 }
 
 // ─── 6. Reward ringkasan ──────────────────────────────────────────────────────
@@ -64,23 +95,34 @@ if ($row = $res_rk->fetch_assoc()) {
     }
 }
 
-// ─── 7. Tren bulanan — GABUNG 1 query UNION ───────────────────────────────────
-// Sebelumnya 2 query terpisah, sekarang 1 UNION lalu merge di PHP
-$stmt_tren = $conn->prepare(
-    "SELECT 'p' AS src, DATE_FORMAT(p.tanggal,'%Y-%m') AS bulan, SUM(jp.poin) AS poin
-     FROM pelanggaran p
-     JOIN jenis_pelanggaran jp ON p.jenis_pelanggaran_id = jp.id
-     WHERE p.santri_id = ? AND p.tanggal BETWEEN ? AND ?
-     GROUP BY bulan
-     UNION ALL
-     SELECT 'r' AS src, DATE_FORMAT(dr.tanggal,'%Y-%m') AS bulan, SUM(jr.poin_reward) AS poin
-     FROM daftar_reward dr
-     JOIN jenis_reward jr ON dr.jenis_reward_id = jr.id
-     WHERE dr.santri_id = ? AND dr.tanggal BETWEEN ? AND ?
-     GROUP BY bulan
-     ORDER BY bulan ASC"
-);
-$stmt_tren->bind_param("ississ", $santri_id, $start_dt, $end_dt, $santri_id, $start_dt, $end_dt);
+// ─── 7. Tren bulanan — Dinamis untuk Pengabdian ─────────────────────────────────
+if ($filter_bagian === 'Pengabdian') {
+    $sql_tren = "SELECT 'p' AS src, DATE_FORMAT(p.tanggal,'%Y-%m') AS bulan, COUNT(p.id) AS poin
+         FROM pelanggaran p
+         JOIN jenis_pelanggaran jp ON p.jenis_pelanggaran_id = jp.id
+         WHERE $where_p
+         GROUP BY bulan
+         ORDER BY bulan ASC";
+    $stmt_tren = $conn->prepare($sql_tren);
+    $stmt_tren->bind_param($types_p, ...$params_p);
+} else {
+    $sql_tren = "SELECT 'p' AS src, DATE_FORMAT(p.tanggal,'%Y-%m') AS bulan, SUM(jp.poin) AS poin
+         FROM pelanggaran p
+         JOIN jenis_pelanggaran jp ON p.jenis_pelanggaran_id = jp.id
+         WHERE $where_p
+         GROUP BY bulan
+         UNION ALL
+         SELECT 'r' AS src, DATE_FORMAT(dr.tanggal,'%Y-%m') AS bulan, SUM(jr.poin_reward) AS poin
+         FROM daftar_reward dr
+         JOIN jenis_reward jr ON dr.jenis_reward_id = jr.id
+         WHERE dr.santri_id = ? AND dr.tanggal BETWEEN ? AND ?
+         GROUP BY bulan
+         ORDER BY bulan ASC";
+    $stmt_tren = $conn->prepare($sql_tren);
+    $params_tren = array_merge($params_p, [$santri_id, $start_dt, $end_dt]);
+    $types_tren = $types_p . "iss";
+    $stmt_tren->bind_param($types_tren, ...$params_tren);
+}
 $stmt_tren->execute();
 $res_tren = $stmt_tren->get_result();
 $tren_p = [];
@@ -101,24 +143,40 @@ foreach ($all_months as $m) {
 
 // ─── 8. Kesimpulan karakter (dari poin pelanggaran/reward) ────────────────────
 $rasio = $karakter_class = $karakter_icon = '';
-if ($total_poin_reward == 0 && $total_poin_pelanggaran == 0) {
-    $rasio = "Santri belum memiliki catatan pelanggaran maupun reward pada periode ini.";
-    $karakter_class = "text-secondary"; $karakter_icon = "fa-minus-circle";
-} elseif ($total_poin_reward >= $total_poin_pelanggaran * 2) {
-    $rasio = "Sangat Baik. Santri menunjukkan prestasi yang jauh melampaui catatan pelanggarannya.";
-    $karakter_class = "text-success";   $karakter_icon = "fa-star";
-} elseif ($total_poin_reward > $total_poin_pelanggaran) {
-    $rasio = "Baik. Santri lebih banyak mendapatkan apresiasi/reward dibanding melakukan pelanggaran.";
-    $karakter_class = "text-primary";   $karakter_icon = "fa-thumbs-up";
-} elseif ($total_poin_pelanggaran >= $total_poin_reward * 2 && $total_poin_reward > 0) {
-    $rasio = "Perlu Perhatian Khusus. Pelanggaran santri jauh mendominasi dibandingkan prestasinya.";
-    $karakter_class = "text-danger";    $karakter_icon = "fa-exclamation-triangle";
-} elseif ($total_poin_pelanggaran > $total_poin_reward) {
-    $rasio = "Kurang Disiplin. Catatan pelanggaran masih lebih tinggi daripada prestasi/reward.";
-    $karakter_class = "text-warning";   $karakter_icon = "fa-exclamation-circle";
+if ($filter_bagian === 'Pengabdian') {
+    if ($total_kasus == 0) {
+        $rasio = "Sangat Disiplin. Tidak ada catatan keterlambatan sama sekali pada periode ini.";
+        $karakter_class = "text-success"; $karakter_icon = "fa-star";
+    } elseif ($total_kasus <= 3) {
+        $rasio = "Cukup Disiplin. Hanya ada sedikit insiden keterlambatan yang wajar.";
+        $karakter_class = "text-primary"; $karakter_icon = "fa-thumbs-up";
+    } elseif ($total_kasus <= 10) {
+        $rasio = "Perlu Peningkatan Kedisiplinan. Frekuensi keterlambatan cukup sering terjadi.";
+        $karakter_class = "text-warning"; $karakter_icon = "fa-exclamation-circle";
+    } else {
+        $rasio = "Darurat Kedisiplinan! Santri ini sangat sering terlambat dan butuh evaluasi khusus.";
+        $karakter_class = "text-danger";  $karakter_icon = "fa-exclamation-triangle";
+    }
 } else {
-    $rasio = "Seimbang. Santri memiliki jumlah poin pelanggaran dan reward yang seimbang.";
-    $karakter_class = "text-info";      $karakter_icon = "fa-balance-scale";
+    if ($total_poin_reward == 0 && $total_poin_pelanggaran == 0) {
+        $rasio = "Santri belum memiliki catatan pelanggaran maupun reward pada periode ini.";
+        $karakter_class = "text-secondary"; $karakter_icon = "fa-minus-circle";
+    } elseif ($total_poin_reward >= $total_poin_pelanggaran * 2) {
+        $rasio = "Sangat Baik. Santri menunjukkan prestasi yang jauh melampaui catatan pelanggarannya.";
+        $karakter_class = "text-success";   $karakter_icon = "fa-star";
+    } elseif ($total_poin_reward > $total_poin_pelanggaran) {
+        $rasio = "Baik. Santri lebih banyak mendapatkan apresiasi/reward dibanding melakukan pelanggaran.";
+        $karakter_class = "text-primary";   $karakter_icon = "fa-thumbs-up";
+    } elseif ($total_poin_pelanggaran >= $total_poin_reward * 2 && $total_poin_reward > 0) {
+        $rasio = "Perlu Perhatian Khusus. Pelanggaran santri jauh mendominasi dibandingkan prestasinya.";
+        $karakter_class = "text-danger";    $karakter_icon = "fa-exclamation-triangle";
+    } elseif ($total_poin_pelanggaran > $total_poin_reward) {
+        $rasio = "Kurang Disiplin. Catatan pelanggaran masih lebih tinggi daripada prestasi/reward.";
+        $karakter_class = "text-warning";   $karakter_icon = "fa-exclamation-circle";
+    } else {
+        $rasio = "Seimbang. Santri memiliki jumlah poin pelanggaran dan reward yang seimbang.";
+        $karakter_class = "text-info";      $karakter_icon = "fa-balance-scale";
+    }
 }
 
 // ─── 9. Status peringatan SP ──────────────────────────────────────────────────
@@ -131,6 +189,17 @@ elseif ($poin_bersih_val >= 100)  { $sp_status = "PERINGATAN 1"; $sp_class = "bg
 
 // ─── 10. Rapot: radar (1 query saja, cukup untuk radar + stat cards) ──────────
 // Query tren karakter HANYA dijalankan jika ada rapot (skip jika kosong)
+$bulan_indo   = ['1'=>'Januari','2'=>'Februari','3'=>'Maret','4'=>'April','5'=>'Mei','6'=>'Juni','7'=>'Juli','8'=>'Agustus','9'=>'September','10'=>'Oktober','11'=>'November','12'=>'Desember'];
+$current_ts   = strtotime(date('Y-m-01', strtotime($start_date)));
+$end_ts_month = strtotime(date('Y-m-01', strtotime($end_date)));
+$valid_months = [];
+while ($current_ts <= $end_ts_month) {
+    $y = date('Y', $current_ts); $m = date('n', $current_ts);
+    $valid_months[] = "(tahun = $y AND bulan = '{$bulan_indo[$m]}')";
+    $current_ts = strtotime("+1 month", $current_ts);
+}
+$where_rapot = empty($valid_months) ? "1=0" : "(" . implode(" OR ", $valid_months) . ")";
+
 $stmt_radar = $conn->prepare(
     "SELECT
         AVG(puasa_sunnah) as puasa_sunnah, AVG(sholat_duha) as sholat_duha,
@@ -145,12 +214,9 @@ $stmt_radar = $conn->prepare(
         AVG(piket) as piket, AVG(kerapihan_barang) as kerapihan_barang,
         COUNT(*) as total_rapot
      FROM rapot_kepengasuhan 
-     WHERE santri_id = ?
-       AND STR_TO_DATE(CONCAT(tahun, '-', FIELD(bulan, 'Januari','Februari','Maret','April','Mei','Juni','Juli','Agustus','September','Oktober','November','Desember'), '-01'), '%Y-%c-%d') 
-           BETWEEN STR_TO_DATE(CONCAT(DATE_FORMAT(?, '%Y-%m'), '-01'), '%Y-%m-%d') 
-           AND LAST_DAY(?)"
+     WHERE santri_id = ? AND $where_rapot"
 );
-$stmt_radar->bind_param("iss", $santri_id, $start_date, $end_date);
+$stmt_radar->bind_param("i", $santri_id);
 $stmt_radar->execute();
 $radar_data  = $stmt_radar->get_result()->fetch_assoc();
 $total_rapot = (int)($radar_data['total_rapot'] ?? 0);
@@ -192,13 +258,10 @@ if ($total_rapot > 0) {
                 ROUND((tidur+keterlambatan+seragam+makan+arahan+bahasa_arab)/6,2) AS avg_kedisiplinan,
                 ROUND((mandi+penampilan+piket+kerapihan_barang)/4,2) AS avg_kebersihan
          FROM rapot_kepengasuhan
-         WHERE santri_id = ?
-           AND STR_TO_DATE(CONCAT(tahun, '-', FIELD(bulan, 'Januari','Februari','Maret','April','Mei','Juni','Juli','Agustus','September','Oktober','November','Desember'), '-01'), '%Y-%c-%d') 
-               BETWEEN STR_TO_DATE(CONCAT(DATE_FORMAT(?, '%Y-%m'), '-01'), '%Y-%m-%d') 
-               AND LAST_DAY(?)
+         WHERE santri_id = ? AND $where_rapot
          ORDER BY tahun ASC, $bulan_order ASC"
     );
-    $stmt_tren_k->bind_param("iss", $santri_id, $start_date, $end_date);
+    $stmt_tren_k->bind_param("i", $santri_id);
     $stmt_tren_k->execute();
     $res_tren_k = $stmt_tren_k->get_result();
     while ($row = $res_tren_k->fetch_assoc()) {
@@ -211,10 +274,6 @@ if ($total_rapot > 0) {
 }
 
 // ─── 11.5. Hitung Skor Sinkronisasi (Untuk Info Banner) ──────────────────────
-$total_kasus = 0;
-foreach ($pelanggaran_kategori as $pk) {
-    $total_kasus += $pk['jumlah'];
-}
 $rata_rapot = 0;
 if ($total_rapot > 0) {
     $rata_rapot = array_sum($radar_values) / 20;
@@ -236,6 +295,56 @@ $json_tren_akhlaq   = json_encode($tren_akhlaq);
 $json_tren_disiplin = json_encode($tren_kedisiplinan);
 $json_tren_bersih   = json_encode($tren_kebersihan);
 
+// ─── 11.6. Tren Keterlambatan (Waktu Sholat) ──────────────────────────────────
+$sql_keterlambatan = "
+    SELECT
+        CASE
+            WHEN p.jenis_pelanggaran_id = 2 THEN 'Telat KBM'
+            WHEN TIME(p.tanggal) BETWEEN '03:30:00' AND '05:30:00' THEN 'Subuh'
+            WHEN TIME(p.tanggal) BETWEEN '11:30:00' AND '13:00:00' THEN 'Dzuhur'
+            WHEN TIME(p.tanggal) BETWEEN '14:45:00' AND '16:00:00' THEN 'Ashar'
+            WHEN TIME(p.tanggal) BETWEEN '17:30:00' AND '18:45:00' THEN 'Maghrib'
+            WHEN TIME(p.tanggal) BETWEEN '18:50:00' AND '20:30:00' THEN 'Isya'
+            ELSE 'Lainnya'
+        END AS kategori,
+        COUNT(*) AS jumlah
+    FROM pelanggaran p
+    JOIN jenis_pelanggaran jp ON p.jenis_pelanggaran_id = jp.id
+    WHERE $where_p AND p.jenis_pelanggaran_id IN (1, 2) 
+    GROUP BY CASE
+            WHEN p.jenis_pelanggaran_id = 2 THEN 'Telat KBM'
+            WHEN TIME(p.tanggal) BETWEEN '03:30:00' AND '05:30:00' THEN 'Subuh'
+            WHEN TIME(p.tanggal) BETWEEN '11:30:00' AND '13:00:00' THEN 'Dzuhur'
+            WHEN TIME(p.tanggal) BETWEEN '14:45:00' AND '16:00:00' THEN 'Ashar'
+            WHEN TIME(p.tanggal) BETWEEN '17:30:00' AND '18:45:00' THEN 'Maghrib'
+            WHEN TIME(p.tanggal) BETWEEN '18:50:00' AND '20:30:00' THEN 'Isya'
+            ELSE 'Lainnya'
+        END
+    ORDER BY jumlah DESC
+";
+$stmt_telat = $conn->prepare($sql_keterlambatan);
+$stmt_telat->bind_param($types_p, ...$params_p);
+$stmt_telat->execute();
+$res_telat = $stmt_telat->get_result();
+
+$telat_kategori_labels = [];
+$telat_kategori_data = [];
+$total_telat = 0;
+$total_telat_kbm = 0;
+$total_telat_sholat = 0;
+while ($row = $res_telat->fetch_assoc()) {
+    $telat_kategori_labels[] = $row['kategori'];
+    $telat_kategori_data[] = $row['jumlah'];
+    $total_telat += $row['jumlah'];
+    if ($row['kategori'] === 'Telat KBM') {
+        $total_telat_kbm += $row['jumlah'];
+    } elseif ($row['kategori'] !== 'Lainnya') {
+        $total_telat_sholat += $row['jumlah'];
+    }
+}
+$json_telat_labels = json_encode($telat_kategori_labels);
+$json_telat_data = json_encode($telat_kategori_data);
+
 // ─── Komposisi chart data (hitung PHP, bukan duplikat di JS) ─────────────────
 $comp_labels = $comp_data = $comp_colors = [];
 $colorMap = ['Sangat Berat'=>'#b91c1c','Berat'=>'#ef4444','Sedang'=>'#f59e0b','Ringan'=>'#fcd34d','Reward'=>'#10b981'];
@@ -252,6 +361,22 @@ foreach ($reward_kategori as $rk) {
 $json_comp_labels = json_encode($comp_labels);
 $json_comp_data   = json_encode($comp_data);
 $json_comp_colors = json_encode($comp_colors);
+
+// Data Frekuensi Pelanggaran (Jumlah Kasus)
+$freq_labels = $freq_data = $freq_colors = [];
+foreach ($pelanggaran_kategori as $pk) {
+    $freq_labels[] = 'Pelanggaran ' . $pk['kategori'];
+    $freq_data[]   = $pk['jumlah'];
+    $freq_colors[] = $colorMap[$pk['kategori']] ?? '#6b7280';
+}
+foreach ($reward_kategori as $rk) {
+    $freq_labels[] = 'Reward';
+    $freq_data[]   = $rk['jumlah'];
+    $freq_colors[] = '#10b981';
+}
+$json_freq_labels = json_encode($freq_labels);
+$json_freq_data   = json_encode($freq_data);
+$json_freq_colors = json_encode($freq_colors);
 
 // Flag untuk JS (kurangi logika kondisional inline di JS)
 $has_tren_data    = !empty($labels);
@@ -375,54 +500,79 @@ require_once __DIR__ . '/../layouts/header.php';
 <div class="container py-4" style="overflow-x:hidden">
     <div class="d-flex justify-content-between align-items-center mb-4">
         <h1 class="page-title m-0"><i class="fas fa-chart-pie me-2"></i>Analisis Santri</h1>
-        <a href="javascript:history.back()" class="btn btn-outline-secondary rounded-pill shadow-sm">
+        <a href="rekap_per_santri.php?start_date=<?= urlencode($start_date) ?>&end_date=<?= urlencode($end_date) ?><?= $filter_qs ?>" class="btn btn-outline-secondary rounded-pill shadow-sm">
             <i class="fas fa-arrow-left me-1"></i> Kembali
         </a>
     </div>
 
     <!-- Hero summary -->
-    <div class="character-summary">
-        <div>
-            <div class="character-icon-wrapper <?= $karakter_class ?>">
-                <i class="fas <?= $karakter_icon ?> character-icon"></i>
+    <div class="profile-hero p-3 p-md-4 mb-4 bg-white border shadow-sm" style="border-radius: 16px; position: relative;">
+        <div class="d-flex flex-column align-items-center mb-3">
+            <!-- Icon Avatar -->
+            <div class="character-icon-wrapper <?= $karakter_class ?> bg-light mb-3" style="width: 75px; height: 75px; border-radius: 18px; display: flex; align-items: center; justify-content: center; border: 1px solid #f1f5f9; margin: 0 !important;">
+                <i class="fas <?= $karakter_icon ?> character-icon" style="font-size: 2.2rem; margin: 0;"></i>
             </div>
             
-            <h2 class="fw-bold mb-1 text-dark" style="letter-spacing: -0.5px;"><?= htmlspecialchars($santri['nama']) ?></h2>
-            <div class="text-secondary fw-medium mb-3" style="font-size: 0.95rem;">
-                <i class="fas fa-user-graduate me-1 opacity-75"></i> Kelas <?= htmlspecialchars($santri['kelas']) ?> &nbsp;<span class="text-muted mx-1">•</span>&nbsp; 
-                <i class="fas fa-bed me-1 opacity-75"></i> Kamar <?= htmlspecialchars($santri['kamar']) ?>
+            <!-- Info -->
+            <div class="text-center">
+                <h2 class="fw-bold mb-1 text-dark" style="letter-spacing: -0.5px; font-size: 1.6rem;"><?= htmlspecialchars($santri['nama']) ?></h2>
+                <div class="text-secondary" style="font-size: 0.85rem; font-weight: 500;">
+                    <i class="fas fa-user-graduate me-1 opacity-50"></i> Kls <?= htmlspecialchars($santri['kelas']) ?> &nbsp;<span class="text-muted mx-1">•</span>&nbsp;
+                    <i class="fas fa-bed me-1 opacity-50"></i> Kmr <?= htmlspecialchars($santri['kamar']) ?>
+                </div>
             </div>
-            
-            <div class="d-flex flex-wrap justify-content-center gap-2 mb-4">
-                <span class="badge bg-white text-secondary border shadow-sm d-flex align-items-center px-3 py-2" style="font-size: 0.8rem; font-weight: 500; border-radius: 30px;">
-                    <i class="far fa-calendar-alt me-2 text-primary fs-6"></i> 
-                    <?= date('d M Y', strtotime($start_date)) ?> &nbsp;-&nbsp; <?= date('d M Y', strtotime($end_date)) ?>
-                </span>
+        </div>
+        
+        <!-- Badges Row -->
+        <div class="d-flex flex-wrap justify-content-center gap-2 mb-3">
+            <!-- Date -->
+            <div class="badge bg-light text-secondary border d-flex align-items-center px-2 py-1 fw-medium" style="font-size: 0.75rem; border-radius: 6px;">
+                <i class="far fa-calendar-alt me-1 opacity-50"></i> 
+                <?= date('d M y', strtotime($start_date)) ?> - <?= date('d M y', strtotime($end_date)) ?>
+            </div>
 
+            <!-- Filter -->
+            <?php if ($filter_bagian || $filter_kategori || $filter_jp): ?>
+                <?php
+                    $f_arr = [];
+                    if ($filter_bagian) $f_arr[] = htmlspecialchars($filter_bagian);
+                    if ($filter_kategori) $f_arr[] = htmlspecialchars($filter_kategori);
+                ?>
+                <div class="badge bg-light text-secondary border d-flex align-items-center px-2 py-1 fw-medium" style="font-size: 0.75rem; border-radius: 6px;">
+                    <i class="fas fa-filter me-1 opacity-50"></i> <?= implode(", ", $f_arr) ?>
+                </div>
+            <?php endif; ?>
+
+            <!-- History/Surplus -->
+            <?php if ($filter_bagian === 'Pengabdian'): ?>
+                <?php if ($total_kasus > 0): ?>
+                    <div class="badge bg-light text-secondary border d-flex align-items-center px-2 py-1 fw-medium" style="font-size: 0.75rem; border-radius: 6px;" title="Total keterlambatan">
+                        <i class="fas fa-clock me-1 text-warning opacity-75"></i> Total Telat: <?= $total_kasus ?>x
+                    </div>
+                <?php endif; ?>
+            <?php else: ?>
                 <?php if ($santri['poin_aktif'] > 0): ?>
-                    <span class="badge bg-danger bg-opacity-10 text-danger border border-danger border-opacity-25 shadow-sm d-flex align-items-center px-3 py-2" style="font-size: 0.8rem; border-radius: 30px;" data-bs-toggle="tooltip" title="Total poin seumur hidup (All-Time)">
-                        <i class="fas fa-history me-2 fs-6"></i> Histori: <?= $santri['poin_aktif'] ?> Poin
-                    </span>
+                    <div class="badge bg-light text-secondary border d-flex align-items-center px-2 py-1 fw-medium" style="font-size: 0.75rem; border-radius: 6px;" title="Total poin seumur hidup">
+                        <i class="fas fa-history me-1 text-danger opacity-75"></i> Histori: <?= $santri['poin_aktif'] ?>
+                    </div>
                 <?php elseif ($santri['poin_aktif'] < 0): ?>
-                    <span class="badge bg-success bg-opacity-10 text-success border border-success border-opacity-25 shadow-sm d-flex align-items-center px-3 py-2" style="font-size: 0.8rem; border-radius: 30px;" data-bs-toggle="tooltip" title="Surplus Poin Reward (All-Time)">
-                        <i class="fas fa-star me-2 fs-6 text-warning"></i> Surplus: <?= abs($santri['poin_aktif']) ?> Poin
-                    </span>
-                <?php else: ?>
-                    <span class="badge bg-secondary bg-opacity-10 text-secondary border border-secondary border-opacity-25 shadow-sm d-flex align-items-center px-3 py-2" style="font-size: 0.8rem; border-radius: 30px;" data-bs-toggle="tooltip" title="Poin seumur hidup (All-Time). Saat ini poin bersih.">
-                        <i class="fas fa-history me-2 fs-6"></i> Histori: 0 Poin
-                    </span>
+                    <div class="badge bg-light text-secondary border d-flex align-items-center px-2 py-1 fw-medium" style="font-size: 0.75rem; border-radius: 6px;" title="Surplus poin seumur hidup">
+                        <i class="fas fa-star me-1 text-success opacity-75"></i> Surplus: <?= abs($santri['poin_aktif']) ?>
+                    </div>
                 <?php endif; ?>
+            <?php endif; ?>
 
-                <?php if ($sp_status): ?>
-                    <span class="badge <?= $sp_class ?> shadow-sm d-flex align-items-center px-3 py-2" style="font-size: 0.8rem; border-radius: 30px; letter-spacing: 0.5px;">
-                        <i class="fas fa-exclamation-triangle me-2 fs-6"></i> <?= $sp_status ?>
-                    </span>
-                <?php endif; ?>
-            </div>
-            
-            <div class="summary-conclusion-box <?= $karakter_class ?>">
-                <p class="mb-0 fw-semibold" style="font-size: 0.95rem; line-height: 1.5;"><?= $rasio ?></p>
-            </div>
+            <!-- SP Status -->
+            <?php if ($filter_bagian !== 'Pengabdian' && $sp_status): ?>
+                <div class="badge bg-danger bg-opacity-10 text-danger border border-danger border-opacity-25 d-flex align-items-center px-2 py-1 fw-bold" style="font-size: 0.75rem; border-radius: 6px;">
+                    <i class="fas fa-exclamation-triangle me-1"></i> <?= $sp_status ?>
+                </div>
+            <?php endif; ?>
+        </div>
+        
+        <!-- Conclusion -->
+        <div class="summary-conclusion-box <?= $karakter_class ?> bg-opacity-10 p-2 px-3 border rounded-3 text-dark text-center" style="border-color: currentColor !important; opacity: 0.85;">
+            <p class="mb-0 fw-medium" style="font-size: 0.82rem; line-height: 1.4;"><i class="fas fa-quote-left me-1 opacity-50"></i> <?= $rasio ?></p>
         </div>
     </div>
 
@@ -430,54 +580,94 @@ require_once __DIR__ . '/../layouts/header.php';
     <div style="margin-bottom: 25px; padding: 12px 18px; border-radius: 10px; font-size: 13.5px; display: flex; align-items: flex-start; gap: 12px; background-color: #eff6ff; color: #1e3a8a; border: 1px solid #bfdbfe;">
         <i class="fas fa-link" style="font-size: 18px; margin-top: 2px;"></i>
         <div>
-            <strong>Info Sinkronisasi:</strong> Halaman detail ini menyajikan data santri yang saling terhubung dengan ketiga halaman rekap utama. <strong>Skor Teladan</strong> untuk halaman Santri Teladan, <strong>Poin Bersih</strong> untuk halaman Rekap Karakter, dan poin <strong>Pelanggaran</strong> menjadi acuan di Daftar Hitam.
+            <strong>Info Sinkronisasi:</strong> Halaman detail ini menyajikan data terpadu yang tersinkronisasi langsung dengan perhitungan di menu utama Rekap Per Santri. <strong>Skor Teladan</strong> dan <strong>Poin Bersih</strong> menjadi penentu utama pada fitur Peringkat, sedangkan poin <strong>Pelanggaran</strong> menjadi acuan di Daftar Hitam.
         </div>
     </div>
 
     <!-- Info cards poin -->
     <div class="row g-3 mb-4">
-        <div class="col-6 col-lg-3">
-            <div class="info-card" style="border-top-color:#3b82f6; padding: 1.1rem;">
-                <div class="text-muted text-uppercase fw-bold" style="letter-spacing:0.5px;font-size:.7rem">Skor Teladan</div>
-                <div class="big-number text-primary mt-1" style="font-size: 2rem;"><?= $skor_teladan_str ?></div>
-                <div class="text-muted small mt-1" style="font-size: 0.7rem; line-height: 1.1;">Acuan: Santri Teladan</div>
+        <?php if ($filter_bagian === 'Pengabdian'): ?>
+            <div class="col-6 col-lg-3">
+                <div class="info-card" style="border-top-color:#3b82f6; padding: 1.1rem;">
+                    <div class="text-muted text-uppercase fw-bold" style="letter-spacing:0.5px;font-size:.7rem">Skor Teladan</div>
+                    <div class="big-number text-primary mt-1" style="font-size: 2rem;"><?= $skor_teladan_str ?></div>
+                    <div class="text-muted small mt-1" style="font-size: 0.7rem; line-height: 1.1;">Formula Semua Aspek</div>
+                </div>
             </div>
-        </div>
-        <div class="col-6 col-lg-3">
-            <div class="info-card" style="border-top-color:#0ea5e9; padding: 1.1rem;">
-                <div class="text-muted text-uppercase fw-bold" style="letter-spacing:0.5px;font-size:.7rem">Poin Bersih</div>
-                <div class="big-number mt-1 <?= $poin_bersih > 0 ? 'text-danger' : 'text-success' ?>" style="font-size: 2rem;"><?= $poin_bersih ?></div>
-                <div class="text-muted small mt-1" style="font-size: 0.7rem; line-height: 1.1;">Acuan: Rekap Karakter</div>
-            </div>
-        </div>
-        <div class="col-6 col-lg-3">
-            <a href="detail_pelanggaran.php?id=<?= $santri_id ?>&start_date=<?= urlencode($start_date) ?>&end_date=<?= urlencode($end_date) ?>" class="text-decoration-none" style="display: block; height: 100%;">
-                <div class="info-card danger" style="padding: 1.1rem; transition: transform 0.2s, box-shadow 0.2s;" onmouseover="this.style.transform='translateY(-3px)'; this.style.boxShadow='0 6px 20px rgba(0,0,0,0.1)';" onmouseout="this.style.transform='none'; this.style.boxShadow='0 2px 12px rgba(0,0,0,.06)';">
-                    <div class="text-muted text-uppercase fw-bold" style="letter-spacing:0.5px;font-size:.7rem">Pelanggaran</div>
-                    <div class="big-number text-danger mt-1" style="font-size: 2rem;">
-                        <?= $total_poin_pelanggaran ?> 
-                        <span style="font-size: 0.9rem; font-weight: 500; color: #94a3b8;">(<?= $total_kasus ?>x)</span>
+            <div class="col-6 col-lg-3">
+                <a href="detail_pelanggaran.php?id=<?= $santri_id ?>&start_date=<?= urlencode($start_date) ?>&end_date=<?= urlencode($end_date) ?><?= $filter_qs ?>" class="text-decoration-none" style="display: block; height: 100%;">
+                    <div class="info-card danger" style="padding: 1.1rem; transition: transform 0.2s, box-shadow 0.2s;" onmouseover="this.style.transform='translateY(-3px)'; this.style.boxShadow='0 6px 20px rgba(0,0,0,0.1)';" onmouseout="this.style.transform='none'; this.style.boxShadow='0 2px 12px rgba(0,0,0,.06)';">
+                        <div class="text-muted text-uppercase fw-bold" style="letter-spacing:0.5px;font-size:.7rem">Total Telat</div>
+                        <div class="big-number text-danger mt-1" style="font-size: 2rem;">
+                            <?= $total_kasus ?> <span style="font-size: 1.2rem; font-weight: 600;">x</span>
+                        </div>
+                        <div class="text-muted small mt-1" style="font-size: 0.7rem; line-height: 1.1;">Semua Keterlambatan</div>
                     </div>
-                    <div class="text-muted small mt-1" style="font-size: 0.7rem; line-height: 1.1;">Acuan: Daftar Hitam</div>
+                </a>
+            </div>
+            <div class="col-6 col-lg-3">
+                <div class="info-card warning" style="border-top-color:#f59e0b; padding: 1.1rem;">
+                    <div class="text-muted text-uppercase fw-bold" style="letter-spacing:0.5px;font-size:.7rem">Telat Sholat</div>
+                    <div class="big-number text-warning mt-1" style="font-size: 2rem;">
+                        <?= $total_telat_sholat ?> <span style="font-size: 1.2rem; font-weight: 600;">x</span>
+                    </div>
+                    <div class="text-muted small mt-1" style="font-size: 0.7rem; line-height: 1.1;">Jamaah 5 Waktu</div>
                 </div>
-            </a>
-        </div>
-        <div class="col-6 col-lg-3">
-            <a href="../reward/history/index.php?search=<?= urlencode($santri['nama']) ?>&start_date=<?= urlencode($start_date) ?>&end_date=<?= urlencode($end_date) ?>" class="text-decoration-none" style="display: block; height: 100%;">
-                <div class="info-card success" style="padding: 1.1rem; transition: transform 0.2s, box-shadow 0.2s;" onmouseover="this.style.transform='translateY(-3px)'; this.style.boxShadow='0 6px 20px rgba(0,0,0,0.1)';" onmouseout="this.style.transform='none'; this.style.boxShadow='0 2px 12px rgba(0,0,0,.06)';">
-                    <div class="text-muted text-uppercase fw-bold" style="letter-spacing:0.5px;font-size:.7rem">Total Reward</div>
-                    <div class="big-number text-success mt-1" style="font-size: 2rem;">+<?= $total_poin_reward ?></div>
-                    <div class="text-muted small mt-1" style="font-size: 0.7rem; line-height: 1.1;">Apresiasi periode ini</div>
+            </div>
+            <div class="col-6 col-lg-3">
+                <div class="info-card info" style="border-top-color:#0ea5e9; padding: 1.1rem;">
+                    <div class="text-muted text-uppercase fw-bold" style="letter-spacing:0.5px;font-size:.7rem">Telat KBM</div>
+                    <div class="big-number text-info mt-1" style="font-size: 2rem;">
+                        <?= $total_telat_kbm ?> <span style="font-size: 1.2rem; font-weight: 600;">x</span>
+                    </div>
+                    <div class="text-muted small mt-1" style="font-size: 0.7rem; line-height: 1.1;">Kegiatan Belajar</div>
                 </div>
-            </a>
-        </div>
+            </div>
+        <?php else: ?>
+            <div class="col-6 col-lg-3">
+                <div class="info-card" style="border-top-color:#3b82f6; padding: 1.1rem;">
+                    <div class="text-muted text-uppercase fw-bold" style="letter-spacing:0.5px;font-size:.7rem">Skor Teladan</div>
+                    <div class="big-number text-primary mt-1" style="font-size: 2rem;"><?= $skor_teladan_str ?></div>
+                    <div class="text-muted small mt-1" style="font-size: 0.7rem; line-height: 1.1;">Formula Semua Aspek</div>
+                </div>
+            </div>
+            <div class="col-6 col-lg-3">
+                <div class="info-card" style="border-top-color:#0ea5e9; padding: 1.1rem;">
+                    <div class="text-muted text-uppercase fw-bold" style="letter-spacing:0.5px;font-size:.7rem">Poin Bersih</div>
+                    <div class="big-number mt-1 <?= $poin_bersih > 0 ? 'text-danger' : 'text-success' ?>" style="font-size: 2rem;"><?= $poin_bersih ?></div>
+                    <div class="text-muted small mt-1" style="font-size: 0.7rem; line-height: 1.1;">Formula Neraca</div>
+                </div>
+            </div>
+            <div class="col-6 col-lg-3">
+                <a href="detail_pelanggaran.php?id=<?= $santri_id ?>&start_date=<?= urlencode($start_date) ?>&end_date=<?= urlencode($end_date) ?><?= $filter_qs ?>" class="text-decoration-none" style="display: block; height: 100%;">
+                    <div class="info-card danger" style="padding: 1.1rem; transition: transform 0.2s, box-shadow 0.2s;" onmouseover="this.style.transform='translateY(-3px)'; this.style.boxShadow='0 6px 20px rgba(0,0,0,0.1)';" onmouseout="this.style.transform='none'; this.style.boxShadow='0 2px 12px rgba(0,0,0,.06)';">
+                        <div class="text-muted text-uppercase fw-bold" style="letter-spacing:0.5px;font-size:.7rem">Pelanggaran</div>
+                        <div class="big-number text-danger mt-1" style="font-size: 2rem;">
+                            <?= $total_poin_pelanggaran ?> 
+                            <span style="font-size: 0.9rem; font-weight: 500; color: #94a3b8;">(<?= $total_kasus ?>x)</span>
+                        </div>
+                        <div class="text-muted small mt-1" style="font-size: 0.7rem; line-height: 1.1;">Acuan: Daftar Hitam</div>
+                    </div>
+                </a>
+            </div>
+            <div class="col-6 col-lg-3">
+                <a href="../reward/history/index.php?search=<?= urlencode($santri['nama']) ?>&start_date=<?= urlencode($start_date) ?>&end_date=<?= urlencode($end_date) ?>" class="text-decoration-none" style="display: block; height: 100%;">
+                    <div class="info-card success" style="padding: 1.1rem; transition: transform 0.2s, box-shadow 0.2s;" onmouseover="this.style.transform='translateY(-3px)'; this.style.boxShadow='0 6px 20px rgba(0,0,0,0.1)';" onmouseout="this.style.transform='none'; this.style.boxShadow='0 2px 12px rgba(0,0,0,.06)';">
+                        <div class="text-muted text-uppercase fw-bold" style="letter-spacing:0.5px;font-size:.7rem">Total Reward</div>
+                        <div class="big-number text-success mt-1" style="font-size: 2rem;">+<?= $total_poin_reward ?></div>
+                        <div class="text-muted small mt-1" style="font-size: 0.7rem; line-height: 1.1;">Apresiasi periode ini</div>
+                    </div>
+                </a>
+            </div>
+        <?php endif; ?>
     </div>
 
     <!-- Tab navigation -->
     <ul class="nav analysis-tabs" id="analysisTabs" role="tablist">
         <li class="nav-item" role="presentation">
             <button class="nav-link active" id="tab-pelanggaran" data-bs-toggle="tab" data-bs-target="#pane-pelanggaran" type="button" role="tab">
-                <i class="fas fa-exclamation-triangle"></i> Pelanggaran &amp; Reward
+                <i class="fas <?= $filter_bagian === 'Pengabdian' ? 'fa-clock' : 'fa-exclamation-triangle' ?>"></i> 
+                <?= $filter_bagian === 'Pengabdian' ? 'Keterlambatan' : 'Pelanggaran &amp; Reward' ?>
             </button>
         </li>
         <li class="nav-item" role="presentation">
@@ -499,10 +689,10 @@ require_once __DIR__ . '/../layouts/header.php';
             <!-- Tren bulanan -->
             <div class="pro-chart-card">
                 <div class="chart-title">
-                    <span class="chart-icon-wrap" style="background:#fef3c7"><i class="fas fa-chart-line" style="color:#d97706"></i></span>
-                    Tren Pelanggaran vs Reward
+                    <span class="chart-icon-wrap" style="background:#fef3c7"><i class="fas <?= $filter_bagian === 'Pengabdian' ? 'fa-clock' : 'fa-chart-line' ?>" style="color:#d97706"></i></span>
+                    <?= $filter_bagian === 'Pengabdian' ? 'Tren Keterlambatan per Bulan' : 'Tren Pelanggaran vs Reward' ?>
                 </div>
-                <div class="chart-subtitle">Pergerakan poin per bulan selama periode yang dipilih</div>
+                <div class="chart-subtitle"><?= $filter_bagian === 'Pengabdian' ? 'Pergerakan jumlah kasus keterlambatan selama periode yang dipilih' : 'Pergerakan poin per bulan selama periode yang dipilih' ?></div>
                 <?php if ($has_tren_data): ?>
                     <div class="scroll-hint"><i class="fas fa-arrows-alt-h me-1"></i>Geser untuk melihat selengkapnya</div>
                     <div class="chart-scroll-outer">
@@ -515,21 +705,97 @@ require_once __DIR__ . '/../layouts/header.php';
                 <?php endif; ?>
             </div>
 
-            <!-- Komposisi kategori -->
-            <div class="pro-chart-card">
-                <div class="chart-title">
-                    <span class="chart-icon-wrap" style="background:#f3e8ff"><i class="fas fa-chart-pie" style="color:#7c3aed"></i></span>
-                    Komposisi Kategori
-                </div>
-                <div class="chart-subtitle">Proporsi poin pelanggaran &amp; reward berdasarkan kategori</div>
-                <?php if ($has_comp_data): ?>
-                    <div class="chart-scroll-inner" style="height:280px;max-width:340px;margin:0 auto">
-                        <canvas id="compositionChart"></canvas>
+            <!-- Barisan Grafik Bawah (Kondisional) -->
+            <?php if ($filter_bagian === 'Pengabdian'): ?>
+                <?php if ($total_telat > 0): ?>
+                <div class="row g-4 mt-2">
+                    <!-- Komposisi Waktu Telat (Pie) -->
+                    <div class="col-lg-5">
+                        <div class="pro-chart-card h-100 mb-0">
+                            <div class="chart-title">
+                                <span class="chart-icon-wrap" style="background:#f3e8ff"><i class="fas fa-chart-pie" style="color:#7c3aed"></i></span>
+                                Komposisi Waktu Telat
+                            </div>
+                            <div class="chart-subtitle">Proporsi kasus keterlambatan berdasarkan waktu</div>
+                            <div class="chart-scroll-inner" style="height:280px;max-width:340px;margin:0 auto">
+                                <canvas id="compositionChart"></canvas>
+                            </div>
+                        </div>
                     </div>
-                <?php else: ?>
-                    <div class="empty-chart"><i class="fas fa-chart-pie"></i><p>Belum ada data pelanggaran/reward pada periode ini.</p></div>
+                    <!-- Analisis Waktu Keterlambatan (Bar) -->
+                    <div class="col-lg-7">
+                        <div class="pro-chart-card h-100 mb-0" style="border-top: 4px solid #f97316;">
+                            <div class="chart-title">
+                                <span class="chart-icon-wrap" style="background:#ffedd5"><i class="fas fa-clock" style="color:#f97316"></i></span>
+                                Analisis Waktu Keterlambatan
+                            </div>
+                            <div class="chart-subtitle">Frekuensi kasus Telat Sholat berjamaah dan Telat KBM</div>
+                            <div class="chart-scroll-outer">
+                                <div class="chart-scroll-inner" style="height:280px;min-width:300px;">
+                                    <canvas id="telatChart"></canvas>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
                 <?php endif; ?>
-            </div>
+            <?php else: ?>
+                <!-- Komposisi kategori -->
+                <div class="row g-4 mt-2">
+                    <div class="col-lg-6">
+                        <div class="pro-chart-card h-100 mb-0">
+                            <div class="chart-title">
+                                <span class="chart-icon-wrap" style="background:#f3e8ff"><i class="fas fa-chart-pie" style="color:#7c3aed"></i></span>
+                                Komposisi Poin
+                            </div>
+                            <div class="chart-subtitle">Proporsi poin pelanggaran &amp; reward berdasarkan kategori</div>
+                            <?php if ($has_comp_data): ?>
+                                <div class="chart-scroll-inner" style="height:280px;max-width:340px;margin:0 auto">
+                                    <canvas id="compositionChart"></canvas>
+                                </div>
+                            <?php else: ?>
+                                <div class="empty-chart"><i class="fas fa-chart-pie"></i><p>Belum ada data pelanggaran/reward pada periode ini.</p></div>
+                            <?php endif; ?>
+                        </div>
+                    </div>
+                    <div class="col-lg-6">
+                        <div class="pro-chart-card h-100 mb-0">
+                            <div class="chart-title">
+                                <span class="chart-icon-wrap" style="background:#e0f2fe"><i class="fas fa-chart-pie" style="color:#0284c7"></i></span>
+                                Frekuensi Pelanggaran
+                            </div>
+                            <div class="chart-subtitle">Proporsi berdasarkan jumlah (kali) santri melakukan pelanggaran</div>
+                            <?php if ($has_comp_data): ?>
+                                <div class="chart-scroll-inner" style="height:280px;max-width:340px;margin:0 auto">
+                                    <canvas id="freqChart"></canvas>
+                                </div>
+                            <?php else: ?>
+                                <div class="empty-chart"><i class="fas fa-chart-pie"></i><p>Belum ada data pelanggaran/reward pada periode ini.</p></div>
+                            <?php endif; ?>
+                        </div>
+                    </div>
+                </div>
+
+                <?php if ($total_telat > 0): ?>
+                <!-- Analisis Keterlambatan (Smart UI) -->
+                <div class="row g-4 mt-1">
+                    <div class="col-12">
+                        <div class="pro-chart-card mb-0" style="border-top: 4px solid #f97316;">
+                            <div class="chart-title">
+                                <span class="chart-icon-wrap" style="background:#ffedd5"><i class="fas fa-clock" style="color:#f97316"></i></span>
+                                Analisis Waktu Keterlambatan
+                            </div>
+                            <div class="chart-subtitle">Frekuensi kasus Telat Sholat berjamaah dan Telat KBM berdasarkan waktu</div>
+                            <div class="chart-scroll-outer">
+                                <div class="chart-scroll-inner" style="height:260px;min-width:300px;">
+                                    <canvas id="telatChart"></canvas>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <?php endif; ?>
+            <?php endif; ?>
 
         </div>
 
@@ -677,6 +943,13 @@ document.addEventListener('DOMContentLoaded', function() {
                 data: {
                     labels: <?= $json_labels_p ?>,
                     datasets: [
+                        <?php if ($filter_bagian === 'Pengabdian'): ?>
+                        { label:'Jumlah Keterlambatan', data:<?= $json_data_p ?>,
+                          borderColor:'#f97316', backgroundColor:linGrad(ctx,h,249,115,22),
+                          borderWidth:2.5, tension:.4, fill:true,
+                          pointRadius:5, pointHoverRadius:8,
+                          pointBackgroundColor:'#f97316', pointBorderColor:'#fff', pointBorderWidth:2 }
+                        <?php else: ?>
                         { label:'Poin Pelanggaran', data:<?= $json_data_p ?>,
                           borderColor:'#ef4444', backgroundColor:linGrad(ctx,h,239,68,68),
                           borderWidth:2.5, tension:.4, fill:true,
@@ -687,6 +960,7 @@ document.addEventListener('DOMContentLoaded', function() {
                           borderWidth:2.5, tension:.4, fill:true,
                           pointRadius:5, pointHoverRadius:8,
                           pointBackgroundColor:'#10b981', pointBorderColor:'#fff', pointBorderWidth:2 }
+                        <?php endif; ?>
                     ]
                 },
                 options: {
@@ -698,7 +972,7 @@ document.addEventListener('DOMContentLoaded', function() {
                         tooltip:TOOLTIP
                     },
                     scales: {
-                        y:{ beginAtZero:true, grid:GRID, ticks:{...TICKS, callback:v=>v+' poin'}, border:{display:false} },
+                        y:{ beginAtZero:true, grid:GRID, ticks:{...TICKS, callback:v=>v+'<?= $filter_bagian === 'Pengabdian' ? 'x' : ' poin' ?>'}, border:{display:false} },
                         x:{ grid:{display:false}, ticks:TICKS, border:{display:false} }
                     }
                 }
@@ -707,22 +981,124 @@ document.addEventListener('DOMContentLoaded', function() {
         })();
         <?php endif; ?>
 
-        <?php if ($has_comp_data): ?>
-        new Chart(document.getElementById('compositionChart'), {
-            type: 'doughnut',
-            data: {
-                labels: <?= $json_comp_labels ?>,
-                datasets:[{ data:<?= $json_comp_data ?>, backgroundColor:<?= $json_comp_colors ?>,
-                            borderWidth:3, borderColor:'#fff', hoverBorderColor:'#fff', hoverOffset:6 }]
-            },
-            options: {
-                responsive:true, maintainAspectRatio:false, cutout:'62%',
-                plugins:{
-                    legend:{ position:'bottom', labels:{ usePointStyle:true, pointStyle:'circle', padding:14, font:{size:11,family:FONT} } },
-                    tooltip:TOOLTIP
+        <?php if ($filter_bagian === 'Pengabdian'): ?>
+            <?php if ($total_telat > 0): ?>
+            (function() {
+                const el = document.getElementById('telatChart');
+                if (el) {
+                    const ctx = el.getContext('2d');
+                    new Chart(ctx, {
+                        type: 'bar',
+                        data: {
+                            labels: <?= $json_telat_labels ?>,
+                            datasets: [{
+                                label: 'Frekuensi Keterlambatan (Kali)',
+                                data: <?= $json_telat_data ?>,
+                                backgroundColor: '#f97316',
+                                borderRadius: 6,
+                                maxBarThickness: 60
+                            }]
+                        },
+                        options: {
+                            responsive: true, maintainAspectRatio: false,
+                            plugins: {
+                                legend: { display: false },
+                                tooltip: TOOLTIP
+                            },
+                            scales: {
+                                y: { beginAtZero: true, grid: GRID, ticks: { ...TICKS, stepSize: 1, callback: v=>v+'x' } },
+                                x: { grid: { display: false }, ticks: TICKS }
+                            }
+                        }
+                    });
                 }
-            }
-        });
+
+                const compEl = document.getElementById('compositionChart');
+                if (compEl) {
+                    new Chart(compEl, {
+                        type: 'doughnut',
+                        data: {
+                            labels: <?= $json_telat_labels ?>,
+                            datasets:[{ data:<?= $json_telat_data ?>, backgroundColor:['#f97316', '#fbbf24', '#f87171', '#c084fc', '#60a5fa', '#34d399', '#9ca3af'],
+                                        borderWidth:3, borderColor:'#fff', hoverBorderColor:'#fff', hoverOffset:6 }]
+                        },
+                        options: {
+                            responsive:true, maintainAspectRatio:false, cutout:'50%',
+                            plugins:{
+                                legend:{ position:'bottom', labels:{ usePointStyle:true, pointStyle:'circle', padding:14, font:{size:11,family:FONT} } },
+                                tooltip:{...TOOLTIP, callbacks: { label: function(context) { return ' ' + context.label + ': ' + context.raw + ' Kali'; } } }
+                            }
+                        }
+                    });
+                }
+            })();
+            <?php endif; ?>
+        <?php else: ?>
+            <?php if ($total_telat > 0): ?>
+            (function() {
+                const el = document.getElementById('telatChart');
+                if (!el) return;
+                const ctx = el.getContext('2d');
+                new Chart(ctx, {
+                    type: 'bar',
+                    data: {
+                        labels: <?= $json_telat_labels ?>,
+                        datasets: [{
+                            label: 'Frekuensi Keterlambatan (Kali)',
+                            data: <?= $json_telat_data ?>,
+                            backgroundColor: '#f97316',
+                            borderRadius: 6,
+                            maxBarThickness: 60
+                        }]
+                    },
+                    options: {
+                        responsive: true, maintainAspectRatio: false,
+                        plugins: {
+                            legend: { display: false },
+                            tooltip: TOOLTIP
+                        },
+                        scales: {
+                            y: { beginAtZero: true, grid: GRID, ticks: { ...TICKS, stepSize: 1, callback: v=>v+'x' } },
+                            x: { grid: { display: false }, ticks: TICKS }
+                        }
+                    }
+                });
+            })();
+            <?php endif; ?>
+
+            <?php if ($has_comp_data): ?>
+            new Chart(document.getElementById('compositionChart'), {
+                type: 'doughnut',
+                data: {
+                    labels: <?= $json_comp_labels ?>,
+                    datasets:[{ data:<?= $json_comp_data ?>, backgroundColor:<?= $json_comp_colors ?>,
+                                borderWidth:3, borderColor:'#fff', hoverBorderColor:'#fff', hoverOffset:6 }]
+                },
+                options: {
+                    responsive:true, maintainAspectRatio:false, cutout:'62%',
+                    plugins:{
+                        legend:{ position:'bottom', labels:{ usePointStyle:true, pointStyle:'circle', padding:14, font:{size:11,family:FONT} } },
+                        tooltip:{...TOOLTIP, callbacks: { label: function(context) { return ' ' + context.label + ': ' + context.raw + ' Poin'; } } }
+                    }
+                }
+            });
+
+            new Chart(document.getElementById('freqChart'), {
+                type: 'doughnut',
+                data: {
+                    labels: <?= $json_freq_labels ?>,
+                    datasets:[{ data:<?= $json_freq_data ?>, backgroundColor:<?= $json_freq_colors ?>,
+                                borderWidth:3, borderColor:'#fff', hoverBorderColor:'#fff', hoverOffset:6 }]
+                },
+                options: {
+                    responsive:true, maintainAspectRatio:false, cutout:'50%',
+                    plugins:{
+                        legend:{ position:'bottom', labels:{ usePointStyle:true, pointStyle:'circle', padding:14, font:{size:11,family:FONT} } },
+                        tooltip:{...TOOLTIP, callbacks: { label: function(context) { return ' ' + context.label + ': ' + context.raw + ' Kali'; } } }
+                    }
+                }
+            });
+            <?php endif; ?>
         <?php endif; ?>
     }
 

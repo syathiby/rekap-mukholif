@@ -278,8 +278,8 @@ $kamarQuery = mysqli_query($conn, "
             <h3 class="fw-bolder text-dark mb-1"><i class="fas fa-hand-holding-heart" style="color: var(--primary)"></i> Input Pengabdian</h3>
             <p class="text-muted mb-0">Catat pelanggaran individu atau ketidakbersihan kamar.</p>
         </div>
-        <a href="../../rekap/keterlambatan.php" id="dynamic-rekap-btn" class="btn-back shadow-sm text-decoration-none">
-            <i class="fas fa-chart-line me-1"></i> <span id="dynamic-rekap-text">Rekap Keterlambatan</span>
+        <a href="../../rekap/rekap_per_santri.php?bagian=Pengabdian" id="dynamic-rekap-btn" class="btn-back shadow-sm text-decoration-none">
+            <i class="fas fa-chart-line me-1"></i> <span id="dynamic-rekap-text">Rekap Pengabdian</span>
         </a>
     </div>
 
@@ -526,8 +526,8 @@ $(document).ready(function() {
             btn.attr('href', '../../rekap/kebersihan.php');
             txt.text('Rekap Kebersihan');
         } else {
-            btn.attr('href', '../../rekap/keterlambatan.php');
-            txt.text('Rekap Keterlambatan');
+            btn.attr('href', '../../rekap/rekap_per_santri.php?bagian=Pengabdian');
+            txt.text('Rekap Pengabdian');
         }
     });
 

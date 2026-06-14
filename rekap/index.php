@@ -3,7 +3,7 @@
 require_once __DIR__ . '/../bootstrap/init.php';
 
 // 2. Jalankan 'SATPAM' buat ngejaga halaman
-guard(['rekap_view_statistik', 'rekap_kebersihan', 'rekap_keterlambatan', 'rekap_pelanggaran_umum', 'rekap_detail_santri', 'rekap_santri_teladan', 'rekap_kamar']);
+guard(['rekap_view_statistik', 'rekap_kebersihan', 'rekap_per_santri', 'rekap_kamar']);
 
 // 3. Kalau lolos, baru panggil Tampilan
 require_once __DIR__ . '/../layouts/header.php'; 
@@ -47,69 +47,28 @@ require_once __DIR__ . '/../layouts/header.php';
     </div>
 
     <div class="row g-4">
-        <?php if (has_permission('rekap_pelanggaran_umum')): ?>
+        <?php if (has_permission('rekap_per_santri')): ?>
         <div class="col-md-6 col-lg-4">
-            <a href="pelanggaran_umum.php" class="text-decoration-none">
-                <div class="card h-100 hover-up p-4 d-flex flex-row align-items-center gap-3 border-start border-4 border-primary">
-                    <div class="icon-container text-primary flex-shrink-0" style="background-color: rgba(79, 70, 229, 0.1);">
-                        <i class="fas fa-list-alt fs-4"></i>
+            <a href="rekap_per_santri.php" class="text-decoration-none">
+                <div class="card h-100 hover-up p-4 d-flex flex-row align-items-center gap-3 border-start border-4 border-primary" style="position:relative;overflow:hidden;">
+                    <div class="icon-container text-primary flex-shrink-0" style="background-color:rgba(79,70,229,.1);width:52px;height:52px;">
+                        <i class="fas fa-users fs-4"></i>
                     </div>
                     <div>
-                        <h6 class="text-dark fw-bold mb-1">Pelanggaran Umum</h6>
-                        <p class="text-muted small mb-0">Laporan rekapitulasi pelanggaran secara umum</p>
+                        <h6 class="text-dark fw-bold mb-1">Rekap Per Santri</h6>
+                        <p class="text-muted small mb-2">Daftar Hitam &amp; Peringkat Santri dalam satu halaman</p>
+                        <div class="d-flex flex-wrap gap-1">
+                            <span class="badge rounded-pill" style="background:rgba(239,68,68,.12);color:#b91c1c;font-size:10px;font-weight:600;">🚫 Daftar Hitam</span>
+                            <span class="badge rounded-pill" style="background:rgba(79,70,229,.12);color:#4338ca;font-size:10px;font-weight:600;">🏆 Peringkat Santri</span>
+                        </div>
                     </div>
                 </div>
             </a>
         </div>
         <?php endif; ?>
 
-        <?php if (has_permission('rekap_detail_santri')): ?>
-        <div class="col-md-6 col-lg-4">
-            <a href="karakter.php" class="text-decoration-none">
-                <div class="card h-100 hover-up p-4 d-flex flex-row align-items-center gap-3 border-start border-4" style="border-left-color: #10b981 !important;">
-                    <div class="icon-container flex-shrink-0" style="color: #10b981; background-color: rgba(16, 185, 129, 0.1);">
-                        <i class="fas fa-chart-pie fs-4"></i>
-                    </div>
-                    <div>
-                        <h6 class="text-dark fw-bold mb-1">Analisis Karakter Santri</h6>
-                        <p class="text-muted small mb-0">Rekapitulasi total pelanggaran & reward santri</p>
-                    </div>
-                </div>
-            </a>
-        </div>
-        <?php endif; ?>
 
-        <?php if (has_permission('rekap_keterlambatan')): ?>
-        <div class="col-md-6 col-lg-4">
-            <a href="keterlambatan.php" class="text-decoration-none">
-                <div class="card h-100 hover-up p-4 d-flex flex-row align-items-center gap-3 border-start border-4 border-info">
-                    <div class="icon-container text-info flex-shrink-0" style="background-color: rgba(13, 202, 240, 0.1);">
-                        <i class="fas fa-user-graduate fs-4"></i>
-                    </div>
-                    <div>
-                        <h6 class="text-dark fw-bold mb-1">Keterlambatan Santri</h6>
-                        <p class="text-muted small mb-0">Laporan akumulasi poin dan keterlambatan</p>
-                    </div>
-                </div>
-            </a>
-        </div>
-        <?php endif; ?>
 
-        <?php if (has_permission('rekap_santri_teladan')): ?>
-        <div class="col-md-6 col-lg-4">
-            <a href="santri_teladan.php" class="text-decoration-none">
-                <div class="card h-100 hover-up p-4 d-flex flex-row align-items-center gap-3 border-start border-4" style="border-left-color: #3b82f6 !important;">
-                    <div class="icon-container flex-shrink-0" style="color: #3b82f6; background-color: rgba(59, 130, 246, 0.1);">
-                        <i class="fas fa-award fs-4"></i>
-                    </div>
-                    <div>
-                        <h6 class="text-dark fw-bold mb-1">Santri Teladan</h6>
-                        <p class="text-muted small mb-0">Peringkat santri berprestasi tanpa pelanggaran</p>
-                    </div>
-                </div>
-            </a>
-        </div>
-        <?php endif; ?>
 
         <?php if (has_permission('rekap_kamar')): ?>
         <div class="col-md-6 col-lg-4">

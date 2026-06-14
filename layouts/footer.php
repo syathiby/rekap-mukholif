@@ -85,11 +85,9 @@ if ($can_create_rapot) {
 $can_view_rekap = false;
 if (function_exists('has_permission')) {
     $can_view_rekap = has_permission([
-        'rekap_pelanggaran_umum', 
-        'rekap_detail_santri', 
-        'rekap_kebersihan', 
-        'rekap_keterlambatan', 
-        'rekap_santri_teladan',
+        'rekap_per_santri',
+        'rekap_detail_santri',
+        'rekap_kebersihan',
         'rekap_kamar',
         'rekap_view_statistik', 
         'rekap_view_tahfidz'
@@ -100,7 +98,7 @@ if (function_exists('has_permission')) {
 <!-- --- Bottom Navigation Bar (Mobile Only) --- -->
 <nav class="bottom-nav">
     <div class="bottom-nav-item">
-        <a class="bottom-nav-link <?= ($req_path === '/' || strpos($req_path, '/index.php') !== false) ? 'active' : '' ?>" href="<?= BASE_URL ?>/index.php">
+        <a class="bottom-nav-link <?= ($req_path === '/' || strpos($req_path, '/dashboard.php') !== false) ? 'active' : '' ?>" href="<?= BASE_URL ?>/dashboard.php">
             <i class="fas fa-home"></i>
             <span>Beranda</span>
         </a>

@@ -300,7 +300,7 @@ require_once __DIR__ . '/../layouts/header.php';
                             <?php mysqli_data_seek($bagian_list_result, 0); ?>
                             <?php while ($bagian_row = mysqli_fetch_assoc($bagian_list_result)) : ?>
                                 <option value="<?= htmlspecialchars($bagian_row['bagian']); ?>" <?= ($filter_bagian == $bagian_row['bagian']) ? 'selected' : ''; ?>>
-                                    <?= htmlspecialchars($bagian_row['bagian']); ?>
+                                    <?= htmlspecialchars(format_typing($bagian_row['bagian'])); ?>
                                 </option>
                             <?php endwhile; ?>
                         </select>

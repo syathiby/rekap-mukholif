@@ -157,7 +157,7 @@ if (!defined('BASE_URL')) {
         </a>
         
         <br>
-        <a href="<?= BASE_URL ?>/index.php" class="btn-back">Atau kembali ke Dashboard Utama</a>
+        <a href="<?= BASE_URL ?>/dashboard.php" class="btn-back">Atau kembali ke Dashboard Utama</a>
     </div>
 
     <script>

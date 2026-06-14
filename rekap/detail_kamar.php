@@ -14,6 +14,17 @@ if (empty($kamar)) {
 $start_dt_time = $start_date . ' 00:00:00';
 $end_dt_time   = $end_date . ' 23:59:59';
 
+$bulan_indo   = ['1'=>'Januari','2'=>'Februari','3'=>'Maret','4'=>'April','5'=>'Mei','6'=>'Juni','7'=>'Juli','8'=>'Agustus','9'=>'September','10'=>'Oktober','11'=>'November','12'=>'Desember'];
+$current_ts   = strtotime(date('Y-m-01', strtotime($start_date)));
+$end_ts_month = strtotime(date('Y-m-01', strtotime($end_date)));
+$valid_months = [];
+while ($current_ts <= $end_ts_month) {
+    $y = date('Y', $current_ts); $m = date('n', $current_ts);
+    $valid_months[] = "(tahun = $y AND bulan = '{$bulan_indo[$m]}')";
+    $current_ts = strtotime("+1 month", $current_ts);
+}
+$where_rapot = empty($valid_months) ? "1=0" : "(" . implode(" OR ", $valid_months) . ")";
+
 // 1. Ambil Summary Kamar
 $sql_summary = "
     SELECT 
@@ -42,8 +53,7 @@ $sql_summary = "
                  AVG(tidur) + AVG(keterlambatan) + AVG(seragam) + AVG(makan) + AVG(arahan) + AVG(bahasa_arab) + 
                  AVG(mandi) + AVG(penampilan) + AVG(piket) + AVG(kerapihan_barang)) / 20) AS avg_rapot
         FROM rapot_kepengasuhan
-        WHERE STR_TO_DATE(CONCAT(tahun, '-', FIELD(bulan, 'Januari','Februari','Maret','April','Mei','Juni','Juli','Agustus','September','Oktober','November','Desember'), '-01'), '%Y-%c-%d') 
-              BETWEEN STR_TO_DATE(CONCAT(DATE_FORMAT(?, '%Y-%m'), '-01'), '%Y-%m-%d') AND LAST_DAY(?)
+        WHERE $where_rapot
         GROUP BY santri_id
     ) rpt ON s.id = rpt.santri_id
     LEFT JOIN (
@@ -56,7 +66,7 @@ $sql_summary = "
     GROUP BY s.kamar
 ";
 $stmt_sum = mysqli_prepare($conn, $sql_summary);
-mysqli_stmt_bind_param($stmt_sum, "ssssssssss", $start_dt_time, $end_dt_time, $start_dt_time, $end_dt_time, $start_date, $end_date, $start_date, $end_date, $kamar, $kamar);
+mysqli_stmt_bind_param($stmt_sum, "ssssssss", $start_dt_time, $end_dt_time, $start_dt_time, $end_dt_time, $start_date, $end_date, $kamar, $kamar);
 mysqli_stmt_execute($stmt_sum);
 $summary = mysqli_fetch_assoc(mysqli_stmt_get_result($stmt_sum));
 
@@ -87,15 +97,14 @@ $sql_santri = "
                  AVG(tidur) + AVG(keterlambatan) + AVG(seragam) + AVG(makan) + AVG(arahan) + AVG(bahasa_arab) + 
                  AVG(mandi) + AVG(penampilan) + AVG(piket) + AVG(kerapihan_barang)) / 20) AS avg_rapot
         FROM rapot_kepengasuhan
-        WHERE STR_TO_DATE(CONCAT(tahun, '-', FIELD(bulan, 'Januari','Februari','Maret','April','Mei','Juni','Juli','Agustus','September','Oktober','November','Desember'), '-01'), '%Y-%c-%d') 
-              BETWEEN STR_TO_DATE(CONCAT(DATE_FORMAT(?, '%Y-%m'), '-01'), '%Y-%m-%d') AND LAST_DAY(?)
+        WHERE $where_rapot
         GROUP BY santri_id
     ) rpt ON s.id = rpt.santri_id
     WHERE s.kamar = ?
     ORDER BY ((COALESCE(rpt.avg_rapot, 0) * 20) + COALESCE(rwd.total_reward, 0) - (COALESCE(pel.total_pelanggaran, 0) * 2) - (COALESCE(pel.kasus, 0) * 5)) DESC
 ";
 $stmt_santri = mysqli_prepare($conn, $sql_santri);
-mysqli_stmt_bind_param($stmt_santri, "sssssss", $start_dt_time, $end_dt_time, $start_dt_time, $end_dt_time, $start_date, $end_date, $kamar);
+mysqli_stmt_bind_param($stmt_santri, "sssss", $start_dt_time, $end_dt_time, $start_dt_time, $end_dt_time, $kamar);
 mysqli_stmt_execute($stmt_santri);
 $santri_res = mysqli_stmt_get_result($stmt_santri);
 ?>
@@ -107,8 +116,7 @@ body { background-color: #f8f9fa; font-family: 'Poppins', sans-serif; color: #33
 
 /* Breadcrumb & Header */
 .header-wrapper { display: flex; align-items: center; justify-content: space-between; margin-bottom: 25px; flex-wrap: wrap; gap: 15px; }
-.header-title h2 { color: #1e293b; font-weight: 800; font-size: 28px; margin: 0; display: flex; align-items: center; gap: 12px; }
-.header-title h2::before { content: '🚪'; font-size: 28px; }
+.header-title h2 { color: #1e293b; font-weight: 800; font-size: 28px; margin: 0; display: flex; align-items: center; gap: 14px; }
 .header-title .subtitle { color: #64748b; font-size: 14px; margin-top: 5px; }
 .btn-back { display: inline-flex; align-items: center; gap: 8px; padding: 10px 20px; background-color: white; border: 1px solid #e2e8f0; border-radius: 10px; color: #475569; font-weight: 600; font-size: 14px; text-decoration: none; transition: 0.2s; box-shadow: 0 2px 4px rgba(0,0,0,0.02); }
 .btn-back:hover { background-color: #f8fafc; border-color: #cbd5e1; color: #0f172a; transform: translateY(-1px); }
@@ -149,7 +157,12 @@ body { background-color: #f8f9fa; font-family: 'Poppins', sans-serif; color: #33
 <div class="container">
     <div class="header-wrapper">
         <div class="header-title">
-            <h2>Detail Kamar <?= htmlspecialchars($kamar) ?></h2>
+            <h2>
+                <div style="width: 46px; height: 46px; background: linear-gradient(135deg, #6366f1, #4f46e5); color: white; border-radius: 12px; display: flex; align-items: center; justify-content: center; box-shadow: 0 4px 12px rgba(79, 70, 229, 0.3); flex-shrink: 0;">
+                    <i class="fas fa-door-open" style="font-size: 1.3rem;"></i>
+                </div>
+                Detail Kamar <?= htmlspecialchars($kamar) ?>
+            </h2>
             <div class="subtitle">
                 <i class="far fa-calendar-alt me-1"></i> Periode Filter: <?= date('d M Y', strtotime($start_date)) ?> s/d <?= date('d M Y', strtotime($end_date)) ?>
             </div>
@@ -251,8 +264,8 @@ body { background-color: #f8f9fa; font-family: 'Poppins', sans-serif; color: #33
 
                                 <!-- Aksi -->
                                 <td style="text-align: center;">
-                                    <?php if (has_permission('rekap_detail_santri')): ?>
-                                        <a href="detail_karakter.php?id=<?= $s['id'] ?>&start_date=<?= urlencode($start_date) ?>&end_date=<?= urlencode($end_date) ?>" class="btn-detail" title="Lihat Grafik Karakter">
+                                    <?php if (has_permission('rekap_per_santri')): ?>
+                                        <a href="detail_per_santri.php?id=<?= $s['id'] ?>&start_date=<?= urlencode($start_date) ?>&end_date=<?= urlencode($end_date) ?>" class="btn-detail" title="Lihat Grafik Karakter">
                                             <i class="fas fa-chart-line"></i>
                                         </a>
                                     <?php else: ?>

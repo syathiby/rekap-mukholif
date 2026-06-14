@@ -62,8 +62,18 @@ while ($r = mysqli_fetch_assoc($res_rwd)) {
 }
 
 // 🔹 Kueri 4: Total Rapot Individu (Menggabungkan 20 Indikator)
-$stmt_rpt = mysqli_prepare($conn, "SELECT s.kamar, SUM(((puasa_sunnah + sholat_duha + sholat_malam + sedekah + sunnah_tidur + ibadah_lainnya + lisan + sikap + kesopanan + muamalah + tidur + keterlambatan + seragam + makan + arahan + bahasa_arab + mandi + penampilan + piket + kerapihan_barang) / 20)) AS total FROM rapot_kepengasuhan r JOIN santri s ON r.santri_id = s.id WHERE STR_TO_DATE(CONCAT(r.tahun, '-', FIELD(r.bulan, 'Januari','Februari','Maret','April','Mei','Juni','Juli','Agustus','September','Oktober','November','Desember'), '-01'), '%Y-%c-%d') BETWEEN STR_TO_DATE(CONCAT(DATE_FORMAT(?, '%Y-%m'), '-01'), '%Y-%m-%d') AND LAST_DAY(?) GROUP BY s.kamar");
-mysqli_stmt_bind_param($stmt_rpt, "ss", $start_date, $end_date);
+$bulan_indo   = ['1'=>'Januari','2'=>'Februari','3'=>'Maret','4'=>'April','5'=>'Mei','6'=>'Juni','7'=>'Juli','8'=>'Agustus','9'=>'September','10'=>'Oktober','11'=>'November','12'=>'Desember'];
+$current_ts   = strtotime(date('Y-m-01', strtotime($start_date)));
+$end_ts_month = strtotime(date('Y-m-01', strtotime($end_date)));
+$valid_months = [];
+while ($current_ts <= $end_ts_month) {
+    $y = date('Y', $current_ts); $m = date('n', $current_ts);
+    $valid_months[] = "(r.tahun = $y AND r.bulan = '{$bulan_indo[$m]}')";
+    $current_ts = strtotime("+1 month", $current_ts);
+}
+$where_rapot = empty($valid_months) ? "1=0" : "(" . implode(" OR ", $valid_months) . ")";
+
+$stmt_rpt = mysqli_prepare($conn, "SELECT s.kamar, SUM(((puasa_sunnah + sholat_duha + sholat_malam + sedekah + sunnah_tidur + ibadah_lainnya + lisan + sikap + kesopanan + muamalah + tidur + keterlambatan + seragam + makan + arahan + bahasa_arab + mandi + penampilan + piket + kerapihan_barang) / 20)) AS total FROM rapot_kepengasuhan r JOIN santri s ON r.santri_id = s.id WHERE $where_rapot GROUP BY s.kamar");
 mysqli_stmt_execute($stmt_rpt);
 $res_rpt = mysqli_stmt_get_result($stmt_rpt);
 while ($r = mysqli_fetch_assoc($res_rpt)) {

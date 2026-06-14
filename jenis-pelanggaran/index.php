@@ -289,7 +289,7 @@ if ($can_edit || $can_delete) $colspan++; // Tambah 1 untuk Aksi
                         <?php mysqli_data_seek($bagian_list_result, 0); ?>
                         <?php while ($bagian_row = mysqli_fetch_assoc($bagian_list_result)) : ?>
                             <option value="<?= htmlspecialchars($bagian_row['bagian']); ?>" <?= ($filter_bagian == $bagian_row['bagian']) ? 'selected' : ''; ?>>
-                                <?= htmlspecialchars($bagian_row['bagian']); ?>
+                                <?= htmlspecialchars(format_typing($bagian_row['bagian'])); ?>
                             </option>
                         <?php endwhile; ?>
                     </select>
@@ -390,17 +390,17 @@ if ($can_edit || $can_delete) $colspan++; // Tambah 1 untuk Aksi
                             <?php endif; ?>
                             <td class="text-center align-middle"><?= $no++; ?></td>
                             <td class="align-middle">
-                                <div class="fw-bold"><?= htmlspecialchars($row['nama_pelanggaran']); ?></div>
+                                <div class="fw-bold"><?= htmlspecialchars(format_typing($row['nama_pelanggaran'])); ?></div>
                                 <div class="small text-muted">ID: <?= $row['id']; ?>
                                     <?php if ($is_protected) : ?>
                                         <span class="badge bg-secondary ms-1">Default</span>
                                     <?php endif; ?>
                                 </div>
                             </td>
-                            <td class="align-middle"><?= htmlspecialchars($row['bagian']); ?></td>
+                            <td class="align-middle"><?= htmlspecialchars(format_typing($row['bagian'])); ?></td>
                             <td class="text-center align-middle fw-bold"><?= htmlspecialchars($row['poin']); ?></td>
                             <td class="text-center align-middle">
-                                <span class="badge <?= $badge_class; ?>"><?= htmlspecialchars($row['kategori']); ?></span>
+                                <span class="badge <?= $badge_class; ?>"><?= htmlspecialchars(format_typing($row['kategori'])); ?></span>
                             </td>
                             <?php if ($can_edit || $can_delete): ?>
                                 <td class="text-center align-middle">

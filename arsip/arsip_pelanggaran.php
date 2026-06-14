@@ -142,7 +142,7 @@ $data_rekap = $stmt_data->get_result();
                     <select name="bagian" id="bagian" class="form-select">
                         <option value="semua">Semua Bagian</option>
                         <?php mysqli_data_seek($bagian_result, 0); while($b = $bagian_result->fetch_assoc()): ?>
-                            <option value="<?= htmlspecialchars($b['bagian']) ?>" <?= ($filter_bagian == $b['bagian']) ? 'selected' : '' ?>><?= htmlspecialchars($b['bagian']) ?></option>
+                            <option value="<?= htmlspecialchars($b['bagian']) ?>" <?= ($filter_bagian == $b['bagian']) ? 'selected' : '' ?>><?= htmlspecialchars(format_typing($b['bagian'])) ?></option>
                         <?php endwhile; ?>
                     </select>
                 </div>
