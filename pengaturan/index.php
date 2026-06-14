@@ -230,7 +230,7 @@ require_once __DIR__ . '/../layouts/header.php';
             <div class="settings-card card-reset">
                 <div class="icon-box"><i class="fas fa-archive"></i></div>
                 <h5 class="card-title">Tutup Buku Akhir Tahun</h5>
-                <p class="card-desc">Arsipkan data, hapus pelanggaran ringan, dan bersihkan laci utama untuk tahun ajaran baru.</p>
+                <p class="card-desc">Arsipkan data pelanggaran, kebersihan, rapot kepengasuhan dan bersihkan laci utama untuk tahun ajaran baru.</p>
                 <a href="reset-poin/index.php" class="settings-link">
                     Lakukan Tutup Buku <i class="fas fa-arrow-right text-xs"></i>
                 </a>

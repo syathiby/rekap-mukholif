@@ -153,8 +153,8 @@ require_once __DIR__ . '/../../layouts/header.php';
                                         <h5 class="card-title fw-bold text-danger-emphasis mb-2">Aksi Tutup Buku Otomatis</h5>
                                         <p class="card-text mb-0">
                                             Fitur ini akan secara otomatis: <br>
-                                            1. <strong>Mengarsipkan</strong> seluruh data pelanggaran dan kebersihan (dari Periode Aktif s/d Hari Ini) ke Gudang Arsip.<br>
-                                            2. <strong>Menghapus</strong> seluruh pelanggaran ringan/sedang dan pelanggaran kebersihan dari laci utama.<br>
+                                            1. <strong>Mengarsipkan</strong> seluruh data pelanggaran, kebersihan, dan rapot kepengasuhan (dari Periode Aktif s/d Hari Ini) ke Gudang Arsip.<br>
+                                            2. <strong>Menghapus</strong> seluruh data rapot, pelanggaran ringan/sedang, dan pelanggaran kebersihan dari laci utama.<br>
                                             3. <strong>Mempertahankan</strong> pelanggaran Sangat Berat dan seluruh Surplus Poin Reward.<br>
                                             4. <strong>Memperbarui</strong> Periode Aktif ke hari esok.
                                         </p>
