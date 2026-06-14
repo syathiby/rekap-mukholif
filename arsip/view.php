@@ -200,9 +200,9 @@ $json_tren_harian = json_encode([
             <a href="index.php" class="btn btn-light border shadow-sm flex-shrink-0 px-3 py-2 fw-medium"><i class="fas fa-arrow-left me-2"></i> Kembali</a>
         </div>
         <div class="btn-group">
-            <a href="views/arsip_pelanggaran.php?id=<?= $arsip_id ?>" class="btn-detail"><i class="fas fa-list"></i> Lihat Detail Pelanggaran</a>
-            <a href="views/arsip_santri.php?id=<?= $arsip_id ?>" class="btn-detail secondary"><i class="fas fa-users"></i> Lihat Rekap Poin Santri</a>
-            <a href="views/arsip_rapot.php?id=<?= $arsip_id ?>" class="btn-detail" style="background-color: #f39c12; color: white;"><i class="fas fa-file-alt"></i> Lihat Arsip Rapot</a>
+            <a href="pages/arsip_pelanggaran.php?id=<?= $arsip_id ?>" class="btn-detail"><i class="fas fa-list"></i> Lihat Detail Pelanggaran</a>
+            <a href="pages/arsip_santri.php?id=<?= $arsip_id ?>" class="btn-detail secondary"><i class="fas fa-users"></i> Lihat Rekap Poin Santri</a>
+            <a href="pages/arsip_rapot.php?id=<?= $arsip_id ?>" class="btn-detail" style="background-color: #f39c12; color: white;"><i class="fas fa-file-alt"></i> Lihat Arsip Rapot</a>
         </div>
     </div>
 

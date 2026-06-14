@@ -118,7 +118,7 @@ $data_rekap = $stmt_data->get_result();
             <p class="text-muted mb-0">Periode: <?= date('d M Y', strtotime($meta['tanggal_mulai'])); ?> - <?= date('d M Y', strtotime($meta['tanggal_selesai'])); ?></p>
         </div>
         <div class="col-lg-6 d-flex justify-content-start justify-content-lg-end gap-2">
-            <a href="../index.php" class="btn btn-secondary"><i class="fas fa-arrow-left"></i> <span class="d-none d-sm-inline">Kembali</span></a>
+            <a href="../view.php?id=<?= $arsip_id ?>" class="btn btn-secondary"><i class="fas fa-arrow-left"></i> <span class="d-none d-sm-inline">Kembali</span></a>
             <?php
                 // Bikin query string dari filter yang lagi aktif untuk dioper
                 $filter_params = http_build_query([
