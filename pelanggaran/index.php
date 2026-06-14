@@ -1,4 +1,4 @@
-<?php 
+﻿<?php 
 // 1. Panggil 'Otak' aplikasi dulu
 require_once __DIR__ . '/../bootstrap/init.php';
 
@@ -11,7 +11,7 @@ require_once __DIR__ . '/../layouts/header.php';
 <style>
     .hover-up {
         transition: transform 0.2s ease, box-shadow 0.2s ease;
-        border: 1px solid var(--border-color, #e2e8f0) !important;
+        border: 1px solid var(--border-color, #e2e8f0);
         border-radius: 1rem;
         background: var(--bg-card, #ffffff);
     }
@@ -42,7 +42,7 @@ require_once __DIR__ . '/../layouts/header.php';
         <?php if (has_permission('pelanggaran_pengabdian_input')): ?>
         <div class="col-md-6 col-lg-4">
             <a href="pengabdian/create.php" class="text-decoration-none">
-                <div class="card h-100 hover-up p-4 d-flex flex-row align-items-center gap-3 border-start border-4 border-warning">
+                <div class="card h-100 hover-up p-4 d-flex flex-row align-items-center gap-3">
                     <div class="icon-container text-warning flex-shrink-0" style="background-color: rgba(255, 193, 7, 0.15);">
                         <i class="fas fa-hands-helping fs-4"></i>
                     </div>
@@ -58,7 +58,7 @@ require_once __DIR__ . '/../layouts/header.php';
         <?php if (has_permission('pelanggaran_kesantrian_input')): ?>
         <div class="col-md-6 col-lg-4">
             <a href="kesantrian/create.php" class="text-decoration-none">
-                <div class="card h-100 hover-up p-4 d-flex flex-row align-items-center gap-3 border-start border-4 border-primary">
+                <div class="card h-100 hover-up p-4 d-flex flex-row align-items-center gap-3">
                     <div class="icon-container text-primary flex-shrink-0" style="background-color: rgba(79, 70, 229, 0.1);">
                         <i class="fas fa-user-shield fs-4"></i>
                     </div>
@@ -74,7 +74,7 @@ require_once __DIR__ . '/../layouts/header.php';
         <?php if (has_permission('pelanggaran_bahasa_input')): ?>
         <div class="col-md-6 col-lg-4">
             <a href="bahasa/create.php" class="text-decoration-none">
-                <div class="card h-100 hover-up p-4 d-flex flex-row align-items-center gap-3 border-start border-4 border-info">
+                <div class="card h-100 hover-up p-4 d-flex flex-row align-items-center gap-3">
                     <div class="icon-container text-info flex-shrink-0" style="background-color: rgba(13, 202, 240, 0.1);">
                         <i class="fas fa-language fs-4"></i>
                     </div>
@@ -90,7 +90,7 @@ require_once __DIR__ . '/../layouts/header.php';
         <?php if (has_permission('pelanggaran_diniyyah_input')): ?>
         <div class="col-md-6 col-lg-4">
             <a href="diniyyah/create.php" class="text-decoration-none">
-                <div class="card h-100 hover-up p-4 d-flex flex-row align-items-center gap-3 border-start border-4 border-success">
+                <div class="card h-100 hover-up p-4 d-flex flex-row align-items-center gap-3">
                     <div class="icon-container text-success flex-shrink-0" style="background-color: rgba(25, 135, 84, 0.1);">
                         <i class="fas fa-book-quran fs-4"></i>
                     </div>
@@ -106,7 +106,7 @@ require_once __DIR__ . '/../layouts/header.php';
         <?php if (has_permission('pelanggaran_tahfidz_input')): ?>
         <div class="col-md-6 col-lg-4">
             <a href="tahfidz/create.php" class="text-decoration-none">
-                <div class="card h-100 hover-up p-4 d-flex flex-row align-items-center gap-3 border-start border-4 border-danger">
+                <div class="card h-100 hover-up p-4 d-flex flex-row align-items-center gap-3">
                     <div class="icon-container text-danger flex-shrink-0" style="background-color: rgba(220, 53, 69, 0.1);">
                         <i class="fas fa-book-reader fs-4"></i>
                     </div>

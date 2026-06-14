@@ -20,7 +20,7 @@ require_once __DIR__ . '/../layouts/header.php';
     
     .hover-up {
         transition: transform 0.2s ease, box-shadow 0.2s ease;
-        border: 1px solid var(--border) !important;
+        border: 1px solid var(--border);
         border-radius: 1rem;
         background: var(--bg-card);
     }
@@ -46,11 +46,11 @@ require_once __DIR__ . '/../layouts/header.php';
         <p class="text-muted mb-0">Akses seluruh laporan dan statistik pelanggaran santri</p>
     </div>
 
-    <div class="row g-4">
+    <div class="row g-4 justify-content-center">
         <?php if (has_permission('rekap_per_santri')): ?>
         <div class="col-md-6 col-lg-4">
             <a href="rekap_per_santri.php" class="text-decoration-none">
-                <div class="card h-100 hover-up p-4 d-flex flex-row align-items-center gap-3 border-start border-4 border-primary" style="position:relative;overflow:hidden;">
+                <div class="card h-100 hover-up p-4 d-flex flex-row align-items-center gap-3" style="position:relative;overflow:hidden;">
                     <div class="icon-container text-primary flex-shrink-0" style="background-color:rgba(79,70,229,.1);width:52px;height:52px;">
                         <i class="fas fa-users fs-4"></i>
                     </div>
@@ -73,7 +73,7 @@ require_once __DIR__ . '/../layouts/header.php';
         <?php if (has_permission('rekap_kamar')): ?>
         <div class="col-md-6 col-lg-4">
             <a href="peringkat_kamar.php" class="text-decoration-none">
-                <div class="card h-100 hover-up p-4 d-flex flex-row align-items-center gap-3 border-start border-4" style="border-left-color: #ec4899 !important;">
+                <div class="card h-100 hover-up p-4 d-flex flex-row align-items-center gap-3">
                     <div class="icon-container flex-shrink-0" style="color: #ec4899; background-color: rgba(236, 72, 153, 0.1);">
                         <i class="fas fa-bed fs-4"></i>
                     </div>
@@ -89,7 +89,7 @@ require_once __DIR__ . '/../layouts/header.php';
         <?php if (has_permission('rekap_kebersihan')): ?>
         <div class="col-md-6 col-lg-4">
             <a href="kebersihan.php" class="text-decoration-none">
-                <div class="card h-100 hover-up p-4 d-flex flex-row align-items-center gap-3 border-start border-4 border-warning">
+                <div class="card h-100 hover-up p-4 d-flex flex-row align-items-center gap-3">
                     <div class="icon-container text-warning flex-shrink-0" style="background-color: rgba(255, 193, 7, 0.15);">
                         <i class="fas fa-home fs-4"></i>
                     </div>
@@ -105,7 +105,7 @@ require_once __DIR__ . '/../layouts/header.php';
         <?php if (has_permission('rekap_view_bahasa')): ?>
         <div class="col-md-6 col-lg-4">
             <a href="../pelanggaran/bahasa/rekap.php" class="text-decoration-none">
-                <div class="card h-100 hover-up p-4 d-flex flex-row align-items-center gap-3 border-start border-4 border-danger">
+                <div class="card h-100 hover-up p-4 d-flex flex-row align-items-center gap-3">
                     <div class="icon-container text-danger flex-shrink-0" style="background-color: rgba(220, 53, 69, 0.1);">
                         <i class="fas fa-language fs-4"></i>
                     </div>
@@ -121,7 +121,7 @@ require_once __DIR__ . '/../layouts/header.php';
         <?php if (has_permission('rekap_view_diniyyah')): ?>
         <div class="col-md-6 col-lg-4">
             <a href="../pelanggaran/diniyyah/rekap.php" class="text-decoration-none">
-                <div class="card h-100 hover-up p-4 d-flex flex-row align-items-center gap-3 border-start border-4 border-success">
+                <div class="card h-100 hover-up p-4 d-flex flex-row align-items-center gap-3">
                     <div class="icon-container text-success flex-shrink-0" style="background-color: rgba(25, 135, 84, 0.1);">
                         <i class="fas fa-book-quran fs-4"></i>
                     </div>
@@ -137,7 +137,7 @@ require_once __DIR__ . '/../layouts/header.php';
         <?php if (has_permission('rekap_view_tahfidz')): ?>
         <div class="col-md-6 col-lg-4">
             <a href="../pelanggaran/tahfidz/rekap.php" class="text-decoration-none">
-                <div class="card h-100 hover-up p-4 d-flex flex-row align-items-center gap-3 border-start border-4" style="border-left-color: #0891b2 !important;">
+                <div class="card h-100 hover-up p-4 d-flex flex-row align-items-center gap-3">
                     <div class="icon-container flex-shrink-0" style="color: #0891b2; background-color: rgba(8, 145, 178, 0.1);">
                         <i class="fas fa-book-open fs-4"></i>
                     </div>
@@ -153,7 +153,7 @@ require_once __DIR__ . '/../layouts/header.php';
         <?php if (has_permission('rekap_view_statistik')): ?>
         <div class="col-md-6 col-lg-4">
             <a href="chart.php" class="text-decoration-none">
-                <div class="card h-100 hover-up p-4 d-flex flex-row align-items-center gap-3 border-start border-4" style="border-left-color: #8b5cf6 !important;">
+                <div class="card h-100 hover-up p-4 d-flex flex-row align-items-center gap-3">
                     <div class="icon-container flex-shrink-0" style="color: #8b5cf6; background-color: rgba(139, 92, 246, 0.1);">
                         <i class="fas fa-chart-line fs-4"></i>
                     </div>
