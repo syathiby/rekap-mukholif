@@ -1,9 +1,9 @@
-﻿<?php
+<?php
 // File: rekap-mukholif/rapot/generate_pdf.php
 
-require_once __DIR__ . '/../bootstrap/init.php'; 
-require_once __DIR__ . '/../vendor/autoload.php'; 
-require_once __DIR__ . '/helper.php'; 
+require_once __DIR__ . '/../../bootstrap/init.php'; 
+require_once __DIR__ . '/../../vendor/autoload.php'; 
+require_once __DIR__ . '/../config/helper.php';
 
 guard('rapot_cetak');
 

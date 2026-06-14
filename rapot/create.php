@@ -3,7 +3,7 @@
 // VERSI FINAL TERPADU + AUTO CEK POIN & REWARD
 
 require_once __DIR__ . '/../bootstrap/init.php';
-require_once __DIR__ . '/helper.php';
+require_once __DIR__ . '/config/helper.php';
 
 guard('rapot_create');
 
@@ -187,7 +187,7 @@ require_once __DIR__ . '/../layouts/header.php';
         </div>
     </div>
 
-    <form action="process.php" method="POST" id="form-rapot">
+    <form action="crud/process.php" method="POST" id="form-rapot">
 
         <div class="card form-card border-start border-4 border-secondary">
             <div class="card-header bg-white py-3">
@@ -455,13 +455,13 @@ $(document).ready(function() {
 
             var data = { santri_id: santri, bulan: bulan, tahun: tahun };
 
-            $.post('get_pelanggaran_santri.php', data, function(res) {
+            $.post('api/get_pelanggaran_santri.php', data, function(res) {
                 $('#card-rincian-poin').html(res);
             }).fail(function() {
                 $('#card-rincian-poin').html('<div class="alert alert-danger mb-0">Gagal memuat data pelanggaran.</div>');
             });
 
-            $.post('get_reward_santri.php', data, function(res) {
+            $.post('api/get_reward_santri.php', data, function(res) {
                 $('#card-rincian-reward').html(res);
             }).fail(function() {
                 $('#card-rincian-reward').html('<div class="alert alert-danger mb-0">Gagal memuat data reward.</div>');
@@ -486,7 +486,7 @@ $(document).ready(function() {
         var originalText = btn.html();
         btn.html('<i class="fas fa-spinner fa-spin me-1"></i> Memproses...').prop('disabled', true);
 
-        $.post('generate_catatan.php', $('#form-rapot').serialize(), function(response) {
+        $.post('api/generate_catatan.php', $('#form-rapot').serialize(), function(response) {
             $('#catatan_musyrif').val(response);
             btn.html(originalText).prop('disabled', false);
             checkFormValidity();

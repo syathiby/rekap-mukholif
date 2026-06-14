@@ -1,15 +1,15 @@
-﻿<?php
+<?php
 // File: rekap-mukholif/rapot/bulk_processor.php
 // VERSI 2.0: Layout Responsif & Sentris
 
 // Panggil 'Otak' aplikasi cuma buat panggil header
-require_once __DIR__ . '/../bootstrap/init.php';
+require_once __DIR__ . '/../../bootstrap/init.php';
 guard('rapot_cetak');
 
 // Kita panggil header.php tapi GAK panggil footer.php
 // biar bisa kita kontrol penuh halamannya
 $page_title = "Prosesor Bulk Rapot";
-$header_path = __DIR__ . '/../layouts/header.php';
+$header_path = __DIR__ . '/../../layouts/header.php';
 
 // --- Magic buat ngambil CSS/JS dari header ---
 ob_start();
@@ -150,14 +150,14 @@ $head_content = $head_matches[1] ?? '';
                     let blob;
                     if (type === 'pdf') {
                         // --- Logika Fetch PDF ---
-                        const response = await fetch(`generate_pdf.php?id=${item.id}&output=string`);
+                        const response = await fetch(`../export/generate_pdf.php?id=${item.id}&output=string`);
                         if (!response.ok) throw new Error(`Server error ${response.status}`);
                         blob = await response.blob();
                         
                     } else {
                         // --- Logika Fetch & Render PNG ---
                         // 1. Ambil HTML mentahnya
-                        const htmlResponse = await fetch(`generate_png.php?id=${item.id}&mode=html`);
+                        const htmlResponse = await fetch(`../export/generate_png.php?id=${item.id}&mode=html`);
                         if (!htmlResponse.ok) throw new Error(`Server error ${htmlResponse.status}`);
                         const html = await htmlResponse.text();
                         

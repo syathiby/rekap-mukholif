@@ -1,12 +1,12 @@
 <?php 
 // 1. Panggil 'Otak' aplikasi dulu
-require_once __DIR__ . '/../bootstrap/init.php';
+require_once __DIR__ . '/../../bootstrap/init.php';
 
 // 2. Jalankan 'SATPAM' buat ngejaga halaman
 guard('arsip_view'); 
 
 // 3. Kalau lolos, baru panggil Tampilan
-require_once __DIR__ . '/../layouts/header.php';
+require_once __DIR__ . '/../../layouts/header.php';
 
 $arsip_id = (int)($_GET['id'] ?? 0);
 if ($arsip_id < 1) die('Arsip tidak ditemukan');
@@ -174,7 +174,7 @@ $is_filtered = !empty($filter_kelas) || !empty($filter_kamar) || !empty($search_
                 <?php endif; ?>
             </p>
         </div>
-        <a href="view.php?id=<?= $arsip_id ?>" class="btn btn-outline-secondary mt-2 mt-md-0 flex-shrink-0">
+        <a href="../view.php?id=<?= $arsip_id ?>" class="btn btn-outline-secondary mt-2 mt-md-0 flex-shrink-0">
             <i class="fas fa-arrow-left me-2"></i>Kembali
         </a>
     </div>
@@ -269,4 +269,4 @@ $is_filtered = !empty($filter_kelas) || !empty($filter_kamar) || !empty($search_
     </div>
 </div>
 
-<?php require_once __DIR__ . '/../layouts/footer.php'; ?>
+<?php require_once __DIR__ . '/../../layouts/footer.php'; ?>

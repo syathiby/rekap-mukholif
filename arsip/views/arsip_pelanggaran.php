@@ -1,12 +1,12 @@
 <?php
 // 1. Panggil 'Otak' aplikasi dulu
-require_once __DIR__ . '/../bootstrap/init.php';
+require_once __DIR__ . '/../../bootstrap/init.php';
 
 // 2. Jalankan 'SATPAM' buat ngejaga halaman
 guard('arsip_view');
 
 // 3. Kalau lolos, baru panggil Tampilan
-require_once __DIR__ . '/../layouts/header.php';
+require_once __DIR__ . '/../../layouts/header.php';
 
 $arsip_id = (int)($_GET['id'] ?? 0);
 if ($arsip_id < 1) die('Arsip tidak ditemukan');
@@ -118,7 +118,7 @@ $data_rekap = $stmt_data->get_result();
             <p class="text-muted mb-0">Periode: <?= date('d M Y', strtotime($meta['tanggal_mulai'])); ?> - <?= date('d M Y', strtotime($meta['tanggal_selesai'])); ?></p>
         </div>
         <div class="col-lg-6 d-flex justify-content-start justify-content-lg-end gap-2">
-            <a href="index.php" class="btn btn-secondary"><i class="fas fa-arrow-left"></i> <span class="d-none d-sm-inline">Kembali</span></a>
+            <a href="../index.php" class="btn btn-secondary"><i class="fas fa-arrow-left"></i> <span class="d-none d-sm-inline">Kembali</span></a>
             <?php
                 // Bikin query string dari filter yang lagi aktif untuk dioper
                 $filter_params = http_build_query([
@@ -233,4 +233,4 @@ document.addEventListener('DOMContentLoaded', function() {
 });
 </script>
 
-<?php include __DIR__ . '/../layouts/footer.php'; ?>
+<?php include __DIR__ . '/../../layouts/footer.php'; ?>

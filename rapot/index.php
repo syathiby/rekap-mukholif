@@ -185,10 +185,10 @@ if (isset($_GET['ajax']) && $_GET['ajax'] == '1') {
                                 </a>
                             <?php endif; ?>
                             <?php if ($can_cetak): ?>
-                                <a class="dropdown-item" href="generate_pdf.php?id=<?php echo $rapot['id']; ?>" target="_blank" data-bs-toggle="tooltip" title="Unduh PDF">
+                                <a class="dropdown-item" href="export/generate_pdf.php?id=<?php echo $rapot['id']; ?>" target="_blank" data-bs-toggle="tooltip" title="Unduh PDF">
                                     <i class="fas fa-file-pdf fa-sm fa-fw me-2 text-gray-400"></i> Unduh PDF
                                 </a>
-                                <a class="dropdown-item" href="generate_png.php?id=<?php echo $rapot['id']; ?>" target="_blank" data-bs-toggle="tooltip" title="Unduh PNG (Maks 2MB)">
+                                <a class="dropdown-item" href="export/generate_png.php?id=<?php echo $rapot['id']; ?>" target="_blank" data-bs-toggle="tooltip" title="Unduh PNG (Maks 2MB)">
                                     <i class="fas fa-file-image fa-sm fa-fw me-2 text-gray-400"></i> Unduh PNG
                                 </a>
                             <?php endif; ?>
@@ -467,10 +467,10 @@ require_once __DIR__ . '/../layouts/header.php';
                                                         </a>
                                                     <?php endif; ?>
                                                     <?php if ($can_cetak): ?>
-                                                        <a class="dropdown-item" href="generate_pdf.php?id=<?php echo $rapot['id']; ?>" target="_blank" data-bs-toggle="tooltip" title="Unduh PDF">
+                                                        <a class="dropdown-item" href="export/generate_pdf.php?id=<?php echo $rapot['id']; ?>" target="_blank" data-bs-toggle="tooltip" title="Unduh PDF">
                                                             <i class="fas fa-file-pdf fa-sm fa-fw me-2 text-gray-400"></i> Unduh PDF
                                                         </a>
-                                                        <a class="dropdown-item" href="generate_png.php?id=<?php echo $rapot['id']; ?>" target="_blank" data-bs-toggle="tooltip" title="Unduh PNG (Maks 2MB)">
+                                                        <a class="dropdown-item" href="export/generate_png.php?id=<?php echo $rapot['id']; ?>" target="_blank" data-bs-toggle="tooltip" title="Unduh PNG (Maks 2MB)">
                                                             <i class="fas fa-file-image fa-sm fa-fw me-2 text-gray-400"></i> Unduh PNG
                                                         </a>
                                                     <?php endif; ?>
@@ -905,7 +905,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 filename: data.filename 
             }));
             sessionStorage.setItem('bulkProcessList', JSON.stringify(bulkList));
-            window.open('bulk_processor.php?type=pdf', '_blank');
+            window.open('crud/bulk_processor.php?type=pdf', '_blank');
         });
     }
     
@@ -934,7 +934,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 return;
             }
             sessionStorage.setItem('bulkProcessList', bulkListString);
-            window.open('bulk_processor.php?type=png', '_blank');
+            window.open('crud/bulk_processor.php?type=png', '_blank');
             pngWarningModal.hide();
         });
     }
@@ -968,7 +968,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 return;
             }
             form.innerHTML = '';
-            form.action = 'bulk_delete.php';
+            form.action = 'crud/bulk_delete.php';
             checkedIDs.forEach(function(id) {
                 const input = document.createElement('input');
                 input.type = 'hidden';

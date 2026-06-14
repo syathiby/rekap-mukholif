@@ -2,7 +2,7 @@
 // File: rekap-mukholif/rapot/process.php
 
 // 1. Panggil 'Otak' aplikasi dulu
-require_once __DIR__ . '/../bootstrap/init.php';
+require_once __DIR__ . '/../../bootstrap/init.php';
 
 // 2. Jalankan 'SATPAM'
 guard('rapot_create');
@@ -160,7 +160,7 @@ if (isset($_POST['simpan_rapot'])) {
         // 11. Kasih notif sukses & redirect
         set_flash_message('Rapot baru berhasil disimpan dengan poin reward!', 'success');
         
-        header('Location: index.php');
+        header('Location: ../index.php');
         exit; 
 
     } catch (Throwable $e) { // Ganti Exception jadi Throwable biar nangkep semua error
@@ -171,7 +171,7 @@ if (isset($_POST['simpan_rapot'])) {
         error_log("Total Poin Reward: $total_poin_reward");
         
         set_flash_message('Error: ' . $e->getMessage(), 'danger');
-        header('Location: create.php');
+        header('Location: ../create.php');
         exit;
 
     } finally {
@@ -181,7 +181,7 @@ if (isset($_POST['simpan_rapot'])) {
     }
 
 } else {
-    header('Location: create.php');
+    header('Location: ../create.php');
     exit;
 }
 ?>

@@ -8,16 +8,18 @@ Cocok dipelajari oleh developer penerus atau yang mengembangkan menggunakan AI.
 C:\laragon\www\rekap-mukholif
 |
 +--- arsip                                     => [FOLDER] Fitur manajemen arsip: menyimpan snapshot data periode lama sebelum periode baru dimulai.
-|   +--- arsip_kebersihan.php                  => Halaman tabel arsip khusus pelanggaran kebersihan per kamar dari periode yang sudah diarsipkan.
-|   +--- arsip_pelanggaran.php                 => Halaman tabel arsip pelanggaran umum (semua 5 bidang) dari periode lama.
-|   +--- arsip_santri.php                      => Halaman daftar santri beserta total poin mereka yang tersimpan di dalam sebuah arsip tertentu.
-|   +--- create.php                            => Script pemicu proses arsip: menginisiasi snapshot data ke tabel arsip_data_*.
-|   +--- detail_kebersihan_arsip.php           => Halaman detail riwayat pelanggaran kebersihan per kamar dari data arsip.
-|   +--- detail_pelanggaran_arsip.php          => Halaman detail seluruh riwayat pelanggaran satu santri dari data arsip periode lama.
-|   +--- export_arsip.php                      => Halaman pemilih filter sebelum mengekspor data arsip ke file Excel.
+|   +--- crud                                  => [FOLDER] Sub-modul manipulasi data arsip.
+|   |   \--- delete.php                        => Script backend hapus arsip secara permanen (termasuk snapshot yang terhubung).
+|   +--- export                                => [FOLDER] Sub-modul konversi/export data arsip ke bentuk unduhan.
+|   |   +--- export_arsip.php                  => Halaman pemilih filter sebelum mengekspor data arsip ke file Excel.
+|   |   \--- process_export_arsip.php          => Script backend yang menarik data arsip dan menggenerate file Excel via PhpSpreadsheet.
+|   +--- views                                 => [FOLDER] Sub-modul halaman-halaman yang menampikan rincian data arsip.
+|   |   +--- arsip_kebersihan.php              => Halaman tabel arsip khusus pelanggaran kebersihan per kamar.
+|   |   +--- arsip_pelanggaran.php             => Halaman tabel arsip pelanggaran umum (semua 5 bidang).
+|   |   +--- arsip_santri.php                  => Halaman daftar santri beserta total poin mereka di arsip tersebut.
+|   |   +--- detail_kebersihan_arsip.php       => Halaman detail riwayat pelanggaran kebersihan per kamar dari data arsip.
+|   |   \--- detail_pelanggaran_arsip.php      => Halaman detail riwayat pelanggaran satu santri dari data arsip.
 |   +--- index.php                             => Halaman utama (dashboard) daftar semua arsip yang pernah dibuat, beserta tombol aksi.
-|   +--- process.php                           => Script backend yang memproses pembuatan arsip baru: INSERT ke tabel arsip lalu snapshot ke arsip_data_*.
-|   +--- process_export_arsip.php              => Script backend yang menarik data arsip dan menggenerate file Excel via PhpSpreadsheet.
 |   \--- view.php                              => Halaman ringkasan satu arsip: menampilkan judul, tanggal, dan link ke sub-halaman data arsip.
 |
 +--- assets                                    => [FOLDER] Aset statis frontend: CSS, gambar, ikon.
@@ -151,19 +153,23 @@ C:\laragon\www\rekap-mukholif
 |   \--- index.php                             => Halaman dashboard pengaturan: grid card link ke semua sub-menu pengaturan (Users, Izin, Periode, Reset Poin, Log, Backup, Impor).
 |
 +--- rapot                                     => [FOLDER] Modul cetak rapot evaluasi santri bulanan (PDF dan PNG).
-|   +--- bulk_delete.php                       => Script hapus massal banyak rapot sekaligus. Menghapus record dari DB dan file fisik PDF/PNG dari server.
-|   +--- bulk_processor.php                    => Script generate rapot massal: loop semua santri di kamar/kelas tertentu, generate PDF/PNG per santri secara batch.
+|   +--- api                                   => [FOLDER] Sub-modul endpoint AJAX untuk mengambil data.
+|   |   +--- generate_catatan.php              => Script generator teks catatan musyrif otomatis berbasis poin_aktif santri. Return JSON teks sesuai threshold poin.
+|   |   +--- get_pelanggaran_santri.php        => AJAX endpoint: ambil daftar pelanggaran satu santri di periode aktif, return JSON untuk ditampilkan di form.
+|   |   \--- get_reward_santri.php             => AJAX endpoint: ambil daftar reward satu santri, return JSON untuk ditampilkan di form create rapot.
+|   +--- config                                => [FOLDER] Sub-modul konfigurasi, bantuan fungsi, dan kerangka template.
+|   |   +--- helper.php                        => Fungsi-fungsi kalkulasi khusus modul rapot: konversi nilai numerik ke huruf/predikat, rumus total skor kepengasuhan.
+|   |   \--- template_rapot.php                => Kanvas/desain HTML rapot: layout kop, tabel nilai aspek, kolom pelanggaran, reward, catatan musyrif. Struktur HTML ini TIDAK BOLEH berubah saat rewrite.
+|   +--- crud                                  => [FOLDER] Sub-modul manipulasi data rapot (tambah, hapus) ke database.
+|   |   +--- bulk_delete.php                   => Script hapus massal banyak rapot sekaligus. Menghapus record dari DB dan file fisik PDF/PNG dari server.
+|   |   +--- bulk_processor.php                => Script generate rapot massal: loop semua santri di kamar/kelas tertentu, generate PDF/PNG per santri secara batch.
+|   |   +--- delete.php                        => Script hapus satu rapot: DELETE dari DB + hapus file PDF/PNG dari disk.
+|   |   \--- process.php                       => Script backend simpan rapot: INSERT ke rapot_kepengasuhan dengan semua 20 kolom aspek kepengasuhan + catatan + poin snapshot.
+|   +--- export                                => [FOLDER] Sub-modul konversi dokumen ke bentuk unduhan.
+|   |   +--- generate_pdf.php                  => Script konversi rapot ke PDF menggunakan DomPDF. Render template HTML rapot, konversi, stream ke browser.
+|   |   \--- generate_png.php                  => Script konversi rapot ke file PNG menggunakan GD Library atau DomPDF+imagick. Berguna untuk dibagikan via WhatsApp.
 |   +--- create.php                            => Halaman form buat rapot satu santri: isi nilai aspek kepengasuhan (skala 1-5 untuk 20 aspek), pre-fill pelanggaran dan reward otomatis via AJAX.
-|   +--- delete.php                            => Script hapus satu rapot: DELETE dari DB + hapus file PDF/PNG dari disk.
-|   +--- generate_catatan.php                  => Script generator teks catatan musyrif otomatis berbasis poin_aktif santri. Return JSON teks sesuai threshold poin.
-|   +--- generate_pdf.php                      => Script konversi rapot ke PDF menggunakan DomPDF. Render template HTML rapot, konversi, stream ke browser.
-|   +--- generate_png.php                      => Script konversi rapot ke file PNG menggunakan GD Library atau DomPDF+imagick. Berguna untuk dibagikan via WhatsApp.
-|   +--- get_pelanggaran_santri.php            => AJAX endpoint: ambil daftar pelanggaran satu santri di periode aktif, return JSON untuk ditampilkan di form create rapot.
-|   +--- get_reward_santri.php                 => AJAX endpoint: ambil daftar reward satu santri, return JSON untuk ditampilkan di form create rapot.
-|   +--- helper.php                            => Fungsi-fungsi kalkulasi khusus modul rapot: konversi nilai numerik ke huruf/predikat, rumus total skor kepengasuhan.
 |   +--- index.php                             => Halaman daftar semua rapot yang pernah dibuat (49KB, terbesar). Filter per kamar/kelas/bulan. Tombol preview, PDF, PNG, hapus.
-|   +--- process.php                           => Script backend simpan rapot: INSERT ke rapot_kepengasuhan dengan semua 20 kolom aspek kepengasuhan + catatan + poin snapshot.
-|   +--- template_rapot.php                    => Kanvas/desain HTML rapot: layout kop, tabel nilai aspek, kolom pelanggaran, reward, catatan musyrif. Struktur HTML ini TIDAK BOLEH berubah saat rewrite agar DomPDF tetap render dengan benar.
 |   \--- view.php                              => Halaman preview rapot di browser sebelum dicetak. Render template_rapot.php dengan data santri yang dipilih.
 |
 +--- rekap                                     => [FOLDER] Modul dashboard analitik dan laporan visual untuk rapat/evaluasi pimpinan.

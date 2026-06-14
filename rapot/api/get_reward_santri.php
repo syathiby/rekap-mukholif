@@ -1,8 +1,8 @@
-﻿<?php
+<?php
 // File: rekap-mukholif/rapot/get_reward_santri.php
 
 // 1. Panggil 'Otak' aplikasi
-require_once __DIR__ . '/../bootstrap/init.php';
+require_once __DIR__ . '/../../bootstrap/init.php';
 
 // 2. Jalankan 'SATPAM' (Sesuaikan guard-nya kalau beda)
 guard('rapot_create');

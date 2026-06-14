@@ -2,7 +2,7 @@
 // File: rekap-mukholif/rapot/delete.php
 
 // 1. Panggil 'Otak' aplikasi dulu
-require_once __DIR__ . '/../bootstrap/init.php';
+require_once __DIR__ . '/../../bootstrap/init.php';
 
 // 2. Jalankan 'SATPAM'
 // Bikin izin baru 'rapot_delete'
@@ -11,7 +11,7 @@ guard('rapot_delete');
 // 3. Cek ID dari URL
 if (empty($_GET['id'])) {
     set_flash_message('Error: ID Rapot tidak ditemukan.', 'danger');
-    header('Location: index.php');
+    header('Location: ../index.php');
     exit;
 }
 
@@ -50,6 +50,6 @@ try {
 }
 
 // 6. Balikin ke halaman index
-header('Location: index.php');
+header('Location: ../index.php');
 exit;
 ?>

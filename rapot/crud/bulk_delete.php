@@ -2,7 +2,7 @@
 // File: rekap-mukholif/rapot/bulk_delete.php
 
 // 1. Panggil 'Otak' aplikasi dulu
-require_once __DIR__ . '/../bootstrap/init.php';
+require_once __DIR__ . '/../../bootstrap/init.php';
 
 // 2. Jalankan 'SATPAM' (Harus punya izin delete)
 guard('rapot_delete');
@@ -10,7 +10,7 @@ guard('rapot_delete');
 // 3. Cek apakah ini request POST dan ada ID-nya
 if ($_SERVER['REQUEST_METHOD'] !== 'POST' || empty($_POST['ids'])) {
     set_flash_message('Error: Request tidak valid.', 'danger');
-    header('Location: index.php');
+    header('Location: ../index.php');
     exit;
 }
 
@@ -27,7 +27,7 @@ $sanitized_ids = array_filter(array_unique($sanitized_ids));
 
 if (empty($sanitized_ids)) {
     set_flash_message('Error: Tidak ada ID rapot yang valid untuk dihapus.', 'danger');
-    header('Location: index.php');
+    header('Location: ../index.php');
     exit;
 }
 
@@ -67,6 +67,6 @@ try {
 }
 
 // 7. Balikin ke halaman index (dia bakal ngambil filter dari session)
-header('Location: index.php');
+header('Location: ../index.php');
 exit;
 ?>

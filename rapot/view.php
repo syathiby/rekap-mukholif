@@ -1,8 +1,8 @@
-﻿<?php
+<?php
 // File: rekap-mukholif/rapot/view.php
 
 require_once __DIR__ . '/../bootstrap/init.php'; 
-require_once __DIR__ . '/helper.php'; 
+require_once __DIR__ . '/config/helper.php'; 
 
 guard('rapot_view');
 
@@ -122,7 +122,7 @@ echo '<!DOCTYPE html>
 <body>
     <div class="page-wrapper">';
 
-include 'template_rapot.php';
+include 'config/template_rapot.php';
 
 echo '
     </div>
