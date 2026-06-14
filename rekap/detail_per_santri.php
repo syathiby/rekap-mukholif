@@ -36,7 +36,7 @@ if (!$santri) { die("Data santri tidak ditemukan."); }
 $start_dt = $start_date . ' 00:00:00';
 $end_dt   = $end_date   . ' 23:59:59';
 
-$where_p = "p.santri_id = ? AND p.tanggal BETWEEN ? AND ?";
+$where_p = "p.santri_id = ? AND (p.tanggal BETWEEN ? AND ? OR jp.kategori = 'Sangat Berat')";
 $params_p = [$santri_id, $start_dt, $end_dt];
 $types_p = "iss";
 

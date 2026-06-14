@@ -39,7 +39,7 @@ $start_dt_time = $start_date ? $start_date . ' 00:00:00' : '1970-01-01 00:00:00'
 $end_dt_time   = $end_date   ? $end_date . ' 23:59:59' : '2099-12-31 23:59:59';
 $sql_pb = "
     SELECT 
-        (SELECT COALESCE(SUM(jp.poin), 0) FROM pelanggaran p JOIN jenis_pelanggaran jp ON p.jenis_pelanggaran_id = jp.id WHERE p.santri_id = ? AND p.tanggal BETWEEN ? AND ?) -
+        (SELECT COALESCE(SUM(jp.poin), 0) FROM pelanggaran p JOIN jenis_pelanggaran jp ON p.jenis_pelanggaran_id = jp.id WHERE p.santri_id = ? AND (p.tanggal BETWEEN ? AND ? OR jp.kategori = 'Sangat Berat')) -
         (SELECT COALESCE(SUM(jr.poin_reward), 0) FROM daftar_reward dr JOIN jenis_reward jr ON dr.jenis_reward_id = jr.id WHERE dr.santri_id = ? AND dr.tanggal BETWEEN ? AND ?) 
     AS poin_bersih
 ";
@@ -63,7 +63,7 @@ $sql_detail = "
     FROM pelanggaran p
     JOIN jenis_pelanggaran jp ON p.jenis_pelanggaran_id = jp.id
     WHERE p.santri_id = ?
-      AND DATE(p.tanggal) BETWEEN ? AND ?
+      AND (DATE(p.tanggal) BETWEEN ? AND ? OR jp.kategori = 'Sangat Berat')
       AND p.jenis_pelanggaran_id != 3
 ";
 $params_detail = [$santri_id, $start_date, $end_date];

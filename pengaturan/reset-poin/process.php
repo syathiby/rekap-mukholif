@@ -181,8 +181,35 @@ elseif (isset($_POST['tutup_buku_massal'])) {
         $stmt_kebersihan_snapshot->execute();
         $stmt_kebersihan_snapshot->close();
 
-        // 2. RESET PELANGGARAN KEBERSIHAN (Opsi A)
+        // Snapshot rapot kepengasuhan
+        $sql_rapot_snapshot = "
+            INSERT INTO arsip_data_rapot (
+                arsip_id, santri_id, santri_nama, santri_kelas, santri_kamar,
+                musyrif_id, musyrif_nama, bulan, tahun,
+                puasa_sunnah, sholat_duha, sholat_malam, sedekah, sunnah_tidur, ibadah_lainnya,
+                lisan, sikap, kesopanan, muamalah, tidur, keterlambatan, seragam, makan,
+                arahan, bahasa_arab, mandi, penampilan, piket, kerapihan_barang,
+                total_poin_pelanggaran_saat_itu, total_poin_reward_saat_itu, catatan_musyrif, dibuat_pada
+            )
+            SELECT
+                ?, r.santri_id, s.nama, s.kelas, s.kamar,
+                r.musyrif_id, u.nama_lengkap, r.bulan, r.tahun,
+                r.puasa_sunnah, r.sholat_duha, r.sholat_malam, r.sedekah, r.sunnah_tidur, r.ibadah_lainnya,
+                r.lisan, r.sikap, r.kesopanan, r.muamalah, r.tidur, r.keterlambatan, r.seragam, r.makan,
+                r.arahan, r.bahasa_arab, r.mandi, r.penampilan, r.piket, r.kerapihan_barang,
+                r.total_poin_pelanggaran_saat_itu, r.total_poin_reward_saat_itu, r.catatan_musyrif, r.dibuat_pada
+            FROM rapot_kepengasuhan r
+            LEFT JOIN santri s ON r.santri_id = s.id
+            LEFT JOIN users u ON r.musyrif_id = u.id
+        ";
+        $stmt_rapot_snapshot = $conn->prepare($sql_rapot_snapshot);
+        $stmt_rapot_snapshot->bind_param('i', $arsip_id);
+        $stmt_rapot_snapshot->execute();
+        $stmt_rapot_snapshot->close();
+
+        // 2. RESET PELANGGARAN KEBERSIHAN & RAPOT
         $conn->query("DELETE FROM pelanggaran_kebersihan");
+        $conn->query("DELETE FROM rapot_kepengasuhan");
 
         // 3. RESET POIN SANTRI & PELANGGARAN UMUM RINGAN
         $result_santri = mysqli_query($conn, "SELECT id FROM santri");
