@@ -25,13 +25,17 @@ $periode_aktif = PERIODE_AKTIF;
 $tanggal_awal = $_GET['tanggal_awal'] ?? $periode_aktif;
 $tanggal_akhir = $_GET['tanggal_akhir'] ?? date("Y-m-d");
 
+// Optimasi Sargable Query (agar MySQL menggunakan Index pada kolom tanggal)
+$tgl_awal_db = $tanggal_awal . ' 00:00:00';
+$tgl_akhir_db = $tanggal_akhir . ' 23:59:59';
+
 // Ambil jumlah pelanggaran yang belum dieksekusi (SESUAI FILTER TANGGAL)
 $sql_belum_eksekusi = "SELECT COUNT(pk.id) AS jumlah_belum_eksekusi
                        FROM pelanggaran_kebersihan pk
                        LEFT JOIN eksekusi_kebersihan ek ON pk.id = ek.pelanggaran_id
-                       WHERE pk.kamar = ? AND ek.id IS NULL AND DATE(pk.tanggal) BETWEEN ? AND ?";
+                       WHERE pk.kamar = ? AND ek.id IS NULL AND pk.tanggal BETWEEN ? AND ?";
 $stmt_belum_eksekusi = $conn->prepare($sql_belum_eksekusi);
-$stmt_belum_eksekusi->bind_param("sss", $nama_kamar, $tanggal_awal, $tanggal_akhir);
+$stmt_belum_eksekusi->bind_param("sss", $nama_kamar, $tgl_awal_db, $tgl_akhir_db);
 $stmt_belum_eksekusi->execute();
 $result_belum_eksekusi = $stmt_belum_eksekusi->get_result();
 $data_belum_eksekusi = $result_belum_eksekusi->fetch_assoc();
@@ -39,11 +43,41 @@ $jumlah_belum_eksekusi = $data_belum_eksekusi['jumlah_belum_eksekusi'];
 $stmt_belum_eksekusi->close();
 
 // Ambil data pelanggaran kebersihan (SESUAI FILTER TANGGAL)
-$sql_pelanggaran = "SELECT id, tanggal, catatan FROM pelanggaran_kebersihan WHERE kamar = ? AND DATE(tanggal) BETWEEN ? AND ? ORDER BY tanggal DESC";
+$sql_pelanggaran = "SELECT id, tanggal, catatan FROM pelanggaran_kebersihan WHERE kamar = ? AND tanggal BETWEEN ? AND ? ORDER BY tanggal DESC";
 $stmt_pelanggaran = $conn->prepare($sql_pelanggaran);
-$stmt_pelanggaran->bind_param("sss", $nama_kamar, $tanggal_awal, $tanggal_akhir);
+$stmt_pelanggaran->bind_param("sss", $nama_kamar, $tgl_awal_db, $tgl_akhir_db);
 $stmt_pelanggaran->execute();
 $result_pelanggaran = $stmt_pelanggaran->get_result();
+
+// Ambil data untuk grafik trend (dikelompokkan per pekan/mingguan)
+$sql_trend = "SELECT 
+                DATE_ADD(DATE(tanggal), INTERVAL -WEEKDAY(DATE(tanggal)) DAY) as awal_pekan,
+                DATE_ADD(DATE(tanggal), INTERVAL 6-WEEKDAY(DATE(tanggal)) DAY) as akhir_pekan,
+                COUNT(id) as jumlah 
+              FROM pelanggaran_kebersihan 
+              WHERE kamar = ? AND tanggal BETWEEN ? AND ? 
+              GROUP BY awal_pekan, akhir_pekan 
+              ORDER BY awal_pekan ASC";
+$stmt_trend = $conn->prepare($sql_trend);
+$stmt_trend->bind_param("sss", $nama_kamar, $tgl_awal_db, $tgl_akhir_db);
+$stmt_trend->execute();
+$result_trend = $stmt_trend->get_result();
+
+$labels_trend = [];
+$data_trend = [];
+while ($row_trend = $result_trend->fetch_assoc()) {
+    $awal = date('d', strtotime($row_trend['awal_pekan']));
+    $akhir = date('d M', strtotime($row_trend['akhir_pekan']));
+    
+    // Jika bulannya berbeda (contoh: 30 Nov - 06 Dec)
+    if (date('m', strtotime($row_trend['awal_pekan'])) !== date('m', strtotime($row_trend['akhir_pekan']))) {
+        $awal = date('d M', strtotime($row_trend['awal_pekan']));
+    }
+    
+    $labels_trend[] = $awal . ' - ' . $akhir;
+    $data_trend[] = (int)$row_trend['jumlah'];
+}
+$stmt_trend->close();
 
 ?>
 <style>
@@ -216,6 +250,24 @@ $result_pelanggaran = $stmt_pelanggaran->get_result();
             white-space: nowrap;
         }
 
+        /* --- STYLES UNTUK GRAFIK PRO-CHART --- */
+        .pro-chart-card{background:#fff;border-radius:16px;box-shadow:0 2px 16px rgba(0,0,0,.07);padding:1.5rem 1.75rem 1.75rem;border:1px solid #f1f5f9;margin-bottom: 20px;}
+        .chart-title{font-size:1rem;font-weight:700;color:#1e293b;margin-bottom:2px;display:flex;align-items:center;gap:8px}
+        .chart-subtitle{font-size:.8rem;color:#94a3b8;margin-bottom:1.25rem;padding-left:28px}
+        .chart-icon-wrap{width:28px;height:28px;border-radius:8px;display:inline-flex;align-items:center;justify-content:center;font-size:.8rem;flex-shrink:0}
+        
+        .chart-scroll-outer{overflow-x:auto;-webkit-overflow-scrolling:touch;scrollbar-width:thin;scrollbar-color:#cbd5e1 #f8fafc;border-radius:10px}
+        .chart-scroll-outer::-webkit-scrollbar{height:5px}
+        .chart-scroll-outer::-webkit-scrollbar-track{background:#f8fafc;border-radius:10px}
+        .chart-scroll-outer::-webkit-scrollbar-thumb{background:#cbd5e1;border-radius:10px}
+        .chart-scroll-inner{position:relative;height:300px}
+        .chart-scroll-inner.tall{height:360px}
+        .scroll-hint{font-size:.72rem;color:#94a3b8;text-align:right;margin-bottom:6px;display:none}
+        
+        .empty-chart{display:flex;flex-direction:column;align-items:center;justify-content:center;color:#94a3b8;padding:3rem 1rem;gap:.75rem}
+        .empty-chart i{font-size:2rem;opacity:.3}
+        .empty-chart p{margin:0;font-size:.85rem;text-align:center}
+
         @keyframes fadeIn {
             from { opacity: 0; transform: translateY(20px); }
             to { opacity: 1; transform: translateY(0); }
@@ -226,7 +278,8 @@ $result_pelanggaran = $stmt_pelanggaran->get_result();
             h2 { font-size: 22px; }
             .header-card { flex-direction: column; align-items: flex-start; }
             .info-grid { grid-template-columns: 1fr; }
-            .table-wrapper, .info-card { padding: 15px; }
+            .table-wrapper, .info-card, .pro-chart-card { padding: 15px; }
+            .scroll-hint{display:block}
         }
     </style>
 <div class="container">
@@ -257,6 +310,26 @@ $result_pelanggaran = $stmt_pelanggaran->get_result();
         </div>
     </div>
 
+    <!-- Grafik Tren Pelanggaran -->
+    <div class="pro-chart-card">
+        <div class="chart-title">
+            <span class="chart-icon-wrap" style="background:#e0e7ff"><i class="fas fa-chart-line" style="color:#4f46e5"></i></span>
+            Tren Pelanggaran Kebersihan
+        </div>
+        <div class="chart-subtitle">Pergerakan jumlah pelanggaran kebersihan per pekan selama periode yang dipilih</div>
+        
+        <?php if (!empty($labels_trend)): ?>
+            <div class="scroll-hint"><i class="fas fa-arrows-alt-h me-1"></i>Geser untuk melihat selengkapnya</div>
+            <div class="chart-scroll-outer">
+                <div class="chart-scroll-inner tall" style="min-width:<?= max(count($labels_trend)*80, 480) ?>px">
+                    <canvas id="trendChart"></canvas>
+                </div>
+            </div>
+        <?php else: ?>
+            <div class="empty-chart"><i class="fas fa-chart-line"></i><p>Belum ada data pelanggaran pada periode ini.</p></div>
+        <?php endif; ?>
+    </div>
+
     <div class="table-wrapper">
         <h3><i class="fas fa-history"></i> Riwayat Pelanggaran</h3>
         <table>
@@ -274,7 +347,12 @@ $result_pelanggaran = $stmt_pelanggaran->get_result();
                         <tr>
                             <td><?= $no++; ?></td>
                             <td><span class="badge"><i class="far fa-calendar-alt"></i> <?= date('d M Y, H:i', strtotime($row['tanggal'])); ?> WIB</span></td>
-                            <td><?= !empty($row['catatan']) ? htmlspecialchars($row['catatan']) : '-'; ?></td>
+                            <?php 
+                                $catatan_text = !empty($row['catatan']) ? $row['catatan'] : '-';
+                                // Perbaikan artifact encoding (Â² menjadi ²)
+                                $catatan_text = str_replace('Â²', '²', $catatan_text);
+                            ?>
+                            <td style="white-space: normal;"><?= $catatan_text !== '-' ? htmlspecialchars($catatan_text) : '-'; ?></td>
                         </tr>
                     <?php endwhile; ?>
                 <?php else : ?>
@@ -296,3 +374,63 @@ $stmt_pelanggaran->close();
 $conn->close();
 require_once __DIR__ . '/../layouts/footer.php';
 ?>
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const ctx = document.getElementById('trendChart');
+    if (ctx) {
+        new Chart(ctx, {
+            type: 'line',
+            data: {
+                labels: <?= json_encode($labels_trend) ?>,
+                datasets: [{
+                    label: 'Jumlah Pelanggaran',
+                    data: <?= json_encode($data_trend) ?>,
+                    borderColor: '#4361ee',
+                    backgroundColor: 'rgba(67, 97, 238, 0.1)',
+                    borderWidth: 2,
+                    pointBackgroundColor: '#4361ee',
+                    pointBorderColor: '#ffffff',
+                    pointBorderWidth: 2,
+                    pointRadius: 4,
+                    pointHoverRadius: 6,
+                    fill: true,
+                    tension: 0.3 // Smooth curves
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: {
+                        display: false
+                    },
+                    tooltip: {
+                        callbacks: {
+                            label: function(context) {
+                                return context.parsed.y + ' Pelanggaran';
+                            }
+                        }
+                    }
+                },
+                scales: {
+                    y: {
+                        beginAtZero: true,
+                        ticks: {
+                            stepSize: 1,
+                            precision: 0
+                        },
+                        grid: {
+                            color: '#f0f0f0'
+                        }
+                    },
+                    x: {
+                        grid: {
+                            display: false
+                        }
+                    }
+                }
+            }
+        });
+    }
+});
+</script>
