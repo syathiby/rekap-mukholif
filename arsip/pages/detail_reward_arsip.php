@@ -24,7 +24,7 @@ if (!$arsip) die("<div class='container my-4'><div class='alert alert-danger'>Ar
 
 $filter_kamar = $_GET['kamar'] ?? null;
 $filter_bagian = $_GET['bagian'] ?? null;
-$filter_jp = $_GET['jenis_pelanggaran'] ?? null;
+$filter_jp = $_GET['jenis_reward'] ?? null;
 
 // Query 1: Ambil data profil santri     
 $stmt_santri = $conn->prepare("SELECT santri_nama AS nama, santri_kelas AS kelas, santri_kamar AS kamar, total_poin_saat_arsip AS poin_aktif FROM arsip_data_santri WHERE arsip_id = ? AND santri_id = ?");
@@ -49,52 +49,32 @@ $stmt_pb->execute();
 $poin_bersih_dinamis = (int)$stmt_pb->get_result()->fetch_assoc()['poin_bersih'];
 $poin_bersih_display = $poin_bersih_dinamis < 0 ? 0 : $poin_bersih_dinamis;
 
-// Query 2: Ambil detail pelanggaran
+// Query 2: Ambil detail reward
 $sql_detail = "
-    SELECT p.tanggal, COALESCE(jp.kategori, 'Lainnya') AS kategori, p.poin,
-        CASE
-            WHEN p.jenis_pelanggaran_id = 1 AND TIME(p.tanggal) BETWEEN '03:30:00' AND '05:30:00' THEN CONCAT(p.jenis_pelanggaran_nama, ' (Subuh)')
-            WHEN p.jenis_pelanggaran_id = 1 AND TIME(p.tanggal) BETWEEN '11:30:00' AND '13:00:00' THEN CONCAT(p.jenis_pelanggaran_nama, ' (Dzuhur)')
-            WHEN p.jenis_pelanggaran_id = 1 AND TIME(p.tanggal) BETWEEN '14:45:00' AND '16:00:00' THEN CONCAT(p.jenis_pelanggaran_nama, ' (Ashar)')
-            WHEN p.jenis_pelanggaran_id = 1 AND TIME(p.tanggal) BETWEEN '17:30:00' AND '18:45:00' THEN CONCAT(p.jenis_pelanggaran_nama, ' (Maghrib)')
-            WHEN p.jenis_pelanggaran_id = 1 AND TIME(p.tanggal) BETWEEN '18:50:00' AND '20:30:00' THEN CONCAT(p.jenis_pelanggaran_nama, ' (Isya)')
-            ELSE p.jenis_pelanggaran_nama
-        END AS nama_pelanggaran
-    FROM arsip_data_pelanggaran p
-    LEFT JOIN jenis_pelanggaran jp ON p.jenis_pelanggaran_id = jp.id
-    WHERE p.arsip_id = ? AND p.santri_id = ? AND p.tipe = 'Umum'
-      AND p.jenis_pelanggaran_id != 3
+    SELECT tanggal, '' AS kategori, poin_reward AS poin,
+           nama_reward AS nama_pelanggaran, dicatat_oleh_nama
+    FROM arsip_data_reward
+    WHERE arsip_id = ? AND santri_id = ?
 ";
 $params_detail = [$arsip_id, $santri_id];
 $types_detail = "ii";
-if ($filter_bagian) {
-    $sql_detail .= " AND p.bagian = ?";
-    $params_detail[] = $filter_bagian;
-    $types_detail .= "s";
-}
-if ($filter_jp) {
-    $sql_detail .= " AND p.jenis_pelanggaran_id = ?";
-    $params_detail[] = $filter_jp;
-    $types_detail .= "i";
-}
-$sql_detail .= " ORDER BY p.tanggal DESC";
+$sql_detail .= " ORDER BY tanggal DESC";
 $stmt_detail = $conn->prepare($sql_detail);
 $stmt_detail->bind_param($types_detail, ...$params_detail);
 $stmt_detail->execute();
 $detail_list = $stmt_detail->get_result()->fetch_all(MYSQLI_ASSOC);
 
 // Kalkulasi statistik
-$total_pelanggaran = count($detail_list);
+$total_reward = count($detail_list);
 $total_poin = array_sum(array_column($detail_list, 'poin'));
 
 // Helper function untuk ikon
 function getKategoriInfo($kategori) {
     return match (strtolower($kategori)) {
-        'sangat berat' => ['color' => 'danger', 'icon' => 'fa-skull-crossbones'],
         'berat' => ['color' => 'danger', 'icon' => 'fa-exclamation-triangle'],
         'sedang' => ['color' => 'warning', 'icon' => 'fa-exclamation-circle'],
         'ringan' => ['color' => 'success', 'icon' => 'fa-info-circle'],
-        default => ['color' => 'secondary', 'icon' => 'fa-question-circle'],
+        default => ['color' => 'success', 'icon' => 'fa-star'],
     };
 }
 
@@ -279,13 +259,13 @@ function getTelatInfo($nama) {
     <!-- ✅ HEADER BARU: Lebih Rapi & Profesional -->
     <div class="page-header">
         <div>
-            <h1 class="page-title">Detail Pelanggaran</h1>
-            <p class="text-muted mb-0">Rincian lengkap pelanggaran yang tercatat.</p>
+            <h1 class="page-title">Detail Reward</h1>
+            <p class="text-muted mb-0">Rincian lengkap reward yang tercatat.</p>
         </div>
         <?php
         $filter_qs = "";
         if (!empty($filter_bagian)) $filter_qs .= "&bagian=" . urlencode($filter_bagian);
-        if (!empty($filter_jp)) $filter_qs .= "&jenis_pelanggaran=" . urlencode($filter_jp);
+        if (!empty($filter_jp)) $filter_qs .= "&jenis_reward=" . urlencode($filter_jp);
         ?>
         <a href="detail_arsip_santri.php?arsip_id=<?= $arsip_id ?>&id=<?= $santri_id ?><?= $filter_qs ?>" class="btn btn-back">
             <i class="fas fa-arrow-left me-2"></i>Kembali
@@ -309,14 +289,14 @@ function getTelatInfo($nama) {
                                 <i class="fas fa-clock fs-4"></i>
                             </div>
                             <div>
-                                <div class="stat-number text-danger" style="font-size: 2.2rem;"><?= $total_pelanggaran ?></div>
+                                <div class="stat-number text-danger" style="font-size: 2.2rem;"><?= $total_reward ?></div>
                                 <div class="stat-label text-danger fw-medium" style="opacity: 0.9;">Total Keterlambatan (Kali)</div>
                             </div>
                         </div>
                     <?php else: ?>
                         <div class="stat-item">
-                            <div class="stat-number"><?= $total_pelanggaran ?></div>
-                            <div class="stat-label">Total Pelanggaran</div>
+                            <div class="stat-number"><?= $total_reward ?></div>
+                            <div class="stat-label">Total Reward</div>
                         </div>
                         <div class="stat-item">
                             <div class="stat-number"><?= $total_poin ?></div>
@@ -342,7 +322,7 @@ function getTelatInfo($nama) {
         <div class="col-lg-8">
             <div class="detail-card">
                 <div class="detail-card-header">
-                    <i class="fas fa-list-ul me-2"></i>Rincian Pelanggaran
+                    <i class="fas fa-list-ul me-2"></i>Rincian Reward
                 </div>
                 <div class="table-responsive">
                     <table class="table mb-0">
@@ -350,7 +330,7 @@ function getTelatInfo($nama) {
                             <tr>
                                 <th class="text-center" style="width: 5%;">No</th>
                                 <th>Tanggal</th>
-                                <th><?= $filter_bagian === 'Pengabdian' ? 'Nama Keterlambatan' : 'Nama Pelanggaran' ?></th>
+                                <th><?= $filter_bagian === 'Pengabdian' ? 'Nama Keterlambatan' : 'Nama Reward' ?></th>
                                 <?php if ($filter_bagian !== 'Pengabdian'): ?>
                                 <th class="text-center">Poin</th>
                                 <?php endif; ?>
@@ -358,7 +338,7 @@ function getTelatInfo($nama) {
                         </thead>
                         <tbody>
                             <?php if (empty($detail_list)): ?>
-                                <tr><td colspan="4" class="text-center p-5 text-muted"><i class="fas fa-check-circle fa-3x mb-3"></i><br>Tidak ada data pelanggaran ditemukan dengan filter ini.</td></tr>
+                                <tr><td colspan="4" class="text-center p-5 text-muted"><i class="fas fa-check-circle fa-3x mb-3"></i><br>Tidak ada data reward ditemukan dengan filter ini.</td></tr>
                             <?php else: ?>
                                 <?php foreach ($detail_list as $index => $row): 
                                     $info = getKategoriInfo($row['kategori']);
@@ -371,10 +351,10 @@ function getTelatInfo($nama) {
                                     </td>
                                     <td>
                                         <?php 
-                                            $is_telat = (strpos(strtolower($row['nama_pelanggaran']), 'telat') !== false || strpos(strtolower($row['nama_pelanggaran']), 'kbm') !== false);
+                                            $is_telat = (strpos(strtolower($row['nama_reward']), 'telat') !== false || strpos(strtolower($row['nama_reward']), 'kbm') !== false);
                                             
                                             if ($filter_bagian === 'Pengabdian' || $is_telat): 
-                                                $telatInfo = getTelatInfo($row['nama_pelanggaran']);
+                                                $telatInfo = getTelatInfo($row['nama_reward']);
                                         ?>
                                             <div class="d-flex align-items-center">
                                                 <div class="d-flex align-items-center justify-content-center rounded-circle me-3 flex-shrink-0" style="width: 40px; height: 40px; background-color: <?= $telatInfo['bg'] ?>; color: <?= $telatInfo['text'] ?>;">
@@ -383,7 +363,7 @@ function getTelatInfo($nama) {
                                                 <div style="min-width: 0;">
                                                     <div class="fw-bold text-truncate" style="color: <?= $telatInfo['text'] ?>; font-size: 1.05rem;">
                                                         <?php if ($telatInfo['label'] !== 'Lainnya') echo 'Telat '; ?>
-                                                        <?= $telatInfo['label'] !== 'Lainnya' ? $telatInfo['label'] : htmlspecialchars(format_typing($row['nama_pelanggaran'])) ?>
+                                                        <?= $telatInfo['label'] !== 'Lainnya' ? $telatInfo['label'] : htmlspecialchars(format_typing($row['nama_reward'])) ?>
                                                     </div>
                                                     <div class="d-flex align-items-center flex-wrap gap-2 mt-1">
                                                         <span class="text-muted small text-truncate" style="max-width: 200px;"><?= $telatInfo['desc'] ?></span>
@@ -399,7 +379,7 @@ function getTelatInfo($nama) {
                                                     <i class="fas <?= $info['icon'] ?> fs-5"></i>
                                                 </div>
                                                 <div style="min-width: 0;">
-                                                    <div class="fw-bold text-dark text-truncate" style="font-size: 1.05rem;"><?= htmlspecialchars(format_typing($row['nama_pelanggaran'])) ?></div>
+                                                    <div class="fw-bold text-dark text-truncate" style="font-size: 1.05rem;"><?= htmlspecialchars(format_typing($row['nama_reward'])) ?></div>
                                                     <div class="mt-1">
                                                         <span class="badge bg-<?= $info['color'] ?> bg-opacity-10 text-<?= $info['color'] ?> px-2 py-0 border border-<?= $info['color'] ?> border-opacity-25" style="font-size: 0.65rem; font-weight: 600;"><?= htmlspecialchars(format_typing($row['kategori'])) ?></span>
                                                     </div>

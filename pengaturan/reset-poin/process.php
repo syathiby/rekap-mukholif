@@ -207,17 +207,67 @@ elseif (isset($_POST['tutup_buku_massal'])) {
         $stmt_rapot_snapshot->execute();
         $stmt_rapot_snapshot->close();
 
+        // Snapshot reward santri ke arsip_data_reward
+        $sql_reward_snapshot = "
+            INSERT INTO arsip_data_reward
+                (arsip_id, santri_id, santri_nama, santri_kelas, santri_kamar,
+                 jenis_reward_id, nama_reward, poin_reward, tanggal, dicatat_oleh_nama)
+            SELECT
+                ?, dr.santri_id, s.nama, s.kelas, s.kamar,
+                jr.id, jr.nama_reward, jr.poin_reward, dr.tanggal, u.nama_lengkap
+            FROM daftar_reward dr
+            JOIN santri s ON dr.santri_id = s.id
+            JOIN jenis_reward jr ON dr.jenis_reward_id = jr.id
+            LEFT JOIN users u ON dr.dicatat_oleh = u.id
+        ";
+        $stmt_reward_snapshot = $conn->prepare($sql_reward_snapshot);
+        $stmt_reward_snapshot->bind_param('i', $arsip_id);
+        $stmt_reward_snapshot->execute();
+        $stmt_reward_snapshot->close();
+
         // 2. RESET PELANGGARAN KEBERSIHAN & RAPOT
         $conn->query("DELETE FROM pelanggaran_kebersihan");
         $conn->query("DELETE FROM rapot_kepengasuhan");
 
         // 3. RESET POIN SANTRI & PELANGGARAN UMUM RINGAN
+        // Hitung surplus reward per santri sebelum daftar_reward dihapus
+        $surplus_per_santri = [];
+        $q_surplus = $conn->query("
+            SELECT dr.santri_id,
+                   COALESCE(SUM(jr.poin_reward), 0) AS total_reward,
+                   (
+                       SELECT COALESCE(SUM(jp.poin), 0)
+                       FROM pelanggaran p
+                       JOIN jenis_pelanggaran jp ON p.jenis_pelanggaran_id = jp.id
+                       WHERE p.santri_id = dr.santri_id
+                   ) AS total_pelanggaran
+            FROM daftar_reward dr
+            JOIN jenis_reward jr ON dr.jenis_reward_id = jr.id
+            GROUP BY dr.santri_id
+        ");
+        if ($q_surplus) {
+            while ($row_s = $q_surplus->fetch_assoc()) {
+                $surplus = (int)$row_s['total_reward'] - (int)$row_s['total_pelanggaran'];
+                if ($surplus > 0) {
+                    $surplus_per_santri[(int)$row_s['santri_id']] = $surplus;
+                }
+            }
+        }
+
+        // Hapus daftar_reward (sudah di-snapshot ke arsip)
+        $conn->query("DELETE FROM daftar_reward");
+
         $result_santri = mysqli_query($conn, "SELECT id FROM santri");
         $santri_list = mysqli_fetch_all($result_santri, MYSQLI_ASSOC);
         
         $processed_count = 0;
         foreach ($santri_list as $santri) {
             resetPoinSantri($conn, $santri['id'], $keterangan, $di_reset_oleh);
+            // Terapkan surplus reward sebagai poin bonus awal tahun baru
+            if (isset($surplus_per_santri[$santri['id']])) {
+                $bonus = -$surplus_per_santri[$santri['id']]; // Negatif karena reward mengurangi poin
+                $conn->query("UPDATE santri SET poin_aktif = poin_aktif + ($bonus) WHERE id = {$santri['id']}");
+            }
             $processed_count++;
         }
 

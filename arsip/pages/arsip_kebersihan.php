@@ -1,238 +1,358 @@
-<?php 
+<?php
 // 1. Panggil 'Otak' aplikasi dulu
 require_once __DIR__ . '/../../bootstrap/init.php';
 
 // 2. Jalankan 'SATPAM' buat ngejaga halaman
-guard('arsip_view'); 
+guard('arsip_view');
 
-// 3. Kalau lolos, baru panggil Tampilan
-require_once __DIR__ . '/../../layouts/header.php';
+require_once __DIR__ . '/../../layouts/header.php'; 
 
-
-// 1. Ambil ID Arsip dari URL
 $arsip_id = (int)($_GET['id'] ?? 0);
 if ($arsip_id <= 0) {
-    die("<div class='container my-4 alert alert-danger'>ID Arsip tidak valid.</div>");
+    die("<div class='container mt-5'><div class='alert alert-danger'>Arsip tidak valid.</div></div>");
 }
 
-// 2. Ambil parameter filter dari URL untuk link "Kembali"
-$filter_bagian_kembali = $_GET['bagian'] ?? 'semua';
-$filter_kamar_kembali = $_GET['kamar'] ?? 'semua';
-$filter_kelas_kembali = $_GET['kelas'] ?? 'semua';
-
-// Buat URL lengkap untuk tombol kembali ke arsip_pelanggaran.php
-$params_kembali = http_build_query([
-    'id' => $arsip_id,
-    'bagian' => $filter_bagian_kembali,
-    'kamar' => $filter_kamar_kembali,
-    'kelas' => $filter_kelas_kembali
-]);
-$link_kembali = "arsip_pelanggaran.php?" . $params_kembali;
-
-// 3. Ambil detail arsip utamanya
 $stmt_arsip = $conn->prepare("SELECT * FROM arsip WHERE id = ?");
 $stmt_arsip->bind_param('i', $arsip_id);
 $stmt_arsip->execute();
 $arsip = $stmt_arsip->get_result()->fetch_assoc();
-$stmt_arsip->close();
-
 if (!$arsip) {
-    die("<div class='container my-4 alert alert-danger'>Arsip tidak ditemukan.</div>");
+    die("<div class='container mt-5'><div class='alert alert-danger'>Arsip tidak ditemukan.</div></div>");
 }
 
-// 4. Kueri Agregasi: Ambil rekap dari tabel arsip_data_pelanggaran_kebersihan
-$stmt_data = $conn->prepare("
-    SELECT
-        kamar,
-        COUNT(id) AS total_pelanggaran,
-        MAX(tanggal) AS tanggal_terbaru
-    FROM
-        arsip_data_pelanggaran_kebersihan
-    WHERE
-        arsip_id = ? AND kamar IS NOT NULL AND kamar != ''
-    GROUP BY
-        kamar
-    ORDER BY
-        total_pelanggaran DESC, tanggal_terbaru DESC
-");
-$stmt_data->bind_param('i', $arsip_id);
-$stmt_data->execute();
-$rekap_kamar = $stmt_data->get_result()->fetch_all(MYSQLI_ASSOC);
-$stmt_data->close();
+$sort_order = $_GET['sort'] ?? 'desc'; // default: terbanyak
 
+// Query
+$sql = "
+    SELECT 
+        k.kamar,
+        COALESCE(p.total_pelanggaran, 0) AS total_pelanggaran
+    FROM 
+        (SELECT DISTINCT santri_kamar AS kamar FROM arsip_data_santri WHERE arsip_id = ? AND santri_kamar IS NOT NULL AND santri_kamar != '') k
+    LEFT JOIN 
+        (SELECT kamar, COUNT(*) AS total_pelanggaran
+         FROM arsip_data_pelanggaran_kebersihan
+         WHERE arsip_id = ?
+         GROUP BY kamar
+        ) p ON k.kamar = p.kamar
+";
+
+// Tentukan urutan
+$order = ($sort_order === 'asc') ? 'ASC' : 'DESC';
+$sql .= " ORDER BY total_pelanggaran $order, CAST(k.kamar AS UNSIGNED) ASC";
+
+// Prepared Statement
+$stmt = $conn->prepare($sql);
+$stmt->bind_param("ii", $arsip_id, $arsip_id);
+$stmt->execute();
+$result = $stmt->get_result();
+if (!$result) die("Query Error: " . $stmt->error);
 ?>
+
 <style>
     :root {
         --primary: #4361ee;
         --secondary: #3f37c9;
-        --light-bg: #f5f7fa;
-        --card-bg: #ffffff;
-        --text-dark: #212529;
-        --text-light: #6c757d;
-        --border-color: #e0e0e0;
+        --danger: #f72585;
+        --warning: #f8961e;
+        --success: #4cc9f0;
+        --light: #f8f9fa;
+        --dark: #212529;
+        /* Warna untuk piala */
         --gold: #f59e0b;
         --silver: #9ca3af;
         --bronze: #a16207;
     }
-    .header-card {
-        background: var(--card-bg);
-        padding: 25px;
-        border-radius: 12px;
-        box-shadow: 0 4px 12px rgba(0,0,0,0.05);
-        margin-bottom: 25px;
-        border-left: 5px solid var(--primary);
+    
+    .container {
+        padding: 30px;
+        max-width: 1200px;
+        margin: 0 auto;
+        animation: fadeIn 0.6s ease-out;
     }
-    .header-card h1 {
-            margin: 0;
-            color: var(--primary);
-            font-size: 24px;
-            font-weight: 600;
-        }
-        .table-wrapper {
-            background: var(--card-bg);
+        
+        .header-card {
+            background: white;
             padding: 25px;
             border-radius: 12px;
-            box-shadow: 0 4px 12px rgba(0,0,0,0.05);
+            box-shadow: 0 4px 12px rgba(0,0,0,0.08);
+            margin-bottom: 30px;
+            border-left: 5px solid var(--primary);
+        }
+        
+        h2 {
+            margin: 0;
+            color: var(--primary);
+            font-size: 28px;
+            font-weight: 600;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+        
+        .filter-card {
+            background: white;
+            padding: 25px;
+            border-radius: 12px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.08);
+            margin-bottom: 30px;
+        }
+        
+        .filter-form {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 20px;
+            align-items: flex-end;
+        }
+        
+        .form-group {
+            display: flex;
+            flex-direction: column;
+            flex-grow: 1; /* <<< Perbaikan kecil */
+        }
+        
+        label {
+            font-size: 14px;
+            margin-bottom: 8px;
+            color: #6c757d;
+            font-weight: 500;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        
+        input[type="date"], select {
+            padding: 12px 15px;
+            border: 1px solid #e0e0e0;
+            border-radius: 8px;
+            font-family: 'Poppins', sans-serif;
+            transition: all 0.3s ease;
+            width: 100%; /* <<< Perbaikan kecil */
+            box-sizing: border-box; /* <<< Perbaikan kecil */
+        }
+        
+        input[type="date"]:focus, select:focus {
+            outline: none;
+            border-color: var(--primary);
+            box-shadow: 0 0 0 3px rgba(67, 97, 238, 0.2);
+        }
+        
+        button {
+            padding: 12px 24px;
+            background-color: var(--primary);
+            color: white;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            font-family: 'Poppins', sans-serif;
+            font-weight: 500;
+            transition: all 0.3s ease;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        
+        button:hover {
+            background-color: var(--secondary);
+            transform: translateY(-2px);
+        }
+        
+        .table-wrapper {
+            background: white;
+            padding: 25px;
+            border-radius: 12px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.08);
+            /* === INI KUNCI UTAMANYA === */
             overflow-x: auto;
         }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+        
         table thead th {
-            background-color: var(--light-bg);
+            background-color: var(--light);
+            color: var(--dark);
             font-weight: 600;
             padding: 16px 12px;
             text-align: center;
-            border-bottom: 2px solid var(--border-color);
+            border-bottom: 2px solid #e0e0e0;
+            /* === TAMBAHAN BIAR RAPI PAS DI-SCROLL === */
             white-space: nowrap;
         }
+        
+        table tbody tr {
+            transition: all 0.2s ease;
+        }
+        
+        table tbody tr:hover {
+            background-color: rgba(67, 97, 238, 0.05);
+        }
+        
         table tbody td {
             padding: 14px 12px;
             border-bottom: 1px solid #f0f0f0;
             text-align: center;
-            vertical-align: middle;
+             /* === TAMBAHAN BIAR RAPI PAS DI-SCROLL === */
+            white-space: nowrap;
         }
+
         table tbody tr:last-child td {
             border-bottom: none;
         }
-        table tbody tr:hover {
-            background-color: rgba(67, 97, 238, 0.04);
-        }
+        
         .pelanggaran-count {
             display: inline-block;
-            padding: 6px 14px;
+            padding: 6px 12px;
             border-radius: 20px;
-            font-weight: 700;
-            font-size: 1.1rem;
+            font-weight: 600;
         }
+
         .pelanggaran-count.banyak {
-            background-color: #ffebee;
-            color: #c62828;
+             background-color: #ffebee;
+             color: #c62828;
         }
+
         .pelanggaran-count.nol {
-            background-color: #e8f5e9;
-            color: #2e7d32;
+             background-color: #e8f5e9;
+             color: #2e7d32;
         }
+        
         .rank-icon {
             font-size: 1.8rem;
         }
         .rank-1 .rank-icon { color: var(--gold); }
         .rank-2 .rank-icon { color: var(--silver); }
         .rank-3 .rank-icon { color: var(--bronze); }
+        
+        /* === STYLE BARU UNTUK TOMBOL DETAIL (SESUAI GAMBAR) === */
         .btn-detail {
             display: inline-flex;
             align-items: center;
             gap: 8px;
             padding: 8px 16px;
+            font-size: 14px;
             font-weight: 600;
-            background-color: #eef2ff;
-            color: var(--secondary);
-            border-radius: 9999px;
+            background-color: #eef2ff; /* Warna lavender muda */
+            color: var(--secondary); /* Warna ungu tua untuk teks & ikon */
+            border-radius: 9999px; /* Bikin jadi bentuk pil */
             text-decoration: none;
-            transition: all 0.2s ease;
+            transition: all 0.3s ease;
+            border: 1px solid transparent;
         }
+
         .btn-detail:hover {
-            background-color: #e0e7ff;
+            background-color: #e0e7ff; /* Sedikit lebih gelap pas di-hover */
             transform: translateY(-2px);
+            box-shadow: 0 4px 10px rgba(63, 55, 201, 0.15);
+        }
+        /* === /STYLE BARU === */
+        
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(20px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        
+        /* === BAGIAN RESPONSIVE UNTUK MOBILE === */
+        @media (max-width: 768px) {
+            .container {
+                padding: 15px; /* Padding dikecilin biar gak mepet */
+            }
+
+            h2 {
+                font-size: 22px; /* Ukuran judul dikecilin */
+            }
+
+            .filter-form {
+                flex-direction: column;
+                align-items: stretch;
+            }
+
+            .header-card, .filter-card, .table-wrapper {
+                padding: 15px; /* Padding di dalem card dikecilin */
+            }
         }
     </style>
-</head>
-<body>
-
-<div class="container-fluid py-4">
-
-    <div class="header-card d-flex justify-content-between align-items-center">
-        <div>
-            <h1><i class="fas fa-broom me-2"></i> Rekap Arsip Kebersihan per Kamar</h1>
-            <p class="text-muted mb-0">
-                Arsip: <strong><?= htmlspecialchars($arsip['judul']) ?></strong> 
-                (<?= date('d M Y', strtotime($arsip['tanggal_mulai'])) ?> - <?= date('d M Y', strtotime($arsip['tanggal_selesai'])) ?>)
-            </p>
+    <div class="container">
+        <div class="header-card d-flex justify-content-between align-items-center">
+            <div>
+                <h2><i class="fas fa-broom"></i> Kebersihan Kamar (Arsip)</h2>
+                <p class="text-muted mt-2 mb-0">Arsip: <strong><?= htmlspecialchars($arsip['judul']) ?></strong> (<?= date('d M Y', strtotime($arsip['tanggal_mulai'])) ?> - <?= date('d M Y', strtotime($arsip['tanggal_selesai'])) ?>)</p>
+            </div>
+            <div>
+                <a href="../view.php?id=<?= $arsip_id ?>" style="display: inline-flex; align-items: center; gap: 8px; padding: 10px 24px; background-color: #f8fafc; color: #475569; border: 1px solid #e2e8f0; text-decoration: none; border-radius: 9999px; font-weight: 600; font-size: 14px; transition: all 0.2s ease; white-space: nowrap;" onmouseover="this.style.backgroundColor='#f1f5f9'; this.style.borderColor='#cbd5e1';" onmouseout="this.style.backgroundColor='#f8fafc'; this.style.borderColor='#e2e8f0';">
+                    <i class="fas fa-arrow-left"></i> Kembali
+                </a>
+            </div>
         </div>
-        <a href="<?= $link_kembali ?>" class="btn btn-light">
-            <i class="fas fa-arrow-left me-2"></i>Kembali
-        </a>
-    </div>
+
+        <div class="filter-card" style="padding: 1.5rem; background: #fff; border-radius: 12px; box-shadow: 0 2px 8px rgba(0,0,0,0.04); margin-bottom: 2rem; border: 1px solid #e2e8f0;">
+            <form method="GET" action="" class="filter-form m-0" id="filterForm">
+                <input type="hidden" name="id" value="<?= $arsip_id ?>">
+                
+                <div class="d-flex align-items-center gap-3 w-100">
+                    <label class="fw-semibold text-secondary mb-0" style="white-space: nowrap;"><i class="fas fa-sort-amount-down me-2"></i>Urutkan Berdasarkan:</label>
+                    <select name="sort" class="form-select form-select-sm fw-medium border-0 bg-light" style="max-width: 200px; cursor: pointer;" onchange="document.getElementById('loadingOverlay').style.display='flex'; this.form.submit()">
+                        <option value="desc" <?= $sort_order == 'desc' ? 'selected' : '' ?>>Paling Banyak Melanggar</option>
+                        <option value="asc" <?= $sort_order == 'asc' ? 'selected' : '' ?>>Paling Sedikit Melanggar</option>
+                    </select>
+                </div>
+            </form>
+        </div>
+
+        <div id="loadingOverlay" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(255,255,255,0.8); z-index: 9999; justify-content: center; align-items: center; flex-direction: column;">
+            <div class="spinner-border text-primary" role="status" style="width: 3rem; height: 3rem;"></div>
+            <p class="mt-3 fw-semibold text-primary">Memuat Data...</p>
+        </div>
 
     <div class="table-wrapper">
-        <table class="table">
-            <thead>
+        <table>
+             <thead>
                 <tr>
                     <th style="width: 10%;">Peringkat</th>
                     <th>Kamar</th>
                     <th>Jumlah Pelanggaran</th>
-                    <th>Pelanggaran Terakhir</th>
+                    <!-- PENAMBAHAN KOLOM AKSI -->
                     <th style="width: 15%;">Aksi</th>
                 </tr>
             </thead>
             <tbody>
-                <?php if (empty($rekap_kamar)): ?>
-                    <tr>
-                        <td colspan="5" class="text-center p-5">
-                            <i class="fas fa-check-circle fa-3x text-success mb-3"></i>
-                            <p class="mb-0 fw-bold">Data Bersih</p>
-                            <p class="text-muted small">Tidak ada data pelanggaran kebersihan pada arsip ini.</p>
-                        </td>
-                    </tr>
-                <?php else: ?>
-                    <?php foreach ($rekap_kamar as $index => $item): ?>
-                        <tr class="<?= ($index < 3) ? 'rank-'.($index + 1) : '' ?>">
-                            <td>
-                                <?php if ($index < 3): ?>
-                                    <i class='fas fa-trophy rank-icon'></i>
-                                <?php else: ?>
-                                    <span class="fw-bold"><?= $index + 1 ?></span>
-                                <?php endif; ?>
-                            </td>
-                            <td class="fw-bold fs-5">Kamar <?= htmlspecialchars($item['kamar']) ?></td>
-                            <td>
-                                <?php $count_class = $item['total_pelanggaran'] > 0 ? 'banyak' : 'nol'; ?>
-                                <span class='pelanggaran-count <?= $count_class ?>'><?= $item['total_pelanggaran'] ?></span>
-                            </td>
-                            <td>
-                                <div class="d-flex flex-column">
-                                    <span><?= date('d M Y', strtotime($item['tanggal_terbaru'])) ?></span>
-                                    <small class="text-muted"><?= date('H:i', strtotime($item['tanggal_terbaru'])) ?> WIB</small>
-                                </div>
-                            </td>
-                            <td>
-                                <?php
-                                    $detail_link_params = http_build_query([
-                                        'arsip_id' => $arsip_id,
-                                        'kamar' => $item['kamar'],
-                                        'bagian' => $filter_bagian_kembali,
-                                        'kamar_filter' => $filter_kamar_kembali,
-                                        'kelas' => $filter_kelas_kembali
-                                    ]);
-                                    $detail_link = "detail_kebersihan_arsip.php?" . $detail_link_params;
-                                ?>
-                                <a href="<?= $detail_link ?>" class="btn-detail">
-                                    <i class="fas fa-info-circle"></i> Detail
-                                </a>
-                            </td>
-                        </tr>
-                    <?php endforeach; ?>
-                <?php endif; ?>
+                <?php
+                if (mysqli_num_rows($result) > 0) {
+                    $no = 1;
+                    while ($row = mysqli_fetch_assoc($result)) {
+                        $rank_class = ($sort_order == 'desc' && $no <=3) ? "rank-$no" : "";
+                        echo "<tr class='$rank_class'>";
+
+                        echo "<td class='text-center'>";
+                        if ($sort_order == 'desc' && $no <= 3) {
+                                echo "<i class='fas fa-trophy rank-icon'></i>";
+                        } else {
+                                echo $no;
+                        }
+                        echo "</td>";
+                        
+                        echo "<td>Kamar " . htmlspecialchars($row['kamar']) . "</td>";
+                        
+                        $count_class = $row['total_pelanggaran'] > 0 ? 'banyak' : 'nol';
+                        echo "<td><span class='pelanggaran-count $count_class'>{$row['total_pelanggaran']}</span></td>";
+
+                        // <!-- **INI BAGIAN PENTINGNYA** Menambahkan parameter tanggal ke link -->
+                        $link_detail = "detail_arsip_kebersihan.php?id=" . $arsip_id . "&kamar=" . urlencode($row['kamar']);
+                        echo "<td><a href='" . $link_detail . "' class='btn-detail'><i class='fas fa-info-circle'></i> Detail</a></td>";
+                        
+                        echo "</tr>";
+                        $no++;
+                    }
+                } else {
+                    // <!-- Colspan diubah jadi 4 -->
+                    echo "<tr><td colspan='4' class='text-center p-4'>Tidak ada data ditemukan</td></tr>";
+                }
+                ?>
             </tbody>
         </table>
-    </div>
-</div>
+    </div> <!-- .table-wrapper -->
+</div> <!-- .container -->
 
 <?php require_once __DIR__ . '/../../layouts/footer.php'; ?>
