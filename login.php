@@ -77,17 +77,28 @@ function resetRateLimit($ip) {
 
 // Cek apakah IP ini sedang diblokir
 $visitor_ip   = $_SERVER['REMOTE_ADDR'];
+
+// Tangani jika dilempar dari guard() karena akses ilegal
+if (isset($_GET['illegal'])) {
+    $info = "Silakan login terlebih dahulu untuk melanjutkan.";
+    recordFailedAttempt($visitor_ip);
+}
+
 $rate_check   = checkRateLimit($visitor_ip);
+$remaining_time_js = 0;
+$is_blocked = false;
+
 if ($rate_check['blocked']) {
-    $menit_tersisa = ceil($rate_check['remaining'] / 60);
-    $error = "⛔ Terlalu banyak percobaan login gagal. Coba lagi dalam {$menit_tersisa} menit.";
+    $is_blocked = true;
+    $remaining_time_js = $rate_check['remaining'];
+    // Pesan error akan di-update oleh Javascript
+    $error = "⛔ Terlalu banyak percobaan gagal. Coba lagi dalam <span id='countdown-timer' class='fw-bold'></span>.";
 }
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     // PERBAIKAN: Tolak langsung jika IP sedang diblokir
-    if ($rate_check['blocked']) {
-        $menit_tersisa = ceil($rate_check['remaining'] / 60);
-        $error = "⛔ Terlalu banyak percobaan login gagal. Coba lagi dalam {$menit_tersisa} menit.";
+    if ($is_blocked) {
+        $error = "⛔ Terlalu banyak percobaan gagal. Coba lagi dalam <span id='countdown-timer' class='fw-bold'></span>.";
         // Jangan lanjut proses login
         goto end_login_process;
     }
@@ -289,16 +300,23 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
             <div class="mb-4">
                 <label for="password" class="form-label text-sm fw-medium text-secondary mb-1">Password</label>
-                <div class="input-group-modern password-wrapper">
+                <div class="input-group-modern password-wrapper mb-2">
                     <i class="fas fa-lock"></i>
-                    <input type="password" class="form-control input-modern" id="password" name="password" required placeholder="••••••••">
+                    <input type="password" class="form-control input-modern" id="password" name="password" required placeholder="••••••••" <?= $is_blocked ? 'disabled' : '' ?>>
                     <button type="button" class="password-toggle" onclick="togglePassword()">
                         <span id="toggle-icon"><i class="fas fa-eye text-muted"></i></span>
                     </button>
                 </div>
+                <!-- Warning Rule Login -->
+                <div class="d-flex align-items-start mt-2">
+                    <i class="fas fa-info-circle text-primary mt-1 me-2 text-sm" style="font-size: 0.85rem;"></i>
+                    <p class="text-muted mb-0 text-sm" style="font-size: 0.85rem; line-height: 1.4;">
+                        Gagal akses / login <strong><?= LOGIN_MAX_ATTEMPTS ?> kali</strong> beruntun akan memblokir Anda selama <strong><?= LOGIN_LOCKOUT_SEC / 60 ?> menit</strong>.
+                    </p>
+                </div>
             </div>
 
-            <button type="submit" class="btn btn-login w-100 mt-2">
+            <button type="submit" id="btn-submit" class="btn btn-login w-100 mt-2" <?= $is_blocked ? 'disabled' : '' ?>>
                 Masuk Sistem
             </button>
         </form>
@@ -364,6 +382,31 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         sessionStorage.clear();
     } catch (e) {
         console.warn('[PWA] Gagal membersihkan storage:', e);
+    }
+
+    // ── Logika Countdown Real-time untuk IP Terblokir ───────────────
+    let remainingTime = <?= $remaining_time_js ?>;
+    if (remainingTime > 0) {
+        const timerElement = document.getElementById('countdown-timer');
+        const btnSubmit = document.getElementById('btn-submit');
+        const passInput = document.getElementById('password');
+        
+        const updateTimerDisplay = () => {
+            if (remainingTime <= 0) {
+                // Waktu habis, refresh halaman agar form terbuka lagi
+                window.location.href = 'login.php';
+                return;
+            }
+            
+            const minutes = Math.floor(remainingTime / 60);
+            const seconds = remainingTime % 60;
+            timerElement.textContent = `${minutes}:${seconds.toString().padStart(2, '0')}`;
+            remainingTime--;
+        };
+        
+        // Eksekusi langsung dan atur interval 1 detik
+        updateTimerDisplay();
+        setInterval(updateTimerDisplay, 1000);
     }
 
     function togglePassword() {
