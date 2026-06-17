@@ -29,144 +29,197 @@ if (!empty($end_date)) {
     $end_date_sql = mysqli_real_escape_string($conn, $end_date . ' 23:59:59');
 }
 
-// 1. Hitung dulu semua angka yang dibutuhkan
-$pelanggaran_umum = (int) (mysqli_fetch_assoc(mysqli_query($conn, "SELECT COUNT(*) AS total FROM pelanggaran WHERE tanggal BETWEEN '$start_date_sql' AND '$end_date_sql'"))['total'] ?? 0);
-$pelanggaran_kebersihan = (int) (mysqli_fetch_assoc(mysqli_query($conn, "SELECT COUNT(*) AS total FROM pelanggaran_kebersihan WHERE tanggal BETWEEN '$start_date_sql' AND '$end_date_sql'"))['total'] ?? 0);
-$total_santri = (int) (mysqli_fetch_assoc(mysqli_query($conn, "SELECT COUNT(*) AS total FROM santri"))['total'] ?? 0);
-$total_jenis_pelanggaran = (int) (mysqli_fetch_assoc(mysqli_query($conn, "SELECT COUNT(*) AS total FROM jenis_pelanggaran"))['total'] ?? 0);
+// =================================================================
+// CACHING DASHBOARD LOGIC (TANPA UBAH DATABASE)
+// =================================================================
+$cache_dir = __DIR__ . '/cache/dashboard/';
+if (!is_dir($cache_dir)) {
+    mkdir($cache_dir, 0755, true);
+    file_put_contents($cache_dir . '.htaccess', 'Deny from all');
+}
 
-// 2. Baru kumpulkan semua hasil ke dalam satu array `$stats`
-$stats = [
-    'santri' => $total_santri,
-    'jenis_pelanggaran' => $total_jenis_pelanggaran,
-    'pelanggaran_umum' => $pelanggaran_umum,
-    'pelanggaran_kebersihan' => $pelanggaran_kebersihan,
-    'total_pelanggaran' => $pelanggaran_umum + $pelanggaran_kebersihan,
-];
+$cache_key = md5($start_date_sql . '_' . $end_date_sql);
+$cache_file = $cache_dir . $cache_key . '.json';
+$cache_lifetime = 300; // 5 menit cache
 
-$stats['santri_tanpa_pelanggaran'] = (int) (mysqli_fetch_assoc(mysqli_query($conn, "
-    SELECT COUNT(s.id) as total 
-    FROM santri s
-    WHERE NOT EXISTS (
-        SELECT 1 FROM pelanggaran p 
-        WHERE p.santri_id = s.id AND p.tanggal BETWEEN '$start_date_sql' AND '$end_date_sql'
-    )
-"))['total'] ?? 0);
+$dashboard_data = null;
+// Bisa paksa refresh dengan tambahkan ?refresh=1 di URL
+$force_refresh = isset($_GET['refresh']) && $_GET['refresh'] == '1';
 
-// =============================================================
-// QUERY UNTUK TABEL DAN LIST LAINNYA
-// =============================================================
-// Query ini diubah agar tidak terpengaruh filter tanggal
-$recent_violations = mysqli_query($conn, "
-    (
-        SELECT p.id, s.nama, s.kamar, jp.nama_pelanggaran, p.tanggal, u.nama_lengkap AS pencatat
+if (!$force_refresh && file_exists($cache_file) && (time() - filemtime($cache_file)) < $cache_lifetime) {
+    // Ambil data dari fotokopian (cache) agar MySQL tidak kerja!
+    $dashboard_data = json_decode(file_get_contents($cache_file), true);
+}
+
+if (!$dashboard_data) {
+    // JIKA CACHE KOSONG / EXPIRED, BARU SISI SERVER BERJUANG MENGHITUNG.
+    // 1. Hitung dulu semua angka yang dibutuhkan
+    $pelanggaran_umum = (int) (mysqli_fetch_assoc(mysqli_query($conn, "SELECT COUNT(*) AS total FROM pelanggaran WHERE tanggal BETWEEN '$start_date_sql' AND '$end_date_sql'"))['total'] ?? 0);
+    $pelanggaran_kebersihan = (int) (mysqli_fetch_assoc(mysqli_query($conn, "SELECT COUNT(*) AS total FROM pelanggaran_kebersihan WHERE tanggal BETWEEN '$start_date_sql' AND '$end_date_sql'"))['total'] ?? 0);
+    $total_santri = (int) (mysqli_fetch_assoc(mysqli_query($conn, "SELECT COUNT(*) AS total FROM santri"))['total'] ?? 0);
+    $total_jenis_pelanggaran = (int) (mysqli_fetch_assoc(mysqli_query($conn, "SELECT COUNT(*) AS total FROM jenis_pelanggaran"))['total'] ?? 0);
+
+    // 2. Kumpulkan hasil ke array $stats
+    $stats = [
+        'santri' => $total_santri,
+        'jenis_pelanggaran' => $total_jenis_pelanggaran,
+        'pelanggaran_umum' => $pelanggaran_umum,
+        'pelanggaran_kebersihan' => $pelanggaran_kebersihan,
+        'total_pelanggaran' => $pelanggaran_umum + $pelanggaran_kebersihan,
+    ];
+
+    $stats['santri_tanpa_pelanggaran'] = (int) (mysqli_fetch_assoc(mysqli_query($conn, "
+        SELECT COUNT(s.id) as total 
+        FROM santri s
+        WHERE NOT EXISTS (
+            SELECT 1 FROM pelanggaran p 
+            WHERE p.santri_id = s.id AND p.tanggal BETWEEN '$start_date_sql' AND '$end_date_sql'
+        )
+    "))['total'] ?? 0);
+
+    // =============================================================
+    // QUERY UNTUK TABEL DAN LIST LAINNYA
+    // =============================================================
+    $recent_violations_res = mysqli_query($conn, "
+        (
+            SELECT p.id, s.nama, s.kamar, jp.nama_pelanggaran, p.tanggal, u.nama_lengkap AS pencatat
+            FROM pelanggaran p
+            JOIN santri s ON p.santri_id = s.id
+            JOIN jenis_pelanggaran jp ON p.jenis_pelanggaran_id = jp.id
+            LEFT JOIN users u ON p.dicatat_oleh = u.id
+            WHERE p.tanggal >= DATE_SUB(NOW(), INTERVAL 7 DAY)
+        )
+        UNION ALL
+        (
+            SELECT pk.id, 'Penghuni Kamar' AS nama, pk.kamar, 'Kebersihan Kamar' AS nama_pelanggaran, pk.tanggal, u.nama_lengkap AS pencatat
+            FROM pelanggaran_kebersihan pk
+            LEFT JOIN users u ON pk.dicatat_oleh = u.id
+            WHERE pk.tanggal >= DATE_SUB(NOW(), INTERVAL 7 DAY)
+        )
+        ORDER BY tanggal DESC
+        LIMIT 7
+    ");
+    $recent_violations = [];
+    while($row = mysqli_fetch_assoc($recent_violations_res)) $recent_violations[] = $row;
+
+    $frequent_violation_query = mysqli_query($conn, "
+        SELECT nama_pelanggaran, SUM(total) AS total_gabungan FROM (
+            SELECT jp.nama_pelanggaran, COUNT(*) as total 
+            FROM pelanggaran p
+            JOIN jenis_pelanggaran jp ON p.jenis_pelanggaran_id = jp.id
+            WHERE p.tanggal BETWEEN '$start_date_sql' AND '$end_date_sql'
+            GROUP BY jp.nama_pelanggaran
+            UNION ALL
+            SELECT 'Kebersihan Kamar' AS nama_pelanggaran, COUNT(*) AS total
+            FROM pelanggaran_kebersihan pk
+            WHERE pk.tanggal BETWEEN '$start_date_sql' AND '$end_date_sql'
+            HAVING COUNT(*) > 0
+        ) AS gabung
+        GROUP BY nama_pelanggaran
+        ORDER BY total_gabungan DESC
+        LIMIT 1
+    ");
+    $frequent_violation = mysqli_fetch_assoc($frequent_violation_query);
+
+    $top_violators_res = mysqli_query($conn, "
+        SELECT 
+            s.nama, 
+            s.kamar, 
+            SUM(jp.poin) as total_poin,
+            COALESCE(rwd.total_reward, 0) as total_reward,
+            (SUM(jp.poin) - COALESCE(rwd.total_reward, 0)) AS poin_bersih_periode
         FROM pelanggaran p
         JOIN santri s ON p.santri_id = s.id
         JOIN jenis_pelanggaran jp ON p.jenis_pelanggaran_id = jp.id
-        LEFT JOIN users u ON p.dicatat_oleh = u.id
-        WHERE p.tanggal >= DATE_SUB(NOW(), INTERVAL 7 DAY)
-    )
-    UNION ALL
-    (
-        SELECT pk.id, 'Penghuni Kamar' AS nama, pk.kamar, 'Kebersihan Kamar' AS nama_pelanggaran, pk.tanggal, u.nama_lengkap AS pencatat
-        FROM pelanggaran_kebersihan pk
-        LEFT JOIN users u ON pk.dicatat_oleh = u.id
-        WHERE pk.tanggal >= DATE_SUB(NOW(), INTERVAL 7 DAY)
-    )
-    ORDER BY tanggal DESC
-    LIMIT 7
-");
-
-$frequent_violation_query = mysqli_query($conn, "
-    SELECT nama_pelanggaran, SUM(total) AS total_gabungan FROM (
-        SELECT jp.nama_pelanggaran, COUNT(*) as total 
-        FROM pelanggaran p
-        JOIN jenis_pelanggaran jp ON p.jenis_pelanggaran_id = jp.id
+        LEFT JOIN (
+            SELECT dr.santri_id, SUM(jr.poin_reward) AS total_reward
+            FROM daftar_reward dr
+            JOIN jenis_reward jr ON dr.jenis_reward_id = jr.id
+            WHERE dr.tanggal BETWEEN '$start_date_sql' AND '$end_date_sql'
+            GROUP BY dr.santri_id
+        ) rwd ON s.id = rwd.santri_id
         WHERE p.tanggal BETWEEN '$start_date_sql' AND '$end_date_sql'
-        GROUP BY jp.nama_pelanggaran
-        UNION ALL
-        SELECT 'Kebersihan Kamar' AS nama_pelanggaran, COUNT(*) AS total
-        FROM pelanggaran_kebersihan pk
-        WHERE pk.tanggal BETWEEN '$start_date_sql' AND '$end_date_sql'
-        HAVING COUNT(*) > 0
-    ) AS gabung
-    GROUP BY nama_pelanggaran
-    ORDER BY total_gabungan DESC
-    LIMIT 1
-");
-$frequent_violation = mysqli_fetch_assoc($frequent_violation_query);
-
-$top_violators = mysqli_query($conn, "
-    SELECT 
-        s.nama, 
-        s.kamar, 
-        SUM(jp.poin) as total_poin,
-        COALESCE(rwd.total_reward, 0) as total_reward,
-        (SUM(jp.poin) - COALESCE(rwd.total_reward, 0)) AS poin_bersih_periode
-    FROM pelanggaran p
-    JOIN santri s ON p.santri_id = s.id
-    JOIN jenis_pelanggaran jp ON p.jenis_pelanggaran_id = jp.id
-    LEFT JOIN (
-        SELECT dr.santri_id, SUM(jr.poin_reward) AS total_reward
-        FROM daftar_reward dr
-        JOIN jenis_reward jr ON dr.jenis_reward_id = jr.id
-        WHERE dr.tanggal BETWEEN '$start_date_sql' AND '$end_date_sql'
-        GROUP BY dr.santri_id
-    ) rwd ON s.id = rwd.santri_id
-    WHERE p.tanggal BETWEEN '$start_date_sql' AND '$end_date_sql'
-    GROUP BY s.id
-    ORDER BY total_poin DESC, s.nama ASC
-    LIMIT 5
-");
+        GROUP BY s.id
+        ORDER BY total_poin DESC, s.nama ASC
+        LIMIT 5
+    ");
+    $top_violators = [];
+    while($row = mysqli_fetch_assoc($top_violators_res)) $top_violators[] = $row;
 
 
-$bulan_indo   = ['1'=>'Januari','2'=>'Februari','3'=>'Maret','4'=>'April','5'=>'Mei','6'=>'Juni','7'=>'Juli','8'=>'Agustus','9'=>'September','10'=>'Oktober','11'=>'November','12'=>'Desember'];
-$current_ts   = strtotime(date('Y-m-01', strtotime($start_date_sql)));
-$end_ts_month = strtotime(date('Y-m-01', strtotime($end_date_sql)));
-$valid_months = [];
-while ($current_ts <= $end_ts_month) {
-    $y = date('Y', $current_ts); $m = date('n', $current_ts);
-    $valid_months[] = "(tahun = $y AND bulan = '{$bulan_indo[$m]}')";
-    $current_ts = strtotime("+1 month", $current_ts);
+    $bulan_indo   = ['1'=>'Januari','2'=>'Februari','3'=>'Maret','4'=>'April','5'=>'Mei','6'=>'Juni','7'=>'Juli','8'=>'Agustus','9'=>'September','10'=>'Oktober','11'=>'November','12'=>'Desember'];
+    $current_ts   = strtotime(date('Y-m-01', strtotime($start_date_sql)));
+    $end_ts_month = strtotime(date('Y-m-01', strtotime($end_date_sql)));
+    $valid_months = [];
+    while ($current_ts <= $end_ts_month) {
+        $y = date('Y', $current_ts); $m = date('n', $current_ts);
+        $valid_months[] = "(tahun = $y AND bulan = '{$bulan_indo[$m]}')";
+        $current_ts = strtotime("+1 month", $current_ts);
+    }
+    $where_rapot = empty($valid_months) ? "1=0" : "(" . implode(" OR ", $valid_months) . ")";
+
+    $best_students_res = mysqli_query($conn, "
+        SELECT s.id, s.nama, s.kelas, s.kamar,
+               COALESCE(rwd.total_reward, 0) AS total_reward,
+               COALESCE(rpt.avg_rapot, 0) AS avg_rapot
+        FROM santri s
+        LEFT JOIN (
+            SELECT dr.santri_id, SUM(jr.poin_reward) AS total_reward
+            FROM daftar_reward dr
+            JOIN jenis_reward jr ON dr.jenis_reward_id = jr.id
+            WHERE dr.tanggal BETWEEN '$start_date_sql' AND '$end_date_sql'
+            GROUP BY dr.santri_id
+        ) rwd ON s.id = rwd.santri_id
+        LEFT JOIN (
+            SELECT santri_id, 
+                   ((AVG(puasa_sunnah) + AVG(sholat_duha) + AVG(sholat_malam) + AVG(sedekah) + AVG(sunnah_tidur) + AVG(ibadah_lainnya) + 
+                     AVG(lisan) + AVG(sikap) + AVG(kesopanan) + AVG(muamalah) + 
+                     AVG(tidur) + AVG(keterlambatan) + AVG(seragam) + AVG(makan) + AVG(arahan) + AVG(bahasa_arab) + 
+                     AVG(mandi) + AVG(penampilan) + AVG(piket) + AVG(kerapihan_barang)) / 20) AS avg_rapot
+            FROM rapot_kepengasuhan
+            WHERE $where_rapot
+            GROUP BY santri_id
+        ) rpt ON s.id = rpt.santri_id
+        WHERE s.id NOT IN (
+            SELECT p.santri_id FROM pelanggaran p WHERE p.tanggal BETWEEN '$start_date_sql' AND '$end_date_sql'
+        )
+        ORDER BY total_reward DESC, avg_rapot DESC, CAST(s.kamar AS UNSIGNED) ASC, s.nama ASC
+        LIMIT 5
+    ");
+    $best_students = [];
+    while($row = mysqli_fetch_assoc($best_students_res)) $best_students[] = $row;
+
+    $top_histori_res = mysqli_query($conn, "
+        SELECT id, nama, kelas, kamar, poin_aktif
+        FROM santri
+        WHERE poin_aktif > 0
+        ORDER BY poin_aktif DESC, nama ASC
+        LIMIT 5
+    ");
+    $top_histori = [];
+    while($row = mysqli_fetch_assoc($top_histori_res)) $top_histori[] = $row;
+
+    // Simpan data mentah ke dalam format JSON untuk request selanjutnya
+    $dashboard_data = [
+        'stats' => $stats,
+        'recent_violations' => $recent_violations,
+        'frequent_violation' => $frequent_violation,
+        'top_violators' => $top_violators,
+        'best_students' => $best_students,
+        'top_histori' => $top_histori,
+        'cache_time' => time()
+    ];
+    file_put_contents($cache_file, json_encode($dashboard_data));
+
+} else {
+    // GUNAKAN DATA DARI CACHE (Super Cepat!)
+    $stats = $dashboard_data['stats'];
+    $recent_violations = $dashboard_data['recent_violations'];
+    $frequent_violation = $dashboard_data['frequent_violation'];
+    $top_violators = $dashboard_data['top_violators'];
+    $best_students = $dashboard_data['best_students'];
+    $top_histori = $dashboard_data['top_histori'];
 }
-$where_rapot = empty($valid_months) ? "1=0" : "(" . implode(" OR ", $valid_months) . ")";
-
-$best_students = mysqli_query($conn, "
-    SELECT s.id, s.nama, s.kelas, s.kamar,
-           COALESCE(rwd.total_reward, 0) AS total_reward,
-           COALESCE(rpt.avg_rapot, 0) AS avg_rapot
-    FROM santri s
-    LEFT JOIN (
-        SELECT dr.santri_id, SUM(jr.poin_reward) AS total_reward
-        FROM daftar_reward dr
-        JOIN jenis_reward jr ON dr.jenis_reward_id = jr.id
-        WHERE dr.tanggal BETWEEN '$start_date_sql' AND '$end_date_sql'
-        GROUP BY dr.santri_id
-    ) rwd ON s.id = rwd.santri_id
-    LEFT JOIN (
-        SELECT santri_id, 
-               ((AVG(puasa_sunnah) + AVG(sholat_duha) + AVG(sholat_malam) + AVG(sedekah) + AVG(sunnah_tidur) + AVG(ibadah_lainnya) + 
-                 AVG(lisan) + AVG(sikap) + AVG(kesopanan) + AVG(muamalah) + 
-                 AVG(tidur) + AVG(keterlambatan) + AVG(seragam) + AVG(makan) + AVG(arahan) + AVG(bahasa_arab) + 
-                 AVG(mandi) + AVG(penampilan) + AVG(piket) + AVG(kerapihan_barang)) / 20) AS avg_rapot
-        FROM rapot_kepengasuhan
-        WHERE $where_rapot
-        GROUP BY santri_id
-    ) rpt ON s.id = rpt.santri_id
-    WHERE s.id NOT IN (
-        SELECT p.santri_id FROM pelanggaran p WHERE p.tanggal BETWEEN '$start_date_sql' AND '$end_date_sql'
-    )
-    ORDER BY total_reward DESC, avg_rapot DESC, CAST(s.kamar AS UNSIGNED) ASC, s.nama ASC
-    LIMIT 5
-");
-
-$top_histori = mysqli_query($conn, "
-    SELECT id, nama, kelas, kamar, poin_aktif
-    FROM santri
-    WHERE poin_aktif > 0
-    ORDER BY poin_aktif DESC, nama ASC
-    LIMIT 5
-");
 
 
 // =============================================================
@@ -374,8 +427,8 @@ $teladan_onclick = !$can_view_santri_teladan ? 'onclick="event.preventDefault();
                                     </tr>
                                 </thead>
                                 <tbody>
-                                    <?php if(mysqli_num_rows($recent_violations) > 0): ?>
-                                        <?php $no = 1; while($violation = mysqli_fetch_assoc($recent_violations)): $time_ago = time_elapsed_string($violation['tanggal']); ?>
+                                    <?php if(count($recent_violations) > 0): ?>
+                                        <?php $no = 1; foreach($recent_violations as $violation): $time_ago = time_elapsed_string($violation['tanggal']); ?>
                                             <tr>
                                                 <td><?= $no++ ?></td>
                                                 <td>
@@ -393,7 +446,7 @@ $teladan_onclick = !$can_view_santri_teladan ? 'onclick="event.preventDefault();
                                                 </td>
                                                 <td><span class="text-muted small"><i class="fas fa-user-edit"></i> <?= htmlspecialchars($violation['pencatat'] ?? 'N/A') ?></span></td>
                                             </tr>
-                                        <?php endwhile; ?>
+                                        <?php endforeach; ?>
                                     <?php else: ?>
                                         <tr><td colspan="5" class="text-center py-5 text-muted"><i class="fas fa-check-circle fs-2 text-success mb-2 d-block"></i> Alhamdulillah, tidak ada pelanggaran baru-baru ini.</td></tr>
                                     <?php endif; ?>
@@ -403,10 +456,9 @@ $teladan_onclick = !$can_view_santri_teladan ? 'onclick="event.preventDefault();
 
                         <!-- Mobile Cards -->
                         <div class="d-md-none p-3">
-                            <?php if(mysqli_num_rows($recent_violations) > 0): ?>
-                                <?php mysqli_data_seek($recent_violations, 0); // Reset pointer ?>
+                            <?php if(count($recent_violations) > 0): ?>
                                 <div class="mobile-violations-list">
-                                    <?php while($violation = mysqli_fetch_assoc($recent_violations)): 
+                                    <?php foreach($recent_violations as $violation): 
                                         $time_ago = time_elapsed_string($violation['tanggal']);
                                         $initial = htmlspecialchars(substr($violation['nama'] ?? 'S', 0, 1));
                                         
@@ -436,7 +488,7 @@ $teladan_onclick = !$can_view_santri_teladan ? 'onclick="event.preventDefault();
                                                 </div>
                                             </div>
                                         </div>
-                                    <?php endwhile; ?>
+                                    <?php endforeach; ?>
                                 </div>
                             <?php else: ?>
                                 <div class="text-center py-4 text-muted border rounded bg-light">
@@ -484,8 +536,8 @@ $teladan_onclick = !$can_view_santri_teladan ? 'onclick="event.preventDefault();
                                 <?php endif; ?>
                                 
                                 <div class="student-list d-flex flex-column gap-3">
-                                    <?php if(mysqli_num_rows($top_violators) > 0): ?>
-                                        <?php while($violator = mysqli_fetch_assoc($top_violators)): ?>
+                                    <?php if(count($top_violators) > 0): ?>
+                                        <?php foreach($top_violators as $violator): ?>
                                             <div class="student-item d-flex align-items-center p-3 border rounded bg-white shadow-sm">
                                                 <div class="student-avatar rounded-circle text-white d-flex align-items-center justify-content-center me-3 fw-bold" style="background: linear-gradient(135deg, #ef4444, #b91c1c); box-shadow: 0 3px 8px rgba(239,68,68,0.2);">
                                                     <?= htmlspecialchars(substr($violator['nama'], 0, 1)) ?>
@@ -505,7 +557,7 @@ $teladan_onclick = !$can_view_santri_teladan ? 'onclick="event.preventDefault();
                                                     <?= (int)$violator['total_poin'] ?>
                                                 </div>
                                             </div>
-                                        <?php endwhile; ?>
+                                        <?php endforeach; ?>
                                     <?php else: ?>
 
                                         <div class="text-center text-muted py-4"><i class="fas fa-info-circle fs-2 mb-2"></i><p>Tidak ada data pelanggar</p></div>
@@ -519,8 +571,8 @@ $teladan_onclick = !$can_view_santri_teladan ? 'onclick="event.preventDefault();
                                 <?php endif; ?>
                                 
                                 <div class="student-list d-flex flex-column gap-3">
-                                    <?php if(mysqli_num_rows($best_students) > 0): ?>
-                                        <?php $no = 1; while($student = mysqli_fetch_assoc($best_students)): 
+                                    <?php if(count($best_students) > 0): ?>
+                                        <?php $no = 1; foreach($best_students as $student): 
                                             // Menentukan warna rank
                                             if ($no === 1) $rank_class = 'rank-1';
                                             elseif ($no === 2) $rank_class = 'rank-2';
@@ -547,7 +599,7 @@ $teladan_onclick = !$can_view_santri_teladan ? 'onclick="event.preventDefault();
                                                 </div>
                                                 <div class="rank-badge-sm <?= $rank_class ?>"><?= $no ?></div>
                                             </div>
-                                        <?php $no++; endwhile; ?>
+                                        <?php $no++; endforeach; ?>
                                     <?php else: ?>
 
                                         <div class="text-center text-muted py-4"><i class="fas fa-info-circle fs-2 mb-2"></i><p>Belum ada santri tanpa pelanggaran</p></div>
@@ -560,8 +612,8 @@ $teladan_onclick = !$can_view_santri_teladan ? 'onclick="event.preventDefault();
                                     <span class="text-muted small"><i class="fas fa-info-circle me-1"></i> Data akumulasi seumur hidup</span>
                                 </div>
                                 <div class="student-list d-flex flex-column gap-3">
-                                    <?php if(mysqli_num_rows($top_histori) > 0): ?>
-                                        <?php while($histori = mysqli_fetch_assoc($top_histori)): ?>
+                                    <?php if(count($top_histori) > 0): ?>
+                                        <?php foreach($top_histori as $histori): ?>
                                             <div class="student-item d-flex align-items-center p-3 border rounded bg-white shadow-sm">
                                                 <div class="student-avatar rounded-circle text-white d-flex align-items-center justify-content-center me-3 fw-bold" style="background: linear-gradient(135deg, #64748b, #334155); box-shadow: 0 3px 8px rgba(100,116,139,0.2);">
                                                     <?= htmlspecialchars(substr($histori['nama'], 0, 1)) ?>
@@ -576,7 +628,7 @@ $teladan_onclick = !$can_view_santri_teladan ? 'onclick="event.preventDefault();
                                                     <?= (int)$histori['poin_aktif'] ?>
                                                 </div>
                                             </div>
-                                        <?php endwhile; ?>
+                                        <?php endforeach; ?>
                                     <?php else: ?>
                                         <div class="text-center text-muted py-4"><i class="fas fa-info-circle fs-2 mb-2"></i><p>Belum ada histori poin</p></div>
                                     <?php endif; ?>
