@@ -42,8 +42,19 @@ if (isset($_SESSION['sync_success_msg'])) {
     unset($_SESSION['sync_success_msg']);
 }
 
-$preview_data = $_SESSION['sync_preview_data'] ?? null;
 $type         = $_SESSION['sync_type']         ?? null;
+$preview_data = null;
+// BUG FIX 1: Read preview data from JSON file instead of Session
+if (!empty($_SESSION['sync_preview_file']) && file_exists($_SESSION['sync_preview_file'])) {
+    $preview_data = json_decode(file_get_contents($_SESSION['sync_preview_file']), true);
+} elseif (isset($_SESSION['sync_preview_data'])) {
+    $preview_data = $_SESSION['sync_preview_data'];
+}
+
+// Cek status data aktif untuk Tutup Buku
+$q_aktif = mysqli_query($conn, "SELECT (SELECT COUNT(*) FROM pelanggaran) + (SELECT COUNT(*) FROM daftar_reward) AS total");
+$cek_data_aktif = $q_aktif ? (int)mysqli_fetch_assoc($q_aktif)['total'] : 0;
+$has_active_data = $cek_data_aktif > 0;
 
 // ── Helper format tampilan ─────────────────────────────────────────────────
 function fmt_kelas($k): string {
@@ -117,8 +128,9 @@ require_once __DIR__ . '/../../layouts/header.php';
 .row-delete { background:#fef2f2 !important; }
 .row-fatal  { background:#fff5f5 !important; border-left:4px solid #e53e3e !important; }
 
-.diff-old { font-size:.84rem; color:#94a3b8; text-decoration:line-through; text-decoration-color:#ef4444; text-decoration-thickness:2px; margin-right:4px; opacity: 0.7; }
-.diff-new { font-weight:600; color:#0f172a; }
+.diff-old { font-size:.8rem; color:#ef4444; text-decoration:line-through; text-decoration-color:#ef4444; text-decoration-thickness:1.5px; background:#fef2f2; padding:2px 6px; border-radius:4px; border:1px solid #fca5a5; margin-right:20px; position:relative; display:inline-block; opacity:0.85; }
+.diff-old::after { content:"➔"; position:absolute; right:-18px; top:50%; transform:translateY(-50%); color:#94a3b8; font-size:0.85rem; text-decoration:none !important; display:inline-block; }
+.diff-new { font-size:.85rem; font-weight:600; color:#059669; background:#ecfdf5; padding:2px 6px; border-radius:4px; border:1px solid #6ee7b7; display:inline-block; }
 .fatal-reason { font-size:.77rem; color:#9b2c2c; line-height:1.4; margin-top:6px;
                 background:#fff; padding:7px 12px; border-radius:6px;
                 border:1px solid #feb2b2; display:block; }
@@ -154,10 +166,7 @@ require_once __DIR__ . '/../../layouts/header.php';
 .tpl-reward:hover { background:#064e3b; color:#fff; }
 
 /* ── Archive warning ─────────────────────────────── */
-#archive-warn { display:none; margin-top:10px; background:#fffbeb;
-                border:1.5px solid #f59e0b; border-left:5px solid #d97706;
-                border-radius:10px; padding:12px 16px; font-size:.84rem; color:#78350f; }
-#archive-warn a { color:#b45309; font-weight:600; }
+#archive-warn { display:none; }
 </style>
 
 <div class="container-fluid py-4 px-4">
@@ -176,35 +185,43 @@ require_once __DIR__ . '/../../layouts/header.php';
 
     <?php display_flash_message(); ?>
 
-    <!-- ── Flash: Error ──────────────────────────────────────────────────── -->
+    <!-- ── Flash: Error ────────────────────────────────────────────────────── -->
     <?php if ($error_msg): ?>
-        <div class="sf-alert sf-alert-danger">
-            <?php if ($error_type === 'csrf'): ?>
-                <div class="sf-alert-title"><i class="bi bi-shield-exclamation-fill fs-5"></i> Sesi Keamanan Berakhir</div>
-                <div><?= htmlspecialchars($error_msg) ?></div>
-                <button onclick="location.reload()" class="sf-alert-action">
-                    <i class="bi bi-arrow-clockwise"></i> Muat Ulang
-                </button>
-            <?php else: ?>
-                <div class="sf-alert-title"><i class="bi bi-exclamation-triangle-fill fs-5"></i> Kendala Sinkronisasi</div>
-                <div><?= htmlspecialchars($error_msg) ?></div>
-            <?php endif; ?>
-        </div>
+        <script>
+            document.addEventListener('DOMContentLoaded', function() {
+                Swal.fire({
+                    title: '<?= $error_type === "csrf" ? "Sesi Berakhir" : "Kendala Sinkronisasi" ?>',
+                    html: <?= json_encode($error_msg) ?>,
+                    icon: 'error',
+                    confirmButtonColor: '#e53e3e',
+                    confirmButtonText: 'Tutup',
+                    customClass: {
+                        popup: 'rounded-4 shadow-lg border-0 p-3 p-md-4',
+                        title: 'fw-bold fs-5 text-danger'
+                    }
+                }).then(() => {
+                    <?php if ($error_type === "csrf"): ?>
+                    location.reload();
+                    <?php endif; ?>
+                });
+            });
+        </script>
     <?php endif; ?>
 
     <!-- ── Flash: Sukses ──────────────────────────────────────────────────── -->
     <?php if ($success_msg): ?>
-        <div class="alert alert-success d-none" id="successDataMsg"><?= htmlspecialchars($success_msg) ?></div>
         <script>
             document.addEventListener('DOMContentLoaded', function() {
                 Swal.fire({
-                    title: 'Sinkronisasi Berhasil!',
-                    text: <?= json_encode($success_msg) ?>,
+                    title: 'Sinkronisasi Selesai!',
+                    html: <?= json_encode($success_msg) ?>,
                     icon: 'success',
-                    confirmButtonColor: '#4f46e5',
+                    confirmButtonColor: '#059669',
+                    confirmButtonText: 'Selesai',
                     customClass: {
-                        popup: 'rounded-4 shadow-lg border-0 p-4',
-                        title: 'fw-bold fs-4'
+                        popup: 'rounded-4 shadow-lg border-0 p-3 p-md-4',
+                        title: 'fw-bold fs-4 text-success',
+                        htmlContainer: 'text-start'
                     }
                 });
             });
@@ -292,11 +309,34 @@ require_once __DIR__ . '/../../layouts/header.php';
                                 <option value="update_insert">Update &amp; Insert Saja (Aman)</option>
                                 <option value="full_sync">Sinkronisasi Penuh (+ Hapus Data)</option>
                             </select>
-                            <div id="archive-warn">
-                                <i class="bi bi-exclamation-triangle-fill me-1"></i>
-                                <strong>Perhatian:</strong> Sebelum Sinkronisasi Penuh, pastikan Anda sudah melakukan
-                                <a href="../backup-restore/index.php"><i class="bi bi-archive me-1"></i>backup/arsip data</a>
-                                terlebih dahulu. Data yang tidak ada di file Excel akan dihapus permanen.
+                            <div id="archive-warn" class="mt-3">
+                                <?php if ($has_active_data): ?>
+                                    <div class="alert bg-warning bg-opacity-10 border border-warning border-opacity-50 text-dark p-3 rounded-3 shadow-sm mb-0">
+                                        <div class="d-flex align-items-start gap-2">
+                                            <i class="bi bi-exclamation-circle-fill text-warning fs-4 mt-1"></i>
+                                            <div>
+                                                <h6 class="fw-bold mb-1">Peringatan Tutup Buku</h6>
+                                                <p class="small mb-2 text-secondary" style="line-height:1.4">
+                                                    Ada <strong><?= number_format($cek_data_aktif) ?> riwayat data</strong> (pelanggaran/reward) yang belum diarsipkan. 
+                                                    Sinkronisasi Penuh <u>tidak akan bisa menghapus</u> santri yang masih terikat dengan data tersebut.
+                                                </p>
+                                                <a href="../reset-poin/index.php" class="btn btn-sm btn-warning text-dark fw-bold rounded-pill px-3 shadow-sm mt-1" style="font-size: 0.75rem;">
+                                                    <i class="bi bi-archive-fill me-1"></i> Lakukan Tutup Buku
+                                                </a>
+                                            </div>
+                                        </div>
+                                    </div>
+                                <?php else: ?>
+                                    <div class="alert bg-success bg-opacity-10 border border-success border-opacity-50 text-dark p-3 rounded-3 shadow-sm mb-0">
+                                        <div class="d-flex align-items-center gap-2">
+                                            <i class="bi bi-check-circle-fill text-success fs-4"></i>
+                                            <div>
+                                                <h6 class="fw-bold mb-0 text-success">Status Aman (Sudah Tutup Buku)</h6>
+                                                <p class="small mb-0 text-secondary mt-1">Laci data sudah bersih. Sistem siap untuk melakukan Sinkronisasi Penuh.</p>
+                                            </div>
+                                        </div>
+                                    </div>
+                                <?php endif; ?>
                             </div>
                         </div>
                     </div>
@@ -454,7 +494,6 @@ require_once __DIR__ . '/../../layouts/header.php';
                                 <td>
                                     <?php if ($act === 'UPDATE' && ($d['kamar'] ?? '') !== ($od['kamar'] ?? '')): ?>
                                         <span class="diff-old"><?= fmt_kamar($od['kamar']) ?></span>
-                                        <i class="bi bi-arrow-right text-muted mx-1"></i>
                                         <span class="diff-new"><?= fmt_kamar($d['kamar']) ?></span>
                                     <?php else: ?>
                                         <?= fmt_kamar($d['kamar'] ?? '') ?>
@@ -484,7 +523,6 @@ require_once __DIR__ . '/../../layouts/header.php';
                                 <td class="text-center">
                                     <?php if ($act === 'UPDATE' && ($d['poin'] ?? 0) != ($od['poin'] ?? 0)): ?>
                                         <span class="diff-old"><?= (int)($od['poin'] ?? 0) ?></span>
-                                        <i class="bi bi-arrow-right text-muted mx-1"></i>
                                         <span class="diff-new"><?= (int)($d['poin'] ?? 0) ?></span>
                                     <?php else: ?>
                                         <?= (int)($d['poin'] ?? 0) ?>
@@ -514,7 +552,6 @@ require_once __DIR__ . '/../../layouts/header.php';
                                 <td class="text-center">
                                     <?php if ($act === 'UPDATE' && ($d['poin_reward'] ?? 0) != ($od['poin_reward'] ?? 0)): ?>
                                         <span class="diff-old"><?= htmlspecialchars($od['poin_reward']) ?></span>
-                                        <i class="bi bi-arrow-right text-muted mx-1"></i>
                                         <span class="diff-new"><?= htmlspecialchars($d['poin_reward']) ?></span>
                                     <?php else: ?>
                                         <?= htmlspecialchars($d['poin_reward'] ?? 0) ?>
@@ -615,29 +652,29 @@ updateTpl(); updateArchWarn();
 // ── SweetAlert konfirmasi ─────────────────────────────────────────────────
 document.getElementById('btnConfirmSync')?.addEventListener('click', function(e) {
     e.preventDefault();
-    let html = `<div class="text-start mb-2">
-        <p class="text-muted small mb-3">Ringkasan perubahan yang akan diterapkan ke database:</p>
-        <div class="d-flex flex-column gap-2">`;
-    if (syncStats.insert) html += `<div class="d-flex justify-content-between align-items-center p-2 rounded-3 bg-success bg-opacity-10 border border-success border-opacity-10"><span class="text-success fw-semibold"><i class="bi bi-plus-circle-fill me-2"></i>Data Baru (Insert)</span><span class="badge bg-success text-white rounded-pill px-3">${syncStats.insert}</span></div>`;
-    if (syncStats.update) html += `<div class="d-flex justify-content-between align-items-center p-2 rounded-3 bg-warning bg-opacity-10 border border-warning border-opacity-10"><span class="text-warning-emphasis fw-semibold"><i class="bi bi-pencil-square me-2"></i>Pembaruan (Update)</span><span class="badge bg-warning text-dark rounded-pill px-3">${syncStats.update}</span></div>`;
-    if (syncStats.delete) html += `<div class="d-flex justify-content-between align-items-center p-2 rounded-3 bg-danger bg-opacity-10 border border-danger border-opacity-10"><span class="text-danger fw-semibold"><i class="bi bi-trash-fill me-2"></i>Penghapusan (Delete)</span><span class="badge bg-danger text-white rounded-pill px-3">${syncStats.delete}</span></div>`;
-    if (syncStats.fatal) html += `<div class="d-flex justify-content-between align-items-center p-2 rounded-3 bg-danger bg-opacity-10 border border-danger border-opacity-20"><span class="text-danger fw-bold"><i class="bi bi-exclamation-octagon-fill me-2"></i>Konflik ID (Fatal)</span><span class="badge bg-danger text-white rounded-pill px-3">${syncStats.fatal}</span></div><p class="text-danger small mt-0 mb-0 px-1" style="font-size:.75rem"><i class="bi bi-info-circle-fill me-1"></i>Data konflik akan dibuat baru dengan ID otomatis (aman).</p>`;
+    let html = `<div class="text-start mb-0">
+        <div class="d-flex flex-column border-top">`;
+    if (syncStats.insert) html += `<div class="d-flex justify-content-between align-items-center py-2 border-bottom"><span class="text-success fw-semibold" style="font-size:0.85rem"><i class="bi bi-plus-circle-fill me-2"></i>Data Baru (Insert)</span><span class="badge bg-success text-white rounded-pill px-2">${syncStats.insert}</span></div>`;
+    if (syncStats.update) html += `<div class="d-flex justify-content-between align-items-center py-2 border-bottom"><span class="text-warning-emphasis fw-semibold" style="font-size:0.85rem"><i class="bi bi-pencil-square me-2"></i>Perbarui (Update)</span><span class="badge bg-warning text-dark rounded-pill px-2">${syncStats.update}</span></div>`;
+    if (syncStats.delete) html += `<div class="d-flex justify-content-between align-items-center py-2 border-bottom"><span class="text-danger fw-semibold" style="font-size:0.85rem"><i class="bi bi-trash-fill me-2"></i>Hapus (Delete)</span><span class="badge bg-danger text-white rounded-pill px-2">${syncStats.delete}</span></div>`;
+    if (syncStats.fatal) html += `<div class="d-flex justify-content-between align-items-center py-2 border-bottom"><span class="text-danger fw-bold" style="font-size:0.85rem"><i class="bi bi-exclamation-octagon-fill me-2"></i>Konflik ID (Fatal)</span><span class="badge bg-danger text-white rounded-pill px-2">${syncStats.fatal}</span></div><p class="text-danger mt-1 mb-0" style="font-size:.72rem;line-height:1.2"><i class="bi bi-info-circle-fill me-1"></i>Data konflik akan di-generate ID baru (Aman).</p>`;
     if (!syncStats.insert && !syncStats.update && !syncStats.delete && !syncStats.fatal)
-        html += `<div class="text-center p-3 text-muted"><i class="bi bi-info-circle me-1"></i> Tidak ada perubahan data.</div>`;
-    html += `</div><p class="mt-4 mb-0 text-muted small text-center">Apakah Anda yakin ingin menerapkan seluruh perubahan?</p></div>`;
+        html += `<div class="text-center py-3 text-muted" style="font-size:0.85rem"><i class="bi bi-info-circle me-1"></i> Tidak ada perubahan data.</div>`;
+    html += `</div></div>`;
 
     Swal.fire({
         title: 'Terapkan Perubahan?',
         html, icon: 'info',
         showCancelButton: true, buttonsStyling: false,
-        confirmButtonText: '<i class="bi bi-check-circle-fill me-1"></i> Ya, Terapkan Sekarang',
+        confirmButtonText: 'Terapkan',
         cancelButtonText: 'Batal',
+        reverseButtons: true,
         customClass: {
             popup: 'rounded-4 shadow-lg border-0 p-3 p-md-4',
-            title: 'fw-bold text-dark mb-3 fs-5',
-            confirmButton: 'btn fw-bold px-4 py-2 rounded-3 text-white w-100 mb-2',
-            cancelButton:  'btn btn-light border px-4 py-2 rounded-3 text-secondary w-100 m-0',
-            actions: 'd-flex flex-column w-100 mt-3'
+            title: 'fw-bold text-dark mb-1 fs-5',
+            confirmButton: 'btn fw-bold px-4 py-2 rounded-3 text-white flex-grow-1 mx-1',
+            cancelButton:  'btn btn-light border px-4 py-2 rounded-3 text-secondary flex-grow-1 mx-1',
+            actions: 'd-flex flex-row w-100 mt-3 mb-0'
         },
         didOpen: () => {
              const confirmBtn = Swal.getConfirmButton();

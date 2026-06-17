@@ -22,9 +22,14 @@ $stmt_arsip->execute();
 $arsip = $stmt_arsip->get_result()->fetch_assoc();
 if (!$arsip) die("<div class='container my-4'><div class='alert alert-danger'>Arsip tidak ditemukan.</div></div>");
 
-$filter_kamar = $_GET['kamar'] ?? null;
-$filter_bagian = $_GET['bagian'] ?? null;
-$filter_jp = $_GET['jenis_reward'] ?? null;
+$filter_bagian = $_GET['bagian'] ?? '';
+$filter_kategori = $_GET['kategori'] ?? '';
+$filter_jp = $_GET['jenis_pelanggaran'] ?? '';
+$filter_tipe = $_GET['tipe'] ?? '';
+$filter_kelas = $_GET['kelas'] ?? '';
+$filter_kamar = $_GET['kamar'] ?? '';
+$filter_sort_order = $_GET['sort_order'] ?? '';
+$filter_formula = $_GET['formula'] ?? '';
 
 // Query 1: Ambil data profil santri     
 $stmt_santri = $conn->prepare("SELECT santri_nama AS nama, santri_kelas AS kelas, santri_kamar AS kamar, total_poin_saat_arsip AS poin_aktif FROM arsip_data_santri WHERE arsip_id = ? AND santri_id = ?");
@@ -263,11 +268,16 @@ function getTelatInfo($nama) {
             <p class="text-muted mb-0">Rincian lengkap reward yang tercatat.</p>
         </div>
         <?php
-        $filter_qs = "";
-        if (!empty($filter_bagian)) $filter_qs .= "&bagian=" . urlencode($filter_bagian);
-        if (!empty($filter_jp)) $filter_qs .= "&jenis_reward=" . urlencode($filter_jp);
+        $back_qs = "";
+        if (!empty($filter_tipe)) $back_qs .= "&tipe=" . urlencode($filter_tipe);
+        if (!empty($filter_kelas)) $back_qs .= "&kelas=" . urlencode($filter_kelas);
+        if (!empty($filter_kamar)) $back_qs .= "&kamar=" . urlencode($filter_kamar);
+        if (!empty($filter_bagian)) $back_qs .= "&bagian=" . urlencode($filter_bagian);
+        if (!empty($filter_jp)) $back_qs .= "&jenis_pelanggaran=" . urlencode($filter_jp);
+        if (!empty($filter_sort_order)) $back_qs .= "&sort_order=" . urlencode($filter_sort_order);
+        if (!empty($filter_formula)) $back_qs .= "&formula=" . urlencode($filter_formula);
         ?>
-        <a href="detail_arsip_santri.php?arsip_id=<?= $arsip_id ?>&id=<?= $santri_id ?><?= $filter_qs ?>" class="btn btn-back">
+        <a href="detail_arsip_santri.php?arsip_id=<?= $arsip_id ?>&id=<?= $santri_id ?><?= $back_qs ?>" class="btn btn-back">
             <i class="fas fa-arrow-left me-2"></i>Kembali
         </a>
     </div>

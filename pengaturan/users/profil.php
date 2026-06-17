@@ -30,6 +30,30 @@ if (!$user) {
 }
 
 $csrf_token = csrf_generate();
+
+// Cek sisa limit ganti profil
+$has_user_manage = false;
+if (function_exists('has_permission')) {
+    $has_user_manage = has_permission('user_manage');
+}
+
+$limit_max = 3;
+$limit_used = 0;
+$limit_remaining = $limit_max;
+
+if (!$has_user_manage) {
+    $current_month = date('Y-m');
+    $stmt_limit = $conn->prepare("SELECT COUNT(*) as count FROM log_aktifitas WHERE user_id = ? AND fitur = 'profil' AND aksi = 'UPDATE' AND DATE_FORMAT(dibuat_pada, '%Y-%m') = ?");
+    $stmt_limit->bind_param("is", $user_id, $current_month);
+    $stmt_limit->execute();
+    $res_limit = $stmt_limit->get_result();
+    $limit_data = $res_limit->fetch_assoc();
+    $stmt_limit->close();
+    
+    $limit_used = (int)$limit_data['count'];
+    $limit_remaining = max(0, $limit_max - $limit_used);
+}
+
 require_once __DIR__ . '/../../layouts/header.php';
 ?>
 
@@ -48,6 +72,19 @@ require_once __DIR__ . '/../../layouts/header.php';
 
     <div class="row justify-content-center px-1">
         <div class="col-lg-8">
+            <?php if (!$has_user_manage): ?>
+            <div class="alert <?= $limit_remaining > 0 ? 'alert-info' : 'alert-danger' ?> d-flex align-items-center border-0 shadow-sm rounded-4 mb-4" role="alert" style="background: <?= $limit_remaining > 0 ? 'linear-gradient(to right, #eff6ff, #dbeafe)' : 'linear-gradient(to right, #fef2f2, #fee2e2)' ?>;">
+                <i class="fas <?= $limit_remaining > 0 ? 'fa-info-circle text-primary' : 'fa-exclamation-triangle text-danger' ?> fa-2x me-3"></i>
+                <div>
+                    <h6 class="alert-heading fw-bold mb-1 <?= $limit_remaining > 0 ? 'text-primary' : 'text-danger' ?>">Informasi Limit Profil</h6>
+                    <p class="mb-0 <?= $limit_remaining > 0 ? 'text-dark' : 'text-danger' ?>" style="font-size: 0.95rem;">
+                        Anda memiliki batas maksimal perubahan profil sebanyak <strong><?= $limit_max ?> kali</strong> dalam 1 bulan.<br>
+                        Sisa limit Anda bulan ini: <span class="badge <?= $limit_remaining > 0 ? 'bg-success' : 'bg-danger' ?> rounded-pill ms-1 px-2 py-1"><?= $limit_remaining ?> kali</span>
+                    </p>
+                </div>
+            </div>
+            <?php endif; ?>
+
             <div class="card shadow-sm border-0 rounded-4" style="background: linear-gradient(180deg, #ffffff, #f8fafc); overflow: hidden;">
                 <div style="height: 4px; background: linear-gradient(90deg, #6366f1, #8b5cf6); width: 100%;"></div>
                 <div class="card-body p-4 p-md-5">
@@ -86,7 +123,7 @@ require_once __DIR__ . '/../../layouts/header.php';
                         </div>
 
                         <div class="mt-5 d-flex justify-content-end">
-                            <button type="submit" class="btn btn-primary btn-lg rounded-pill px-5 shadow-sm fw-bold" style="background: linear-gradient(135deg, #6366f1, #4f46e5); border: none; transition: transform 0.2s;" onmouseover="this.style.transform='translateY(-2px)'" onmouseout="this.style.transform='none'">
+                            <button type="submit" class="btn btn-primary btn-lg rounded-pill px-5 shadow-sm fw-bold" <?= (!$has_user_manage && $limit_remaining <= 0) ? 'disabled' : '' ?> style="background: linear-gradient(135deg, #6366f1, #4f46e5); border: none; transition: transform 0.2s;" onmouseover="this.style.transform='translateY(-2px)'" onmouseout="this.style.transform='none'">
                                 <i class="fas fa-save me-2"></i>Simpan Perubahan
                             </button>
                         </div>

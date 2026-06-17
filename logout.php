@@ -10,16 +10,33 @@
 
 require_once __DIR__ . '/bootstrap/init.php';
 
-// Tangkap reason sebelum session destroyed
-$logout_reason = (isset($_GET['timeout']) || ($_GET['reason'] ?? '') === 'timeout') ? 'timeout' : '';
-$login_redirect = BASE_URL . '/login.php' . ($logout_reason === 'timeout' ? '?timeout=1' : '');
+$is_auto_logout = isset($_GET['timeout']) || ($_GET['reason'] ?? '') === 'timeout' || isset($_GET['access_denied']);
+
+// ── PROTEKSI CSRF ──────────────────────────────────────────────────────────
+if (!$is_auto_logout) {
+    if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
+        http_response_code(405);
+        exit('Method Not Allowed. Gunakan metode POST untuk logout demi keamanan.');
+    }
+    csrf_validate(); // Pastikan request POST memiliki token CSRF yang valid
+} else {
+    // Jika karena timeout, pastikan session user ID memang kosong (sudah dihancurkan oleh init.php)
+    // Jika user masih login aktif, berarti ada orang yang iseng ngirim ?timeout=1 (CSRF attack via GET)
+    if (isset($_SESSION['user_id'])) {
+        // Gagal, ini percobaan CSRF logout via URL
+        header('Location: ' . BASE_URL . '/dashboard.php');
+        exit;
+    }
+}
+
+$login_redirect = BASE_URL . '/login.php' . ($is_auto_logout ? '?timeout=1' : '');
 
 if (session_status() === PHP_SESSION_NONE) {
     session_start();
 }
 
-// Catat log logout
-if (isset($_SESSION['username'])) {
+// Catat log logout hanya jika disengaja (POST)
+if (!$is_auto_logout && isset($_SESSION['username'])) {
     write_activity_log('LOGOUT', 'auth', "User '" . $_SESSION['username'] . "' melakukan logout dari sistem");
 }
 
@@ -33,7 +50,6 @@ if (ini_get("session.use_cookies")) {
         $params["path"],   $params["domain"],
         $params["secure"], $params["httponly"]
     );
-    // Hapus juga di root path, untuk menjamin
     setcookie(session_name(), '', time() - 86400, '/');
 }
 
@@ -51,142 +67,247 @@ header("Expires: Sat, 26 Jul 1997 05:00:00 GMT");
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
     <title>Keluar — AsuhTrack</title>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
     <style>
+        :root {
+            --bg-body: #09090b;
+            --bg-card: #18181b;
+            --border-color: #27272a;
+            --text-main: #f4f4f5;
+            --text-muted: #a1a1aa;
+            --accent: #3b82f6;
+            --success: #10b981;
+        }
+
         *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+        
         body {
             font-family: 'Inter', sans-serif;
-            background: #0d1117;
-            color: #e6edf3;
+            background-color: var(--bg-body);
+            color: var(--text-main);
             min-height: 100vh;
             display: flex;
             align-items: center;
             justify-content: center;
-            padding: 16px;
+            padding: 20px;
+            -webkit-font-smoothing: antialiased;
         }
-        .logout-card {
-            background: #161b22;
-            border: 1px solid rgba(255,255,255,0.07);
-            border-radius: 20px;
-            padding: 40px 32px;
-            max-width: 360px;
+
+        .container {
+            background-color: var(--bg-card);
+            border: 1px solid var(--border-color);
+            border-radius: 12px;
+            padding: 32px;
             width: 100%;
-            text-align: center;
-            box-shadow: 0 20px 60px rgba(0,0,0,0.5);
-        }
-        .spinner-wrap {
-            width: 64px; height: 64px;
-            margin: 0 auto 24px;
+            max-width: 380px;
+            box-shadow: 0 4px 24px rgba(0, 0, 0, 0.4);
             position: relative;
+            overflow: hidden;
         }
-        .spinner {
-            width: 100%; height: 100%;
-            border-radius: 50%;
-            border: 3px solid rgba(37,99,235,0.12);
-            border-top-color: #2563eb;
-            animation: spin 0.9s linear infinite;
-        }
-        .spinner-icon {
+
+        /* Subtle top progress indicator */
+        .progress-track {
             position: absolute;
-            inset: 0;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-size: 1.5rem;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 2px;
+            background: transparent;
         }
-        @keyframes spin { to { transform: rotate(360deg); } }
+        .progress-bar {
+            height: 100%;
+            width: 0%;
+            background-color: var(--accent);
+            transition: width 0.3s ease, background-color 0.3s ease;
+        }
 
-        h2 { font-size: 1.1rem; font-weight: 700; margin-bottom: 8px; color: #e6edf3; }
-        p  { font-size: 0.82rem; color: #8b949e; line-height: 1.6; }
-
-        .step-list {
-            list-style: none;
-            margin: 20px 0 0;
+        .header {
+            margin-bottom: 24px;
             text-align: left;
-            display: flex;
-            flex-direction: column;
-            gap: 8px;
         }
-        .step-list li {
+
+        .header h1 {
+            font-size: 1.125rem;
+            font-weight: 600;
+            margin-bottom: 6px;
+            letter-spacing: -0.01em;
             display: flex;
             align-items: center;
             gap: 10px;
-            font-size: 0.78rem;
-            color: #8b949e;
-            padding: 8px 12px;
-            border-radius: 8px;
-            background: rgba(255,255,255,0.03);
-            transition: all 0.3s ease;
         }
-        .step-list li.done {
-            color: #3fb950;
-            background: rgba(63,185,80,0.08);
+
+        .header p {
+            font-size: 0.875rem;
+            color: var(--text-muted);
+            line-height: 1.5;
         }
-        .step-list li.done .step-dot { background: #3fb950; }
-        .step-list li.active {
-            color: #60a5fa;
-            background: rgba(96,165,250,0.08);
+
+        .steps {
+            list-style: none;
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
         }
-        .step-list li.active .step-dot { background: #60a5fa; animation: pulse 1s infinite; }
-        .step-dot {
-            width: 8px; height: 8px;
-            border-radius: 50%;
-            background: rgba(255,255,255,0.15);
+
+        .step-item {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            font-size: 0.875rem;
+            color: var(--text-muted);
+            transition: color 0.2s ease;
+        }
+
+        .step-item.active {
+            color: var(--text-main);
+        }
+
+        .step-item.done {
+            color: var(--text-main);
+        }
+
+        .icon-box {
+            width: 16px;
+            height: 16px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
             flex-shrink: 0;
-            transition: background 0.3s;
         }
-        @keyframes pulse {
-            0%, 100% { opacity: 1; transform: scale(1); }
-            50%       { opacity: 0.4; transform: scale(0.7); }
+
+        /* Clean CSS Spinner */
+        .spinner {
+            width: 14px;
+            height: 14px;
+            border: 2px solid transparent;
+            border-top-color: var(--text-muted);
+            border-right-color: var(--text-muted);
+            border-radius: 50%;
+            animation: spin 0.8s linear infinite;
         }
+        
+        .step-item.active .spinner {
+            border-top-color: var(--accent);
+            border-right-color: var(--accent);
+        }
+
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+
+        /* SVG Checkmark */
+        .check-svg {
+            width: 16px;
+            height: 16px;
+            color: var(--success);
+            stroke-width: 2.5;
+            stroke-linecap: round;
+            stroke-linejoin: round;
+            fill: none;
+            stroke: currentColor;
+            opacity: 0;
+            transform: scale(0.5);
+            transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+        }
+
+        .step-item.done .icon-box {
+            position: relative;
+        }
+        
+        .step-item.done .spinner {
+            display: none;
+        }
+        
+        .step-item.done .check-svg {
+            opacity: 1;
+            transform: scale(1);
+        }
+
+        /* Success State adjustments */
+        .success-mode .progress-bar {
+            background-color: var(--success);
+        }
+
     </style>
 </head>
 <body>
-<div class="logout-card" id="logoutCard">
-    <div class="spinner-wrap">
-        <div class="spinner" id="mainSpinner"></div>
-        <div class="spinner-icon">🔒</div>
-    </div>
-    <h2>Sedang Keluar…</h2>
-    <p>Menghapus semua jejak sesi dan data browser</p>
 
-    <ul class="step-list" id="stepList">
-        <li id="step0" class="active"><span class="step-dot"></span>Menghapus data sesi</li>
-        <li id="step1"><span class="step-dot"></span>Membersihkan penyimpanan lokal</li>
-        <li id="step2"><span class="step-dot"></span>Menghapus cache Service Worker</li>
-        <li id="step3"><span class="step-dot"></span>Menghapus cookies browser</li>
-        <li id="step4"><span class="step-dot"></span>Membersihkan IndexedDB</li>
+<div class="container" id="mainContainer">
+    <div class="progress-track">
+        <div class="progress-bar" id="progressBar"></div>
+    </div>
+    
+    <div class="header">
+        <h1 id="mainTitle">Keluar dari AsuhTrack</h1>
+        <p id="subTitle">Menghapus sisa data demi keamanan akun Anda</p>
+    </div>
+
+    <ul class="steps" id="stepList">
+        <li class="step-item" id="step0">
+            <div class="icon-box"><div class="spinner" id="spin0"></div><svg class="check-svg" viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"></polyline></svg></div>
+            <span>Mengakhiri sesi akun</span>
+        </li>
+        <li class="step-item" id="step1">
+            <div class="icon-box"><div class="spinner" id="spin1"></div><svg class="check-svg" viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"></polyline></svg></div>
+            <span>Membersihkan memori browser</span>
+        </li>
+        <li class="step-item" id="step2">
+            <div class="icon-box"><div class="spinner" id="spin2"></div><svg class="check-svg" viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"></polyline></svg></div>
+            <span>Menghapus data sementara (Cache)</span>
+        </li>
+        <li class="step-item" id="step3">
+            <div class="icon-box"><div class="spinner" id="spin3"></div><svg class="check-svg" viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"></polyline></svg></div>
+            <span>Menghapus jejak login (Cookies)</span>
+        </li>
+        <li class="step-item" id="step4">
+            <div class="icon-box"><div class="spinner" id="spin4"></div><svg class="check-svg" viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"></polyline></svg></div>
+            <span>Membersihkan data offline</span>
+        </li>
     </ul>
 </div>
 
 <script>
 'use strict';
 
-// ─── Helper: Tandai step ──────────────────────────────────────────────────
-function markDone(id) {
-    const el = document.getElementById(id);
-    if (el) { el.className = 'done'; }
-}
-function markActive(id) {
-    const el = document.getElementById(id);
-    if (el) { el.className = 'active'; }
+const totalSteps = 5;
+let currentStep = 0;
+
+function updateProgress() {
+    const percentage = (currentStep / totalSteps) * 100;
+    document.getElementById('progressBar').style.width = percentage + '%';
 }
 
-// ─── Fungsi utama: Zero-Trash Logout ─────────────────────────────────────
+function setStepState(id, state) {
+    const el = document.getElementById(id);
+    if (!el) return;
+    
+    if (state === 'active') {
+        el.classList.add('active');
+        // spinner is active by default in CSS, just inherit colors
+    } else if (state === 'done') {
+        el.classList.remove('active');
+        el.classList.add('done');
+        currentStep++;
+        updateProgress();
+    }
+}
+
 async function zeroTrashLogout() {
+    // Initial delay
+    await sleep(400);
 
     // STEP 0: Session storage & local storage
+    setStepState('step0', 'active');
     try {
         sessionStorage.clear();
         localStorage.clear();
     } catch(e) {}
-    markDone('step0');
-    markActive('step1');
-    await sleep(150);
+    await sleep(250);
+    setStepState('step0', 'done');
 
-    // STEP 1: Semua storage (localStorage, sessionStorage)
+    // STEP 1: Semua storage (Double-clean)
+    setStepState('step1', 'active');
     try {
-        // Hapus setiap key secara individual juga (double-clean)
         if (window.localStorage) {
             const lKeys = Object.keys(localStorage);
             lKeys.forEach(k => localStorage.removeItem(k));
@@ -196,25 +317,18 @@ async function zeroTrashLogout() {
             sKeys.forEach(k => sessionStorage.removeItem(k));
         }
     } catch(e) {}
-    markDone('step1');
-    markActive('step2');
-    await sleep(150);
+    await sleep(250);
+    setStepState('step1', 'done');
 
-    // STEP 2: Cache API (Service Worker caches) — hapus SEMUA cache names
+    // STEP 2: Service Worker Caches
+    setStepState('step2', 'active');
     try {
         if ('caches' in window) {
             const cacheNames = await caches.keys();
-            await Promise.all(
-                cacheNames.map(name => caches.delete(name))
-            );
+            await Promise.all(cacheNames.map(name => caches.delete(name)));
         }
-    } catch(e) {}
-
-    // Unregister semua service workers
-    try {
         if ('serviceWorker' in navigator) {
             const registrations = await navigator.serviceWorker.getRegistrations();
-            // Kirim pesan clear ke SW yang aktif sebelum unregister
             for (const reg of registrations) {
                 if (reg.active) {
                     reg.active.postMessage({ type: 'CLEAR_ALL_CACHES' });
@@ -223,29 +337,28 @@ async function zeroTrashLogout() {
             }
         }
     } catch(e) {}
-    markDone('step2');
-    markActive('step3');
-    await sleep(150);
+    await sleep(250);
+    setStepState('step2', 'done');
 
-    // STEP 3: Cookies browser (semua cookies yang terlihat oleh JS)
+    // STEP 3: Cookies Browser
+    setStepState('step3', 'active');
     try {
         const cookies = document.cookie.split(';');
         for (const cookie of cookies) {
             const eqPos = cookie.indexOf('=');
             const name = eqPos > -1 ? cookie.substr(0, eqPos).trim() : cookie.trim();
             if (!name) continue;
-            // Hapus di berbagai kemungkinan path & domain
             const expiry = 'expires=Thu, 01 Jan 1970 00:00:00 GMT';
             document.cookie = `${name}=; ${expiry}; path=/`;
             document.cookie = `${name}=; ${expiry}; path=/admin/`;
             document.cookie = `${name}=; ${expiry}; path=/; domain=${location.hostname}`;
         }
     } catch(e) {}
-    markDone('step3');
-    markActive('step4');
-    await sleep(150);
+    await sleep(250);
+    setStepState('step3', 'done');
 
-    // STEP 4: IndexedDB — hapus semua database
+    // STEP 4: IndexedDB
+    setStepState('step4', 'active');
     try {
         if (window.indexedDB && indexedDB.databases) {
             const dbs = await indexedDB.databases();
@@ -253,16 +366,27 @@ async function zeroTrashLogout() {
                 dbs.map(db => new Promise((resolve) => {
                     const req = indexedDB.deleteDatabase(db.name);
                     req.onsuccess = resolve;
-                    req.onerror   = resolve; // lanjut meski error
+                    req.onerror   = resolve;
                     req.onblocked = resolve;
                 }))
             );
         }
     } catch(e) {}
-    markDone('step4');
-    await sleep(200);
+    await sleep(250);
+    setStepState('step4', 'done');
 
-    // ─── REDIRECT: Ganti history entry agar tombol Back tidak bisa kembali ───
+    // FINAL STATE
+    finishSequence();
+}
+
+async function finishSequence() {
+    document.getElementById('mainContainer').classList.add('success-mode');
+    document.getElementById('mainTitle').textContent = 'Selesai';
+    
+    // Pause briefly for user to see all checkmarks
+    await sleep(600);
+
+    // Redirect
     window.location.replace('<?php echo addslashes($login_redirect); ?>');
 }
 
@@ -270,7 +394,6 @@ function sleep(ms) {
     return new Promise(resolve => setTimeout(resolve, ms));
 }
 
-// Mulai proses saat halaman siap
 window.addEventListener('DOMContentLoaded', zeroTrashLogout);
 </script>
 </body>

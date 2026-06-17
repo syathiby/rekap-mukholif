@@ -355,7 +355,10 @@ mysqli_stmt_close($stmt_count);
                         <?php
                         $types_paged = $types . 'ii';
                         $params_paged = array_merge($params, [$per_page, $offset]);
-                        $query = "SELECT * FROM santri" . $where_sql . " ORDER BY CAST(kamar AS UNSIGNED) ASC, nama ASC LIMIT ? OFFSET ?";
+                        $query = "SELECT *, 
+                                  (SELECT COUNT(*) FROM pelanggaran WHERE santri_id = santri.id) as jml_pelanggaran,
+                                  (SELECT COUNT(*) FROM daftar_reward WHERE santri_id = santri.id) as jml_reward 
+                                  FROM santri" . $where_sql . " ORDER BY CAST(kamar AS UNSIGNED) ASC, nama ASC LIMIT ? OFFSET ?";
                         $stmt = mysqli_prepare($conn, $query);
                         if (!empty($params_paged)) {
                             mysqli_stmt_bind_param($stmt, $types_paged, ...$params_paged);
@@ -414,7 +417,7 @@ mysqli_stmt_close($stmt_count);
                                             <a href="edit.php?id=<?= $row['id'] ?>" class="btn btn-sm btn-warning me-2" title="Edit"><i class="fas fa-edit"></i></a>
                                         <?php endif; ?>
                                         <?php if ($can_delete): ?>
-                                            <a href="#" onclick="showConfirmDelete('delete.php?id=<?= $row['id'] ?>&csrf_token=<?= $csrf_token ?>')" class="btn btn-sm btn-danger" title="Hapus"><i class="fas fa-trash"></i></a>
+                                            <a href="#" onclick='showConfirmDelete("delete.php?id=<?= $row["id"] ?>&csrf_token=<?= $csrf_token ?>", <?= json_encode($row["nama"]) ?>, <?= (int)$row["jml_pelanggaran"] ?>, <?= (int)$row["jml_reward"] ?>)' class="btn btn-sm btn-danger" title="Hapus"><i class="fas fa-trash"></i></a>
                                         <?php endif; ?>
                                     </div>
                                 </td>
@@ -566,13 +569,40 @@ document.addEventListener('DOMContentLoaded', function() {
     const confirmBtn = document.getElementById('confirmDeleteButton');
 
     // Fungsi untuk Hapus Satuan (Single Delete)
-    window.showConfirmDelete = function(deleteUrl) {
-        confirmMessage.textContent = 'Apakah Anda benar-benar yakin ingin menghapus santri ini?';
-        confirmBtn.onclick = function() {
-            window.location.href = deleteUrl;
-        };
-        confirmBtn.removeAttribute('href'); // Hapus href lama jika ada
-        confirmModal.show();
+    window.showConfirmDelete = function(deleteUrl, namaSantri, jmlPelanggaran, jmlReward) {
+        let titleText = 'Konfirmasi Hapus';
+        let mainText = 'Apakah Anda benar-benar yakin ingin menghapus santri ini?';
+        let iconType = 'warning';
+        
+        if (jmlPelanggaran > 0 || jmlReward > 0) {
+            let detail = [];
+            if (jmlPelanggaran > 0) detail.push(`<b>${jmlPelanggaran} Pelanggaran</b>`);
+            if (jmlReward > 0) detail.push(`<b>${jmlReward} Reward</b>`);
+            
+            titleText = 'PERINGATAN KERAS!';
+            mainText = `Santri <b>${namaSantri}</b> masih memiliki data ${detail.join(' dan ')} aktif.<br><br><span class='text-danger'>Menghapus santri ini akan <b>MEMUSNAHKAN SELURUH RIWAYAT TERSEBUT</b> secara permanen.</span><br><br>Apakah Anda sangat yakin?`;
+            iconType = 'error';
+        }
+
+        Swal.fire({
+            title: titleText,
+            html: mainText,
+            icon: iconType,
+            showCancelButton: true,
+            confirmButtonColor: '#e53e3e',
+            cancelButtonColor: '#64748b',
+            confirmButtonText: '<i class="fas fa-trash me-2"></i>Ya, Hapus Permanen',
+            cancelButtonText: 'Batal',
+            reverseButtons: true,
+            customClass: {
+                popup: 'rounded-4 shadow-lg border-0 p-4',
+                title: 'fw-bold fs-4'
+            }
+        }).then((result) => {
+            if (result.isConfirmed) {
+                window.location.href = deleteUrl;
+            }
+        });
     }
 
     // --- Bagian Checkbox Pinter & Bulk Action ---

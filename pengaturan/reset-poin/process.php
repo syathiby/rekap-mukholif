@@ -66,61 +66,10 @@ function resetPoinSantri($conn, $id_santri, $keterangan, $di_reset_oleh) {
 
 $di_reset_oleh = $_SESSION['user_id'];
 
-// SKENARIO 1: RESET BEBERAPA SANTRI (MULTI-SELECT)
-if (isset($_POST['reset_satu_santri'])) {
-    $id_santri_array = $_POST['santri_id']; // Sekarang ini berupa array
-    $keterangan = trim($_POST['keterangan_satu']);
 
-    if (empty($id_santri_array) || !is_array($id_santri_array) || empty($keterangan)) {
-        $_SESSION['message'] = ['type' => 'danger', 'text' => 'Minimal satu santri dan keterangan harus diisi.'];
-        header("Location: index.php");
-        exit();
-    }
-
-    // Ambil nama santri untuk dicatat di log
-    $santri_names = [];
-    if (!empty($id_santri_array)) {
-        $ids_str = implode(',', array_map('intval', $id_santri_array));
-        $q_s = $conn->query("SELECT nama FROM santri WHERE id IN ($ids_str)");
-        if ($q_s) {
-            while ($s_row = $q_s->fetch_assoc()) {
-                $santri_names[] = $s_row['nama'];
-            }
-        }
-    }
-
-    mysqli_begin_transaction($conn);
-    try {
-        $processed_count = 0;
-        foreach ($id_santri_array as $id_santri) {
-            // Pastikan ID valid
-            if (!empty($id_santri)) {
-                resetPoinSantri($conn, $id_santri, $keterangan, $di_reset_oleh);
-                $processed_count++;
-            }
-        }
-        
-        mysqli_commit($conn);
-        
-        // Catat log reset poin
-        write_activity_log('RESET_POIN', 'reset-poin', "Melakukan reset poin santri sebanyak " . count($santri_names) . " anak: " . implode(', ', $santri_names), [
-            'santri_ids' => $id_santri_array,
-            'santri_names' => $santri_names,
-            'keterangan' => $keterangan
-        ]);
-        
-        $_SESSION['message'] = ['type' => 'success', 'text' => "RESET BERHASIL! Sebanyak $processed_count santri telah direset poin and riwayat pelanggaran non-permanennya."];
-    } catch (Exception $e) {
-        mysqli_rollback($conn);
-        $_SESSION['message'] = ['type' => 'danger', 'text' => 'RESET GAGAL! Terjadi kesalahan: ' . $e->getMessage()];
-    }
-
-    header("Location: index.php");
-    exit();
-}
 
 // SKENARIO 2: TUTUP BUKU AKHIR TAHUN
-elseif (isset($_POST['tutup_buku_massal'])) {
+if (isset($_POST['tutup_buku_massal'])) {
     $keterangan = trim($_POST['keterangan_semua']);
     $judul_arsip = trim($_POST['judul_arsip']);
 

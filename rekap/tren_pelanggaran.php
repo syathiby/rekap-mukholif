@@ -354,7 +354,10 @@ require_once __DIR__ . '/../layouts/header.php';
                                         <small class="d-block text-muted"><?= date('d M Y', strtotime($row['tanggal'])) ?></small>
                                     </td>
                                     <td class="align-middle"><?= htmlspecialchars($row['nama_santri']) ?></td>
-                                    <td class="align-middle"><?= htmlspecialchars($row['nama_pelanggaran']) ?></td>
+                                    <td class="align-middle">
+                                        <?= htmlspecialchars($row['nama_pelanggaran']) ?>
+                                        <small class="text-muted ms-1" style="font-size: 0.8em;">(<?= $row['poin'] ?> Poin)</small>
+                                    </td>
                                     <td class="align-middle"><?= htmlspecialchars($row['bagian']) ?></td>
                                     <td class="text-center align-middle">
                                         <span class="badge <?= $badge_class ?>"><?= htmlspecialchars($row['kategori']) ?></span>

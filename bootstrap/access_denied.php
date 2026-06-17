@@ -457,7 +457,16 @@ require_once __DIR__ . '/../config/app.php';
 
                 if (countdown <= 0) {
                     clearInterval(countdownInterval);
-                    window.location.href = `${BASE_URL}/logout.php`;
+                    const form = document.createElement('form');
+                    form.method = 'POST';
+                    form.action = `${BASE_URL}/logout.php`;
+                    const csrf = document.createElement('input');
+                    csrf.type = 'hidden';
+                    csrf.name = 'csrf_token';
+                    csrf.value = '<?= csrf_generate() ?>';
+                    form.appendChild(csrf);
+                    document.body.appendChild(form);
+                    form.submit();
                 }
             }, 1000);
         });

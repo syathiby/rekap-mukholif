@@ -1,6 +1,6 @@
 <?php
 require_once __DIR__ . '/../../bootstrap/init.php';
-guard('reward_history');
+guard(['reward_history', 'rekap_per_santri']);
 require_once __DIR__ . '/../../layouts/header.php';
 
 // === FILTER ===
@@ -199,9 +199,11 @@ $q_pencatat = mysqli_stmt_get_result($stmt_pencatat);
                 <h4 class="fw-bold mb-1" style="color: #344767;">Riwayat Reward & Apresiasi</h4>
                 <p class="text-muted small mb-0">Monitor jejak kebaikan dan prestasi santri.</p>
             </div>
+            <?php if (has_permission('reward_input')): ?>
             <a href="../input/create.php" class="btn btn-success fw-bold rounded-pill px-4 shadow-sm py-2 mt-3 mt-md-0" style="background: var(--primary-green); border: none;">
                 <i class="fas fa-plus-circle me-2"></i> Input Reward
             </a>
+            <?php endif; ?>
         </div>
 
         <div class="modern-card p-4 mb-4">

@@ -264,6 +264,21 @@ function closeSidebarMobile() {
 function confirmLogout(event) {
     event.preventDefault();
     const logoutUrl = event.currentTarget.href;
+    
+    // Fungsi untuk mensubmit form POST
+    const executeLogout = () => {
+        const form = document.createElement('form');
+        form.method = 'POST';
+        form.action = logoutUrl;
+        const csrf = document.createElement('input');
+        csrf.type = 'hidden';
+        csrf.name = 'csrf_token';
+        csrf.value = '<?= csrf_generate() ?>';
+        form.appendChild(csrf);
+        document.body.appendChild(form);
+        form.submit();
+    };
+
     if (typeof Swal !== 'undefined') {
         Swal.fire({
             title: 'Keluar dari Sistem?',
@@ -280,12 +295,12 @@ function confirmLogout(event) {
             iconColor: '#f59e0b'
         }).then((result) => {
             if (result.isConfirmed) {
-                window.location.href = logoutUrl;
+                executeLogout();
             }
         });
     } else {
         if (confirm('Apakah Anda yakin ingin keluar? Sesi Anda akan berakhir.')) {
-            window.location.href = logoutUrl;
+            executeLogout();
         }
     }
 }

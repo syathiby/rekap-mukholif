@@ -120,8 +120,10 @@ if ($action === 'preview') {
             // Ambil semua santri dari DB
             $res = mysqli_query($conn, 'SELECT id, nama, kelas, kamar FROM santri');
             $db_map = [];
+            $name_map = []; // BUG FIX 3: Fallback map
             while ($r = mysqli_fetch_assoc($res)) {
                 $db_map[$r['id']] = $r;
+                $name_map[strtolower(trim($r['nama']))] = $r;
             }
 
             foreach ($rows as $idx => $row) {
@@ -130,6 +132,15 @@ if ($action === 'preview') {
                 $id_raw = get_smart_value($row_data, ['id_santri', 'id_siswa', 'id']);
                 $id     = ($id_raw !== null && trim((string)$id_raw) !== '') ? (int)$id_raw : null;
                 if ($id !== null && $id <= 0) $id = null;
+
+                // BUG FIX 3: Jika ID kosong, cari berdasarkan nama
+                $nama_excel = (string)(get_smart_value($row_data, ['nama', 'santri', 'name']) ?? '');
+                if ($id === null && trim($nama_excel) !== '') {
+                    $key = strtolower(trim($nama_excel));
+                    if (isset($name_map[$key])) {
+                        $id = (int)$name_map[$key]['id'];
+                    }
+                }
 
                 $db_row = ($id && isset($db_map[$id])) ? $db_map[$id] : null;
 
@@ -208,8 +219,10 @@ if ($action === 'preview') {
 
             $res = mysqli_query($conn, 'SELECT id, nama_pelanggaran, bagian, poin, kategori FROM jenis_pelanggaran');
             $db_map = [];
+            $name_map = [];
             while ($r = mysqli_fetch_assoc($res)) {
                 $db_map[$r['id']] = $r;
+                $name_map[strtolower(trim($r['nama_pelanggaran']))] = $r;
             }
 
             foreach ($rows as $idx => $row) {
@@ -218,6 +231,14 @@ if ($action === 'preview') {
                 $id_raw = get_smart_value($row_data, ['id_pelanggaran', 'id_jenis', 'id']);
                 $id     = ($id_raw !== null && trim((string)$id_raw) !== '') ? (int)$id_raw : null;
                 if ($id !== null && $id <= 0) $id = null;
+
+                $nama_excel = (string)(get_smart_value($row_data, ['nama_pelanggaran', 'nama', 'pelanggaran']) ?? '');
+                if ($id === null && trim($nama_excel) !== '') {
+                    $key = strtolower(trim($nama_excel));
+                    if (isset($name_map[$key])) {
+                        $id = (int)$name_map[$key]['id'];
+                    }
+                }
 
                 $db_row = ($id && isset($db_map[$id])) ? $db_map[$id] : null;
 
@@ -324,8 +345,10 @@ if ($action === 'preview') {
 
             $res = mysqli_query($conn, 'SELECT id, nama_reward, poin_reward, deskripsi FROM jenis_reward');
             $db_map = [];
+            $name_map = [];
             while ($r = mysqli_fetch_assoc($res)) {
                 $db_map[$r['id']] = $r;
+                $name_map[strtolower(trim($r['nama_reward']))] = $r;
             }
 
             foreach ($rows as $idx => $row) {
@@ -334,6 +357,14 @@ if ($action === 'preview') {
                 $id_raw = get_smart_value($row_data, ['id_reward', 'id_jenis', 'id']);
                 $id     = ($id_raw !== null && trim((string)$id_raw) !== '') ? (int)$id_raw : null;
                 if ($id !== null && $id <= 0) $id = null;
+
+                $nama_excel = (string)(get_smart_value($row_data, ['nama_reward', 'nama', 'reward', 'penghargaan']) ?? '');
+                if ($id === null && trim($nama_excel) !== '') {
+                    $key = strtolower(trim($nama_excel));
+                    if (isset($name_map[$key])) {
+                        $id = (int)$name_map[$key]['id'];
+                    }
+                }
 
                 $db_row = ($id && isset($db_map[$id])) ? $db_map[$id] : null;
 
@@ -407,15 +438,21 @@ if ($action === 'preview') {
             }
         }
 
-        $_SESSION['sync_preview_data'] = $preview_list;
+        // BUG FIX 1: Save to JSON file instead of Session to prevent memory bloat
+        $preview_json_file = sys_get_temp_dir() . '/sync_preview_' . uniqid() . '.json';
+        file_put_contents($preview_json_file, json_encode($preview_list));
+        $_SESSION['sync_preview_file'] = $preview_json_file;
 
     } catch (Exception $e) {
         $_SESSION['sync_error_msg'] = $e->getMessage();
         if (isset($_SESSION['sync_temp_file']) && file_exists($_SESSION['sync_temp_file'])) {
             @unlink($_SESSION['sync_temp_file']);
         }
+        if (isset($_SESSION['sync_preview_file']) && file_exists($_SESSION['sync_preview_file'])) {
+            @unlink($_SESSION['sync_preview_file']);
+        }
         unset($_SESSION['sync_preview_data'], $_SESSION['sync_temp_file'],
-              $_SESSION['sync_type'], $_SESSION['sync_mode']);
+              $_SESSION['sync_type'], $_SESSION['sync_mode'], $_SESSION['sync_preview_file']);
     }
 
     header('Location: index.php');
@@ -427,17 +464,23 @@ if ($action === 'preview') {
 // ════════════════════════════════════════════════════════════════════════════
 if ($action === 'confirm') {
 
-    if (!isset($_SESSION['sync_preview_data'], $_SESSION['sync_type'])) {
+    if (empty($_SESSION['sync_type']) || (empty($_SESSION['sync_preview_data']) && empty($_SESSION['sync_preview_file']))) {
         $_SESSION['sync_error_msg'] = 'Sesi sinkronisasi tidak valid atau sudah kedaluwarsa.';
         header('Location: index.php');
         exit;
     }
 
-    $preview_list = $_SESSION['sync_preview_data'];
+    $preview_list = [];
+    if (!empty($_SESSION['sync_preview_file']) && file_exists($_SESSION['sync_preview_file'])) {
+        $preview_list = json_decode(file_get_contents($_SESSION['sync_preview_file']), true) ?: [];
+    } elseif (!empty($_SESSION['sync_preview_data'])) {
+        $preview_list = $_SESSION['sync_preview_data'];
+    }
     $type         = $_SESSION['sync_type'];
     $insert_count = 0;
     $update_count = 0;
     $delete_count = 0;
+    $failed_deletes = [];
 
     mysqli_begin_transaction($conn);
 
@@ -449,15 +492,14 @@ if ($action === 'confirm') {
             $stmt_ins    = mysqli_prepare($conn, 'INSERT INTO santri (id, nama, kelas, kamar) VALUES (?, ?, ?, ?)');
             $stmt_ins_ni = mysqli_prepare($conn, 'INSERT INTO santri (nama, kelas, kamar) VALUES (?, ?, ?)');
             $stmt_upd    = mysqli_prepare($conn, 'UPDATE santri SET nama = ?, kelas = ?, kamar = ? WHERE id = ?');
-            $stmt_del_pel = mysqli_prepare($conn, 'DELETE FROM pelanggaran WHERE santri_id = ?');
-            $stmt_del_rew = mysqli_prepare($conn, 'DELETE FROM daftar_reward WHERE santri_id = ?');
             $stmt_del     = mysqli_prepare($conn, 'DELETE FROM santri WHERE id = ?');
 
 
             foreach ($preview_list as $row) {
+                if (!empty($row['is_fatal'])) continue; // BUG FIX 4: Skip FATAL
                 $d = $row['data'];
                 if ($row['action'] === 'INSERT') {
-                    if (!empty($d['id']) && empty($row['is_fatal'])) {
+                    if (!empty($d['id'])) {
                         mysqli_stmt_bind_param($stmt_ins, 'isss', $d['id'], $d['nama'], $d['kelas'], $d['kamar']);
                         mysqli_stmt_execute($stmt_ins);
                     } else {
@@ -471,13 +513,29 @@ if ($action === 'confirm') {
                     $update_count++;
                 } elseif ($row['action'] === 'DELETE') {
                     $sid = $d['id'];
-                    mysqli_stmt_bind_param($stmt_del_pel, 'i', $sid);
-                    mysqli_stmt_execute($stmt_del_pel);
-                    mysqli_stmt_bind_param($stmt_del_rew, 'i', $sid);
-                    mysqli_stmt_execute($stmt_del_rew);
-                    mysqli_stmt_bind_param($stmt_del, 'i', $sid);
-                    mysqli_stmt_execute($stmt_del);
-                    $delete_count++;
+                    try {
+                        // Sensor PHP: Cek keterkaitan data pelanggaran atau reward
+                        $q_cek = mysqli_query($conn, "SELECT 
+                            (SELECT COUNT(*) FROM pelanggaran WHERE santri_id = $sid) as jml_pelanggaran,
+                            (SELECT COUNT(*) FROM daftar_reward WHERE santri_id = $sid) as jml_reward");
+                        $cek = mysqli_fetch_assoc($q_cek);
+                        
+                        if ($cek['jml_pelanggaran'] > 0 || $cek['jml_reward'] > 0) {
+                            $rincian = [];
+                            if ($cek['jml_pelanggaran'] > 0) $rincian[] = $cek['jml_pelanggaran'] . " Pelanggaran";
+                            if ($cek['jml_reward'] > 0) $rincian[] = $cek['jml_reward'] . " Reward";
+                            $pesan_alasan = "Tertahan: memiliki " . implode(" & ", $rincian) . " aktif";
+                            
+                            $failed_deletes[] = "ID {$d['id']} - " . htmlspecialchars($d['nama']) . " <br><small class='text-muted'>$pesan_alasan</small>";
+                            continue; // Skip hapus, selamatkan data
+                        }
+
+                        mysqli_stmt_bind_param($stmt_del, 'i', $sid);
+                        mysqli_stmt_execute($stmt_del);
+                        $delete_count++;
+                    } catch (Exception $e) {
+                        $failed_deletes[] = "ID {$d['id']} - " . htmlspecialchars($d['nama']) . " <br><small class='text-muted'>Error constraint database</small>";
+                    }
                 }
             }
 
@@ -495,9 +553,10 @@ if ($action === 'confirm') {
             $stmt_del    = mysqli_prepare($conn, 'DELETE FROM jenis_pelanggaran WHERE id = ?');
 
             foreach ($preview_list as $row) {
+                if (!empty($row['is_fatal'])) continue;
                 $d = $row['data'];
                 if ($row['action'] === 'INSERT') {
-                    if (!empty($d['id']) && empty($row['is_fatal'])) {
+                    if (!empty($d['id'])) {
                         mysqli_stmt_bind_param($stmt_ins, 'issis', $d['id'], $d['nama_pelanggaran'], $d['bagian'], $d['poin'], $d['kategori']);
                         mysqli_stmt_execute($stmt_ins);
                     } else {
@@ -510,9 +569,13 @@ if ($action === 'confirm') {
                     mysqli_stmt_execute($stmt_upd);
                     $update_count++;
                 } elseif ($row['action'] === 'DELETE') {
-                    mysqli_stmt_bind_param($stmt_del, 'i', $d['id']);
-                    mysqli_stmt_execute($stmt_del);
-                    $delete_count++;
+                    try {
+                        mysqli_stmt_bind_param($stmt_del, 'i', $d['id']);
+                        mysqli_stmt_execute($stmt_del);
+                        $delete_count++;
+                    } catch (Exception $e) {
+                        $failed_deletes[] = "ID {$d['id']} - " . htmlspecialchars($d['nama_pelanggaran']);
+                    }
                 }
             }
 
@@ -530,9 +593,10 @@ if ($action === 'confirm') {
             $stmt_del    = mysqli_prepare($conn, 'DELETE FROM jenis_reward WHERE id = ?');
 
             foreach ($preview_list as $row) {
+                if (!empty($row['is_fatal'])) continue;
                 $d = $row['data'];
                 if ($row['action'] === 'INSERT') {
-                    if (!empty($d['id']) && empty($row['is_fatal'])) {
+                    if (!empty($d['id'])) {
                         mysqli_stmt_bind_param($stmt_ins, 'isis', $d['id'], $d['nama_reward'], $d['poin_reward'], $d['deskripsi']);
                         mysqli_stmt_execute($stmt_ins);
                     } else {
@@ -545,9 +609,13 @@ if ($action === 'confirm') {
                     mysqli_stmt_execute($stmt_upd);
                     $update_count++;
                 } elseif ($row['action'] === 'DELETE') {
-                    mysqli_stmt_bind_param($stmt_del, 'i', $d['id']);
-                    mysqli_stmt_execute($stmt_del);
-                    $delete_count++;
+                    try {
+                        mysqli_stmt_bind_param($stmt_del, 'i', $d['id']);
+                        mysqli_stmt_execute($stmt_del);
+                        $delete_count++;
+                    } catch (Exception $e) {
+                        $failed_deletes[] = "ID {$d['id']} - " . htmlspecialchars($d['nama_reward']);
+                    }
                 }
             }
 
@@ -564,8 +632,25 @@ if ($action === 'confirm') {
             'jenis_reward'      => 'Jenis Reward',
             default             => 'Santri',
         };
-        $_SESSION['sync_success_msg'] = "Sinkronisasi {$type_label} berhasil! "
-            . "{$insert_count} ditambahkan, {$update_count} diperbarui, {$delete_count} dihapus.";
+        $msg = "Sinkronisasi {$type_label} selesai.<br>"
+             . "<b>{$insert_count}</b> masuk, <b>{$update_count}</b> diperbarui, <b>{$delete_count}</b> dihapus.";
+             
+        if (!empty($failed_deletes)) {
+            // Batasi tampilan maksimal 10 nama agar alert tidak terlalu panjang memenuhi layar
+            $display_fails = array_slice($failed_deletes, 0, 10);
+            $more_fails = count($failed_deletes) > 10 ? "<li class='mt-2'>... dan " . (count($failed_deletes) - 10) . " lainnya.</li>" : "";
+            
+            $msg .= "<br><br><div class='text-start bg-info bg-opacity-10 border border-info border-opacity-50 rounded-3 p-3 mt-2 shadow-sm'>"
+                  . "<div class='d-flex align-items-start gap-2'>"
+                  . "<i class='bi bi-info-circle-fill text-info fs-5 mt-1'></i>"
+                  . "<div>"
+                  . "<strong class='text-dark'>Proteksi Data Aktif Berjalan!</strong><br>"
+                  . "<p class='small text-secondary mb-2 mt-1' style='line-height:1.4'>Ada <strong>" . count($failed_deletes) . " data</strong> yang sengaja dipertahankan karena masih memiliki riwayat di luar arsip yang belum ditutup buku (atau pelanggaran permanen):</p>"
+                  . "<ul class='mb-0 small text-dark ps-3 fw-medium text-start' style='line-height:1.5'><li class='mb-1'>" . implode("</li><li class='mb-1'>", $display_fails) . "</li>{$more_fails}</ul>"
+                  . "</div></div></div>";
+        }
+
+        $_SESSION['sync_success_msg'] = $msg;
 
     } catch (Exception $e) {
         mysqli_rollback($conn);
@@ -574,8 +659,11 @@ if ($action === 'confirm') {
         if (isset($_SESSION['sync_temp_file']) && file_exists($_SESSION['sync_temp_file'])) {
             @unlink($_SESSION['sync_temp_file']);
         }
+        if (isset($_SESSION['sync_preview_file']) && file_exists($_SESSION['sync_preview_file'])) {
+            @unlink($_SESSION['sync_preview_file']);
+        }
         unset($_SESSION['sync_preview_data'], $_SESSION['sync_temp_file'],
-              $_SESSION['sync_type'], $_SESSION['sync_mode']);
+              $_SESSION['sync_type'], $_SESSION['sync_mode'], $_SESSION['sync_preview_file']);
     }
 
     header('Location: index.php');
@@ -589,8 +677,11 @@ if ($action === 'cancel') {
     if (isset($_SESSION['sync_temp_file']) && file_exists($_SESSION['sync_temp_file'])) {
         @unlink($_SESSION['sync_temp_file']);
     }
+    if (isset($_SESSION['sync_preview_file']) && file_exists($_SESSION['sync_preview_file'])) {
+        @unlink($_SESSION['sync_preview_file']);
+    }
     unset($_SESSION['sync_preview_data'], $_SESSION['sync_temp_file'],
-          $_SESSION['sync_type'], $_SESSION['sync_mode']);
+          $_SESSION['sync_type'], $_SESSION['sync_mode'], $_SESSION['sync_preview_file']);
 }
 
 header('Location: index.php');

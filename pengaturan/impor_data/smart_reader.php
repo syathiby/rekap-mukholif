@@ -132,7 +132,15 @@ function is_similar_name(string $name1, string $name2): bool {
     if ($max_len === 0) return false;
 
     $dist = levenshtein($n1, $n2);
-    return ($dist <= 2 || ($dist / $max_len) < 0.20);
+    
+    // BUG FIX 2: Perketat logika kemiripan
+    if ($max_len <= 4) {
+        // Nama sangat pendek (<= 4 huruf) wajib sama persis
+        return $dist === 0;
+    }
+    
+    // Toleransi typo 1 huruf atau max 15% beda untuk nama panjang
+    return ($dist <= 1 || ($dist / $max_len) < 0.15);
 }
 
 

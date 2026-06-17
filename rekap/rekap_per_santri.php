@@ -29,6 +29,17 @@ $end_date     = $_GET['end_date']   ?? date("Y-m-d");
 $kamars_result = mysqli_query($conn, "SELECT DISTINCT kamar FROM santri WHERE kamar IS NOT NULL AND kamar != '' ORDER BY CAST(REGEXP_REPLACE(kamar, '[^0-9]', '') AS UNSIGNED) ASC, REGEXP_REPLACE(kamar, '[0-9]', '') ASC");
 $kelas_result  = mysqli_query($conn, "SELECT DISTINCT kelas FROM santri WHERE kelas IS NOT NULL AND kelas != '' ORDER BY CAST(REGEXP_REPLACE(kelas, '[^0-9]', '') AS UNSIGNED) ASC, REGEXP_REPLACE(kelas, '[0-9]', '') ASC");
 
+// Dropdown filter khusus daftar hitam
+$ff = [$start_date, $end_date];
+$bagian_stmt = $conn->prepare("SELECT DISTINCT jp.bagian FROM pelanggaran p JOIN jenis_pelanggaran jp ON p.jenis_pelanggaran_id = jp.id WHERE DATE(p.tanggal) BETWEEN ? AND ? AND jp.bagian IS NOT NULL AND jp.bagian != '' ORDER BY jp.bagian ASC");
+$bagian_stmt->bind_param("ss", ...$ff); $bagian_stmt->execute(); $bagian_result = $bagian_stmt->get_result();
+
+$kategori_stmt = $conn->prepare("SELECT DISTINCT jp.kategori FROM pelanggaran p JOIN jenis_pelanggaran jp ON p.jenis_pelanggaran_id = jp.id WHERE DATE(p.tanggal) BETWEEN ? AND ? AND jp.kategori IS NOT NULL AND jp.kategori != '' ORDER BY FIELD(jp.kategori, 'Sangat Berat', 'Berat', 'Sedang', 'Ringan')");
+$kategori_stmt->bind_param("ss", ...$ff); $kategori_stmt->execute(); $kategori_result = $kategori_stmt->get_result();
+
+$jp_stmt = $conn->prepare("SELECT DISTINCT jp.id, jp.nama_pelanggaran FROM pelanggaran p JOIN jenis_pelanggaran jp ON p.jenis_pelanggaran_id = jp.id WHERE DATE(p.tanggal) BETWEEN ? AND ? ORDER BY jp.nama_pelanggaran ASC");
+$jp_stmt->bind_param("ss", ...$ff); $jp_stmt->execute(); $jp_result = $jp_stmt->get_result();
+
 // ================================================================
 // TIPE 1: DAFTAR HITAM (ex-pelanggaran_umum)
 // ================================================================
@@ -37,16 +48,6 @@ if ($tipe === 'daftar_hitam') {
     $filter_bagian   = $_GET['bagian']           ?? null;
     $filter_kategori = $_GET['kategori']          ?? null;
     $filter_jp       = $_GET['jenis_pelanggaran'] ?? null;
-
-    $ff = [$start_date, $end_date];
-    $bagian_stmt = $conn->prepare("SELECT DISTINCT jp.bagian FROM pelanggaran p JOIN jenis_pelanggaran jp ON p.jenis_pelanggaran_id = jp.id WHERE DATE(p.tanggal) BETWEEN ? AND ? AND jp.bagian IS NOT NULL AND jp.bagian != '' ORDER BY jp.bagian ASC");
-    $bagian_stmt->bind_param("ss", ...$ff); $bagian_stmt->execute(); $bagian_result = $bagian_stmt->get_result();
-
-    $kategori_stmt = $conn->prepare("SELECT DISTINCT jp.kategori FROM pelanggaran p JOIN jenis_pelanggaran jp ON p.jenis_pelanggaran_id = jp.id WHERE DATE(p.tanggal) BETWEEN ? AND ? AND jp.kategori IS NOT NULL AND jp.kategori != '' ORDER BY FIELD(jp.kategori, 'Sangat Berat', 'Berat', 'Sedang', 'Ringan')");
-    $kategori_stmt->bind_param("ss", ...$ff); $kategori_stmt->execute(); $kategori_result = $kategori_stmt->get_result();
-
-    $jp_stmt = $conn->prepare("SELECT DISTINCT jp.id, jp.nama_pelanggaran FROM pelanggaran p JOIN jenis_pelanggaran jp ON p.jenis_pelanggaran_id = jp.id WHERE DATE(p.tanggal) BETWEEN ? AND ? ORDER BY jp.nama_pelanggaran ASC");
-    $jp_stmt->bind_param("ss", ...$ff); $jp_stmt->execute(); $jp_result = $jp_stmt->get_result();
 
     $sql = "SELECT s.id, s.nama, s.kelas, s.kamar, s.poin_aktif,
                    COALESCE(sub.total_pelanggaran_periode, 0) AS total_pelanggaran_periode,
@@ -378,9 +379,9 @@ tr.rank-3 .rank-icon { color:var(--bronze); }
                         <label>Bagian</label>
                         <select name="bagian" id="bagian" class="form-select">
                             <option value="">Semua Bagian</option>
-                            <?php if ($tipe==='daftar_hitam'): mysqli_data_seek($bagian_result, 0); while ($b = mysqli_fetch_assoc($bagian_result)): ?>
+                            <?php mysqli_data_seek($bagian_result, 0); while ($b = mysqli_fetch_assoc($bagian_result)): ?>
                                 <option value="<?= htmlspecialchars($b['bagian']) ?>" <?= (($filter_bagian??'')==$b['bagian'])?'selected':'' ?>><?= htmlspecialchars(format_typing($b['bagian'])) ?></option>
-                            <?php endwhile; endif; ?>
+                            <?php endwhile; ?>
                         </select>
                     </div>
                 </div>
@@ -389,9 +390,9 @@ tr.rank-3 .rank-icon { color:var(--bronze); }
                         <label>Kategori</label>
                         <select name="kategori" id="kategori" class="form-select">
                             <option value="">Semua Kategori</option>
-                            <?php if ($tipe==='daftar_hitam'): mysqli_data_seek($kategori_result, 0); while ($kat = mysqli_fetch_assoc($kategori_result)): ?>
+                            <?php mysqli_data_seek($kategori_result, 0); while ($kat = mysqli_fetch_assoc($kategori_result)): ?>
                                 <option value="<?= htmlspecialchars($kat['kategori']) ?>" <?= (($filter_kategori??'')==$kat['kategori'])?'selected':'' ?>><?= htmlspecialchars(format_typing($kat['kategori'])) ?></option>
-                            <?php endwhile; endif; ?>
+                            <?php endwhile; ?>
                         </select>
                     </div>
                 </div>
@@ -400,9 +401,9 @@ tr.rank-3 .rank-icon { color:var(--bronze); }
                         <label>Jenis Pelanggaran</label>
                         <select name="jenis_pelanggaran" id="jenis_pelanggaran" class="form-select">
                             <option value="">Semua Jenis</option>
-                            <?php if ($tipe==='daftar_hitam'): mysqli_data_seek($jp_result, 0); while ($jp = mysqli_fetch_assoc($jp_result)): ?>
+                            <?php mysqli_data_seek($jp_result, 0); while ($jp = mysqli_fetch_assoc($jp_result)): ?>
                                 <option value="<?= $jp['id'] ?>" <?= (($filter_jp??'')==$jp['id'])?'selected':'' ?>><?= htmlspecialchars(format_typing($jp['nama_pelanggaran'])) ?></option>
-                            <?php endwhile; endif; ?>
+                            <?php endwhile; ?>
                         </select>
                     </div>
                 </div>

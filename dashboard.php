@@ -297,6 +297,7 @@ $teladan_onclick = !$can_view_santri_teladan ? 'onclick="event.preventDefault();
         
         <div class="row g-4 mb-4">
             <!-- Card 1: Total Santri -->
+            <?php if ($can_view_santri): ?>
             <div class="col-xl-3 col-md-6">
                 <div class="card h-100 shadow-sm border-0 rounded-4 overflow-hidden position-relative" style="background: linear-gradient(145deg, #ffffff, #f8fafc);">
                     <div class="card-body p-4">
@@ -311,17 +312,15 @@ $teladan_onclick = !$can_view_santri_teladan ? 'onclick="event.preventDefault();
                         </div>
                         <div class="text-muted small mt-2 d-flex justify-content-between align-items-center">
                             <span>Santri aktif terdaftar</span>
-                            <?php if ($can_view_santri): ?>
-                                <a href="santri/index.php" class="text-success text-decoration-none fw-semibold stretched-link" style="font-size:0.8rem;">Lihat <i class="fas fa-arrow-right ms-1"></i></a>
-                            <?php else: ?>
-                                <i class="fas fa-lock opacity-50"></i>
-                            <?php endif; ?>
+                            <a href="santri/index.php" class="text-success text-decoration-none fw-semibold stretched-link" style="font-size:0.8rem;">Lihat <i class="fas fa-arrow-right ms-1"></i></a>
                         </div>
                     </div>
                 </div>
             </div>
+            <?php endif; ?>
             
             <!-- Card 2: Jenis Pelanggaran -->
+            <?php if ($can_view_jp): ?>
             <div class="col-xl-3 col-md-6">
                 <div class="card h-100 shadow-sm border-0 rounded-4 overflow-hidden position-relative" style="background: linear-gradient(145deg, #ffffff, #fffbeb);">
                     <div class="card-body p-4">
@@ -336,17 +335,15 @@ $teladan_onclick = !$can_view_santri_teladan ? 'onclick="event.preventDefault();
                         </div>
                         <div class="text-muted small mt-2 d-flex justify-content-between align-items-center">
                             <span>Macam-macam aturan</span>
-                            <?php if ($can_view_jp): ?>
-                                <a href="jenis-pelanggaran/index.php" class="text-warning text-decoration-none fw-semibold stretched-link" style="font-size:0.8rem;">Kelola <i class="fas fa-arrow-right ms-1"></i></a>
-                            <?php else: ?>
-                                <i class="fas fa-lock opacity-50"></i>
-                            <?php endif; ?>
+                            <a href="jenis-pelanggaran/index.php" class="text-warning text-decoration-none fw-semibold stretched-link" style="font-size:0.8rem;">Kelola <i class="fas fa-arrow-right ms-1"></i></a>
                         </div>
                     </div>
                 </div>
             </div>
+            <?php endif; ?>
             
             <!-- Card 3: Total Pelanggaran -->
+            <?php if ($can_view_chart): ?>
             <div class="col-xl-3 col-md-6">
                 <div class="card h-100 shadow-sm border-0 rounded-4 overflow-hidden position-relative" style="background: linear-gradient(145deg, #ffffff, #fef2f2);">
                     <div class="card-body p-4">
@@ -367,17 +364,15 @@ $teladan_onclick = !$can_view_santri_teladan ? 'onclick="event.preventDefault();
                                     <br><span class="text-danger fw-medium d-inline-block mt-1" style="font-size: 0.75rem;"><i class="fas fa-fire me-1"></i>Sering: <?= htmlspecialchars($frequent_violation['nama_pelanggaran']) ?></span>
                                 <?php endif; ?>
                             </div>
-                            <?php if ($can_view_chart): ?>
-                                <a href="rekap/chart.php" class="text-danger text-decoration-none fw-semibold stretched-link" style="font-size:0.8rem;">Statistik <i class="fas fa-arrow-right ms-1"></i></a>
-                            <?php else: ?>
-                                <i class="fas fa-lock opacity-50 mb-1"></i>
-                            <?php endif; ?>
+                            <a href="rekap/chart.php" class="text-danger text-decoration-none fw-semibold stretched-link" style="font-size:0.8rem;">Statistik <i class="fas fa-arrow-right ms-1"></i></a>
                         </div>
                     </div>
                 </div>
             </div>
+            <?php endif; ?>
             
             <!-- Card 4: Santri Teladan -->
+            <?php if ($can_view_santri_teladan): ?>
             <div class="col-xl-3 col-md-6">
                 <div class="card h-100 shadow-sm border-0 rounded-4 overflow-hidden position-relative" style="background: linear-gradient(145deg, #ffffff, #f0fdf4);">
                     <div class="card-body p-4">
@@ -392,15 +387,12 @@ $teladan_onclick = !$can_view_santri_teladan ? 'onclick="event.preventDefault();
                         </div>
                         <div class="text-muted small mt-2 d-flex justify-content-between align-items-center">
                             <span>Tanpa catatan kasus</span>
-                            <?php if ($can_view_santri_teladan): ?>
-                                <a href="rekap/rekap_per_santri.php?tipe=santri_teladan" class="text-primary text-decoration-none fw-semibold stretched-link" style="font-size:0.8rem;">Daftar <i class="fas fa-arrow-right ms-1"></i></a>
-                            <?php else: ?>
-                                <i class="fas fa-lock opacity-50"></i>
-                            <?php endif; ?>
+                            <a href="rekap/rekap_per_santri.php?tipe=santri_teladan" class="text-primary text-decoration-none fw-semibold stretched-link" style="font-size:0.8rem;">Daftar <i class="fas fa-arrow-right ms-1"></i></a>
                         </div>
                     </div>
                 </div>
             </div>
+            <?php endif; ?>
         </div>
 
         <div class="row g-4 mb-4">

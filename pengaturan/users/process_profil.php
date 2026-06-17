@@ -35,7 +35,7 @@ if (empty($username_baru) || empty($old_password)) {
 // 1. Cek batasan 3 kali per bulan (Hanya jika tidak memiliki izin user_manage)
 if (!has_permission('user_manage')) {
     $current_month = date('Y-m');
-    $stmt_limit = $conn->prepare("SELECT COUNT(*) as count FROM log_aktifitas WHERE user_id = ? AND fitur = 'profil' AND aksi = 'UPDATE' AND DATE_FORMAT(waktu, '%Y-%m') = ?");
+    $stmt_limit = $conn->prepare("SELECT COUNT(*) as count FROM log_aktifitas WHERE user_id = ? AND fitur = 'profil' AND aksi = 'UPDATE' AND DATE_FORMAT(dibuat_pada, '%Y-%m') = ?");
     $stmt_limit->bind_param("is", $user_id, $current_month);
     $stmt_limit->execute();
     $res_limit = $stmt_limit->get_result();

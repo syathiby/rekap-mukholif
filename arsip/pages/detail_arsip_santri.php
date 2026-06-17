@@ -31,6 +31,8 @@ $filter_jp = $_GET['jenis_pelanggaran'] ?? '';
 $filter_tipe = $_GET['tipe'] ?? '';
 $filter_kelas = $_GET['kelas'] ?? '';
 $filter_kamar = $_GET['kamar'] ?? '';
+$filter_sort_order = $_GET['sort_order'] ?? '';
+$filter_formula = $_GET['formula'] ?? '';
 
 $filter_qs = "&arsip_id=" . $arsip_id . "&id=" . $santri_id;
 if (!empty($filter_bagian)) $filter_qs .= "&bagian=" . urlencode($filter_bagian);
@@ -42,6 +44,8 @@ if (!empty($filter_kelas)) $back_qs .= "&kelas=" . urlencode($filter_kelas);
 if (!empty($filter_kamar)) $back_qs .= "&kamar=" . urlencode($filter_kamar);
 if (!empty($filter_bagian)) $back_qs .= "&bagian=" . urlencode($filter_bagian);
 if (!empty($filter_jp)) $back_qs .= "&jenis_pelanggaran=" . urlencode($filter_jp);
+if (!empty($filter_sort_order)) $back_qs .= "&sort_order=" . urlencode($filter_sort_order);
+if (!empty($filter_formula)) $back_qs .= "&formula=" . urlencode($filter_formula);
 
 // ─── 4. Info Santri ───────────────────────────────────────────────────────────
 $stmt_santri = $conn->prepare("SELECT santri_id AS id, santri_nama AS nama, santri_kelas AS kelas, santri_kamar AS kamar, total_poin_saat_arsip AS poin_aktif FROM arsip_data_santri WHERE arsip_id = ? AND santri_id = ?");
@@ -340,10 +344,21 @@ $json_telat_data = json_encode($telat_kategori_data);
 // ─── Komposisi chart data (hitung PHP, bukan duplikat di JS) ─────────────────
 $comp_labels = $comp_data = $comp_colors = [];
 $colorMap = ['Sangat Berat'=>'#b91c1c','Berat'=>'#ef4444','Sedang'=>'#f59e0b','Ringan'=>'#fcd34d','Reward'=>'#10b981'];
+$palette = ['#3b82f6', '#8b5cf6', '#14b8a6', '#f97316', '#ec4899', '#6366f1', '#84cc16', '#06b6d4'];
+$paletteIdx = 0;
+
+// Assign warna dinamis untuk bagian/kategori yang tidak ada di colorMap (seperti Pengabdian, Diniyyah, dsb)
+foreach ($pelanggaran_kategori as $pk) {
+    if (!isset($colorMap[$pk['kategori']])) {
+        $colorMap[$pk['kategori']] = $palette[$paletteIdx % count($palette)];
+        $paletteIdx++;
+    }
+}
+
 foreach ($pelanggaran_kategori as $pk) {
     $comp_labels[] = 'Pelanggaran ' . $pk['kategori'];
     $comp_data[]   = $pk['total_poin'];
-    $comp_colors[] = $colorMap[$pk['kategori']] ?? '#6b7280';
+    $comp_colors[] = $colorMap[$pk['kategori']];
 }
 foreach ($reward_kategori as $rk) {
     $comp_labels[] = 'Reward';
@@ -359,7 +374,7 @@ $freq_labels = $freq_data = $freq_colors = [];
 foreach ($pelanggaran_kategori as $pk) {
     $freq_labels[] = 'Pelanggaran ' . $pk['kategori'];
     $freq_data[]   = $pk['jumlah'];
-    $freq_colors[] = $colorMap[$pk['kategori']] ?? '#6b7280';
+    $freq_colors[] = $colorMap[$pk['kategori']];
 }
 foreach ($reward_kategori as $rk) {
     $freq_labels[] = 'Reward';
@@ -586,7 +601,7 @@ require_once __DIR__ . '/../../layouts/header.php';
                 </div>
             </div>
             <div class="col-6 col-lg-3">
-                <a href="detail_pelanggaran_arsip.php?id=<?= $arsip_id ?>&santri_id=<?= $santri_id ?>" class="text-decoration-none" style="display: block; height: 100%;">
+                <a href="detail_pelanggaran_arsip.php?id=<?= $arsip_id ?>&santri_id=<?= $santri_id ?><?= $back_qs ?>" class="text-decoration-none" style="display: block; height: 100%;">
                     <div class="info-card danger" style="padding: 1.1rem; transition: transform 0.2s, box-shadow 0.2s;" onmouseover="this.style.transform='translateY(-3px)'; this.style.boxShadow='0 6px 20px rgba(0,0,0,0.1)';" onmouseout="this.style.transform='none'; this.style.boxShadow='0 2px 12px rgba(0,0,0,.06)';">
                         <div class="text-muted text-uppercase fw-bold" style="letter-spacing:0.5px;font-size:.7rem">Total Telat</div>
                         <div class="big-number text-danger mt-1" style="font-size: 2rem;">
@@ -630,7 +645,7 @@ require_once __DIR__ . '/../../layouts/header.php';
                 </div>
             </div>
             <div class="col-6 col-lg-3">
-                <a href="detail_pelanggaran_arsip.php?id=<?= $arsip_id ?>&santri_id=<?= $santri_id ?>" class="text-decoration-none" style="display: block; height: 100%;">
+                <a href="detail_pelanggaran_arsip.php?id=<?= $arsip_id ?>&santri_id=<?= $santri_id ?><?= $back_qs ?>" class="text-decoration-none" style="display: block; height: 100%;">
                     <div class="info-card danger" style="padding: 1.1rem; transition: transform 0.2s, box-shadow 0.2s;" onmouseover="this.style.transform='translateY(-3px)'; this.style.boxShadow='0 6px 20px rgba(0,0,0,0.1)';" onmouseout="this.style.transform='none'; this.style.boxShadow='0 2px 12px rgba(0,0,0,.06)';">
                         <div class="text-muted text-uppercase fw-bold" style="letter-spacing:0.5px;font-size:.7rem">Pelanggaran</div>
                         <div class="big-number text-danger mt-1" style="font-size: 2rem;">
@@ -642,7 +657,7 @@ require_once __DIR__ . '/../../layouts/header.php';
                 </a>
             </div>
             <div class="col-6 col-lg-3">
-                <a href="detail_reward_arsip.php?id=<?= $arsip_id ?>&santri_id=<?= $santri_id ?>" class="text-decoration-none" style="display: block; height: 100%;">
+                <a href="detail_reward_arsip.php?id=<?= $arsip_id ?>&santri_id=<?= $santri_id ?><?= $back_qs ?>" class="text-decoration-none" style="display: block; height: 100%;">
                     <div class="info-card success" style="padding: 1.1rem; transition: transform 0.2s, box-shadow 0.2s;" onmouseover="this.style.transform='translateY(-3px)'; this.style.boxShadow='0 6px 20px rgba(0,0,0,0.1)';" onmouseout="this.style.transform='none'; this.style.boxShadow='0 2px 12px rgba(0,0,0,.06)';">
                         <div class="text-muted text-uppercase fw-bold" style="letter-spacing:0.5px;font-size:.7rem">Total Reward</div>
                         <div class="big-number text-success mt-1" style="font-size: 2rem;">+<?= $total_poin_reward ?></div>

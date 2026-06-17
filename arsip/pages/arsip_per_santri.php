@@ -36,6 +36,13 @@ $filter_kelas = $_GET['kelas']      ?? null;
 $kamars_result = mysqli_query($conn, "SELECT DISTINCT santri_kamar AS kamar FROM arsip_data_santri WHERE arsip_id = $arsip_id AND santri_kamar IS NOT NULL AND santri_kamar != '' ORDER BY CAST(REGEXP_REPLACE(santri_kamar, '[^0-9]', '') AS UNSIGNED) ASC, REGEXP_REPLACE(santri_kamar, '[0-9]', '') ASC");
 $kelas_result  = mysqli_query($conn, "SELECT DISTINCT santri_kelas AS kelas FROM arsip_data_santri WHERE arsip_id = $arsip_id AND santri_kelas IS NOT NULL AND santri_kelas != '' ORDER BY CAST(REGEXP_REPLACE(santri_kelas, '[^0-9]', '') AS UNSIGNED) ASC, REGEXP_REPLACE(santri_kelas, '[0-9]', '') ASC");
 
+// Dropdown bagian & jenis_pelanggaran (dipakai daftar hitam)
+$bagian_stmt = $conn->prepare("SELECT DISTINCT bagian FROM arsip_data_pelanggaran WHERE arsip_id = ? AND tipe = 'Umum' AND bagian IS NOT NULL AND bagian != '' ORDER BY bagian ASC");
+$bagian_stmt->bind_param("i", $arsip_id); $bagian_stmt->execute(); $bagian_result = $bagian_stmt->get_result();
+
+$jp_stmt = $conn->prepare("SELECT DISTINCT jenis_pelanggaran_id AS id, jenis_pelanggaran_nama AS nama_pelanggaran FROM arsip_data_pelanggaran WHERE arsip_id = ? AND tipe = 'Umum' ORDER BY jenis_pelanggaran_nama ASC");
+$jp_stmt->bind_param("i", $arsip_id); $jp_stmt->execute(); $jp_result = $jp_stmt->get_result();
+
 // ================================================================
 // TIPE 0: DATA SEMUA SANTRI
 // ================================================================
@@ -62,12 +69,6 @@ if ($tipe === 'daftar_hitam') {
 
     $filter_bagian   = $_GET['bagian']           ?? null;
     $filter_jp       = $_GET['jenis_pelanggaran'] ?? null;
-
-    $bagian_stmt = $conn->prepare("SELECT DISTINCT bagian FROM arsip_data_pelanggaran WHERE arsip_id = ? AND tipe = 'Umum' AND bagian IS NOT NULL AND bagian != '' ORDER BY bagian ASC");
-    $bagian_stmt->bind_param("i", $arsip_id); $bagian_stmt->execute(); $bagian_result = $bagian_stmt->get_result();
-
-    $jp_stmt = $conn->prepare("SELECT DISTINCT jenis_pelanggaran_id AS id, jenis_pelanggaran_nama AS nama_pelanggaran FROM arsip_data_pelanggaran WHERE arsip_id = ? AND tipe = 'Umum' ORDER BY jenis_pelanggaran_nama ASC");
-    $jp_stmt->bind_param("i", $arsip_id); $jp_stmt->execute(); $jp_result = $jp_stmt->get_result();
 
     $sql = "SELECT s.santri_id AS id, s.santri_nama AS nama, s.santri_kelas AS kelas, s.santri_kamar AS kamar, s.total_poin_saat_arsip AS poin_aktif,
                    COALESCE(sub.total_pelanggaran_periode, 0) AS total_pelanggaran_periode,
@@ -377,25 +378,25 @@ tr.rank-3 .rank-icon { color:var(--bronze); }
 
             <!-- Filter Khusus Daftar Hitam: Bagian, Kategori, Jenis -->
             <div class="row g-3 conditional-filter f-daftar-hitam <?= ($tipe==='daftar_hitam')?'':'hidden' ?>">
-                <div class="col-lg-4 col-md-6">
+                <div class="col-lg-6 col-md-6">
                     <div class="filter-group">
                         <label>Bagian</label>
                         <select name="bagian" id="bagian" class="form-select">
                             <option value="">Semua Bagian</option>
-                            <?php if ($tipe==='daftar_hitam'): mysqli_data_seek($bagian_result, 0); while ($b = mysqli_fetch_assoc($bagian_result)): ?>
+                            <?php mysqli_data_seek($bagian_result, 0); while ($b = mysqli_fetch_assoc($bagian_result)): ?>
                                 <option value="<?= htmlspecialchars($b['bagian']) ?>" <?= (($filter_bagian??'')==$b['bagian'])?'selected':'' ?>><?= htmlspecialchars(format_typing($b['bagian'])) ?></option>
-                            <?php endwhile; endif; ?>
+                            <?php endwhile; ?>
                         </select>
                     </div>
                 </div>
-                <div class="col-lg-4 col-md-12">
+                <div class="col-lg-6 col-md-6">
                     <div class="filter-group">
                         <label>Jenis Pelanggaran</label>
                         <select name="jenis_pelanggaran" id="jenis_pelanggaran" class="form-select">
                             <option value="">Semua Jenis</option>
-                            <?php if ($tipe==='daftar_hitam'): mysqli_data_seek($jp_result, 0); while ($jp = mysqli_fetch_assoc($jp_result)): ?>
+                            <?php mysqli_data_seek($jp_result, 0); while ($jp = mysqli_fetch_assoc($jp_result)): ?>
                                 <option value="<?= $jp['id'] ?>" <?= (($filter_jp??'')==$jp['id'])?'selected':'' ?>><?= htmlspecialchars(format_typing($jp['nama_pelanggaran'])) ?></option>
-                            <?php endwhile; endif; ?>
+                            <?php endwhile; ?>
                         </select>
                     </div>
                 </div>
@@ -425,6 +426,8 @@ if (!empty($filter_kelas)) $filter_qs .= "&kelas=" . urlencode($filter_kelas);
 if (!empty($filter_kamar)) $filter_qs .= "&kamar=" . urlencode($filter_kamar);
 if (!empty($filter_bagian)) $filter_qs .= "&bagian=" . urlencode($filter_bagian);
 if (!empty($filter_jp)) $filter_qs .= "&jenis_pelanggaran=" . urlencode($filter_jp);
+if (isset($_GET['sort_order'])) $filter_qs .= "&sort_order=" . urlencode($_GET['sort_order']);
+if (isset($_GET['formula'])) $filter_qs .= "&formula=" . urlencode($_GET['formula']);
 
 // ================================================================
 // RENDER KONTEN
