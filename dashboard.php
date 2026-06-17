@@ -209,7 +209,7 @@ if (!$dashboard_data) {
         'top_histori' => $top_histori,
         'cache_time' => time()
     ];
-    file_put_contents($cache_file, json_encode($dashboard_data));
+    file_put_contents($cache_file, json_encode($dashboard_data), LOCK_EX);
 
 } else {
     // GUNAKAN DATA DARI CACHE (Super Cepat!)

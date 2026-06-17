@@ -67,7 +67,7 @@ function recordFailedAttempt($ip) {
             $data = ['attempts' => ($existing['attempts'] ?? 0) + 1, 'first_attempt' => $existing['first_attempt']];
         }
     }
-    file_put_contents($file, json_encode($data));
+    file_put_contents($file, json_encode($data), LOCK_EX);
 }
 
 function resetRateLimit($ip) {
