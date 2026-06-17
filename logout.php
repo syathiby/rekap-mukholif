@@ -18,7 +18,11 @@ if (!$is_auto_logout) {
         http_response_code(405);
         exit('Method Not Allowed. Gunakan metode POST untuk logout demi keamanan.');
     }
-    csrf_validate(); // Pastikan request POST memiliki token CSRF yang valid
+    // Jika sesi user sudah kosong (sudah expired/logged out), abaikan validasi CSRF.
+    // Lanjut saja proses logout untuk membersihkan sisa data di frontend.
+    if (isset($_SESSION['user_id'])) {
+        csrf_validate(); // Pastikan request POST memiliki token CSRF yang valid
+    }
 } else {
     // Jika karena timeout, pastikan session user ID memang kosong (sudah dihancurkan oleh init.php)
     // Jika user masih login aktif, berarti ada orang yang iseng ngirim ?timeout=1 (CSRF attack via GET)
