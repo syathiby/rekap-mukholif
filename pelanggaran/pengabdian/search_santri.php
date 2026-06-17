@@ -1,4 +1,4 @@
-﻿<?php 
+<?php 
 // ✅ FIX: Hapus 'header.php', panggil yang penting aja
 if (session_status() === PHP_SESSION_NONE) { session_start(); }
 require_once __DIR__ . '/../../bootstrap/init.php';
@@ -6,12 +6,19 @@ guard('pelanggaran_pengabdian_input');
 
 // --- Mulai Logika Pencarian ---
 
-// Ambil dan bersihkan istilah pencarian
-$term = isset($_GET['term']) ? mysqli_real_escape_string($conn, $_GET['term']) : '';
+// PERBAIKAN: Gunakan prepared statement, lebih aman dari mysqli_real_escape_string
+$term_raw = isset($_GET['term']) ? $_GET['term'] : '';
+if (strlen($term_raw) < 2) {
+    header('Content-Type: application/json');
+    echo json_encode([]);
+    exit;
+}
 
-// Query ke database
-$query = "SELECT id, nama, kelas, kamar FROM santri WHERE nama LIKE '%$term%' LIMIT 10";
-$result = mysqli_query($conn, $query);
+$likeTerm = '%' . $term_raw . '%';
+$stmt_search = $conn->prepare("SELECT id, nama, kelas, kamar FROM santri WHERE nama LIKE ? LIMIT 10");
+$stmt_search->bind_param("s", $likeTerm);
+$stmt_search->execute();
+$result = $stmt_search->get_result();
 
 // Siapkan array untuk menampung data
 $santri_data = [];

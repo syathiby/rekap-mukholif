@@ -4,3 +4,4 @@
 vendor/
 database.sql
 prd_rombak_struktur.md
+cache/rate_limit/*.json

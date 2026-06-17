@@ -3,10 +3,15 @@ if (session_status() === PHP_SESSION_NONE) { session_start(); }
 require_once __DIR__ . '/../../bootstrap/init.php';
 guard('pelanggaran_bahasa_input');
 
-// Ambil term pencarian dari request GET
-$term = isset($_GET['term']) ? mysqli_real_escape_string($conn, $_GET['term']) : '';
+// PERBAIKAN: Gunakan prepared statement, lebih aman dari mysqli_real_escape_string
+$term_raw = $_GET['term'] ?? '';
+if (strlen($term_raw) < 2) {
+    header('Content-Type: application/json');
+    echo json_encode([]);
+    exit;
+}
 
-// Query untuk mencari nama santri beserta status level bahasa aktifnya
+$likeTerm = '%' . $term_raw . '%';
 $query = "
     SELECT 
         s.id, 
@@ -18,10 +23,14 @@ $query = "
     LEFT JOIN pelanggaran p ON s.id = p.santri_id 
         AND p.jenis_pelanggaran_id IN (SELECT id FROM jenis_pelanggaran WHERE bagian = 'Bahasa')
     LEFT JOIN jenis_pelanggaran jp ON p.jenis_pelanggaran_id = jp.id
-    WHERE s.nama LIKE '%$term%' 
+    WHERE s.nama LIKE ? 
     LIMIT 10
 ";
-$result = mysqli_query($conn, $query);
+$stmt_search = $conn->prepare($query);
+$stmt_search->bind_param("s", $likeTerm);
+$stmt_search->execute();
+$result = $stmt_search->get_result();
+
 
 $santri_data = [];
 while ($row = mysqli_fetch_assoc($result)) {

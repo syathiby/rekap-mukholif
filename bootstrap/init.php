@@ -30,7 +30,21 @@ if (session_status() === PHP_SESSION_NONE) {
     ini_set('session.gc_maxlifetime', 86400);
     ini_set('session.cookie_httponly', 1);
     ini_set('session.cookie_samesite', 'Lax');
+    // PERBAIKAN: Aktifkan cookie_secure agar session cookie hanya dikirim via HTTPS
+    // Di localhost otomatis tidak aktif, di produksi (HTTPS) akan aktif
+    ini_set('session.cookie_secure', (isset($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off') ? 1 : 0);
     session_start();
+}
+
+// ─── SECURITY HEADERS ──────────────────────────────────────────────────
+// Menambahkan header keamanan HTTP standar industri.
+// Mencegah Clickjacking, MIME sniffing, dan kebocoran referrer.
+if (!headers_sent()) {
+    header('X-Frame-Options: SAMEORIGIN');
+    header('X-Content-Type-Options: nosniff');
+    header('Referrer-Policy: strict-origin-when-cross-origin');
+    header('Permissions-Policy: camera=(), microphone=(), geolocation=()');
+    header('X-XSS-Protection: 1; mode=block');
 }
 
 /**

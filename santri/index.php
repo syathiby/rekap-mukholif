@@ -150,6 +150,13 @@ $colspan = 5; // Kolom dasar: No, Nama, Kelas, Kamar, Poin Histori
 if ($can_delete) $colspan++; // Tambah 1 jika bisa hapus (untuk checkbox)
 if ($can_edit || $can_delete) $colspan++; // Tambah 1 jika bisa edit atau hapus (untuk kolom Aksi)
 
+// =================================================================
+// PAGINATION — Batas data per halaman (skalabilitas)
+// =================================================================
+$per_page = 30;  // Tampilkan 30 santri per halaman
+$page     = max(1, (int)($_GET['page'] ?? 1));
+$offset   = ($page - 1) * $per_page;
+
 // Ambil total data (dihitung sekali saja)
 $total = 0;
 $count_query = "SELECT COUNT(*) as total FROM santri" . $where_sql;
@@ -160,6 +167,7 @@ if (!empty($params)) {
 mysqli_stmt_execute($stmt_count);
 $count_result = mysqli_stmt_get_result($stmt_count);
 $total = mysqli_fetch_assoc($count_result)['total'];
+$total_pages = (int)ceil($total / $per_page);
 mysqli_stmt_close($stmt_count);
 ?>
 
@@ -345,10 +353,12 @@ mysqli_stmt_close($stmt_count);
                     </thead>
                     <tbody>
                         <?php
-                        $query = "SELECT * FROM santri" . $where_sql . " ORDER BY CAST(kamar AS UNSIGNED) ASC, nama ASC";
+                        $types_paged = $types . 'ii';
+                        $params_paged = array_merge($params, [$per_page, $offset]);
+                        $query = "SELECT * FROM santri" . $where_sql . " ORDER BY CAST(kamar AS UNSIGNED) ASC, nama ASC LIMIT ? OFFSET ?";
                         $stmt = mysqli_prepare($conn, $query);
-                        if (!empty($params)) {
-                            mysqli_stmt_bind_param($stmt, $types, ...$params);
+                        if (!empty($params_paged)) {
+                            mysqli_stmt_bind_param($stmt, $types_paged, ...$params_paged);
                         }
                         mysqli_stmt_execute($stmt);
                         $result = mysqli_stmt_get_result($stmt);
@@ -423,6 +433,76 @@ mysqli_stmt_close($stmt_count);
         </div>
         </div> <!-- Close table-data-wrapper -->
     </form> </div>
+
+<?php
+// ─── PAGINATION HTML ───────────────────────────────────────────────
+if ($total_pages > 1):
+    $from = $offset + 1;
+    $to   = min($offset + $per_page, $total);
+    // Buat URL dasar untuk pagination (pertahankan filter yang aktif)
+    $pagination_base_params = [];
+    if (!empty($nama_search))  $pagination_base_params['nama']  = $nama_search;
+    if (!empty($kelas_search)) $pagination_base_params['kelas'] = $kelas_search;
+    if (!empty($kamar_search)) $pagination_base_params['kamar'] = $kamar_search;
+?>
+<div class="d-flex flex-column flex-md-row justify-content-between align-items-center mt-3 px-1 gap-2" id="pagination-nav">
+    <span class="text-muted small">
+        Menampilkan <strong><?= $from ?>–<?= $to ?></strong> dari <strong><?= number_format($total) ?></strong> santri
+    </span>
+    <nav>
+        <ul class="pagination pagination-sm mb-0">
+            <?php
+            // Tombol Sebelumnya
+            if ($page > 1):
+                $prev_params = array_merge($pagination_base_params, ['page' => $page - 1]);
+            ?>
+            <li class="page-item">
+                <a class="page-link" href="index.php?<?= http_build_query($prev_params) ?>">
+                    <i class="fas fa-chevron-left"></i> Sebelumnya
+                </a>
+            </li>
+            <?php else: ?>
+            <li class="page-item disabled"><span class="page-link"><i class="fas fa-chevron-left"></i> Sebelumnya</span></li>
+            <?php endif; ?>
+
+            <?php
+            // Nomor halaman (tampilkan maksimal 5 halaman di sekitar halaman aktif)
+            $start_p = max(1, $page - 2);
+            $end_p   = min($total_pages, $page + 2);
+            if ($start_p > 1): ?>
+                <li class="page-item"><a class="page-link" href="index.php?<?= http_build_query(array_merge($pagination_base_params, ['page' => 1])) ?>">1</a></li>
+                <?php if ($start_p > 2): ?><li class="page-item disabled"><span class="page-link">…</span></li><?php endif; ?>
+            <?php endif;
+            for ($p = $start_p; $p <= $end_p; $p++):
+                $p_params = array_merge($pagination_base_params, ['page' => $p]);
+            ?>
+            <li class="page-item <?= ($p === $page) ? 'active' : '' ?>">
+                <a class="page-link" href="index.php?<?= http_build_query($p_params) ?>"><?= $p ?></a>
+            </li>
+            <?php endfor;
+            if ($end_p < $total_pages):
+                if ($end_p < $total_pages - 1): ?><li class="page-item disabled"><span class="page-link">…</span></li><?php endif; ?>
+                <li class="page-item"><a class="page-link" href="index.php?<?= http_build_query(array_merge($pagination_base_params, ['page' => $total_pages])) ?>"><?= $total_pages ?></a></li>
+            <?php endif; ?>
+
+            <?php
+            // Tombol Berikutnya
+            if ($page < $total_pages):
+                $next_params = array_merge($pagination_base_params, ['page' => $page + 1]);
+            ?>
+            <li class="page-item">
+                <a class="page-link" href="index.php?<?= http_build_query($next_params) ?>">
+                    Berikutnya <i class="fas fa-chevron-right"></i>
+                </a>
+            </li>
+            <?php else: ?>
+            <li class="page-item disabled"><span class="page-link">Berikutnya <i class="fas fa-chevron-right"></i></span></li>
+            <?php endif; ?>
+        </ul>
+    </nav>
+</div>
+<?php endif; ?>
+
 
 <div class="modal fade" id="infoModal" tabindex="-1" aria-labelledby="infoModalLabel" aria-hidden="true">
   <div class="modal-dialog modal-dialog-centered">

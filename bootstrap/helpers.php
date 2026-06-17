@@ -124,16 +124,10 @@ function write_activity_log($aksi, $fitur, $deskripsi, $detail = null)
     $username = isset($_SESSION['username']) ? $_SESSION['username'] : 'Sistem';
     $namaLengkap = isset($_SESSION['nama_lengkap']) ? $_SESSION['nama_lengkap'] : 'Sistem Otomatis';
 
-    // Deteksi IP Address secara aman
-    $ipAddress = '0.0.0.0';
-    if (!empty($_SERVER['HTTP_CLIENT_IP'])) {
-        $ipAddress = $_SERVER['HTTP_CLIENT_IP'];
-    } elseif (!empty($_SERVER['HTTP_X_FORWARDED_FOR'])) {
-        $ipAddress = explode(',', $_SERVER['HTTP_X_FORWARDED_FOR'])[0];
-    } elseif (!empty($_SERVER['REMOTE_ADDR'])) {
-        $ipAddress = $_SERVER['REMOTE_ADDR'];
-    }
-    $ipAddress = trim($ipAddress);
+    // PERBAIKAN: Hanya gunakan REMOTE_ADDR yang tidak bisa dipalsukan.
+    // HTTP_CLIENT_IP dan HTTP_X_FORWARDED_FOR bisa dimanipulasi oleh penyerang.
+    // Jika suatu saat perlu proxy support, aktifkan kembali dengan whitelist IP proxy.
+    $ipAddress = !empty($_SERVER['REMOTE_ADDR']) ? trim($_SERVER['REMOTE_ADDR']) : '0.0.0.0';
 
     // Deteksi User Agent
     $userAgent = isset($_SERVER['HTTP_USER_AGENT']) ? $_SERVER['HTTP_USER_AGENT'] : 'Unknown';

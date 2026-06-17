@@ -21,7 +21,77 @@ if (isset($_GET['timeout'])) {
     $info = "Sesi Anda ter-logout otomatis sebagai bentuk keamanan karena login terlalu lama.";
 }
 
+// =================================================================
+// RATE LIMITING — Anti Brute-Force (Tanpa Database)
+// Menyimpan hitungan percobaan gagal per IP di folder cache/
+// =================================================================
+define('LOGIN_MAX_ATTEMPTS', 5);   // Maks percobaan gagal
+define('LOGIN_LOCKOUT_SEC', 900);  // Waktu kunci: 15 menit
+define('RATE_LIMIT_DIR', __DIR__ . '/cache/rate_limit/');
+
+if (!is_dir(RATE_LIMIT_DIR)) {
+    mkdir(RATE_LIMIT_DIR, 0755, true);
+    // Buat .htaccess pengaman agar folder tidak bisa diakses dari browser
+    file_put_contents(RATE_LIMIT_DIR . '.htaccess', 'Deny from all');
+}
+
+function getRateLimitFile($ip) {
+    return RATE_LIMIT_DIR . md5($ip) . '.json';
+}
+
+function checkRateLimit($ip) {
+    $file = getRateLimitFile($ip);
+    if (!file_exists($file)) return ['blocked' => false, 'attempts' => 0, 'remaining' => 0];
+
+    $data = json_decode(file_get_contents($file), true);
+    if (!$data) return ['blocked' => false, 'attempts' => 0, 'remaining' => 0];
+
+    $elapsed = time() - ($data['first_attempt'] ?? time());
+    if ($elapsed > LOGIN_LOCKOUT_SEC) {
+        // Waktu kunci sudah lewat, reset
+        unlink($file);
+        return ['blocked' => false, 'attempts' => 0, 'remaining' => 0];
+    }
+
+    $blocked = ($data['attempts'] ?? 0) >= LOGIN_MAX_ATTEMPTS;
+    $remaining = LOGIN_LOCKOUT_SEC - $elapsed;
+    return ['blocked' => $blocked, 'attempts' => $data['attempts'] ?? 0, 'remaining' => $remaining];
+}
+
+function recordFailedAttempt($ip) {
+    $file = getRateLimitFile($ip);
+    $data = ['attempts' => 1, 'first_attempt' => time()];
+    if (file_exists($file)) {
+        $existing = json_decode(file_get_contents($file), true);
+        if ($existing && (time() - ($existing['first_attempt'] ?? time())) <= LOGIN_LOCKOUT_SEC) {
+            $data = ['attempts' => ($existing['attempts'] ?? 0) + 1, 'first_attempt' => $existing['first_attempt']];
+        }
+    }
+    file_put_contents($file, json_encode($data));
+}
+
+function resetRateLimit($ip) {
+    $file = getRateLimitFile($ip);
+    if (file_exists($file)) unlink($file);
+}
+
+// Cek apakah IP ini sedang diblokir
+$visitor_ip   = $_SERVER['REMOTE_ADDR'];
+$rate_check   = checkRateLimit($visitor_ip);
+if ($rate_check['blocked']) {
+    $menit_tersisa = ceil($rate_check['remaining'] / 60);
+    $error = "⛔ Terlalu banyak percobaan login gagal. Coba lagi dalam {$menit_tersisa} menit.";
+}
+
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+    // PERBAIKAN: Tolak langsung jika IP sedang diblokir
+    if ($rate_check['blocked']) {
+        $menit_tersisa = ceil($rate_check['remaining'] / 60);
+        $error = "⛔ Terlalu banyak percobaan login gagal. Coba lagi dalam {$menit_tersisa} menit.";
+        // Jangan lanjut proses login
+        goto end_login_process;
+    }
+
     $username = $_POST['username'] ?? '';
     $password = $_POST['password'] ?? '';
 
@@ -57,6 +127,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         }
 
         if ($password_correct) {
+            // Login berhasil: Reset hitungan percobaan gagal
+            resetRateLimit($visitor_ip);
+
             // TRANSISI HALUS: Update password di database ke Bcrypt secara diam-diam!
             if ($needs_rehash) {
                 $new_hash = password_hash($password, PASSWORD_DEFAULT);
@@ -86,11 +159,19 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             header("Location: " . BASE_URL . "/dashboard.php");
             exit;
         } else {
-            $error = "❌ Password salah!";
+            // Password salah: Catat percobaan gagal
+            recordFailedAttempt($visitor_ip);
+            $attempts_left = LOGIN_MAX_ATTEMPTS - ($rate_check['attempts'] + 1);
+            $error = "❌ Password salah!" . ($attempts_left > 0 ? " (Sisa {$attempts_left} percobaan sebelum diblokir)" : "");
         }
     } else {
-        $error = "❌ Username tidak ditemukan!";
+        // Username tidak ditemukan: Catat percobaan gagal
+        recordFailedAttempt($visitor_ip);
+        $attempts_left = LOGIN_MAX_ATTEMPTS - ($rate_check['attempts'] + 1);
+        $error = "❌ Username tidak ditemukan!" . ($attempts_left > 0 ? " (Sisa {$attempts_left} percobaan sebelum diblokir)" : "");
     }
+
+    end_login_process:
 }
 ?>
 
