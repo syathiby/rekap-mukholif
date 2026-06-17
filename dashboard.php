@@ -38,6 +38,21 @@ if (!is_dir($cache_dir)) {
     file_put_contents($cache_dir . '.htaccess', 'Deny from all');
 }
 
+// Garbage Collection: Bersihkan cache yang sudah kedaluwarsa secara berkala (peluang 5%)
+// Agar file .json tidak menumpuk terus-menerus seiring waktu
+if (rand(1, 100) <= 5) {
+    $files = glob($cache_dir . '*.json');
+    if (is_array($files)) {
+        $now = time();
+        foreach ($files as $f) {
+            // Hapus file cache yang umurnya lebih dari 1 jam (3600 detik)
+            if (is_file($f) && ($now - filemtime($f)) > 3600) {
+                @unlink($f);
+            }
+        }
+    }
+}
+
 $cache_key = md5($start_date_sql . '_' . $end_date_sql);
 $cache_file = $cache_dir . $cache_key . '.json';
 $cache_lifetime = 300; // 5 menit cache
