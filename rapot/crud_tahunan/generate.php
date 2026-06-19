@@ -51,19 +51,65 @@ $tahun_akhir_int = $tahun_awal_int + 1;
 $santri_dengan_data = 0;
 $santri_info        = [];
 
-foreach ($santri_list as $s) {
-    $sid_cek = (int)$s['id'];
-    $stmt_cek = $conn->prepare("
-        SELECT COUNT(*) as total FROM rapot_kepengasuhan
-        WHERE santri_id = ? AND (tahun = ? OR tahun = ?)
-    ");
-    $stmt_cek->bind_param('iii', $sid_cek, $tahun_awal_int, $tahun_akhir_int);
+// Perbaikan N+1 Query: Lakukan 1x Query Massal dengan GROUP BY
+$santri_ids = array_column($santri_list, 'id');
+if (!empty($santri_ids)) {
+    $placeholders = implode(',', array_fill(0, count($santri_ids), '?'));
+    $sql_cek = "
+        SELECT santri_id, COUNT(*) as total 
+        FROM rapot_kepengasuhan 
+        WHERE santri_id IN ($placeholders) AND (tahun = ? OR tahun = ?)
+        GROUP BY santri_id
+    ";
+    $stmt_cek = $conn->prepare($sql_cek);
+    
+    // Bind dinamis
+    $types = str_repeat('i', count($santri_ids)) . 'ii';
+    $params = $santri_ids;
+    $params[] = $tahun_awal_int;
+    $params[] = $tahun_akhir_int;
+    $stmt_cek->bind_param($types, ...$params);
     $stmt_cek->execute();
-    $cek = $stmt_cek->get_result()->fetch_assoc();
+    $result_cek = $stmt_cek->get_result();
+    
+    $map_counts = [];
+    while ($row = $result_cek->fetch_assoc()) {
+        $map_counts[$row['santri_id']] = (int)$row['total'];
+    }
     $stmt_cek->close();
-    $jumlah = (int)$cek['total'];
-    if ($jumlah > 0) $santri_dengan_data++;
-    $santri_info[$sid_cek] = ['jumlah_bulan' => $jumlah];
+
+    // Map status dari rapot_tahunan (jika sudah pernah di-generate)
+    $sql_status = "
+        SELECT santri_id, status 
+        FROM rapot_tahunan 
+        WHERE santri_id IN ($placeholders) AND periode = ?
+    ";
+    $stmt_status = $conn->prepare($sql_status);
+    $types_status = str_repeat('i', count($santri_ids)) . 's';
+    $params_status = $santri_ids;
+    $params_status[] = $periode;
+    $stmt_status->bind_param($types_status, ...$params_status);
+    $stmt_status->execute();
+    $result_status = $stmt_status->get_result();
+    
+    $map_status = [];
+    while ($row = $result_status->fetch_assoc()) {
+        $map_status[$row['santri_id']] = $row['status'];
+    }
+    $stmt_status->close();
+
+    // Assign ke santri_info
+    foreach ($santri_list as $s) {
+        $sid_cek = (int)$s['id'];
+        $jumlah = $map_counts[$sid_cek] ?? 0;
+        $status = $map_status[$sid_cek] ?? '';
+        
+        if ($jumlah > 0) $santri_dengan_data++;
+        $santri_info[$sid_cek] = [
+            'jumlah_bulan' => $jumlah,
+            'status' => $status
+        ];
+    }
 }
 
 // Cek apakah sudah ada rapor tahunan
@@ -241,6 +287,7 @@ require_once __DIR__ . '/../../layouts/header.php';
 
             <!-- Form -->
             <form action="process.php" method="POST" id="form-generate">
+                <input type="hidden" name="csrf_token" value="<?= csrf_generate() ?>">
                 <input type="hidden" name="kamar_id" value="<?= htmlspecialchars($kamar) ?>">
                 <input type="hidden" name="periode"  value="<?= htmlspecialchars($periode) ?>">
 

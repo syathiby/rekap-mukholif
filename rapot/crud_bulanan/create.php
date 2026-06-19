@@ -189,6 +189,7 @@ require_once __DIR__ . '/../../layouts/header.php';
     </div>
 
     <form action="process.php" method="POST" id="form-rapot">
+        <input type="hidden" name="csrf_token" value="<?php echo csrf_generate(); ?>">
 
         <div class="card form-card border-start border-4 border-secondary">
             <div class="card-header bg-white py-3">

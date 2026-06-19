@@ -44,7 +44,7 @@
             border: 1px solid black;
             padding: 3px 5px; 
             text-align: left; 
-            vertical-align: top;
+            vertical-align: middle;
         }
         .tabel-nilai th {
             background-color: #f2f2f2;
@@ -369,7 +369,10 @@
     </div>
 
     <div class="ttd-container">
-        Cileungsi, <?php echo date('d F Y'); ?> <br>
+        Cileungsi, <?php 
+            $bulan_indo = [1 => 'Januari', 'Februari', 'Maret', 'April', 'Mei', 'Juni', 'Juli', 'Agustus', 'September', 'Oktober', 'November', 'Desember'];
+            echo date('d') . ' ' . $bulan_indo[(int)date('m')] . ' ' . date('Y'); 
+        ?> <br>
         Musyrif Kamar <?php echo htmlspecialchars($santri['kamar']); ?>
         
         <div class="nama-musyrif"><?php echo htmlspecialchars($musyrif['nama_lengkap']); ?></div>

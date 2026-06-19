@@ -15,6 +15,9 @@ if ($_SERVER['REQUEST_METHOD'] !== 'POST' || !isset($_POST['kamar_id'])) {
     exit;
 }
 
+// Validasi Token CSRF
+csrf_validate();
+
 // ============================================================
 // 1. AMBIL INPUT
 // ============================================================
@@ -94,6 +97,9 @@ $gagal  = 0;
 $skip   = 0;
 
 $overwrite_approved = isset($_POST['overwrite_approved']) && $_POST['overwrite_approved'] == '1';
+
+// Memulai Transaksi Database Massal (ACID)
+$conn->begin_transaction();
 
 foreach ($santri_list as $santri) {
     $sid = (int)$santri['id'];
@@ -247,6 +253,13 @@ foreach ($santri_list as $santri) {
         error_log("[AsuhTrack] Gagal simpan/proses rapor tahunan santri $sid: " . $e->getMessage() . " in " . $e->getFile() . ":" . $e->getLine());
         $gagal++;
     }
+}
+
+// Jika ada yang gagal fatal di dalam transaksi, kita bisa mengevaluasi apakah harus rollback semua atau commit yang sukses
+if ($gagal > 0 && $sukses === 0) {
+    $conn->rollback();
+} else {
+    $conn->commit();
 }
 
 // ============================================================

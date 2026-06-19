@@ -92,7 +92,7 @@ if ($rate_check['blocked']) {
     $is_blocked = true;
     $remaining_time_js = $rate_check['remaining'];
     // Pesan error akan di-update oleh Javascript — JANGAN di-escape karena ada tag <span>
-    $error = "⛔ Terlalu banyak percobaan gagal. Coba lagi dalam <span id='countdown-timer' class='fw-bold'></span>.";
+    $error = "Terlalu banyak percobaan gagal. Coba lagi dalam <span id='countdown-timer' class='fw-bold'></span>.";
 }
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
@@ -192,12 +192,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             // Username ada tapi password salah
             recordFailedAttempt($visitor_ip);
             $attempts_left = LOGIN_MAX_ATTEMPTS - ($rate_check['attempts'] + 1);
-            $error = "❌ Password salah!" . ($attempts_left > 0 ? " (Sisa {$attempts_left} percobaan sebelum diblokir)" : "");
+            $error = "Password salah!" . ($attempts_left > 0 ? " (Sisa {$attempts_left} percobaan sebelum diblokir)" : "");
         } else {
             // Username tidak ditemukan
             recordFailedAttempt($visitor_ip);
             $attempts_left = LOGIN_MAX_ATTEMPTS - ($rate_check['attempts'] + 1);
-            $error = "❌ Username tidak ditemukan!" . ($attempts_left > 0 ? " (Sisa {$attempts_left} percobaan sebelum diblokir)" : "");
+            $error = "Username tidak ditemukan!" . ($attempts_left > 0 ? " (Sisa {$attempts_left} percobaan sebelum diblokir)" : "");
         }
     }
 
@@ -295,16 +295,16 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         </div>
 
         <?php if ($error): ?>
-            <div class="alert alert-danger d-flex align-items-center py-2 px-3 text-sm mb-4" style="border-radius: 0.75rem; border: none; background: #fee2e2; color: #991b1b; font-weight: 500;">
-                <i class="fas fa-exclamation-circle me-2"></i>
-                <?= $error /* Sengaja tidak di-escape karena $error berisi HTML tag <span> untuk countdown timer. Pastikan $error TIDAK pernah berisi input dari user! */ ?>
+            <div class="alert alert-danger d-flex align-items-start py-2 px-3 text-sm mb-4" style="border-radius: 0.75rem; border: none; background: #fee2e2; color: #991b1b; font-weight: 500;">
+                <i class="fas fa-exclamation-circle mt-1 me-2 flex-shrink-0"></i>
+                <div><?= $error /* Sengaja tidak di-escape karena $error berisi HTML tag <span> untuk countdown timer. Pastikan $error TIDAK pernah berisi input dari user! */ ?></div>
             </div>
         <?php endif; ?>
 
         <?php if ($info): ?>
-            <div class="alert alert-info d-flex align-items-center py-2 px-3 text-sm mb-4" style="border-radius: 0.75rem; border: none; background: #e0f2fe; color: #075985; font-weight: 500;">
-                <i class="fas fa-info-circle me-2"></i>
-                <?= htmlspecialchars($info) ?>
+            <div class="alert alert-info d-flex align-items-start py-2 px-3 text-sm mb-4" style="border-radius: 0.75rem; border: none; background: #e0f2fe; color: #075985; font-weight: 500;">
+                <i class="fas fa-info-circle mt-1 me-2 flex-shrink-0"></i>
+                <div><?= htmlspecialchars($info) ?></div>
             </div>
         <?php endif; ?>
 
@@ -321,7 +321,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 <label for="password" class="form-label text-sm fw-medium text-secondary mb-1">Password</label>
                 <div class="input-group-modern password-wrapper mb-2">
                     <i class="fas fa-lock"></i>
-                    <input type="password" class="form-control input-modern" id="password" name="password" required placeholder="••••••••" <?= $is_blocked ? 'disabled' : '' ?>>
+                    <input type="password" class="form-control input-modern" id="password" name="password" required placeholder="••••••••">
                     <button type="button" class="password-toggle" onclick="togglePassword()">
                         <span id="toggle-icon"><i class="fas fa-eye text-muted"></i></span>
                     </button>
@@ -335,7 +335,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 </div>
             </div>
 
-            <button type="submit" id="btn-submit" class="btn btn-login w-100 mt-2" <?= $is_blocked ? 'disabled' : '' ?>>
+            <button type="submit" id="btn-submit" class="btn btn-login w-100 mt-2">
                 Masuk Sistem
             </button>
         </form>

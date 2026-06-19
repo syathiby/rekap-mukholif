@@ -39,9 +39,9 @@
         }
         .tabel-nilai th, .tabel-nilai td {
             border: 1px solid black;
-            padding: 1px 3px; 
+            padding: 2px 4px; 
             text-align: left; 
-            vertical-align: top;
+            vertical-align: middle;
         }
         .tabel-nilai th {
             background-color: #f2f2f2;
@@ -50,7 +50,6 @@
             vertical-align: middle;
         }
         .tabel-nilai .mutu {
-            font-weight: bold;
             vertical-align: middle;
             text-align: center;
         }
@@ -71,9 +70,8 @@
         }
 
         .catatan-mutu td {
-            font-style: italic;
             font-size: 10pt;
-            background-color: #f9f9f9;
+            vertical-align: top;
         }
 
         /* POIN SECTION */
@@ -171,16 +169,19 @@
     <table class="tabel-nilai">
         <thead>
             <tr>
-                <th width="15%">Mutu</th>
-                <th width="25%">Sub mutu</th>
-                <th width="45%">Penjelasan</th>
-                <th width="15%">Nilai</th>
+                <th rowspan="2" width="15%" style="background-color: #e2efda;">Mutu</th>
+                <th rowspan="2" width="25%" style="background-color: #e2efda;">Sub mutu</th>
+                <th colspan="2" width="60%" style="background-color: #e2efda;">Penilaian</th>
+            </tr>
+            <tr>
+                <th width="45%" style="background-color: #e2efda;">Penjelasan</th>
+                <th width="15%" style="background-color: #e2efda;">Poin</th>
             </tr>
         </thead>
         <tbody>
             <?php foreach ($nilai_aspek as $aspek): 
                 $subs = $aspek['sub_mutu'] ?? [];
-                $row_count = count($subs) + 1; // +1 untuk baris catatan per mutu
+                $row_count = count($subs); // rowspan hanya untuk baris sub mutu
             ?>
                 <?php foreach ($subs as $i => $sub): 
                     $field = $sub['field'];
@@ -200,8 +201,9 @@
                 </tr>
                 <?php endforeach; ?>
                 <tr class="catatan-mutu">
-                    <td colspan="3">
-                        <b>Catatan:</b> <?php echo htmlspecialchars($aspek['catatan'] ?? generate_catatan_per_aspek($aspek)); ?>
+                    <td style="color: #FF0000; vertical-align: middle; text-align: center; font-weight: bold; padding: 4px;">Evaluasi <?php echo htmlspecialchars($aspek['aspek']); ?></td>
+                    <td colspan="3" style="text-align: justify; padding: 4px 6px; vertical-align: top;">
+                        <?php echo htmlspecialchars($aspek['catatan'] ?? generate_catatan_per_aspek($aspek)); ?>
                     </td>
                 </tr>
             <?php endforeach; ?>
@@ -259,7 +261,7 @@
                 </tr>
             <?php endif; ?>
             <tr class="jumlah-row">
-                <td colspan="3" class="text-right">Total Poin Pelanggaran Setahun</td>
+                <td colspan="3" class="text-center">Total Poin Pelanggaran Setahun</td>
                 <td class="text-center"><?php echo $total_pelanggaran; ?></td>
             </tr>
         </tbody>
@@ -291,7 +293,7 @@
                 </tr>
             <?php endif; ?>
             <tr class="jumlah-row">
-                <td colspan="3" class="text-right">Total Poin Reward Setahun</td>
+                <td colspan="3" class="text-center">Total Poin Reward Setahun</td>
                 <td class="text-center"><?php echo $total_reward; ?></td>
             </tr>
         </tbody>
@@ -307,7 +309,10 @@
     </div>
 
     <div class="ttd-container">
-        Cileungsi, <?php echo date('d F Y'); ?> <br>
+        Cileungsi, <?php 
+            $bulan_indo = [1 => 'Januari', 'Februari', 'Maret', 'April', 'Mei', 'Juni', 'Juli', 'Agustus', 'September', 'Oktober', 'November', 'Desember'];
+            echo date('d') . ' ' . $bulan_indo[(int)date('m')] . ' ' . date('Y'); 
+        ?> <br>
         Musyrif Kamar <?php echo htmlspecialchars($santri['kamar']); ?>
         
         <div class="nama-musyrif"><?php echo htmlspecialchars($nama_musyrif); ?></div>

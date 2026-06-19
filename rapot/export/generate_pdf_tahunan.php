@@ -144,7 +144,7 @@ try {
         ];
         $periode         = $rapot['periode'];
         $narasi_global   = $rapot['narasi_ai']       ?? ''; // Diisi oleh generate_catatan.php saat create
-        $nama_musyrif    = $rapot['nama_musyrif']    ?? 'Musyrif';
+        $nama_musyrif    = $_SESSION['nama_lengkap'] ?? $rapot['nama_musyrif'] ?? 'Musyrif';
 
         // Hitung total poin pelanggaran dari rekap
         $total_pelanggaran = 0;

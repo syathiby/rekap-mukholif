@@ -180,7 +180,7 @@ if (isset($_GET['ajax']) && $_GET['ajax'] == '1') {
                         </button>
                         <div class="dropdown-menu dropdown-menu-right shadow animated--fade-in" aria-labelledby="aksiDropdown-<?php echo $rapot['id']; ?>">
                             <?php if ($can_view): ?>
-                                <a class="dropdown-item" href="crud_bulanan/detail.php?id=<?php echo $rapot['id']; ?>" target="_blank" data-bs-toggle="tooltip" title="Lihat Rapot di Halaman Web">
+                                <a class="dropdown-item" href="#" onclick="openViewModal('crud_bulanan/view.php?id=<?php echo $rapot['id']; ?>'); return false;" data-bs-toggle="tooltip" title="Lihat Rapot di Layar">
                                     <i class="fas fa-eye fa-sm fa-fw me-2 text-gray-400"></i> View Rapot
                                 </a>
                             <?php endif; ?>
@@ -368,6 +368,7 @@ require_once __DIR__ . '/../layouts/header.php';
     </div>
 
     <form method="POST" action="" id="bulkActionForm">
+        <input type="hidden" name="csrf_token" value="<?php echo csrf_generate(); ?>">
         
         <div class="card shadow-sm mb-3 card-action-bulk">
             <div class="row g-3 align-items-center">
@@ -450,7 +451,7 @@ require_once __DIR__ . '/../layouts/header.php';
                                                 </button>
                                                 <div class="dropdown-menu dropdown-menu-right shadow animated--fade-in" aria-labelledby="aksiDropdown-<?php echo $rapot['id']; ?>">
                                                     <?php if ($can_view): ?>
-                                                        <a class="dropdown-item" href="crud_bulanan/detail.php?id=<?php echo $rapot['id']; ?>" target="_blank" data-bs-toggle="tooltip" title="Lihat Rapot di Halaman Web">
+                                                        <a class="dropdown-item" href="#" onclick="openViewModal('crud_bulanan/view.php?id=<?php echo $rapot['id']; ?>'); return false;" data-bs-toggle="tooltip" title="Lihat Rapot di Layar">
                                                             <i class="fas fa-eye fa-sm fa-fw me-2 text-gray-400"></i> View Rapot
                                                         </a>
                                                     <?php endif; ?>
@@ -535,7 +536,7 @@ require_once __DIR__ . '/../layouts/header.php';
         <h6 class="text-dark fw-bold mb-2"><i class="fas fa-cog text-primary me-2"></i>3. Aksi Satuan</h6>
         <p class="small mb-2">Klik tombol <i class="fas fa-cog"></i> di setiap baris untuk:</p>
         <ul class="mb-0 small" style="padding-left: 1.25rem;">
-          <li class="mb-1">Melihat (*View*), mengunduh PDF/PNG, atau menghapus satuan.</li>
+          <li class="mb-1">Melihat (View), mengunduh PDF/PNG, atau menghapus satuan.</li>
           <li><strong>Duplikat:</strong> Menyalin isi rapot untuk bulan/periode depan.</li>
         </ul>
       </div>
@@ -984,7 +985,30 @@ document.addEventListener('DOMContentLoaded', function() {
     toggleActionButtons();
 
 });
+    window.openViewModal = function(url) {
+        document.getElementById('viewRapotIframe').src = url;
+        var myModal = new bootstrap.Modal(document.getElementById('viewRapotModal'));
+        myModal.show();
+    };
+
 </script>
+
+<!-- Modal View Rapot -->
+<div class="modal fade" id="viewRapotModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-xl modal-dialog-centered">
+        <div class="modal-content border-0 shadow-lg" style="background-color: #525659; overflow: hidden; max-height: 95vh;">
+            <div class="modal-header bg-dark text-white border-0 py-2">
+                <h6 class="modal-title text-white m-0"><i class="fas fa-eye text-white me-2"></i>Preview Rapot</h6>
+                <div class="ms-auto d-flex align-items-center">
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close" onclick="document.getElementById('viewRapotIframe').src=''"></button>
+                </div>
+            </div>
+            <div class="modal-body p-0 position-relative" style="height: 85vh; background-color: #525659;">
+                <iframe id="viewRapotIframe" src="" style="width:100%; height:100%; border:none; background-color: white;"></iframe>
+            </div>
+        </div>
+    </div>
+</div>
 
 <?php
 // 7. Panggil Footer (Gak berubah)

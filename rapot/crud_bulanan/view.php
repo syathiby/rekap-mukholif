@@ -1,13 +1,10 @@
 <?php
-// File: rekap-mukholif/rapot/generate_pdf.php
+// File: rekap-mukholif/rapot/view.php
 
 require_once __DIR__ . '/../../bootstrap/init.php'; 
-require_once __DIR__ . '/../../vendor/autoload.php'; 
-require_once __DIR__ . '/../config/helper.php';
+require_once __DIR__ . '/../config/helper.php'; 
 
-guard('rapot_cetak');
-
-$output_mode = $_GET['output'] ?? 'download';
+guard('rapot_view');
 
 if (empty($_GET['id'])) {
     die('Error: ID Rapot tidak ditemukan.');
@@ -36,19 +33,18 @@ try {
     if (!$rapot) {
         die('Error: Data rapot tidak ditemukan.');
     }
-
+    
     // Ambil rincian pelanggaran
     $pelanggaran_list = [];
     $sql_pelanggaran = "
-        SELECT jp.nama_pelanggaran, SUM(jp.poin) as poin, COUNT(*) as jumlah
+        SELECT jp.nama_pelanggaran, jp.poin
         FROM pelanggaran p
         JOIN jenis_pelanggaran jp ON p.jenis_pelanggaran_id = jp.id
         WHERE p.santri_id = ? 
           AND MONTH(p.tanggal) = FIND_IN_SET(?, 'Januari,Februari,Maret,April,Mei,Juni,Juli,Agustus,September,Oktober,November,Desember')
           AND YEAR(p.tanggal) = ?
           AND jp.poin > 0
-        GROUP BY jp.nama_pelanggaran
-        ORDER BY MAX(p.tanggal) DESC
+        ORDER BY p.tanggal DESC
     ";
     $stmt_pelanggaran = $conn->prepare($sql_pelanggaran);
     $stmt_pelanggaran->bind_param("isi", $rapot['santri_id'], $rapot['bulan'], $rapot['tahun']);
@@ -59,15 +55,14 @@ try {
     // === TAMBAHAN: Ambil rincian REWARD ===
     $reward_list = [];
     $sql_reward = "
-        SELECT jr.nama_reward, SUM(jr.poin_reward) AS poin, COUNT(*) as jumlah
+        SELECT jr.nama_reward, jr.poin_reward AS poin
         FROM daftar_reward rwd
         JOIN jenis_reward jr ON rwd.jenis_reward_id = jr.id
         WHERE rwd.santri_id = ? 
           AND MONTH(rwd.tanggal) = FIND_IN_SET(?, 'Januari,Februari,Maret,April,Mei,Juni,Juli,Agustus,September,Oktober,November,Desember')
           AND YEAR(rwd.tanggal) = ?
-          AND jr.poin_reward > 0
-        GROUP BY jr.nama_reward
-        ORDER BY MAX(rwd.tanggal) DESC
+          AND jr.poin_reward > 0  -- DIPERBAIKI: gunakan poin_reward, bukan poin
+        ORDER BY rwd.tanggal DESC
     ";
     $stmt_reward = $conn->prepare($sql_reward);
     $stmt_reward->bind_param("isi", $rapot['santri_id'], $rapot['bulan'], $rapot['tahun']);
@@ -88,40 +83,48 @@ $musyrif = [
     'nama_lengkap' => $_SESSION['nama_lengkap'] ?? $rapot['nama_musyrif'] ?? 'User Dihapus'
 ];
 
-$logo_path = __DIR__ . '/../assets/img/Kop Syathiby.jpg';
-if (!file_exists($logo_path)) $logo_path = ''; 
+$logo_path = $base_url . '/assets/img/Kop Syathiby.jpg';
+$logo_file_path = __DIR__ . '/../../assets/img/Kop Syathiby.jpg';
+if (!file_exists($logo_file_path)) $logo_path = ''; 
 
-ob_start(); 
-include __DIR__ . '/../config/template_rapot_bulanan.php'; 
-$html = ob_get_contents();
-ob_end_clean(); 
+echo '<!DOCTYPE html>
+<html>
+<head>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0, user-scalable=yes">
+    <title>View Rapot - ' . htmlspecialchars($santri['nama']) . '</title>
+    <style>
+        body {
+            background-color: #525659;
+            margin: 0;
+            padding: 20px 0;
+        }
+        .page-wrapper {
+            width: 210mm;
+            min-height: 297mm;
+            background-color: white;
+            box-shadow: 0 0 10px rgba(0,0,0,0.5);
+            margin: 20px auto;
+            padding: 7mm 10mm 4mm 10mm;
+            box-sizing: border-box;
+        }
+        @media print {
+            body, .page-wrapper {
+                background-color: white;
+                box-shadow: none;
+                margin: 0;
+                padding: 0;
+                width: 210mm;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="page-wrapper">';
 
-try {
-    $mpdf = new \Mpdf\Mpdf([
-        'mode' => 'utf-8',
-        'format' => 'A4',
-        'margin_left' => 10,
-        'margin_right' => 10,
-        'margin_top' => 7,
-        'margin_bottom' => 4,
-    ]);
+include '../config/template_rapot_bulanan.php';
 
-    $mpdf->WriteHTML($html);
-
-    $nama_santri_clean = preg_replace("/[^a-zA-Z0-9 ]/", "", $santri['nama']);
-    $nama_file = "Rapot {$nama_santri_clean} - {$rapot['bulan']} {$rapot['tahun']}.pdf";
-    
-    if ($output_mode === 'string') {
-        $pdf_content = $mpdf->Output($nama_file, \Mpdf\Output\Destination::STRING_RETURN);
-        header('Content-Type: application/pdf');
-        echo $pdf_content;
-    } else {
-        $mpdf->Output($nama_file, \Mpdf\Output\Destination::DOWNLOAD); 
-    }
-    
-} catch (\Mpdf\MpdfException $e) {
-    echo 'Error mPDF: ' . $e->getMessage();
-}
-
-exit;
+echo '
+    </div>
+</body>
+</html>';
 ?>

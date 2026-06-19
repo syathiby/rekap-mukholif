@@ -8,6 +8,8 @@ guard('rapot_create');
 
 if (isset($_POST['simpan_rapot'])) {
 
+    csrf_validate(); // Validasi CSRF
+
     $santri_id = (int)$_POST['santri_id'];
     $bulan     = $_POST['bulan'];
     $tahun     = (int)$_POST['tahun'];
@@ -41,6 +43,19 @@ if (isset($_POST['simpan_rapot'])) {
     $kerapihan_barang = (int)$_POST['kerapihan_barang'];
 
     try {
+        // Memulai Transaksi Database (ACID)
+        $conn->begin_transaction();
+
+        // Persiapan rentang tanggal untuk optimasi index (Ganti FIND_IN_SET)
+        $bulan_list_indo = [
+            'Januari' => 1, 'Februari' => 2, 'Maret' => 3, 'April' => 4,
+            'Mei' => 5, 'Juni' => 6, 'Juli' => 7, 'Agustus' => 8,
+            'September' => 9, 'Oktober' => 10, 'November' => 11, 'Desember' => 12
+        ];
+        $bulan_num = $bulan_list_indo[$bulan] ?? date('n');
+        $start_date = sprintf('%04d-%02d-01', $tahun, $bulan_num);
+        $end_date = date('Y-m-t', strtotime($start_date));
+
         // Kalkulasi Total Poin Pelanggaran
         $total_poin_pelanggaran = 0;
         $sql_poin = "
@@ -48,11 +63,10 @@ if (isset($_POST['simpan_rapot'])) {
             FROM pelanggaran p
             JOIN jenis_pelanggaran jp ON p.jenis_pelanggaran_id = jp.id
             WHERE p.santri_id = ?
-              AND MONTH(p.tanggal) = FIND_IN_SET(?, 'Januari,Februari,Maret,April,Mei,Juni,Juli,Agustus,September,Oktober,November,Desember')
-              AND YEAR(p.tanggal) = ?
+              AND p.tanggal >= ? AND p.tanggal <= ?
         ";
         $stmt_poin = $conn->prepare($sql_poin);
-        $stmt_poin->bind_param("isi", $santri_id, $bulan, $tahun);
+        $stmt_poin->bind_param("iss", $santri_id, $start_date, $end_date);
         $stmt_poin->execute();
         $hasil_poin = $stmt_poin->get_result()->fetch_assoc();
         if ($hasil_poin && $hasil_poin['total_poin'] > 0) {
@@ -67,11 +81,10 @@ if (isset($_POST['simpan_rapot'])) {
             FROM daftar_reward rwd
             JOIN jenis_reward jr ON rwd.jenis_reward_id = jr.id
             WHERE rwd.santri_id = ?
-              AND MONTH(rwd.tanggal) = FIND_IN_SET(?, 'Januari,Februari,Maret,April,Mei,Juni,Juli,Agustus,September,Oktober,November,Desember')
-              AND YEAR(rwd.tanggal) = ?
+              AND rwd.tanggal >= ? AND rwd.tanggal <= ?
         ";
         $stmt_reward = $conn->prepare($sql_reward);
-        $stmt_reward->bind_param("isi", $santri_id, $bulan, $tahun);
+        $stmt_reward->bind_param("iss", $santri_id, $start_date, $end_date);
         $stmt_reward->execute();
         $hasil_reward = $stmt_reward->get_result()->fetch_assoc();
         if ($hasil_reward && $hasil_reward['total_poin_reward'] > 0) {
@@ -122,12 +135,17 @@ if (isset($_POST['simpan_rapot'])) {
             throw new Exception("Execute failed: " . $stmt_insert->error);
         }
 
-        // Catat log aktivitas
+        // Catat log aktivitas (Gunakan Prepared Statement)
         $nama_santri = "Unknown";
-        $q_santri = $conn->query("SELECT nama FROM santri WHERE id = $santri_id");
-        if ($q_santri && $r_santri = $q_santri->fetch_assoc()) {
+        $stmt_santri_log = $conn->prepare("SELECT nama FROM santri WHERE id = ?");
+        $stmt_santri_log->bind_param("i", $santri_id);
+        $stmt_santri_log->execute();
+        $r_santri = $stmt_santri_log->get_result()->fetch_assoc();
+        if ($r_santri) {
             $nama_santri = $r_santri['nama'];
         }
+        $stmt_santri_log->close();
+
         write_activity_log('CREATE', 'rapot', "Menginput nilai rapot kepengasuhan untuk '" . htmlspecialchars($nama_santri) . "' periode $bulan $tahun", [
             'santri_id'   => $santri_id,
             'nama_santri' => $nama_santri,
@@ -135,11 +153,14 @@ if (isset($_POST['simpan_rapot'])) {
             'tahun'       => $tahun,
         ]);
 
+        $conn->commit(); // Selesaikan transaksi dengan sukses
+
         set_flash_message('Rapot baru berhasil disimpan!', 'success');
         header('Location: ../index.php');
         exit;
 
     } catch (Throwable $e) {
+        $conn->rollback(); // Batalkan semua aksi jika ada kegagalan
         error_log("[AsuhTrack] RAPOT BULANAN PROCESS ERROR: " . $e->getMessage());
         set_flash_message('Error: ' . $e->getMessage(), 'danger');
         header('Location: create.php');

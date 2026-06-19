@@ -5,6 +5,9 @@
 require_once __DIR__ . '/../../bootstrap/init.php';
 guard('rapot_delete');
 
+// Validasi Keamanan (Mencegah eksekusi tanpa izin)
+csrf_validate();
+
 if ($_SERVER['REQUEST_METHOD'] !== 'POST' || empty($_POST['ids'])) {
     set_flash_message('Error: Request tidak valid.', 'danger');
     header('Location: ../../rapot/index.php');

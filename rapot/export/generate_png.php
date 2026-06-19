@@ -82,7 +82,7 @@ $santri = [
     'kelas' => $rapot['kelas_santri'] ?? 'N/A'
 ];
 $musyrif = [
-    'nama_lengkap' => $rapot['nama_musyrif'] ?? 'User Dihapus'
+    'nama_lengkap' => $_SESSION['nama_lengkap'] ?? $rapot['nama_musyrif'] ?? 'User Dihapus'
 ];
 
 $logo_path = $base_url . '/assets/img/Kop Syathiby.jpg';
