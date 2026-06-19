@@ -611,17 +611,19 @@ require_once __DIR__ . '/../../layouts/header.php';
                     <select name="fitur" id="fitur" class="form-select">
                         <option value="">Semua Fitur</option>
                         <?php foreach ([
-                            'auth'             => 'Authentication',
-                            'santri'           => 'Master Santri',
-                            'pelanggaran'      => 'Pelanggaran',
-                            'reward'           => 'Reward / Prestasi',
-                            'jenis_pelanggaran'=> 'Katalog Pelanggaran',
-                            'users'            => 'User / Staf',
-                            'izin'             => 'Izin Akses (RBAC)',
-                            'periode-aktif'    => 'Periode Aktif',
-                            'reset-poin'       => 'Reset Poin',
-                            'backup-restore'   => 'Backup & Restore',
-                            'log-aktifitas'    => 'Log Aktivitas',
+                            'auth'               => 'Authentication',
+                            'santri'             => 'Master Santri',
+                            'pelanggaran'        => 'Pelanggaran',
+                            'reward'             => 'Reward / Prestasi',
+                            'jenis_pelanggaran'  => 'Katalog Pelanggaran',
+                            'users'              => 'User / Staf',
+                            'izin'               => 'Izin Akses (RBAC)',
+                            'periode-aktif'      => 'Periode Aktif',
+                            'reset-poin'         => 'Reset Poin',
+                            'backup-restore'     => 'Backup & Restore',
+                            'log-aktifitas'      => 'Log Aktivitas',
+                            'rapot_kepengasuhan' => 'Rapor Bulanan',
+                            'rapot_tahunan'      => 'Rapor Tahunan',
                         ] as $v => $l): ?>
                         <option value="<?= $v ?>" <?= ($fitur === $v) ? 'selected' : '' ?>><?= $l ?></option>
                         <?php endforeach; ?>

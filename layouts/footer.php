@@ -263,6 +263,31 @@ if (function_exists('has_permission')) {
             document.activeElement.blur();
         }
     });
+
+    // ==========================================
+    // GLOBAL FLASH MESSAGE HANDLER (SweetAlert2)
+    // ==========================================
+    <?php if (isset($_SESSION['flash_message'])): ?>
+        <?php 
+            $f_type = 'success';
+            $f_msg = 'Operasi berhasil.';
+            if (is_array($_SESSION['flash_message'])) {
+                $f_type = $_SESSION['flash_message']['type'] ?? 'success';
+                $f_msg = $_SESSION['flash_message']['message'] ?? '';
+            } else {
+                $f_msg = $_SESSION['flash_message'];
+                if (in_array(strtolower($f_msg), ['success', 'danger', 'warning', 'info', 'error'])) {
+                    $f_type = strtolower($f_msg);
+                    $f_msg = ($f_type == 'success') ? 'Operasi berhasil.' : 'Terjadi kesalahan.';
+                }
+            }
+            if ($f_type == 'danger') $f_type = 'error'; // Map bootstrap danger to sweetalert error
+            unset($_SESSION['flash_message']); // Bersihkan session
+        ?>
+        document.addEventListener('DOMContentLoaded', function() {
+            showToast("<?= addslashes(htmlspecialchars($f_msg)) ?>", "<?= addslashes(htmlspecialchars($f_type)) ?>");
+        });
+    <?php endif; ?>
 </script>
 </body>
 </html>

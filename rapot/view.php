@@ -122,7 +122,7 @@ echo '<!DOCTYPE html>
 <body>
     <div class="page-wrapper">';
 
-include 'config/template_rapot.php';
+include 'config/template_rapot_bulanan.php';
 
 echo '
     </div>

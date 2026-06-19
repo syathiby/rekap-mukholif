@@ -40,14 +40,15 @@ try {
     // Ambil rincian pelanggaran
     $pelanggaran_list = [];
     $sql_pelanggaran = "
-        SELECT jp.nama_pelanggaran, jp.poin
+        SELECT jp.nama_pelanggaran, SUM(jp.poin) as poin, COUNT(*) as jumlah
         FROM pelanggaran p
         JOIN jenis_pelanggaran jp ON p.jenis_pelanggaran_id = jp.id
         WHERE p.santri_id = ? 
           AND MONTH(p.tanggal) = FIND_IN_SET(?, 'Januari,Februari,Maret,April,Mei,Juni,Juli,Agustus,September,Oktober,November,Desember')
           AND YEAR(p.tanggal) = ?
           AND jp.poin > 0
-        ORDER BY p.tanggal DESC
+        GROUP BY jp.nama_pelanggaran
+        ORDER BY MAX(p.tanggal) DESC
     ";
     $stmt_pelanggaran = $conn->prepare($sql_pelanggaran);
     $stmt_pelanggaran->bind_param("isi", $rapot['santri_id'], $rapot['bulan'], $rapot['tahun']);
@@ -58,14 +59,15 @@ try {
     // === TAMBAHAN: Ambil rincian REWARD ===
     $reward_list = [];
     $sql_reward = "
-        SELECT jr.nama_reward, jr.poin_reward AS poin
+        SELECT jr.nama_reward, SUM(jr.poin_reward) AS poin, COUNT(*) as jumlah
         FROM daftar_reward rwd
         JOIN jenis_reward jr ON rwd.jenis_reward_id = jr.id
         WHERE rwd.santri_id = ? 
           AND MONTH(rwd.tanggal) = FIND_IN_SET(?, 'Januari,Februari,Maret,April,Mei,Juni,Juli,Agustus,September,Oktober,November,Desember')
           AND YEAR(rwd.tanggal) = ?
-          AND jr.poin_reward > 0  -- DIPERBAIKI: gunakan poin_reward, bukan poin
-        ORDER BY rwd.tanggal DESC
+          AND jr.poin_reward > 0
+        GROUP BY jr.nama_reward
+        ORDER BY MAX(rwd.tanggal) DESC
     ";
     $stmt_reward = $conn->prepare($sql_reward);
     $stmt_reward->bind_param("isi", $rapot['santri_id'], $rapot['bulan'], $rapot['tahun']);
@@ -90,7 +92,7 @@ $logo_path = __DIR__ . '/../assets/img/Kop Syathiby.jpg';
 if (!file_exists($logo_path)) $logo_path = ''; 
 
 ob_start(); 
-include 'template_rapot.php'; 
+include __DIR__ . '/../config/template_rapot_bulanan.php'; 
 $html = ob_get_contents();
 ob_end_clean(); 
 

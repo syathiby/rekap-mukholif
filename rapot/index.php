@@ -193,7 +193,7 @@ if (isset($_GET['ajax']) && $_GET['ajax'] == '1') {
                                 </a>
                             <?php endif; ?>
                             <?php if ($can_create): ?>
-                                <a class="dropdown-item" href="create.php?duplicate_id=<?php echo $rapot['id']; ?>&kamar=<?php echo urlencode($filter_kamar); ?>" data-bs-toggle="tooltip" title="Duplikat rapot ini ke bulan baru">
+                                <a class="dropdown-item" href="crud_bulanan/create.php?duplicate_id=<?php echo $rapot['id']; ?>&kamar=<?php echo urlencode($filter_kamar); ?>" data-bs-toggle="tooltip" title="Duplikat rapot ini ke bulan baru">
                                     <i class="fas fa-copy fa-sm fa-fw me-2 text-gray-400"></i> Duplikat
                                 </a>
                             <?php endif; ?>
@@ -306,40 +306,25 @@ require_once __DIR__ . '/../layouts/header.php';
             </span>
         </div>
     </div>
-    
-    <?php
-    // SISTEM NOTIFIKASI TOAST
-    if (isset($_SESSION['flash_message'])) {
-        $flash = $_SESSION['flash_message'];
-        $tipe = 'success'; $pesan = 'Operasi berhasil.'; // Default
 
-        if (is_array($flash)) {
-            $tipe = $flash['type'] ?? 'success';
-            $pesan = $flash['message'] ?? 'Operasi berhasil.';
-        } elseif (is_string($flash)) {
-            if (in_array($flash, ['success', 'danger', 'warning', 'info'])) {
-                $tipe = $flash;
-                if ($tipe == 'success') $pesan = 'Operasi berhasil.';
-                if ($tipe == 'danger') $pesan = 'Terjadi kesalahan.';
-            } else {
-                $pesan = $flash;
-            }
-        }
-        
-        if (strtolower(trim($pesan)) === 'success') {
-            $pesan = 'Operasi berhasil.';
-        }
-        
-        echo "<script>
-            document.addEventListener('DOMContentLoaded', function() {
-                if (typeof tampilkanNotif === 'function') {
-                    tampilkanNotif('" . addslashes($pesan) . "', '" . addslashes($tipe) . "');
-                }
-            });
-        </script>";
-        unset($_SESSION['flash_message']);
-    }
-    ?>
+    <!-- PERINGATAN PERMANEN: Rapot Bulanan sebagai dasar Rapor Tahunan -->
+    <div class="d-flex align-items-start gap-3 p-3 mb-4 rounded-3 border border-warning-subtle"
+         style="background: linear-gradient(135deg, #fffbeb 0%, #fef3c7 100%); border-left: 4px solid #f59e0b !important;">
+        <div class="flex-shrink-0 mt-1">
+            <i class="fas fa-exclamation-triangle fa-lg text-warning"></i>
+        </div>
+        <div>
+            <p class="fw-bold mb-1 text-dark" style="font-size: 0.9rem;">
+                Perhatian: Data Rapor Bulanan adalah Dasar Rapor Tahunan
+            </p>
+            <p class="mb-0 text-secondary" style="font-size: 0.82rem; line-height: 1.6;">
+                Seluruh data rapor bulanan yang tersimpan di halaman ini akan menjadi bahan perhitungan otomatis saat membuat <strong>Rapor Tahunan</strong>.
+                Menghapus atau mengubah rapor bulanan yang sudah digunakan sebagai dasar rapor tahunan dapat mempengaruhi keakuratan nilai dan narasi rapor tahunan.
+                <strong>Pastikan seluruh data sudah benar dan lengkap sebelum melakukan penghapusan.</strong>
+            </p>
+        </div>
+    </div>
+    <!-- Notifikasi Toast kini ditangani secara global di footer.php -->
     
     <div class="filter-card p-3 p-md-4 mb-4">
         <form action="index.php" method="GET" class="row g-3 align-items-end">
@@ -387,10 +372,13 @@ require_once __DIR__ . '/../layouts/header.php';
         <div class="card shadow-sm mb-3 card-action-bulk">
             <div class="row g-3 align-items-center">
                 <!-- Group Kiri: Create -->
-                <div class="col-12 col-md-auto d-flex gap-2 mb-3 mb-md-0">
+                <div class="col-12 col-md-auto d-flex gap-2 mb-3 mb-md-0 flex-wrap">
                     <?php if ($can_create): ?>
-                        <a href="create.php?kamar=<?php echo urlencode($filter_kamar); ?>" id="btn-create-rapot" class="btn btn-success flex-grow-1 flex-md-grow-0 fw-medium">
+                        <a href="crud_bulanan/create.php?kamar=<?php echo urlencode($filter_kamar); ?>" id="btn-create-rapot" class="btn btn-success flex-grow-1 flex-md-grow-0 fw-medium">
                             <i class="fas fa-plus-circle me-1"></i> Buat Rapot Baru
+                        </a>
+                        <a href="crud_tahunan/index.php" class="btn btn-primary flex-grow-1 flex-md-grow-0 fw-medium">
+                            <i class="fas fa-star me-1"></i> Rapor Tahunan
                         </a>
                     <?php endif; ?>
                 </div>
@@ -475,7 +463,7 @@ require_once __DIR__ . '/../layouts/header.php';
                                                         </a>
                                                     <?php endif; ?>
                                                     <?php if ($can_create): ?>
-                                                        <a class="dropdown-item" href="create.php?duplicate_id=<?php echo $rapot['id']; ?>&kamar=<?php echo urlencode($filter_kamar); ?>" data-bs-toggle="tooltip" title="Duplikat rapot ini ke bulan baru">
+                                                        <a class="dropdown-item" href="crud_bulanan/create.php?duplicate_id=<?php echo $rapot['id']; ?>&kamar=<?php echo urlencode($filter_kamar); ?>" data-bs-toggle="tooltip" title="Duplikat rapot ini ke bulan baru">
                                                             <i class="fas fa-copy fa-sm fa-fw me-2 text-gray-400"></i> Duplikat
                                                         </a>
                                                     <?php endif; ?>
@@ -791,7 +779,7 @@ document.addEventListener('DOMContentLoaded', function() {
             if (this.id === 'kamar') {
                 const btnCreate = document.getElementById('btn-create-rapot');
                 if (btnCreate) {
-                    btnCreate.href = 'create.php?kamar=' + encodeURIComponent(this.value);
+                    btnCreate.href = 'crud_bulanan/create.php?kamar=' + encodeURIComponent(this.value);
                 }
             }
             fetchRapotData(1);
@@ -905,7 +893,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 filename: data.filename 
             }));
             sessionStorage.setItem('bulkProcessList', JSON.stringify(bulkList));
-            window.open('crud/bulk_processor.php?type=pdf', '_blank');
+            window.open('crud_bulanan/bulk_processor.php?type=pdf', '_blank');
         });
     }
     
@@ -934,7 +922,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 return;
             }
             sessionStorage.setItem('bulkProcessList', bulkListString);
-            window.open('crud/bulk_processor.php?type=png', '_blank');
+            window.open('crud_bulanan/bulk_processor.php?type=png', '_blank');
             pngWarningModal.hide();
         });
     }
@@ -968,7 +956,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 return;
             }
             form.innerHTML = '';
-            form.action = 'crud/bulk_delete.php';
+            form.action = 'crud_bulanan/bulk_delete.php';
             checkedIDs.forEach(function(id) {
                 const input = document.createElement('input');
                 input.type = 'hidden';

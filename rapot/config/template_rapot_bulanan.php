@@ -325,7 +325,9 @@
                         <?php
                         $rincian = [];
                         foreach ($pelanggaran_list as $p) {
-                            $rincian[] = htmlspecialchars($p['nama_pelanggaran']) . ' (' . $p['poin'] . ')';
+                            $jml = (int)$p['jumlah'];
+                            $jml_txt = $jml > 1 ? " ({$jml}x)" : "";
+                            $rincian[] = htmlspecialchars($p['nama_pelanggaran']) . $jml_txt . ' (' . $p['poin'] . ')';
                         }
                         echo implode(', ', $rincian);
                         ?>
@@ -345,7 +347,9 @@
                         <?php
                         $rincian = [];
                         foreach ($reward_list as $r) {
-                            $rincian[] = htmlspecialchars($r['nama_reward']) . ' (' . $r['poin'] . ')';
+                            $jml = (int)$r['jumlah'];
+                            $jml_txt = $jml > 1 ? " ({$jml}x)" : "";
+                            $rincian[] = htmlspecialchars($r['nama_reward']) . $jml_txt . ' (' . $r['poin'] . ')';
                         }
                         echo implode(', ', $rincian);
                         ?>
@@ -361,9 +365,7 @@
     </div>
     
     <div class="penutup">
-        <p>Demikian Laporan ini kami sampaikan kepada Bapak/ibu, semoga dengan adanya laporan ini Ananda bisa
-        mempertahankan hal-hal baiknya dan menjadi lebih baik lagi dari sebelumnya, Kami berharap Bapak/ibu
-        dapat memberikan Motivasi dan nasihat agar ananda senantiasa konsisten dalam kebaikan</p>
+        <p>Demikian laporan kepengasuhan ini disampaikan. Kami memohon dukungan Bapak/Ibu untuk senantiasa memberikan motivasi agar Ananda istiqomah dalam kebaikan.</p>
     </div>
 
     <div class="ttd-container">

@@ -93,7 +93,7 @@ $nama_santri_clean = preg_replace("/[^a-zA-Z0-9 ]/", "", $santri['nama']);
 $nama_file = "Rapot {$nama_santri_clean} - {$rapot['bulan']} {$rapot['tahun']}.png";
 
 ob_start(); 
-include 'template_rapot.php'; 
+include __DIR__ . '/../config/template_rapot_bulanan.php'; 
 $html = ob_get_contents();
 ob_end_clean(); 
 

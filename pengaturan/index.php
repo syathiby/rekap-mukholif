@@ -83,6 +83,10 @@ require_once __DIR__ . '/../layouts/header.php';
     .card-log-aktifitas:hover { border-color: #6366f1; }
     .card-log-aktifitas .icon-box { background: rgba(99, 102, 241, 0.1); color: #4f46e5; }
 
+    .card-api-key::before { background: linear-gradient(90deg, #7c3aed, #a78bfa); }
+    .card-api-key:hover { border-color: #7c3aed; }
+    .card-api-key .icon-box { background: rgba(124, 58, 237, 0.08); color: #7c3aed; }
+
     .icon-box {
         width: 52px;
         height: 52px;
@@ -261,6 +265,20 @@ require_once __DIR__ . '/../layouts/header.php';
                 <p class="card-desc">Cadangkan seluruh data sistem ke dalam file SQL, atau pulihkan data dari file cadangan yang ada.</p>
                 <a href="backup-restore/index.php" class="settings-link">
                     Kelola Database <i class="fas fa-arrow-right text-xs"></i>
+                </a>
+            </div>
+        </div>
+        <?php endif; ?>
+
+        <!-- KARTU: Konfigurasi AI / API Key -->
+        <?php if (has_permission('setup_api_ai')): ?>
+        <div class="col-xl-4 col-md-6">
+            <div class="settings-card card-api-key">
+                <div class="icon-box"><i class="fas fa-robot"></i></div>
+                <h5 class="card-title">Konfigurasi AI</h5>
+                <p class="card-desc">Kelola API Key untuk layanan Google Gemini AI yang digunakan pada fitur Rapor Tahunan otomatis dan AI Guide.</p>
+                <a href="api_key/index.php" class="settings-link">
+                    Kelola API Key <i class="fas fa-arrow-right text-xs"></i>
                 </a>
             </div>
         </div>
