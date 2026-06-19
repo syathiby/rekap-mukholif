@@ -180,7 +180,7 @@ if (isset($_GET['ajax']) && $_GET['ajax'] == '1') {
                         </button>
                         <div class="dropdown-menu dropdown-menu-right shadow animated--fade-in" aria-labelledby="aksiDropdown-<?php echo $rapot['id']; ?>">
                             <?php if ($can_view): ?>
-                                <a class="dropdown-item" href="view.php?id=<?php echo $rapot['id']; ?>" target="_blank" data-bs-toggle="tooltip" title="Lihat Rapot di Halaman Web">
+                                <a class="dropdown-item" href="crud_bulanan/detail.php?id=<?php echo $rapot['id']; ?>" target="_blank" data-bs-toggle="tooltip" title="Lihat Rapot di Halaman Web">
                                     <i class="fas fa-eye fa-sm fa-fw me-2 text-gray-400"></i> View Rapot
                                 </a>
                             <?php endif; ?>
@@ -450,7 +450,7 @@ require_once __DIR__ . '/../layouts/header.php';
                                                 </button>
                                                 <div class="dropdown-menu dropdown-menu-right shadow animated--fade-in" aria-labelledby="aksiDropdown-<?php echo $rapot['id']; ?>">
                                                     <?php if ($can_view): ?>
-                                                        <a class="dropdown-item" href="view.php?id=<?php echo $rapot['id']; ?>" target="_blank" data-bs-toggle="tooltip" title="Lihat Rapot di Halaman Web">
+                                                        <a class="dropdown-item" href="crud_bulanan/detail.php?id=<?php echo $rapot['id']; ?>" target="_blank" data-bs-toggle="tooltip" title="Lihat Rapot di Halaman Web">
                                                             <i class="fas fa-eye fa-sm fa-fw me-2 text-gray-400"></i> View Rapot
                                                         </a>
                                                     <?php endif; ?>
