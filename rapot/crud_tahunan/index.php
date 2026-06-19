@@ -4,7 +4,7 @@
 require_once __DIR__ . '/../../bootstrap/init.php';
 require_once __DIR__ . '/../config/helper.php';
 
-guard(['rapot_view', 'rapot_create', 'rapot_cetak', 'rapot_delete']);
+guard('rapot_view');
 
 $can_create = has_permission('rapot_create');
 $can_cetak  = has_permission('rapot_cetak');

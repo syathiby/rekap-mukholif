@@ -365,7 +365,7 @@
     </div>
     
     <div class="penutup">
-        <p>Demikian laporan kepengasuhan ini disampaikan. Kami memohon dukungan Bapak/Ibu untuk senantiasa memberikan motivasi agar Ananda istiqomah dalam kebaikan.</p>
+        <p>Demikian laporan kepengasuhan ini disampaikan. Kami memohon dukungan Bapak/Ibu untuk senantiasa memberikan motivasi agar Ananda selalu istiqomah dalam kebaikan.</p>
     </div>
 
     <div class="ttd-container">

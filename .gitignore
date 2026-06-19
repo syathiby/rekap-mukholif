@@ -5,6 +5,5 @@ vendor/
 database.sql
 prd_rombak_struktur.md
 PRD_AsuhTrack_AI_Rapor_Tahunan_v2.md
-cache/rate_limit/*.json
-cache/dashboard/*.json  
- 
+# Folder Cache (Jangan masukkan ke Git, server akan bikin otomatis)
+cache/ 

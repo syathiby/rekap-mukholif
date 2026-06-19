@@ -46,49 +46,94 @@ if (!function_exists('generate_catatan_tahunan')) {
         return $subs[0];
     }
 
-    function _kalimat_per_mutu(array $aspek, float $avg): string {
+    function _kalimat_per_mutu(array $aspek, float $avg, int $index): string {
         $label = _label_mutu($aspek['aspek']);
         $sub_rendah = _sub_terendah($aspek);
         $sub_nama_rendah = $sub_rendah ? strtolower($sub_rendah['nama']) : '';
         $nilai_rendah = $sub_rendah ? (float)$sub_rendah['nilai_final'] : 0;
+        
+        $sub_tinggi = _sub_tertinggi($aspek);
+        $sub_nama_tinggi = $sub_tinggi ? strtolower($sub_tinggi['nama']) : '';
+
+        // Variasi pembuka (agar tidak selalu "Dalam hal...")
+        $pembuka = [
+            "Terkait aspek {$label},",
+            "Dalam hal {$label},",
+            "Mengenai perkembangan {$label},",
+            "Untuk aspek {$label},"
+        ];
+        // Pilih pembuka berdasarkan index agar bervariasi antar mutu
+        $awalan = $pembuka[$index % count($pembuka)];
+        
+        // Transisi kalimat jika bukan poin pertama
+        $transisi = "";
+        if ($index > 0) {
+            $transisi_list = ["Selain itu, ", "Di samping itu, ", "Sementara itu, ", "Adapun "];
+            $transisi = $transisi_list[$index % count($transisi_list)];
+            $awalan = strtolower($awalan);
+        }
 
         if ($avg >= 4.5) {
-            return "Dalam hal {$label}, Ananda sudah menunjukkan kebiasaan yang sangat baik.";
+            $kalimat = [
+                "Ananda telah membiasakan diri dengan sangat konsisten dan membanggakan.",
+                "Ananda menunjukkan komitmen yang patut diapresiasi.",
+                "Ananda mampu mempertahankan rutinitas yang amat positif sepanjang tahun ini.",
+                "kami melihat perkembangan yang sangat menjanjikan dari diri Ananda."
+            ];
+            $isi = $kalimat[$index % count($kalimat)];
+            return "{$transisi}{$awalan} {$isi}";
         } elseif ($avg >= 3.5) {
             if ($nilai_rendah < 4 && $sub_nama_rendah) {
-                return "Dalam hal {$label}, Ananda sudah cukup baik, meskipun kedisiplinannya pada poin {$sub_nama_rendah} masih bisa ditingkatkan lagi.";
+                $template_baik_tapi_kurang = [
+                    "{$transisi}{$awalan} perkembangan Ananda sudah terbilang baik, meskipun pada bagian {$sub_nama_rendah} masih memerlukan pembiasaan yang lebih konsisten.",
+                    "{$transisi}{$awalan} ada banyak kemajuan yang menggembirakan, namun Ananda masih perlu sedikit lebih fokus dalam hal {$sub_nama_rendah}.",
+                    "{$transisi}{$awalan} Ananda secara umum telah menunjukkan kesungguhan yang baik, hanya saja kebiasaan {$sub_nama_rendah} perlu lebih diperhatikan.",
+                    "{$transisi}{$awalan} perkembangannya cukup menggembirakan, kendati demikian pendampingan pada aspek {$sub_nama_rendah} masih tetap diperlukan."
+                ];
+                return $template_baik_tapi_kurang[$index % count($template_baik_tapi_kurang)];
             }
-            return "Dalam hal {$label}, Ananda sudah menunjukkan perkembangan yang positif.";
+            $kalimat = [
+                "Ananda terus menunjukkan perkembangan yang positif dan layak dipertahankan.",
+                "Ananda sudah menunjukkan progres yang baik dan perlu terus dijaga konsistensinya.",
+                "Ananda secara perlahan mulai terbiasa dengan rutinitas dan aturan yang ada."
+            ];
+            $isi = $kalimat[$index % count($kalimat)];
+            return "{$transisi}{$awalan} {$isi}";
         } elseif ($avg >= 2.5) {
             if ($sub_nama_rendah) {
-                return "Untuk {$label}, Ananda masih membutuhkan bimbingan, khususnya dalam hal {$sub_nama_rendah}.";
+                $template_kurang = [
+                    "{$transisi}{$awalan} Ananda masih memerlukan pendampingan yang konsisten, khususnya dalam hal {$sub_nama_rendah}.",
+                    "{$transisi}{$awalan} kesadaran Ananda perlu terus ditumbuhkan, terutama dalam urusan {$sub_nama_rendah}.",
+                    "{$transisi}{$awalan} perhatian lebih diperlukan agar kebiasaan {$sub_nama_rendah} bisa semakin baik ke depannya."
+                ];
+                return $template_kurang[$index % count($template_kurang)];
             }
-            return "Untuk {$label}, Ananda masih perlu membiasakan diri mengikuti rutinitas yang ada.";
+            return "{$transisi}{$awalan} Ananda masih perlu lebih banyak dukungan dan motivasi untuk mengikuti rutinitas secara mandiri.";
         } else {
-            return "Terkait {$label}, Ananda masih sangat membutuhkan perhatian dan bimbingan lebih lanjut.";
+            return "{$transisi}pada aspek {$label} ini, Ananda masih memerlukan perhatian dan bimbingan yang lebih intensif dari berbagai pihak agar dapat berkembang lebih baik.";
         }
     }
 
     function _kalimat_penutup(float $avg_global, int $total_pelanggaran, int $total_reward): string {
         $kalimat_reward = '';
         if ($total_reward > 0) {
-            $kalimat_reward = " Kami juga sangat mengapresiasi pencapaian {$total_reward} poin reward yang Ananda dapatkan.";
+            $kalimat_reward = " Kami juga turut bersyukur atas capaian positif Ananda yang berhasil meraih {$total_reward} poin reward, sebuah bukti nyata potensi yang dimilikinya.";
         }
         $kalimat_pelanggaran = '';
         if ($total_pelanggaran > 20) {
-            $kalimat_pelanggaran = " Namun, catatan pelanggaran sebesar {$total_pelanggaran} poin perlu menjadi bahan evaluasi serius agar Ananda bisa lebih disiplin ke depannya.";
+            $kalimat_pelanggaran = " Meski demikian, catatan pelanggaran sejumlah {$total_pelanggaran} poin perlu menjadi bahan evaluasi bersama agar ke depannya Ananda dapat lebih disiplin.";
         } elseif ($total_pelanggaran > 0) {
-            $kalimat_pelanggaran = " Terdapat juga catatan pelanggaran sebesar {$total_pelanggaran} poin yang perlu kita jadikan bahan evaluasi bersama.";
+            $kalimat_pelanggaran = " Tentu saja, adanya catatan pelanggaran sebanyak {$total_pelanggaran} poin tetap perlu menjadi perhatian kita bersama agar tidak terulang kembali.";
         }
 
         if ($avg_global >= 4.5) {
-            return "Secara keseluruhan, perkembangan Ananda selama setahun ini sangat baik.{$kalimat_reward}{$kalimat_pelanggaran} Semoga Ananda bisa terus mempertahankan kebiasaan baiknya.";
+            return "Secara umum, perjalanan Ananda di pesantren selama setahun ini sungguh membanggakan dan patut disyukuri bersama.{$kalimat_reward}{$kalimat_pelanggaran} Harapan besar kami, semoga Ananda senantiasa istiqamah merawat kebiasaan-kebiasaan mulia ini dan menjadi teladan yang baik bagi teman-temannya.";
         } elseif ($avg_global >= 3.5) {
-            return "Secara keseluruhan, Ananda telah mengikuti proses belajar dan pembinaan dengan baik.{$kalimat_reward}{$kalimat_pelanggaran} Harapan kami, Ananda bisa terus berkembang menjadi lebih baik lagi.";
+            return "Secara keseluruhan, Ananda berhasil melewati masa pembinaan tahun ini dengan catatan yang cukup menggembirakan.{$kalimat_reward}{$kalimat_pelanggaran} Besar harapan kami agar Ananda terus semangat dalam memperbaiki diri dan meraih capaian yang lebih baik di tahun ajaran mendatang.";
         } elseif ($avg_global >= 2.5) {
-            return "Secara umum, Ananda masih memerlukan adaptasi dan motivasi lebih.{$kalimat_reward}{$kalimat_pelanggaran} Kami memohon kerja sama Bapak/Ibu untuk ikut memotivasi Ananda dari rumah.";
+            return "Secara garis besar, proses pembinaan Ananda masih menemui beberapa tantangan yang perlu disikapi dengan bijak.{$kalimat_reward}{$kalimat_pelanggaran} Untuk itu, dukungan dan kerja sama yang aktif antara pihak asrama dan Bapak/Ibu di rumah sangatlah kami harapkan demi kemajuan Ananda ke depannya.";
         } else {
-            return "Perkembangan Ananda tahun ini masih banyak yang perlu dievaluasi.{$kalimat_reward}{$kalimat_pelanggaran} Diperlukan kerja sama yang erat antara pembina dan orang tua demi kebaikan Ananda.";
+            return "Evaluasi menyeluruh selama setahun ini menunjukkan bahwa Ananda masih memerlukan bimbingan dan pendampingan yang lebih intensif dalam proses pembiasaan akhlak dan kedisiplinan.{$kalimat_reward}{$kalimat_pelanggaran} Kami mengajak Bapak/Ibu untuk bersama-sama merumuskan langkah terbaik agar Ananda dapat berkembang lebih optimal di masa mendatang.";
         }
     }
 
@@ -102,13 +147,15 @@ if (!function_exists('generate_catatan_tahunan')) {
 
         $kalimat = [];
         $sapaan = $nama_santri ? "Ananda {$nama_santri}" : "Ananda";
-        $kalimat[] = "Alhamdulillah, {$sapaan} telah menyelesaikan masa pendidikannya selama satu tahun ini.";
+        $kalimat[] = "Alhamdulillah, {$sapaan} telah menyelesaikan satu tahun masa pendidikan di pesantren ini.";
 
         $semua_avg = [];
+        $index = 0;
         foreach ($nilai_aspek as $aspek) {
             $avg = _avg_aspek($aspek);
             $semua_avg[] = $avg;
-            $kalimat[] = _kalimat_per_mutu($aspek, $avg);
+            $kalimat[] = _kalimat_per_mutu($aspek, $avg, $index);
+            $index++;
         }
 
         $avg_global = !empty($semua_avg) ? array_sum($semua_avg) / count($semua_avg) : 0;
@@ -129,28 +176,31 @@ if (!function_exists('generate_catatan_tahunan')) {
         $val_tinggi = $sub_tinggi ? (float)$sub_tinggi['nilai_final'] : 0;
 
         if ($avg >= 4.5) {
-            return "Perkembangan {$label} Ananda sangat memuaskan, terutama kebiasaannya dalam hal {$nama_tinggi} yang patut dipertahankan.";
+            return "Pencapaian Ananda pada aspek {$label} selama setahun ini sungguh memuaskan dan layak mendapat apresiasi. Secara khusus, komitmen dan kesungguhan Ananda dalam hal {$nama_tinggi} sangat menonjol dan membanggakan. Kami berharap kebiasaan positif ini bisa terus dijaga dan menjadi inspirasi bagi teman-teman yang lain.";
         } elseif ($avg >= 3.5) {
+            $tambahan = "";
             if ($val_rendah < $val_tinggi && $nama_rendah) {
-                return "Secara umum sudah baik, hanya saja Ananda perlu lebih disiplin lagi dalam hal {$nama_rendah}.";
+                $tambahan = " Hanya saja, Ananda masih sesekali kurang konsisten, terutama dalam hal {$nama_rendah}.";
             }
-            return "Ananda sudah menunjukkan usaha yang bagus dalam menjaga {$label}-nya.";
+            return "Perkembangan Ananda pada aspek {$label} secara umum sudah berjalan dengan baik dan menggembirakan.{$tambahan} Ke depannya, Ananda perlu terus dimotivasi untuk meningkatkan konsistensinya di semua bagian secara merata.";
         } elseif ($avg >= 2.5) {
+            $tambahan = "";
             if ($nama_rendah) {
-                return "Masih perlu evaluasi dan bimbingan, khususnya terkait kebiasaan {$nama_rendah} yang perlu diperbaiki.";
+                $tambahan = " Kami mendapati bahwa Ananda masih kurang memperhatikan urusan {$nama_rendah}, yang cukup berpengaruh pada penilaian di aspek ini.";
             }
-            return "Ananda masih perlu dimotivasi untuk lebih mematuhi aturan dan arahan pembina.";
+            return "Perkembangan {$label} Ananda masih memerlukan perhatian ekstra dari berbagai pihak.{$tambahan} Mohon bantuan Bapak/Ibu untuk turut memotivasi Ananda agar lebih bersungguh-sungguh mengikuti setiap arahan pembina.";
         } else {
-            return "Sangat membutuhkan bimbingan intensif dan pengawasan lebih dari para pembina.";
+            return "Penilaian pada aspek {$label} menunjukkan bahwa Ananda masih memerlukan bimbingan yang lebih intensif. Ananda tampaknya belum sepenuhnya memahami pentingnya kebiasaan di area ini, khususnya dalam hal {$nama_rendah}. Evaluasi personal dan pendampingan yang berkelanjutan sangat diperlukan agar Ananda dapat berkembang lebih baik ke depannya.";
         }
     }
 }
+
 
 // =========================================================================
 // 2. ENDPOINT API (Untuk Rapor Bulanan)
 // Menerima $_POST dari form bulanan dan mencetak catatan
 // =========================================================================
-if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+if (basename($_SERVER['SCRIPT_FILENAME']) === 'generate_catatan.php' && $_SERVER['REQUEST_METHOD'] === 'POST') {
     
     if (!isset($_POST['lisan']) && !isset($_POST['sholat_duha'])) {
         exit;

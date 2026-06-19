@@ -60,11 +60,11 @@ function checkRateLimit($ip) {
 
 function recordFailedAttempt($ip) {
     $file = getRateLimitFile($ip);
-    $data = ['attempts' => 1, 'first_attempt' => time()];
+    $data = ['ip' => $ip, 'attempts' => 1, 'first_attempt' => time()];
     if (file_exists($file)) {
         $existing = json_decode(file_get_contents($file), true);
         if ($existing && (time() - ($existing['first_attempt'] ?? time())) <= LOGIN_LOCKOUT_SEC) {
-            $data = ['attempts' => ($existing['attempts'] ?? 0) + 1, 'first_attempt' => $existing['first_attempt']];
+            $data = ['ip' => $ip, 'attempts' => ($existing['attempts'] ?? 0) + 1, 'first_attempt' => $existing['first_attempt']];
         }
     }
     file_put_contents($file, json_encode($data), LOCK_EX);
@@ -84,32 +84,26 @@ if (isset($_GET['illegal'])) {
     recordFailedAttempt($visitor_ip);
 }
 
-$rate_check   = checkRateLimit($visitor_ip);
+$rate_check        = checkRateLimit($visitor_ip);
 $remaining_time_js = 0;
-$is_blocked = false;
+$is_blocked        = false;
 
 if ($rate_check['blocked']) {
     $is_blocked = true;
     $remaining_time_js = $rate_check['remaining'];
-    // Pesan error akan di-update oleh Javascript
+    // Pesan error akan di-update oleh Javascript — JANGAN di-escape karena ada tag <span>
     $error = "⛔ Terlalu banyak percobaan gagal. Coba lagi dalam <span id='countdown-timer' class='fw-bold'></span>.";
 }
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
-    // PERBAIKAN: Tolak langsung jika IP sedang diblokir
-    if ($is_blocked) {
-        $error = "⛔ Terlalu banyak percobaan gagal. Coba lagi dalam <span id='countdown-timer' class='fw-bold'></span>.";
-        // Jangan lanjut proses login
-        goto end_login_process;
-    }
-
-    $username = $_POST['username'] ?? '';
+    $username = trim($_POST['username'] ?? '');
     $password = $_POST['password'] ?? '';
 
-    // Query baru buat ngambil data user + SEMUA TIKET yang dia punya
+    // ─── PROSES VERIFIKASI KREDENSIAL ────────────────────────────────────────
+    // Dilakukan lebih awal agar admin bisa bypass blokir jika password benar
     $stmt = $conn->prepare("
-        SELECT 
-            u.id, u.username, u.password, u.nama_lengkap, u.role, 
+        SELECT
+            u.id, u.username, u.password, u.nama_lengkap, u.role,
             GROUP_CONCAT(p.nama_izin) AS permissions
         FROM users u
         LEFT JOIN user_permissions up ON u.id = up.user_id
@@ -120,25 +114,48 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $stmt->bind_param("s", $username);
     $stmt->execute();
     $result = $stmt->get_result();
+    $user   = $result->fetch_assoc();
 
-    if ($user = $result->fetch_assoc()) {
-        $password_correct = false;
-        $needs_rehash = false;
+    $password_correct = false;
+    $needs_rehash     = false;
 
-        // Cek gaya Bcrypt (Baru) ATAU gaya SHA-256 (Lama)
+    if ($user) {
         if (password_verify($password, $user['password'])) {
             $password_correct = true;
-            // Coba lihat apakah algoritma ini perlu rehash (misal dari bcrypt cost 10 ke 12 di masa depan)
             if (password_needs_rehash($user['password'], PASSWORD_DEFAULT)) {
                 $needs_rehash = true;
             }
         } elseif (hash('sha256', $password) === $user['password']) {
             $password_correct = true;
-            $needs_rehash = true; // Format lama, wajib convert!
+            $needs_rehash = true;
+        }
+    }
+
+    // ─── PENJAGA BLOKIR: Blokir berlaku untuk SEMUA kecuali admin + password benar ─
+    //
+    //  • Jika IP diblokir DAN bukan admin dengan password benar → tolak
+    //  • Jika IP diblokir TAPI admin dengan password benar      → bypass (lanjut login)
+    //
+    if ($is_blocked) {
+        $is_admin_bypass = $password_correct
+                        && $user
+                        && strtolower(trim($user['role'])) === 'admin';
+
+        if (!$is_admin_bypass) {
+            // Bukan admin atau password salah — tetap diblokir
+            goto end_login_process;
         }
 
-        if ($password_correct) {
-            // Login berhasil: Reset hitungan percobaan gagal
+        // Admin dengan password benar → reset blokir dan lanjut proses
+        resetRateLimit($visitor_ip);
+        $is_blocked        = false;
+        $remaining_time_js = 0;
+        $error             = '';
+    }
+    // ─────────────────────────────────────────────────────────────────────────
+
+    if ($user && $password_correct) {
+        // Login berhasil: Reset hitungan percobaan gagal
             resetRateLimit($visitor_ip);
 
             // TRANSISI HALUS: Update password di database ke Bcrypt secara diam-diam!
@@ -169,17 +186,19 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             // REVISI: Arahkan ke halaman index pake BASE_URL
             header("Location: " . BASE_URL . "/dashboard.php");
             exit;
-        } else {
-            // Password salah: Catat percobaan gagal
+    } else {
+        // Password salah atau username tidak ditemukan: Catat percobaan gagal
+        if ($user) {
+            // Username ada tapi password salah
             recordFailedAttempt($visitor_ip);
             $attempts_left = LOGIN_MAX_ATTEMPTS - ($rate_check['attempts'] + 1);
             $error = "❌ Password salah!" . ($attempts_left > 0 ? " (Sisa {$attempts_left} percobaan sebelum diblokir)" : "");
+        } else {
+            // Username tidak ditemukan
+            recordFailedAttempt($visitor_ip);
+            $attempts_left = LOGIN_MAX_ATTEMPTS - ($rate_check['attempts'] + 1);
+            $error = "❌ Username tidak ditemukan!" . ($attempts_left > 0 ? " (Sisa {$attempts_left} percobaan sebelum diblokir)" : "");
         }
-    } else {
-        // Username tidak ditemukan: Catat percobaan gagal
-        recordFailedAttempt($visitor_ip);
-        $attempts_left = LOGIN_MAX_ATTEMPTS - ($rate_check['attempts'] + 1);
-        $error = "❌ Username tidak ditemukan!" . ($attempts_left > 0 ? " (Sisa {$attempts_left} percobaan sebelum diblokir)" : "");
     }
 
     end_login_process:
@@ -278,7 +297,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         <?php if ($error): ?>
             <div class="alert alert-danger d-flex align-items-center py-2 px-3 text-sm mb-4" style="border-radius: 0.75rem; border: none; background: #fee2e2; color: #991b1b; font-weight: 500;">
                 <i class="fas fa-exclamation-circle me-2"></i>
-                <?= htmlspecialchars($error) ?>
+                <?= $error /* Sengaja tidak di-escape karena $error berisi HTML tag <span> untuk countdown timer. Pastikan $error TIDAK pernah berisi input dari user! */ ?>
             </div>
         <?php endif; ?>
 

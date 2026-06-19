@@ -5,7 +5,7 @@
 require_once __DIR__ . '/../../bootstrap/init.php';
 require_once __DIR__ . '/../config/helper.php';
 
-guard(['rapot_view', 'rapot_cetak', 'rapot_create', 'rapot_delete']);
+guard('rapot_view');
 
 $can_cetak  = has_permission('rapot_cetak');
 $can_delete = has_permission('rapot_delete');
@@ -24,90 +24,7 @@ if (empty($kamar) || empty($periode)) {
 // Flash message ditangani global oleh footer.php
 
 // Handle POST actions
-if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action'])) {
-
-    // Approve single
-    if ($_POST['action'] === 'approve') {
-        guard('rapot_create');
-        $rapor_id = (int)($_POST['rapor_id'] ?? 0);
-        if ($rapor_id) {
-            try {
-                $stmt_cek = $conn->prepare("SELECT narasi_ai FROM rapot_tahunan WHERE id = ?");
-                $stmt_cek->bind_param('i', $rapor_id);
-                $stmt_cek->execute();
-                $row_cek = $stmt_cek->get_result()->fetch_assoc();
-                $stmt_cek->close();
-                
-                $narasi = trim($row_cek['narasi_ai'] ?? '');
-                if (strlen($narasi) < 15 || preg_match_all('/[a-zA-Z0-9]/', $narasi) < 10) {
-                    $flash = ['type' => 'danger', 'message' => 'Gagal approve: Catatan belum diisi atau tidak valid. Buka detail rapor untuk mengedit catatan.'];
-                } else {
-                    $uid = (int)($_SESSION['user_id'] ?? 0);
-                    $stmt_ap = $conn->prepare("
-                        UPDATE rapot_tahunan
-                        SET status = 'APPROVED', approved_by = ?, approved_at = NOW()
-                        WHERE id = ? AND status = 'DRAFT'
-                    ");
-                    $stmt_ap->bind_param('ii', $uid, $rapor_id);
-                    $stmt_ap->execute();
-                    if ($stmt_ap->affected_rows > 0) {
-                        write_activity_log('UPDATE', 'rapot_tahunan', "Approve rapor tahunan ID $rapor_id", ['id' => $rapor_id]);
-                        $flash = ['type' => 'success', 'message' => 'Rapor berhasil di-approve.'];
-                    } else {
-                        $flash = ['type' => 'warning', 'message' => 'Rapor tidak ditemukan atau sudah dalam status APPROVED.'];
-                    }
-                    $stmt_ap->close();
-                }
-            } catch (Exception $e) {
-                $flash = ['type' => 'danger', 'message' => 'Gagal approve: ' . $e->getMessage()];
-            }
-        }
-    }
-
-    // Approve semua
-    if ($_POST['action'] === 'approve_all') {
-        guard('rapot_create');
-        try {
-            $stmt_cek = $conn->prepare("SELECT id, narasi_ai FROM rapot_tahunan WHERE kamar = ? AND periode = ? AND status = 'DRAFT'");
-            $stmt_cek->bind_param('ss', $kamar, $periode);
-            $stmt_cek->execute();
-            $drafts = $stmt_cek->get_result()->fetch_all(MYSQLI_ASSOC);
-            $stmt_cek->close();
-
-            $invalid_count = 0;
-            foreach ($drafts as $d) {
-                $narasi = trim($d['narasi_ai'] ?? '');
-                if (strlen($narasi) < 15 || preg_match_all('/[a-zA-Z0-9]/', $narasi) < 10) {
-                    $invalid_count++;
-                }
-            }
-            
-            if ($invalid_count > 0) {
-                $flash = ['type' => 'danger', 'message' => "Gagal approve: Terdapat $invalid_count rapor yang catatannya belum diisi atau tidak valid. Harap lengkapi terlebih dahulu."];
-            } else {
-                $uid = (int)($_SESSION['user_id'] ?? 0);
-                $stmt_ap = $conn->prepare("
-                    UPDATE rapot_tahunan
-                    SET status = 'APPROVED', approved_by = ?, approved_at = NOW()
-                    WHERE kamar = ? AND periode = ? AND status = 'DRAFT'
-                ");
-                $stmt_ap->bind_param('iss', $uid, $kamar, $periode);
-                $stmt_ap->execute();
-                $approved_count = $stmt_ap->affected_rows;
-                $stmt_ap->close();
-                if ($approved_count > 0) {
-                    write_activity_log('UPDATE', 'rapot_tahunan', "Approve semua rapor DRAFT Kamar $kamar periode $periode", []);
-                    $flash = ['type' => 'success', 'message' => "$approved_count rapor berstatus DRAFT berhasil di-approve."];
-                } else {
-                    $flash = ['type' => 'warning', 'message' => 'Tidak ada rapor DRAFT yang bisa di-approve.'];
-                }
-            }
-        } catch (Exception $e) {
-            $flash = ['type' => 'danger', 'message' => 'Gagal approve semua: ' . $e->getMessage()];
-        }
-    }
-
-    // Hapus Bulk
+if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action'])) {    // Hapus Bulk
     if ($_POST['action'] === 'delete_all') {
         guard('rapot_delete');
         $delete_type = $_POST['delete_type'] ?? 'draft_only';
@@ -131,6 +48,36 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action'])) {
             $flash = ['type' => 'success', 'message' => "$deleted rapor berhasil dihapus."];
         } catch (Exception $e) {
             $flash = ['type' => 'danger', 'message' => 'Gagal hapus: ' . $e->getMessage()];
+        }
+    }
+
+    // Approve Rapor
+    if ($_POST['action'] === 'approve') {
+        guard('rapot_create');
+        $rapor_id = (int)($_POST['rapor_id'] ?? 0);
+        $user_id = $_SESSION['user_id'] ?? 0;
+
+        if ($rapor_id > 0) {
+            $stmt_app = $conn->prepare("UPDATE rapot_tahunan SET status = 'APPROVED', approved_by = ?, approved_at = NOW() WHERE id = ? AND status = 'DRAFT'");
+            $stmt_app->bind_param('ii', $user_id, $rapor_id);
+            if ($stmt_app->execute() && $stmt_app->affected_rows > 0) {
+                write_activity_log('UPDATE', 'rapot_tahunan', "Approve rapor tahunan ID $rapor_id", ['rapor_id' => $rapor_id]);
+                header('Content-Type: application/json');
+                echo json_encode(['status' => 'success']);
+                $stmt_app->close();
+                exit;
+            } else {
+                http_response_code(400);
+                header('Content-Type: application/json');
+                echo json_encode(['status' => 'error', 'message' => 'Gagal approve atau sudah approved']);
+                $stmt_app->close();
+                exit;
+            }
+        } else {
+            http_response_code(400);
+            header('Content-Type: application/json');
+            echo json_encode(['status' => 'error', 'message' => 'ID rapor tidak valid']);
+            exit;
         }
     }
 }
@@ -165,7 +112,7 @@ try {
 $total_santri_kamar = count($rapor_list);
 $total    = count(array_filter($rapor_list, fn($r) => !empty($r['rapor_id'])));
 $draft    = count(array_filter($rapor_list, fn($r) => $r['status'] === 'DRAFT'));
-$approved = count(array_filter($rapor_list, fn($r) => $r['status'] === 'APPROVED'));
+$approved = count(array_filter($rapor_list, fn($r) => in_array($r['status'], ['APPROVED', 'EXPORTED'])));
 $fallback = count(array_filter($rapor_list, fn($r) => !empty($r['rapor_id']) && $r['is_fallback']));
 $ai_ok    = $total - $fallback;
 
@@ -367,6 +314,9 @@ require_once __DIR__ . '/../../layouts/header.php';
         <div>
             <h3 class="fw-bolder mb-1" style="color:var(--c-text); letter-spacing:-.02em;">
                 <i class="fas fa-file-alt me-2" style="color:var(--c-primary);"></i>Daftar Rapor Tahunan
+                <button type="button" class="btn btn-sm btn-link text-info p-0 ms-2" data-bs-toggle="modal" data-bs-target="#guideModal" title="Buku Panduan">
+                    <i class="fas fa-info-circle fs-5"></i>
+                </button>
             </h3>
             <p class="text-muted mb-0 small">
                 Kamar <strong><?= htmlspecialchars($kamar) ?></strong>
@@ -375,27 +325,40 @@ require_once __DIR__ . '/../../layouts/header.php';
             </p>
         </div>
         <div class="hdr-btns">
+            <?php if ($can_cetak && $approved > 0): ?>
+            <div class="dropdown flex-grow-1 flex-sm-grow-0">
+                <button class="btn btn-primary fw-semibold w-100" type="button" data-bs-toggle="dropdown" aria-expanded="false" style="border-radius:.75rem;">
+                    <i class="fas fa-download me-1"></i> Download Approved (<?= $approved ?>)
+                </button>
+                <ul class="dropdown-menu shadow-sm border-0 mt-2" style="border-radius:.75rem; box-shadow: 0 4px 12px rgba(0,0,0,0.1) !important;">
+                    <li>
+                        <a class="dropdown-item py-2" href="../export/generate_pdf_tahunan.php?kamar=<?= urlencode($kamar) ?>&periode=<?= urlencode($periode) ?>">
+                            <i class="fas fa-file-pdf me-2 text-danger"></i>Gabung 1 File PDF (Cetak)
+                        </a>
+                    </li>
+                    <li>
+                        <button class="dropdown-item py-2" id="btn-bulk-pdf">
+                            <i class="fas fa-file-archive me-2 text-warning"></i>File PDF Terpisah (ZIP)
+                        </button>
+                    </li>
+                </ul>
+            </div>
+            <?php endif; ?>
+
             <?php if ($can_create): ?>
             <a href="generate.php?kamar=<?= urlencode($kamar) ?>&periode=<?= urlencode($periode) ?>"
-               class="btn btn-success fw-semibold" style="border-radius:.75rem;">
+               class="btn btn-success fw-semibold flex-grow-1 flex-sm-grow-0" style="border-radius:.75rem;">
                 <i class="fas fa-magic me-1"></i> Generate Ulang
             </a>
             <?php endif; ?>
-            <?php if ($can_create && $draft > 0): ?>
-            <form method="POST" class="m-0 p-0" id="form-approve-all">
-                <input type="hidden" name="action" value="approve_all">
-                <button type="button" class="btn btn-primary fw-semibold w-100" style="border-radius:.75rem;" onclick="confirmApproveAll()">
-                    <i class="fas fa-check-double me-1"></i> Approve Semua Draft
-                </button>
-            </form>
-            <?php endif; ?>
+
             <?php if ($can_delete && ($draft > 0 || $approved > 0)): ?>
-            <button type="button" class="btn btn-danger fw-semibold" style="border-radius:.75rem;"
+            <button type="button" class="btn btn-danger fw-semibold flex-grow-1 flex-sm-grow-0" style="border-radius:.75rem;"
                     onclick="confirmDeleteAll()">
-                <i class="fas fa-trash me-1"></i> Hapus Rapor
+                <i class="fas fa-trash me-1"></i> Hapus
             </button>
             <?php endif; ?>
-            <a href="index.php" class="btn btn-light border fw-medium" style="border-radius:.75rem;">
+            <a href="index.php" class="btn btn-light border fw-medium flex-grow-1 flex-sm-grow-0" style="border-radius:.75rem;">
                 <i class="fas fa-arrow-left me-1"></i> Kembali
             </a>
         </div>
@@ -407,7 +370,7 @@ require_once __DIR__ . '/../../layouts/header.php';
     <div class="stat-grid">
         <div class="stat-card">
             <div class="stat-icon" style="background:var(--c-primary-light); color:var(--c-primary);">
-                <i class="fas fa-users"></i>
+                <i class="fas fa-file-alt"></i>
             </div>
             <div>
                 <div class="stat-val"><?= $total ?></div>
@@ -433,12 +396,12 @@ require_once __DIR__ . '/../../layouts/header.php';
             </div>
         </div>
         <div class="stat-card">
-            <div class="stat-icon" style="background:var(--c-success-light);color:var(--c-success);">
-                <i class="fas fa-pen-nib"></i>
+            <div class="stat-icon" style="background:#f0fdf4; color:#166534;">
+                <i class="fas fa-users"></i>
             </div>
             <div>
-                <div class="stat-val"><?= $ai_ok ?></div>
-                <div class="stat-lbl">Catatan Otomatis</div>
+                <div class="stat-val"><?= $total_santri_kamar ?></div>
+                <div class="stat-lbl">Santri Kamar</div>
             </div>
         </div>
     </div>
@@ -449,16 +412,12 @@ require_once __DIR__ . '/../../layouts/header.php';
             <i class="fas fa-list-ul" style="color:var(--c-primary);"></i>
             <span>Daftar Santri</span>
             <span class="ms-auto text-muted fw-normal" style="font-size:.8rem;"><?= $total_santri_kamar ?> entri</span>
-            <?php if ($approved === $total && $total > 0 && $can_cetak): ?>
-            <a href="../export/generate_pdf_tahunan.php?kamar=<?= urlencode($kamar) ?>&periode=<?= urlencode($periode) ?>"
-               class="btn btn-sm btn-primary ms-2 fw-semibold" style="border-radius:.625rem;">
-                <i class="fas fa-download me-1"></i> Download Semua PDF
-            </a>
-            <?php endif; ?>
         </div>
 
         <!-- List -->
-        <?php if (empty($rapor_list)): ?>
+        <?php 
+        $bulk_list = [];
+        if (empty($rapor_list)): ?>
         <div class="empty-box">
             <i class="fas fa-inbox"></i>
             <p class="mb-3">Belum ada rapor tahunan yang di-generate untuk kamar ini.</p>
@@ -490,8 +449,18 @@ require_once __DIR__ . '/../../layouts/header.php';
                         $status     = $r['status'] ?? 'DRAFT';
                         $chip_class = match($status) { 'APPROVED' => 'chip-approved', 'EXPORTED' => 'chip-exported', default => 'chip-draft' };
                         $chip_icon  = match($status) { 'APPROVED' => 'fa-check-circle', 'EXPORTED' => 'fa-file-download', default => 'fa-pen' };
+                        $display_status = ($status === 'EXPORTED') ? 'DOWNLOADED' : $status;
+                        
+                        // Tambahkan ke bulk_list jika APPROVED atau EXPORTED
+                        if (in_array($status, ['APPROVED', 'EXPORTED'])) {
+                            $nama_clean = preg_replace('/[^a-zA-Z0-9 ]/', '', $r['nama_santri']);
+                            $bulk_list[] = [
+                                'id' => $r['rapor_id'],
+                                'filename' => "Rapor Tahunan {$nama_clean} - {$periode}"
+                            ];
+                        }
                         ?>
-                        <span class="chip <?= $chip_class ?>"><i class="fas <?= $chip_icon ?>"></i> <?= $status ?></span>
+                        <span class="chip <?= $chip_class ?>"><i class="fas <?= $chip_icon ?>"></i> <?= $display_status ?></span>
                         <?php if ($r['is_fallback']): ?>
                         <span class="chip chip-statis"><i class="fas fa-exclamation-triangle"></i> Statis</span>
                         <?php else: ?>
@@ -520,24 +489,16 @@ require_once __DIR__ . '/../../layouts/header.php';
                         <i class="fas fa-eye"></i>
                     </a>
 
-                    <?php if ($status === 'DRAFT' && $can_create): ?>
-                    <form method="POST" class="d-inline" onsubmit="confirmSubmit(event, this, 'Approve Rapor?', 'Approve rapor <?= htmlspecialchars(addslashes($r['nama_santri'] ?? '')) ?>?');">
-                        <input type="hidden" name="action"   value="approve">
-                        <input type="hidden" name="rapor_id" value="<?= $r['rapor_id'] ?>">
-                        <button type="submit" class="act-btn ab-ok" title="Approve">
-                            <i class="fas fa-check"></i>
-                        </button>
-                    </form>
-                    <?php endif; ?>
+                    <!-- Approve dipindah ke halaman detail -->
 
-                    <?php if ($status === 'APPROVED' && $can_cetak): ?>
+                    <?php if (in_array($status, ['APPROVED', 'EXPORTED']) && $can_cetak): ?>
                     <a href="../export/generate_pdf_tahunan.php?id=<?= $r['rapor_id'] ?>"
                        class="act-btn ab-pdf" title="Download PDF">
                         <i class="fas fa-file-pdf"></i>
                     </a>
                     <?php endif; ?>
 
-                    <?php if ($can_delete && $status !== 'APPROVED'): ?>
+                    <?php if ($can_delete && !in_array($status, ['APPROVED', 'EXPORTED'])): ?>
                     <a href="delete.php?id=<?= $r['rapor_id'] ?>"
                        class="act-btn ab-del" title="Hapus"
                        onclick="confirmSubmit(event, this, 'Hapus Rapor?', 'Hapus draft rapor <?= htmlspecialchars(addslashes($r['nama_santri'] ?? '')) ?>?');">
@@ -573,22 +534,6 @@ require_once __DIR__ . '/../../layouts/header.php';
 </form>
 
 <script>
-function confirmApproveAll() {
-    Swal.fire({
-        title: 'Approve Semua Draft?',
-        text: "Semua rapor berstatus DRAFT di kamar ini akan disetujui sekaligus dan siap dicetak.",
-        icon: 'info',
-        showCancelButton: true,
-        confirmButtonColor: '#0d6efd',
-        cancelButtonColor: '#6c757d',
-        confirmButtonText: '<i class="fas fa-check-double"></i> Ya, Approve Semua!',
-        cancelButtonText: 'Batal'
-    }).then((result) => {
-        if (result.isConfirmed) {
-            document.getElementById('form-approve-all').submit();
-        }
-    });
-}
 
 function confirmDeleteAll() {
     Swal.fire({
@@ -630,6 +575,77 @@ function confirmDeleteAll() {
         }
     });
 }
+</script>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const btnBulkPdf = document.getElementById('btn-bulk-pdf');
+    if (btnBulkPdf) {
+        btnBulkPdf.addEventListener('click', function() {
+            const bulkList = <?= json_encode($bulk_list) ?>;
+            if (!bulkList || bulkList.length === 0) {
+                Swal.fire('Oops', 'Tidak ada data rapor yang bisa didownload.', 'warning');
+                return;
+            }
+            sessionStorage.setItem('bulkProcessList', JSON.stringify(bulkList));
+            window.open('../crud_bulanan/bulk_processor.php?type=pdf&jenis=tahunan', '_blank');
+        });
+    }
+});
+</script>
+
+<!-- Modal Panduan -->
+<div class="modal fade" id="guideModal" tabindex="-1" aria-labelledby="guideModalLabel" aria-hidden="true">
+  <div class="modal-dialog modal-dialog-centered modal-dialog-scrollable">
+    <div class="modal-content border-0 shadow-lg" style="border-radius: 1rem;">
+      <div class="modal-header border-bottom-0 pb-0 mt-2 mx-2">
+        <h5 class="modal-title fw-bolder text-dark" id="guideModalLabel">
+            <i class="fas fa-spinner fa-spin text-primary me-2"></i>Memuat Panduan...
+        </h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+      </div>
+      <div class="modal-body pt-3 px-4 pb-4 text-muted" id="guideModalBody">
+         <div class="text-center py-4">
+             <div class="spinner-border text-primary" role="status">
+                 <span class="visually-hidden">Loading...</span>
+             </div>
+         </div>
+      </div>
+      <div class="modal-footer border-top-0 pt-0 pb-4 px-4">
+        <button type="button" class="btn btn-primary w-100 fw-medium shadow-sm" style="border-radius: 0.75rem;" data-bs-dismiss="modal">Saya Mengerti</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const guideModal = document.getElementById('guideModal');
+    let guideLoaded = false;
+    
+    if (guideModal) {
+        guideModal.addEventListener('show.bs.modal', function () {
+            if (guideLoaded) return;
+            
+            fetch('../api/guide_tahunan.php')
+                .then(response => response.json())
+                .then(res => {
+                    if(res.status === 'success') {
+                        document.getElementById('guideModalLabel').innerHTML = res.data.title;
+                        document.getElementById('guideModalBody').innerHTML = res.data.content;
+                        guideLoaded = true;
+                    } else {
+                        document.getElementById('guideModalLabel').innerHTML = '<i class="fas fa-exclamation-triangle text-danger me-2"></i>Gagal Memuat';
+                        document.getElementById('guideModalBody').innerHTML = '<div class="alert alert-danger">Gagal memuat panduan: ' + (res.message || 'Error tidak diketahui') + '</div>';
+                    }
+                })
+                .catch(err => {
+                    document.getElementById('guideModalLabel').innerHTML = '<i class="fas fa-exclamation-triangle text-danger me-2"></i>Koneksi Error';
+                    document.getElementById('guideModalBody').innerHTML = '<div class="alert alert-danger">Terjadi kesalahan saat menghubungi server.</div>';
+                });
+        });
+    }
+});
 </script>
 
 <?php require_once __DIR__ . '/../../layouts/footer.php'; ?>

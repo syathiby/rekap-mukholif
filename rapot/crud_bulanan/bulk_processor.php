@@ -121,8 +121,15 @@ $head_content = $head_matches[1] ?? '';
                 try {
                     let blob;
                     if (type === 'pdf') {
-                        // Path diupdate ke ../../export/
-                        const response = await fetch(`../../rapot/export/generate_pdf.php?id=${item.id}&output=string`);
+                        // Cek jenis rapor (tahunan atau bulanan)
+                        const jenisParams = new URLSearchParams(window.location.search);
+                        const jenis = jenisParams.get('jenis');
+                        let pdfUrl = `../../rapot/export/generate_pdf.php?id=${item.id}&output=string`;
+                        if (jenis === 'tahunan') {
+                            pdfUrl = `../../rapot/export/generate_pdf_tahunan.php?id=${item.id}&output=string`;
+                        }
+                        
+                        const response = await fetch(pdfUrl);
                         if (!response.ok) throw new Error(`Server error ${response.status}`);
                         blob = await response.blob();
                     } else {

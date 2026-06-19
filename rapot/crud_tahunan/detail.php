@@ -5,7 +5,7 @@
 require_once __DIR__ . '/../../bootstrap/init.php';
 require_once __DIR__ . '/../config/helper.php';
 require_once __DIR__ . '/../api/generate_catatan.php';
-guard(['rapot_view', 'rapot_cetak', 'rapot_create']);
+guard('rapot_view');
 
 $santri_id = (int)($_GET['santri_id'] ?? 0);
 $periode   = trim($_GET['periode'] ?? '');
@@ -137,6 +137,7 @@ $catatan_otomatis = trim($rapot['narasi_ai'] ?? '');
 
 $can_cetak  = has_permission('rapot_cetak');
 $can_create = has_permission('rapot_create');
+$can_ai     = has_permission('catatan_otomatis');
 $status     = $rapot['status'] ?? 'DRAFT';
 
 // Hitung total nilai (jumlah semua nilai_final)
@@ -248,13 +249,15 @@ require_once __DIR__ . '/../../layouts/header.php';
     .sc-0 { background: #f1f5f9; color: #94a3b8; }
 
     /* koreksi tag */
-    .kor-tag { font-size: .65rem; background: #fef3c7; color: #b45309;
-               border: 1px solid #f59e0b; padding: 1px 4px; border-radius: 4px; margin-left: 2px; vertical-align: super; }
+    .kor-tag { font-size: .65rem; background: #fef3c7; color: #b45309; border: 1px solid #f59e0b; padding: 1px 4px; border-radius: 4px; margin-left: 2px; vertical-align: super; }
+    .kor-tag.kor-minus { background: #fee2e2; color: #b91c1c; border-color: #fca5a5; }
+    .kor-tag.kor-plus  { background: #dcfce7; color: #15803d; border-color: #86efac; }
+    .kor-tag.kor-mix   { background: #e0e7ff; color: #4338ca; border-color: #a5b4fc; } /* Biru/Ungu untuk kombinasi +/- */
 
     /* ─── Catatan otomatis per mutu ─── */
     .catatan-mutu {
-        background: #f8fafc; border-left: 3px solid var(--c-primary);
-        padding: .5rem .875rem; font-size: .82rem; color: #334155;
+        background: #f8fafc;
+        font-size: .82rem; color: #334155;
         line-height: 1.6;
     }
     .catatan-mutu td { border: 1px solid #e9edf3 !important; }
@@ -297,14 +300,99 @@ require_once __DIR__ . '/../../layouts/header.php';
     .chip-approved { background: var(--c-success-light); color: var(--c-success); }
     .chip-exported { background: #e0f2fe; color: #0369a1; }
 
+    /* ─── Global Loader Overlay ─── */
+    .global-loader {
+        position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+        background: rgba(255, 255, 255, 0.85);
+        backdrop-filter: blur(4px);
+        z-index: 9999;
+        display: flex; flex-direction: column; align-items: center; justify-content: center;
+        opacity: 0; pointer-events: none;
+        transition: opacity 0.3s ease;
+    }
+    .global-loader.show {
+        opacity: 1; pointer-events: auto;
+    }
+    .spinner-modern {
+        width: 50px; height: 50px;
+        border: 4px solid var(--c-border);
+        border-top-color: var(--c-primary);
+        border-radius: 50%;
+        animation: spin 1s linear infinite;
+        margin-bottom: 1rem;
+    }
+    @keyframes spin { 100% { transform: rotate(360deg); } }
+    .loader-icon-success {
+        display: none; font-size: 3rem; color: var(--c-success);
+        margin-bottom: 1rem;
+        animation: scaleIn 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+    }
+    @keyframes scaleIn { 0% { transform: scale(0); } 100% { transform: scale(1); } }
+    .loader-text {
+        font-size: 1.1rem; font-weight: 700; color: var(--c-text);
+        letter-spacing: -0.01em;
+    }
+    
+    /* Tombol Edit Nilai */
+    .btn-edit-nilai {
+        background: transparent; color: var(--c-primary);
+        border: 1px solid var(--c-primary-light);
+        width: 28px; height: 28px; border-radius: 6px;
+        display: inline-flex; align-items: center; justify-content: center;
+        cursor: pointer; transition: all 0.2s; font-size: 0.8rem;
+    }
+    .btn-edit-nilai:hover {
+        background: var(--c-primary); color: #fff;
+    }
+
     @media (max-width: 576px) {
         .info-bar { gap: .875rem; }
         .act-row  { flex-direction: column; }
         .act-row .ms-auto { margin-left: 0 !important; width: 100%; }
         .act-row a, .act-row button { width: 100%; text-align: center; }
         .sec-hdr { flex-wrap: wrap; }
+        
+        /* SweetAlert Minimalis di Mobile */
+        div:where(.swal2-container) div:where(.swal2-popup) {
+            padding: 1.25rem 1rem 1rem 1rem !important;
+            width: 92% !important;
+            border-radius: 1.25rem !important;
+        }
+        div:where(.swal2-icon) {
+            transform: scale(0.65) !important;
+            margin: 0 auto 0.5rem auto !important;
+        }
+        div:where(.swal2-container) h2:where(.swal2-title) {
+            font-size: 1.15rem !important;
+            margin-bottom: 0.5rem !important;
+        }
+        div:where(.swal2-container) div:where(.swal2-html-container) {
+            font-size: 0.85rem !important;
+            margin: 0 0 1rem 0 !important;
+            line-height: 1.5;
+        }
+        div:where(.swal2-container) div:where(.swal2-actions) {
+            margin-top: 0.5rem !important;
+            flex-direction: column-reverse;
+            gap: 0.5rem;
+            width: 100%;
+        }
+        div:where(.swal2-container) .swal2-actions button {
+            width: 100% !important;
+            margin: 0 !important;
+            padding: 0.6rem 1rem !important;
+            font-size: 0.9rem !important;
+            border-radius: 0.75rem !important;
+        }
     }
 </style>
+
+<!-- Global Loader -->
+<div id="globalLoader" class="global-loader">
+    <div id="loaderSpinner" class="spinner-modern"></div>
+    <i id="loaderSuccess" class="fas fa-check-circle loader-icon-success"></i>
+    <div id="loaderText" class="loader-text">Memproses data...</div>
+</div>
 
 <div class="container-fluid py-4 px-3 px-md-4">
 <div class="detail-wrap">
@@ -322,7 +410,12 @@ require_once __DIR__ . '/../../layouts/header.php';
     <!-- Info bar -->
     <div class="info-bar mb-3">
         <div class="info-item flex-grow-1">
-            <div class="info-lbl">Nama Santri</div>
+            <div class="info-lbl">
+                Nama Santri 
+                <button type="button" class="btn btn-sm btn-link text-info p-0 ms-1" data-bs-toggle="modal" data-bs-target="#guideModalDetail" title="Buku Panduan">
+                    <i class="fas fa-info-circle" style="font-size:1rem;"></i>
+                </button>
+            </div>
             <div class="info-val fw-bold fs-6"><?= htmlspecialchars($rapot['nama_santri'] ?? '—') ?></div>
         </div>
         <div class="info-item">
@@ -343,8 +436,9 @@ require_once __DIR__ . '/../../layouts/header.php';
                 <?php
                 $pill_class = match($status) { 'APPROVED' => 'chip-approved', 'EXPORTED' => 'chip-exported', default => 'chip-draft' };
                 $pill_icon  = match($status) { 'APPROVED' => 'fa-check-circle', 'EXPORTED' => 'fa-file-download', default => 'fa-pen' };
+                $display_status = ($status === 'EXPORTED') ? 'DOWNLOADED' : $status;
                 ?>
-                <span class="chip <?= $pill_class ?>"><i class="fas <?= $pill_icon ?>"></i> <?= $status ?></span>
+                <span class="chip <?= $pill_class ?>"><i class="fas <?= $pill_icon ?>"></i> <?= $display_status ?></span>
             </div>
         </div>
         <?php if ($jumlah_bulan > 0): ?>
@@ -363,14 +457,18 @@ require_once __DIR__ . '/../../layouts/header.php';
             <span class="ms-auto text-muted fw-normal" style="font-size:.78rem;">Rata-rata dari <?= $jumlah_bulan ?: '?' ?> bulan rapot</span>
         </div>
         <div style="overflow-x:auto;">
-            <?php $koreksi_list = []; ?>
+            <?php 
+            $koreksi_list = []; 
+            $has_manual_edit = false;
+            ?>
             <table class="tbl-nilai">
                 <thead>
                     <tr>
                         <th style="width:13%;">Mutu</th>
                         <th style="width:22%;">Sub Mutu</th>
-                        <th style="width:50%;">Penjelasan</th>
+                        <th style="width:45%;">Penjelasan</th>
                         <th style="width:10%;">Nilai</th>
+                        <th style="width:10%;">Aksi</th>
                     </tr>
                 </thead>
                 <tbody>
@@ -395,13 +493,40 @@ require_once __DIR__ . '/../../layouts/header.php';
                         </td>
                         <?php endif; ?>
                         <td class="td-sub"><?= htmlspecialchars($sub['nama']) ?></td>
-                        <td class="td-penjelasan"><?= htmlspecialchars($ket) ?></td>
+                        <td class="td-penjelasan" id="td-penjelasan-<?= $idx_aspek ?>-<?= $i ?>"><?= htmlspecialchars($ket) ?></td>
                         <td class="td-nilai">
-                            <span class="sc sc-<?= $sc ?>"><?= number_format($nf, $nf == floor($nf) ? 0 : 1) ?></span>
-                            <?php if (!empty($sub['ada_koreksi'])): 
-                                $koreksi_list[] = "<b>" . htmlspecialchars($sub['nama']) . "</b>: " . htmlspecialchars($sub['alasan_koreksi']);
+                            <span class="sc sc-<?= $sc ?>" id="sc-<?= $idx_aspek ?>-<?= $i ?>"><?= number_format($nf, $nf == floor($nf) ? 0 : 1) ?></span>
+                            <?php if (!empty($sub['ada_koreksi']) || !empty($sub['diubah_manual'])): 
+                                $is_minus = false;
+                                $is_plus = false;
+                                if (!empty($sub['ada_koreksi'])) {
+                                    $koreksi_list[] = "<b>" . htmlspecialchars($sub['nama']) . "</b>: " . htmlspecialchars($sub['alasan_koreksi']);
+                                    $is_minus = strpos($sub['alasan_koreksi'], 'Dikurangi') !== false;
+                                    $is_plus  = strpos($sub['alasan_koreksi'], 'Ditambah') !== false;
+                                }
+                                if (!empty($sub['diubah_manual'])) {
+                                    $has_manual_edit = true;
+                                }
+                                
+                                $tag_class = 'kor-tag';
+                                if ($is_minus && $is_plus) {
+                                    $tag_class .= ' kor-mix';
+                                } elseif ($is_minus) {
+                                    $tag_class .= ' kor-minus';
+                                } elseif ($is_plus) {
+                                    $tag_class .= ' kor-plus';
+                                }
                             ?>
-                            <span class="kor-tag" title="<?= htmlspecialchars($sub['alasan_koreksi'] ?? '') ?>">✱</span>
+                            <span class="<?= $tag_class ?>" title="<?= htmlspecialchars($sub['alasan_koreksi'] ?? 'Diedit manual') ?>">✱</span>
+                            <?php endif; ?>
+                        </td>
+                        <td class="text-center">
+                            <?php if ($status === 'DRAFT' && $can_create): ?>
+                            <button type="button" class="btn-edit-nilai" 
+                                    onclick="editNilai(<?= $idx_aspek ?>, <?= $i ?>, '<?= htmlspecialchars(addslashes($sub['nama'])) ?>', <?= $nf ?>)"
+                                    title="Edit Nilai">
+                                <i class="fas fa-edit"></i>
+                            </button>
                             <?php endif; ?>
                         </td>
                     </tr>
@@ -409,27 +534,30 @@ require_once __DIR__ . '/../../layouts/header.php';
                     <!-- Baris catatan per mutu -->
                     <tr class="catatan-mutu">
                         <td colspan="3" style="background:#f8fafc; font-style: italic; color: #334155; font-size: .82rem; padding: .5rem .875rem;">
-                            <i class="fas fa-comment-dots me-1 opacity-50"></i><?= htmlspecialchars($catatan_m) ?>
+                            <i class="fas fa-comment-dots me-1 opacity-50"></i><span id="catatan-aspek-<?= $idx_aspek ?>"><?= htmlspecialchars($catatan_m) ?></span>
                         </td>
-                        <td style="background:#f8fafc;"></td>
+                        <td colspan="2" style="background:#f8fafc;"></td>
                     </tr>
                     <?php endforeach; ?>
 
                     <!-- Baris Jumlah -->
                     <tr>
                         <td colspan="3" class="td-jumlah">Jumlah</td>
-                        <td class="td-jumlah-val"><?= number_format($total_nilai, $total_nilai == floor($total_nilai) ? 0 : 1) ?></td>
+                        <td colspan="2" class="td-jumlah-val" id="total-nilai-global"><?= number_format($total_nilai, $total_nilai == floor($total_nilai) ? 0 : 1) ?></td>
                     </tr>
                 </tbody>
             </table>
         </div>
 
-        <?php if (!empty($koreksi_list)): ?>
+        <?php if (!empty($koreksi_list) || $has_manual_edit): ?>
         <div class="px-4 py-3" style="background:#fffbeb; border-bottom: 1px solid var(--c-border);">
             <div style="font-size:.8rem; color:#b45309; font-weight:600; margin-bottom:.4rem;">
-                <i class="fas fa-info-circle me-1"></i> Penjelasan Koreksi Nilai (✱)
+                <i class="fas fa-info-circle me-1"></i> Penjelasan Tanda Bintang (✱)
             </div>
             <ul style="margin:0; padding-left:1.2rem; font-size:.78rem; color:#92400e; line-height:1.5;">
+                <?php if ($has_manual_edit): ?>
+                <li>Nilai yang memiliki tanda bintang (✱) tanpa keterangan khusus menandakan bahwa <b>nilai tersebut telah diedit secara manual</b> oleh Musyrif.</li>
+                <?php endif; ?>
                 <?php foreach ($koreksi_list as $kor_text): ?>
                 <li><?= $kor_text ?></li>
                 <?php endforeach; ?>
@@ -506,7 +634,7 @@ require_once __DIR__ . '/../../layouts/header.php';
         </div>
         <div class="sec-body">
             <?php if (!empty($catatan_otomatis)): ?>
-            <div class="narasi-box"><?= nl2br(htmlspecialchars($catatan_otomatis)) ?></div>
+            <div class="narasi-box" id="narasi-global-box"><?= nl2br(htmlspecialchars($catatan_otomatis)) ?></div>
             <?php else: ?>
             <div class="d-flex align-items-center gap-3 py-2" style="color:#94a3b8;">
                 <div style="width:36px;height:36px;border-radius:10px;background:#f1f5f9;display:flex;align-items:center;justify-content:center;flex-shrink:0;">
@@ -555,16 +683,9 @@ require_once __DIR__ . '/../../layouts/header.php';
                 <?php endif; ?>
 
                 <?php if ($status === 'DRAFT' && $can_create): ?>
-                <form method="POST" 
-                      action="list.php?kamar=<?= urlencode($rapot['kamar']) ?>&periode=<?= urlencode($rapot['periode']) ?>"
-                      class="d-inline" 
-                      onsubmit="confirmSubmit(event, this, 'Approve Rapor?', 'Apakah Anda yakin ingin melakukan Approve? Rapor yang di-approve siap untuk dicetak/download dan catatannya tidak dapat diubah lagi.');">
-                    <input type="hidden" name="action" value="approve">
-                    <input type="hidden" name="rapor_id" value="<?= $rapot['id'] ?>">
-                    <button type="submit" class="btn btn-success fw-semibold px-4" style="border-radius:.75rem;">
-                        <i class="fas fa-check me-2"></i>Approve Rapor
-                    </button>
-                </form>
+                <button type="button" class="btn btn-success fw-semibold px-4" style="border-radius:.75rem;" onclick="approveRapor()">
+                    <i class="fas fa-check me-2"></i>Approve Rapor
+                </button>
                 <?php endif; ?>
 
                 <div class="ms-auto">
@@ -577,8 +698,7 @@ require_once __DIR__ . '/../../layouts/header.php';
         </div>
     </div>
 
-</div><!-- .detail-wrap -->
-</div><!-- .container-fluid -->
+</div>
 
 <!-- Modal Edit Catatan -->
 <div class="modal fade" id="editCatatanModal" tabindex="-1" aria-labelledby="editCatatanModalLabel" aria-hidden="true">
@@ -617,5 +737,260 @@ require_once __DIR__ . '/../../layouts/header.php';
     </form>
   </div>
 </div>
+
+<script>
+// --- Global Loader Controller ---
+const GlobalLoader = {
+    show: function(text = 'Memproses data...') {
+        document.getElementById('loaderText').innerText = text;
+        document.getElementById('loaderSpinner').style.display = 'block';
+        document.getElementById('loaderSuccess').style.display = 'none';
+        document.getElementById('globalLoader').classList.add('show');
+    },
+    success: function(text = 'Berhasil!', callback = null) {
+        document.getElementById('loaderText').innerText = text;
+        document.getElementById('loaderSpinner').style.display = 'none';
+        document.getElementById('loaderSuccess').style.display = 'block';
+        if(callback) {
+            setTimeout(callback, 800);
+        } else {
+            setTimeout(() => { this.hide(); }, 1200);
+        }
+    },
+    hide: function() {
+        document.getElementById('globalLoader').classList.remove('show');
+    }
+};
+
+// --- Edit Nilai per Baris ---
+function editNilai(idxAspek, idxSub, namaSub, paramVal) {
+    let currentVal = paramVal;
+    const spanEl = document.getElementById(`sc-${idxAspek}-${idxSub}`);
+    if (spanEl && spanEl.innerText) {
+        currentVal = parseFloat(spanEl.innerText);
+    }
+
+    Swal.fire({
+        title: 'Edit Nilai',
+        html: `Ubah nilai untuk <b>${namaSub}</b><br><br>
+               <input type="number" id="inputEditNilai" class="form-control text-center fs-4 fw-bold mx-auto" 
+                      style="width:120px;" step="0.1" min="1" max="5" value="${currentVal}">`,
+        showCancelButton: true,
+        reverseButtons: true,
+        confirmButtonColor: '#1d6fa4',
+        cancelButtonColor: '#64748b',
+        confirmButtonText: 'Lanjutkan <i class="fas fa-arrow-right ms-1"></i>',
+        cancelButtonText: 'Batal',
+        didOpen: () => {
+            document.getElementById('inputEditNilai').focus();
+            document.getElementById('inputEditNilai').select();
+        }
+    }).then((res) => {
+        if(res.isConfirmed) {
+            const newVal = parseFloat(document.getElementById('inputEditNilai').value);
+            if(isNaN(newVal) || newVal < 1 || newVal > 5) {
+                Swal.fire('Error', 'Nilai harus di antara 1.0 - 5.0', 'error');
+                return;
+            }
+            if(newVal === parseFloat(currentVal)) {
+                return; // Tidak ada perubahan
+            }
+            
+            const canAi = <?= $can_ai ? 'true' : 'false' ?>;
+            if (!canAi) {
+                // Langsung simpan nilai tanpa regen AI jika tak punya izin
+                simpanNilaiKeServer(idxAspek, idxSub, newVal, false);
+                return;
+            }
+            
+            // Tanya apakah ingin update catatan AI
+            Swal.fire({
+                title: 'Perbarui Catatan AI?',
+                html: `
+                    <div style="font-size: 0.95rem; color: #334155; margin-bottom: 1.2rem;">
+                        Anda telah mengubah nilai santri. Apakah narasi catatan AI juga perlu disesuaikan dengan nilai yang baru?
+                    </div>
+                    <div style="text-align: left; background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 0.75rem; padding: 1rem; font-size: 0.85rem; line-height: 1.5; color: #475569;">
+                        <div style="margin-bottom: 0.8rem;">
+                            <strong style="color: #1a7c4f;"><i class="fas fa-robot me-1"></i> Ya, Perbarui</strong> &mdash; Simpan nilai dan biarkan AI meracik ulang narasinya.
+                        </div>
+                        <div style="margin-bottom: 0.8rem;">
+                            <strong style="color: #b45309;"><i class="fas fa-ban me-1"></i> Tidak, Biarkan</strong> &mdash; Simpan nilai saja. Catatan yang sudah ada tidak akan diubah.
+                        </div>
+                        <div>
+                            <strong style="color: #64748b;">Batal</strong> &mdash; Batalkan perubahan (nilai tidak jadi disimpan).
+                        </div>
+                    </div>
+                `,
+                icon: 'question',
+                showCancelButton: true,
+                reverseButtons: true,
+                showDenyButton: true,
+                confirmButtonColor: '#1a7c4f',
+                denyButtonColor: '#b45309',
+                cancelButtonColor: '#64748b',
+                confirmButtonText: 'Ya, Perbarui',
+                denyButtonText: 'Tidak, Biarkan',
+                cancelButtonText: 'Batal'
+            }).then((res2) => {
+                if(res2.isConfirmed || res2.isDenied) {
+                    const regenerate = res2.isConfirmed;
+                    simpanNilaiKeServer(idxAspek, idxSub, newVal, regenerate);
+                }
+            });
+        }
+    });
+}
+
+function simpanNilaiKeServer(idxAspek, idxSub, newVal, regenerate) {
+    GlobalLoader.show('Menyimpan nilai...');
+    
+    const formData = new FormData();
+    formData.append('rapor_id', <?= $rapot['id'] ?>);
+    formData.append('idx_aspek', idxAspek);
+    formData.append('idx_sub', idxSub);
+    formData.append('new_score', newVal);
+    formData.append('regenerate_notes', regenerate);
+
+    fetch('../api/update_nilai_tahunan.php', {
+        method: 'POST',
+        body: formData
+    })
+    .then(r => r.json())
+    .then(res => {
+        if(res.status === 'success') {
+            const d = res.data;
+            
+            // Update tabel UI
+            const spanNilai = document.getElementById(`sc-${idxAspek}-${idxSub}`);
+            if(spanNilai) {
+                spanNilai.className = `sc sc-${d.rounded_score}`;
+                spanNilai.innerText = Number.isInteger(d.new_score) ? d.new_score : d.new_score.toFixed(1);
+            }
+            const tdPenjelasan = document.getElementById(`td-penjelasan-${idxAspek}-${idxSub}`);
+            if(tdPenjelasan) tdPenjelasan.innerText = d.penjelasan;
+            
+            const tdTotal = document.getElementById('total-nilai-global');
+            if(tdTotal) tdTotal.innerText = Number.isInteger(d.total_nilai) ? d.total_nilai : d.total_nilai.toFixed(1);
+            
+            // Update Narasi jika diregenerate
+            if(regenerate) {
+                const tdAspek = document.getElementById(`catatan-aspek-${idxAspek}`);
+                if(tdAspek && d.catatan_aspek) tdAspek.innerText = d.catatan_aspek;
+                
+                const boxGlobal = document.getElementById('narasi-global-box');
+                if(boxGlobal && d.catatan_global) {
+                    // ganti nl2br
+                    boxGlobal.innerHTML = d.catatan_global.replace(/(?:\r\n|\r|\n)/g, '<br>');
+                }
+            }
+
+            GlobalLoader.success('Nilai Diperbarui!');
+        } else {
+            GlobalLoader.hide();
+            Swal.fire('Gagal!', res.message || 'Terjadi kesalahan.', 'error');
+        }
+    })
+    .catch(err => {
+        GlobalLoader.hide();
+        Swal.fire('Error Server', err.toString(), 'error');
+    });
+}
+
+// --- Approve Rapor dengan Animasi Transisi ---
+function approveRapor() {
+    Swal.fire({
+        title: 'Approve Rapor?',
+        text: 'Apakah Anda yakin ingin melakukan Approve? Rapor yang di-approve siap untuk dicetak/download dan catatannya tidak dapat diubah lagi.',
+        icon: 'warning',
+        showCancelButton: true,
+        reverseButtons: true,
+        confirmButtonColor: '#1a7c4f',
+        cancelButtonColor: '#64748b',
+        confirmButtonText: '<i class="fas fa-check me-1"></i> Ya, Approve',
+        cancelButtonText: 'Batal'
+    }).then((res) => {
+        if(res.isConfirmed) {
+            GlobalLoader.show('Memproses persetujuan...');
+            
+            const formData = new FormData();
+            formData.append('action', 'approve');
+            formData.append('rapor_id', <?= $rapot['id'] ?>);
+            
+            fetch('list.php?kamar=<?= urlencode($rapot['kamar']) ?>&periode=<?= urlencode($rapot['periode']) ?>', {
+                method: 'POST',
+                body: formData
+            })
+            .then(response => {
+                if(response.ok) {
+                    GlobalLoader.success('Rapor Approved!', () => {
+                        window.location.href = 'list.php?kamar=<?= urlencode($rapot['kamar']) ?>&periode=<?= urlencode($rapot['periode']) ?>';
+                    });
+                } else {
+                    throw new Error('Gagal terhubung ke server');
+                }
+            })
+            .catch(err => {
+                GlobalLoader.hide();
+                Swal.fire('Gagal', err.message, 'error');
+            });
+        }
+    });
+}
+</script>
+
+<!-- Modal Panduan Detail -->
+<div class="modal fade" id="guideModalDetail" tabindex="-1" aria-labelledby="guideModalDetailLabel" aria-hidden="true">
+  <div class="modal-dialog modal-dialog-centered modal-dialog-scrollable">
+    <div class="modal-content border-0 shadow-lg" style="border-radius: 1rem;">
+      <div class="modal-header border-bottom-0 pb-0 mt-2 mx-2">
+        <h5 class="modal-title fw-bolder text-dark" id="guideModalDetailLabel">
+            <i class="fas fa-spinner fa-spin text-primary me-2"></i>Memuat Panduan...
+        </h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+      </div>
+      <div class="modal-body pt-3 px-4 pb-4 text-muted" id="guideModalDetailBody">
+         <div class="text-center py-4">
+             <div class="spinner-border text-primary" role="status">
+                 <span class="visually-hidden">Loading...</span>
+             </div>
+         </div>
+      </div>
+      <div class="modal-footer border-top-0 pt-0 pb-4 px-4">
+        <button type="button" class="btn btn-primary w-100 fw-medium shadow-sm" style="border-radius: 0.75rem;" data-bs-dismiss="modal">Saya Mengerti</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const guideModalDetail = document.getElementById('guideModalDetail');
+    let guideDetailLoaded = false;
+    
+    if (guideModalDetail) {
+        guideModalDetail.addEventListener('show.bs.modal', function () {
+            if (guideDetailLoaded) return;
+            
+            fetch('../api/guide_tahunan_detail.php')
+                .then(response => response.json())
+                .then(res => {
+                    if(res.status === 'success') {
+                        document.getElementById('guideModalDetailLabel').innerHTML = res.data.title;
+                        document.getElementById('guideModalDetailBody').innerHTML = res.data.content;
+                        guideDetailLoaded = true;
+                    } else {
+                        document.getElementById('guideModalDetailLabel').innerHTML = '<i class="fas fa-exclamation-triangle text-danger me-2"></i>Gagal Memuat';
+                        document.getElementById('guideModalDetailBody').innerHTML = '<div class="alert alert-danger">Gagal memuat panduan: ' + (res.message || 'Error tidak diketahui') + '</div>';
+                    }
+                })
+                .catch(err => {
+                    document.getElementById('guideModalDetailLabel').innerHTML = '<i class="fas fa-exclamation-triangle text-danger me-2"></i>Koneksi Error';
+                    document.getElementById('guideModalDetailBody').innerHTML = '<div class="alert alert-danger">Terjadi kesalahan saat menghubungi server.</div>';
+                });
+        });
+    }
+});
+</script>
 
 <?php require_once __DIR__ . '/../../layouts/footer.php'; ?>

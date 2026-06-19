@@ -42,25 +42,25 @@ if (file_exists($cache_file) && ($now - filemtime($cache_file) < $cache_lifetime
 $guide_html = '
     <p class="mb-4 small">Halaman ini digunakan untuk me-<em>generate</em> dan mengelola Rapor Tahunan berdasarkan akumulasi data Rapor Bulanan.</p>
     
-    <h6 class="text-dark fw-bold mb-2"><i class="fas fa-magic text-primary me-2"></i>1. Pembuatan Rapor</h6>
+    <h6 class="text-dark fw-bold mb-2"><i class="fas fa-magic text-primary me-2"></i>1. Generate & Generate Ulang</h6>
     <ul class="mb-4 small" style="padding-left: 1.25rem;">
-      <li class="mb-1">Klik tombol <strong>Generate</strong> pada kamar yang diinginkan.</li>
-      <li class="mb-1">Sistem akan secara otomatis menyusun narasi, menghitung poin pelanggaran dan reward, serta menghitung absensi kedisiplinan selama satu tahun ajaran penuh.</li>
-      <li>Rapor yang baru di-generate akan berstatus <strong>Draft</strong>.</li>
+      <li class="mb-1">Sistem akan secara otomatis menyusun narasi, menghitung poin pelanggaran/reward, serta merekap absensi kedisiplinan selama satu tahun ajaran penuh.</li>
+      <li class="mb-1"><strong>Generate Ulang Massal:</strong> Secara standar, sistem <strong>hanya akan menimpa rapor yang berstatus DRAFT</strong>. Rapor yang sudah berstatus <em>APPROVED / DOWNLOADED</em> akan otomatis dilewati agar aman.</li>
+      <li><strong>Opsi Centang (Bypass):</strong> Jika Anda mencentang opsi <em>"Generate Ulang juga rapor yang sudah APPROVED / DOWNLOADED"</em>, maka sistem akan <strong>memaksa menghapus rapor lama tersebut dan menggantinya dengan perhitungan baru (DRAFT)</strong>. Fitur ini aman dan <strong>tidak akan membuat data jadi ganda/dobel</strong>.</li>
     </ul>
 
     <div class="bg-light border-start border-4 border-warning rounded p-3 mb-4 small text-dark shadow-sm">
         <i class="fas fa-info-circle text-warning me-1"></i>
         <strong>Absen Data:</strong> Jika terdapat info "absen data", artinya ada santri yang <strong>tidak memiliki data Rapor Bulanan sama sekali</strong>, sehingga sistem otomatis melewatinya. <br><br>
         <i class="fas fa-ban text-danger me-1"></i>
-        <strong>Generate Terkunci:</strong> Jika di dalam suatu kamar seluruh santrinya kosong data laporannya, maka kolom keterangan akan tertulis <em>"Data kosong"</em> dan tombol <strong>Generate tidak akan bisa ditekan sama sekali</strong>.
+        <strong>Generate Terkunci:</strong> Jika di dalam suatu kamar seluruh santrinya kosong data laporannya, maka tombol <strong>Generate tidak akan bisa ditekan sama sekali</strong>.
     </div>
 
-    <h6 class="text-dark fw-bold mb-2"><i class="fas fa-tasks text-primary me-2"></i>2. Status Rapor</h6>
+    <h6 class="text-dark fw-bold mb-2"><i class="fas fa-tasks text-primary me-2"></i>2. Status Rapor & Download</h6>
     <ul class="mb-0 small" style="padding-left: 1.25rem;">
-      <li class="mb-1"><strong>Draft:</strong> Rapor sudah dibuat, namun masih bisa di-<em>generate</em> ulang atau diubah catatannya secara manual.</li>
-      <li class="mb-1"><strong>Approved:</strong> Rapor sudah disetujui (dikunci) dan siap didownload sebagai file PDF.</li>
-      <li>Data dengan status <em>Approved</em> aman dari proses Generate Ulang massal, kecuali Anda secara paksa menghapus semuanya.</li>
+      <li class="mb-1"><strong>DRAFT:</strong> Rapor sudah dibuat otomatis, bisa di-generate ulang atau di-edit catatan/narasinya secara manual dengan mengklik tombol "Lihat".</li>
+      <li class="mb-1"><strong>APPROVED:</strong> Rapor sudah dikunci/disetujui. Aman dari overwrite otomatis. Tombol "Download Approved" akan langsung muncul di halaman Daftar Santri.</li>
+      <li><strong>Download PDF:</strong> Anda bisa mengunduh 1 file PDF panjang (semua santri gabung), atau dalam format ZIP (file PDF terpisah per santri).</li>
     </ul>
 ';
 

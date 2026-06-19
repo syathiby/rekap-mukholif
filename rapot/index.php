@@ -4,7 +4,7 @@
 
 // 1. Panggil 'Otak' aplikasi dulu
 require_once __DIR__ . '/../bootstrap/init.php';
-guard(['rapot_view', 'rapot_create', 'rapot_cetak', 'rapot_delete']);
+guard('rapot_view');
 
 // === PENGECEKAN IZIN DI AWAL ===
 $can_create = has_permission('rapot_create');

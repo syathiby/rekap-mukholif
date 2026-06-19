@@ -93,8 +93,24 @@ $sukses = 0;
 $gagal  = 0;
 $skip   = 0;
 
+$overwrite_approved = isset($_POST['overwrite_approved']) && $_POST['overwrite_approved'] == '1';
+
 foreach ($santri_list as $santri) {
     $sid = (int)$santri['id'];
+
+    // ── Cek apakah rapot sudah APPROVED / EXPORTED ───────────────────
+    $stmt_check = $conn->prepare("SELECT status FROM rapot_tahunan WHERE santri_id = ? AND periode = ?");
+    $stmt_check->bind_param('is', $sid, $periode);
+    $stmt_check->execute();
+    $res_check = $stmt_check->get_result()->fetch_assoc();
+    $stmt_check->close();
+
+    if ($res_check && in_array($res_check['status'], ['APPROVED', 'EXPORTED'])) {
+        if (!$overwrite_approved) {
+            $skip++; // Lewati karena sudah di-approve dan user tidak centang "Timpa"
+            continue;
+        }
+    }
 
     // Ambil rapot bulanan santri untuk periode ini
     try {
@@ -125,57 +141,74 @@ foreach ($santri_list as $santri) {
         continue;
     }
 
-    // ── Hitung rata-rata nilai per sub-mutu ──────────────────
-    $nilai_snapshot = [];
-    foreach ($aspek_fields as $aspek_nama => $fields) {
-        $sub_mutu_list = [];
-        foreach ($fields as $field) {
-            $total = 0;
-            $count = 0;
-            foreach ($rapot_bulanan as $rb) {
-                if (isset($rb[$field]) && $rb[$field] > 0) {
-                    $total += $rb[$field];
-                    $count++;
+    // Membungkus seluruh operasi mulai perhitungan sampai DB dalam satu try-catch untuk menghindari Fatal Error (white screen)
+    try {
+        // ── Hitung rata-rata nilai per sub-mutu ──────────────────
+        $nilai_snapshot = [];
+        foreach ($aspek_fields as $aspek_nama => $fields) {
+            $sub_mutu_list = [];
+            foreach ($fields as $field) {
+                $total = 0;
+                $count = 0;
+                foreach ($rapot_bulanan as $rb) {
+                    if (isset($rb[$field]) && $rb[$field] > 0) {
+                        $total += $rb[$field];
+                        $count++;
+                    }
                 }
+                $avg = $count > 0 ? round($total / $count, 1) : 0;
+                $sub_mutu_list[] = [
+                    'field'          => $field,
+                    'nama'           => $sub_mutu_labels[$field] ?? ucwords(str_replace('_', ' ', $field)),
+                    'nilai_rata'     => $avg,
+                    'nilai_final'    => $avg,
+                    'ada_koreksi'    => false,
+                    'alasan_koreksi' => null,
+                ];
             }
-            $avg = $count > 0 ? round($total / $count, 1) : 0;
-            $sub_mutu_list[] = [
-                'field'          => $field,
-                'nama'           => $sub_mutu_labels[$field] ?? ucwords(str_replace('_', ' ', $field)),
-                'nilai_rata'     => $avg,
-                'nilai_final'    => $avg,
-                'ada_koreksi'    => false,
-                'alasan_koreksi' => null,
-            ];
+            $nilai_snapshot[] = ['aspek' => $aspek_nama, 'sub_mutu' => $sub_mutu_list];
         }
-        $nilai_snapshot[] = ['aspek' => $aspek_nama, 'sub_mutu' => $sub_mutu_list];
-    }
 
-    // ── Koreksi nilai berdasarkan frekuensi pelanggaran ──────
-    apply_koreksi_nilai($conn, $sid, $tahun_awal, $tahun_akhir, $nilai_snapshot);
+        // ── Koreksi nilai berdasarkan frekuensi pelanggaran ──────
+        apply_koreksi_nilai($conn, $sid, $tahun_awal, $tahun_akhir, $nilai_snapshot);
 
-    // ── Tambahkan catatan per-aspek ke dalam snapshot ────────
-    foreach ($nilai_snapshot as &$aspek_data) {
-        $aspek_data['catatan'] = generate_catatan_per_aspek($aspek_data);
-    }
-    unset($aspek_data);
+        // ── Tambahkan catatan per-aspek ke dalam snapshot ────────
+        foreach ($nilai_snapshot as &$aspek_data) {
+            $aspek_data['catatan'] = generate_catatan_per_aspek($aspek_data);
+        }
+        unset($aspek_data);
 
-    // ── Total pelanggaran & reward setahun ───────────────────
-    $total_pelanggaran = (int)array_sum(array_column($rapot_bulanan, 'total_poin_pelanggaran_saat_itu'));
-    $total_reward      = (int)array_sum(array_column($rapot_bulanan, 'total_poin_reward_saat_itu'));
+        // ── Total pelanggaran & reward setahun (Query langsung agar akurat) ───────────────────
+        $sql_pel = "SELECT SUM(jp.poin) as total FROM pelanggaran p
+                    JOIN jenis_pelanggaran jp ON p.jenis_pelanggaran_id = jp.id
+                    WHERE p.santri_id = ? AND (YEAR(p.tanggal) = ? OR YEAR(p.tanggal) = ?)";
+        $stmt_pel = $conn->prepare($sql_pel);
+        $stmt_pel->bind_param('iii', $sid, $tahun_awal, $tahun_akhir);
+        $stmt_pel->execute();
+        $total_pelanggaran = (int)$stmt_pel->get_result()->fetch_assoc()['total'];
+        $stmt_pel->close();
 
-    // ── Generate catatan otomatis (rule-based, Custom AI) ─────
-    $catatan_otomatis = "";
-    if (has_permission('catatan_otomatis')) {
-        $catatan_otomatis = generate_catatan_tahunan(
-            $nilai_snapshot,
-            $total_pelanggaran,
-            $total_reward,
-            $santri['nama']
-        );
-    }
+        $sql_rew = "SELECT SUM(jr.poin_reward) as total FROM daftar_reward rwd
+                    JOIN jenis_reward jr ON rwd.jenis_reward_id = jr.id
+                    WHERE rwd.santri_id = ? AND (YEAR(rwd.tanggal) = ? OR YEAR(rwd.tanggal) = ?)";
+        $stmt_rew = $conn->prepare($sql_rew);
+        $stmt_rew->bind_param('iii', $sid, $tahun_awal, $tahun_akhir);
+        $stmt_rew->execute();
+        $total_reward = (int)$stmt_rew->get_result()->fetch_assoc()['total'];
+        $stmt_rew->close();
 
-    // ── Simpan ke DB ─────────────────────────────────────────
+        // ── Generate catatan otomatis (rule-based, Custom AI) ─────
+        $catatan_otomatis = "";
+        if (has_permission('catatan_otomatis')) {
+            $catatan_otomatis = generate_catatan_tahunan(
+                $nilai_snapshot,
+                $total_pelanggaran,
+                $total_reward,
+                (string)($santri['nama'] ?? '')
+            );
+        }
+
+        // ── Simpan ke DB ─────────────────────────────────────────
     $snapshot_json = json_encode($nilai_snapshot, JSON_UNESCAPED_UNICODE);
 
     // Simpan total pelanggaran & reward dalam snapshot meta
@@ -185,7 +218,6 @@ foreach ($santri_list as $santri) {
         'jumlah_bulan'      => count($rapot_bulanan),
     ], JSON_UNESCAPED_UNICODE);
 
-    try {
         $stmt_del = $conn->prepare("DELETE FROM rapot_tahunan WHERE santri_id = ? AND periode = ?");
         $stmt_del->bind_param('is', $sid, $periode);
         $stmt_del->execute();
@@ -211,8 +243,8 @@ foreach ($santri_list as $santri) {
             "Generate rapor tahunan santri ID {$sid} periode {$periode}",
             ['santri_id' => $sid, 'periode' => $periode]
         );
-    } catch (Exception $e) {
-        error_log("[AsuhTrack] Gagal simpan rapor tahunan santri $sid: " . $e->getMessage());
+    } catch (Throwable $e) {
+        error_log("[AsuhTrack] Gagal simpan/proses rapor tahunan santri $sid: " . $e->getMessage() . " in " . $e->getFile() . ":" . $e->getLine());
         $gagal++;
     }
 }

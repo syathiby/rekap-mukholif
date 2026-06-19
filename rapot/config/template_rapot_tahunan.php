@@ -10,36 +10,36 @@
     <style>
         body {
             font-family: 'Times New Roman', Times, serif;
-            font-size: 10pt; 
+            font-size: 11pt; 
             color: #000;
         }
         
         .judul-rapot {
             text-align: center;
             font-weight: bold;
-            font-size: 13pt; 
-            margin: 15px 0 10px 0; 
+            font-size: 14pt; 
+            margin: 10px 0 8px 0; 
             text-decoration: underline;
         }
 
         .tabel-identitas {
             width: 100%;
             border-collapse: collapse;
-            margin-bottom: 10px; 
-            font-size: 10pt; 
+            margin-bottom: 12px; 
+            font-size: 11pt; 
         }
         .tabel-identitas td {
-            padding: 1px 5px; 
+            padding: 1px 4px; 
         }
 
         .tabel-nilai {
             width: 100%;
             border-collapse: collapse;
-            font-size: 10pt; 
+            font-size: 11pt; 
         }
         .tabel-nilai th, .tabel-nilai td {
             border: 1px solid black;
-            padding: 3px 5px; 
+            padding: 1px 3px; 
             text-align: left; 
             vertical-align: top;
         }
@@ -72,16 +72,16 @@
 
         .catatan-mutu td {
             font-style: italic;
-            font-size: 9pt;
+            font-size: 10pt;
             background-color: #f9f9f9;
         }
 
         /* POIN SECTION */
         .rincian-pelanggaran,
         .rincian-reward {
-            font-size: 9pt;
+            font-size: 8pt;
             color: #333;
-            padding: 4px 6px;
+            padding: 2px 4px;
             border: 1px solid #ddd;
             border-top: none;
             background: #f9f9f9;
@@ -90,8 +90,8 @@
 
         /* CSS FOOTER */
         .catatan {
-            margin-top: 10px; 
-            font-size: 10pt; 
+            margin-top: 15px; 
+            font-size: 11pt; 
         }
         .catatan p {
             margin: 0;
@@ -102,9 +102,9 @@
         .ttd-container {
             float: right;
             width: 300px;
-            margin-top: 30px; 
+            margin-top: 25px; 
             text-align: center;
-            font-size: 10pt; 
+            font-size: 11pt; 
         }
         .ttd-container .nama-musyrif {
             margin-top: 60px; 
@@ -116,17 +116,33 @@
         .tabel-rekap {
             width: 100%;
             border-collapse: collapse;
-            font-size: 10pt;
-            margin-bottom: 15px;
+            font-size: 9pt;
+            margin-bottom: 8px;
         }
         .tabel-rekap th, .tabel-rekap td {
-            border: 1px solid black;
-            padding: 5px;
+            border: 1px solid #aaa;
+            padding: 3px;
         }
         .tabel-rekap th {
-            background-color: #f2f2f2;
             text-align: center;
             font-weight: bold;
+            color: #fff;
+        }
+        .tabel-rekap-pelanggaran th {
+            background-color: #e66767;
+        }
+        .tabel-rekap-pelanggaran .jumlah-row td {
+            background-color: #fdecec;
+            font-weight: bold;
+            color: #c00;
+        }
+        .tabel-rekap-reward th {
+            background-color: #48b461;
+        }
+        .tabel-rekap-reward .jumlah-row td {
+            background-color: #ecf8f0;
+            font-weight: bold;
+            color: #090;
         }
         .text-center { text-align: center; }
         .text-right { text-align: right; }
@@ -135,7 +151,7 @@
 <body>
     
     <!-- HALAMAN 1: PENILAIAN KARAKTER -->
-    <img src="<?php echo $logo_path; ?>" style="width: 100%; height: 60px;" alt="Kop Surat">
+    <img src="<?php echo $logo_path; ?>" style="width: 100%; height: 50px;" alt="Kop Surat">
 
     <div class="judul-rapot">RAPORT KEPENGASUHAN SANTRI (TAHUNAN)</div>
 
@@ -180,7 +196,6 @@
                     <td class="penjelasan-cell"><?php echo htmlspecialchars($ket); ?></td>
                     <td class="nilai-angka">
                         <?php echo number_format($nf, $nf == floor($nf) ? 0 : 1); ?>
-                        <?php if (!empty($sub['ada_koreksi'])) echo '*'; ?>
                     </td>
                 </tr>
                 <?php endforeach; ?>
@@ -200,38 +215,16 @@
 
         </tbody>
     </table>
-    <div style="font-size: 8pt; color: #555; margin-top: 2px;">
-        * Nilai telah disesuaikan secara otomatis berdasarkan rekapitulasi poin pelanggaran dan reward santri selama 1 tahun.
-    </div>
-
-    <!-- POIN PELANGGARAN & REWARD BAR KECIL (PERSIS SEPERTI BULANAN) -->
-    <table width="100%" style="margin-top: 10px; font-size: 9pt; line-height: 1.3; border-collapse: collapse;">
-        <tr>
-            <td width="50%" style="padding: 6px 8px; background: #fdecec; border-left: 3px solid #e60000; vertical-align: top;">
-                <div style="color: #c00; font-weight: bold; margin-bottom: 2px;">Poin Pelanggaran</div>
-                <div style="font-weight: bold; color: #000;">
-                    <?php echo ($total_pelanggaran > 0) ? $total_pelanggaran : '–'; ?>
-                </div>
-            </td>
-            <td width="50%" style="padding: 6px 8px; background: #ecf8f0; border-left: 3px solid #009900; vertical-align: top;">
-                <div style="color: #090; font-weight: bold; margin-bottom: 2px;">Poin Reward</div>
-                <div style="font-weight: bold; color: #000;">
-                    <?php echo ($total_reward > 0) ? $total_reward : '–'; ?>
-                </div>
-            </td>
-        </tr>
-    </table>
-
 
 
     <!-- PAGE BREAK -->
     <pagebreak />
 
     <!-- HALAMAN 2: REKAP PELANGGARAN & REWARD -->
-    <img src="<?php echo $logo_path; ?>" style="width: 100%; height: 60px;" alt="Kop Surat">
-    <div class="judul-rapot" style="margin-bottom: 20px;">REKAPITULASI PELANGGARAN & REWARD</div>
+    <img src="<?php echo $logo_path; ?>" style="width: 100%; height: 50px;" alt="Kop Surat">
+    <div class="judul-rapot" style="margin-bottom: 10px;">REKAPITULASI PELANGGARAN & REWARD</div>
     
-    <table class="tabel-identitas" style="margin-bottom: 20px;">
+    <table class="tabel-identitas" style="margin-bottom: 10px;">
         <tr>
             <td width="10%">Periode:</td>
             <td width="40%"><?php echo htmlspecialchars($periode); ?></td>
@@ -240,8 +233,8 @@
         </tr>
     </table>
 
-    <div style="font-weight: bold; margin-bottom: 5px;">A. Rincian Pelanggaran</div>
-    <table class="tabel-rekap">
+    <div style="font-weight: bold; font-size: 12pt; color: #c00; margin-bottom: 5px; border-bottom: 2px solid #e66767; padding-bottom: 3px;">A. Rincian Pelanggaran</div>
+    <table class="tabel-rekap tabel-rekap-pelanggaran">
         <thead>
             <tr>
                 <th width="10%">No</th>
@@ -272,8 +265,8 @@
         </tbody>
     </table>
 
-    <div style="font-weight: bold; margin-top: 20px; margin-bottom: 5px;">B. Rincian Reward / Prestasi</div>
-    <table class="tabel-rekap">
+    <div style="font-weight: bold; font-size: 12pt; color: #090; margin-top: 20px; margin-bottom: 5px; border-bottom: 2px solid #48b461; padding-bottom: 3px;">B. Rincian Reward / Prestasi</div>
+    <table class="tabel-rekap tabel-rekap-reward">
         <thead>
             <tr>
                 <th width="10%">No</th>
@@ -309,8 +302,8 @@
         <p><?php echo nl2br(htmlspecialchars($narasi_global)); ?></p>
     </div>
 
-    <div style="margin-top: 20px; font-size: 10pt; text-align: justify;">
-        <p>Demikian laporan kepengasuhan ini disampaikan. Kami memohon dukungan Bapak/Ibu untuk senantiasa memberikan motivasi agar Ananda istiqomah dalam kebaikan.</p>
+    <div style="margin-top: 15px; font-size: 11pt; text-align: justify;">
+        <p>Demikian laporan kepengasuhan ini disampaikan. Kami memohon dukungan Bapak/Ibu untuk senantiasa memberikan motivasi agar Ananda selalu istiqomah dalam kebaikan.</p>
     </div>
 
     <div class="ttd-container">

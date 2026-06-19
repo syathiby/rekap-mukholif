@@ -1,3 +1,0 @@
-# Folder ini digunakan untuk menyimpan data rate limiting login (anti brute-force).
-# File .json di dalam folder ini diabaikan oleh git (lihat .gitignore).
-# Jangan hapus file ini agar struktur folder tetap ter-track di repository.

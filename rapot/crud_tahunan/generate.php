@@ -128,7 +128,7 @@ require_once __DIR__ . '/../../layouts/header.php';
     .s-kelas { font-size: .78rem; color: var(--c-muted); }
     .s-badge {
         margin-left: auto; font-size: .7rem; font-weight: 600;
-        padding: .2rem .6rem; border-radius: 9999px;
+        padding: .2rem .6rem; border-radius: 9999px; white-space: nowrap;
     }
     .badge-ok  { background: var(--c-success-light); color: var(--c-success); }
     .badge-no  { background: #f1f5f9; color: #94a3b8; }
@@ -203,6 +203,9 @@ require_once __DIR__ . '/../../layouts/header.php';
         <div>
             <h3 class="fw-bolder mb-1" style="color:var(--c-text);">
                 <i class="fas fa-file-alt me-2" style="color:var(--c-primary);"></i>Generate Rapor Tahunan
+                <button type="button" class="btn btn-sm btn-link text-info p-0 ms-2" data-bs-toggle="modal" data-bs-target="#guideModal" title="Buku Panduan">
+                    <i class="fas fa-info-circle fs-5"></i>
+                </button>
             </h3>
             <p class="text-muted mb-0 small">
                 Kamar <strong><?= htmlspecialchars($kamar) ?></strong>
@@ -221,10 +224,10 @@ require_once __DIR__ . '/../../layouts/header.php';
 
             <?php if ($existing > 0): ?>
             <div class="alert alert-warning mb-3" style="border-radius:.875rem;">
-                <i class="fas fa-exclamation-triangle me-2"></i>
-                Sudah ada <strong><?= $existing ?> rapor tahunan</strong> yang di-generate sebelumnya.
-                Menekan <strong>"Generate Ulang"</strong> akan <strong>menimpa (overwrite)</strong> semua data.
-                Status yang sudah APPROVED akan dikembalikan ke DRAFT.
+                <i class="fas fa-info-circle me-2"></i>
+                Sudah ada <strong><?= $existing ?> rapor tahunan</strong> yang di-generate sebelumnya.<br>
+                Secara default, <strong>hanya rapor DRAFT yang akan ditimpa ulang</strong> (rapor APPROVED/DOWNLOADED aman).<br>
+                Jika Anda mencentang opsi di bawah, sistem akan <strong>memaksa menghapus dan menimpa ulang semua rapor</strong> tanpa menyebabkan data ganda.
             </div>
             <?php endif; ?>
 
@@ -253,6 +256,7 @@ require_once __DIR__ . '/../../layouts/header.php';
                     <?php foreach ($santri_list as $s):
                         $has_data = ($santri_info[(int)$s['id']]['jumlah_bulan'] ?? 0) > 0;
                         $jml_bln  = $santri_info[(int)$s['id']]['jumlah_bulan'] ?? 0;
+                        $status_rapor = $santri_info[(int)$s['id']]['status'] ?? '';
                     ?>
                     <div class="santri-row">
                         <div class="s-avatar"><?= strtoupper(substr($s['nama'], 0, 2)) ?></div>
@@ -262,7 +266,11 @@ require_once __DIR__ . '/../../layouts/header.php';
                         </div>
                         <span class="s-badge <?= $has_data ? 'badge-ok' : 'badge-no' ?>">
                             <?php if ($has_data): ?>
-                            <i class="fas fa-check me-1"></i><?= $jml_bln ?> bulan data
+                                <?php if (in_array($status_rapor, ['APPROVED', 'EXPORTED'])): ?>
+                                    <i class="fas fa-shield-alt me-1 text-primary"></i>Sudah <?= $status_rapor === 'EXPORTED' ? 'DOWNLOADED' : $status_rapor ?> (Aman)
+                                <?php else: ?>
+                                    <i class="fas fa-check me-1"></i><?= $jml_bln ?> bulan data
+                                <?php endif; ?>
                             <?php else: ?>
                             <i class="fas fa-minus me-1"></i>Belum ada data
                             <?php endif; ?>
@@ -271,14 +279,23 @@ require_once __DIR__ . '/../../layouts/header.php';
                     <?php endforeach; ?>
                 </div>
 
+                <?php if ($existing > 0): ?>
+                <div class="form-check mt-3 mb-2 px-4">
+                    <input class="form-check-input" type="checkbox" name="overwrite_approved" id="overwrite_approved" value="1">
+                    <label class="form-check-label fw-bold text-danger small" for="overwrite_approved">
+                        Generate Ulang juga rapor yang sudah APPROVED / DOWNLOADED
+                    </label>
+                </div>
+                <?php endif; ?>
+
                 <!-- Tombol Submit -->
-                <div class="d-flex gap-3 flex-wrap mt-3">
+                <div class="d-flex gap-3 flex-wrap mt-3 justify-content-center">
                     <button type="submit" id="btn-generate" class="btn btn-success btn-gen"
                             <?= $santri_dengan_data === 0 ? 'disabled' : '' ?>>
                         <i class="fas fa-magic me-2"></i>
                         <?= $existing > 0 ? 'Generate Ulang Semua' : 'Generate Rapor Tahunan' ?>
                     </button>
-                    <a href="index.php" class="btn btn-light border fw-medium px-4" style="border-radius:.75rem;">Batal</a>
+                    <a href="index.php" class="btn btn-light border fw-medium px-4 d-flex align-items-center" style="border-radius:.75rem;">Batal</a>
                 </div>
             </form>
         </div>
@@ -321,16 +338,16 @@ require_once __DIR__ . '/../../layouts/header.php';
             <div class="gen-card">
                 <div class="gen-card-hdr">
                     <i class="fas fa-cogs" style="color:var(--c-primary);"></i>
-                    Cara Kerja
+                    Alur Pemrosesan
                 </div>
                 <div class="p-3">
                     <ul class="how-list">
-                        <li><span class="how-num">1</span>Baca semua rapot bulanan santri dalam periode</li>
-                        <li><span class="how-num">2</span>Hitung rata-rata nilai per sub-mutu (Ibadah, Akhlaq, dll)</li>
-                        <li><span class="how-num">3</span>Koreksi nilai (plus/minus) berdasarkan rekap poin pelanggaran & reward</li>
-                        <li><span class="how-num">4</span>Generate catatan otomatis berbasis aturan</li>
-                        <li><span class="how-num">5</span>Simpan ke database — status: DRAFT</li>
-                        <li><span class="how-num">6</span>Admin review dan approve</li>
+                        <li><span class="how-num">1</span>Menghimpun keseluruhan data rapor bulanan setiap santri.</li>
+                        <li><span class="how-num">2</span>Menghitung rata-rata komulatif per sub-mutu secara presisi.</li>
+                        <li><span class="how-num">3</span>Kalkulasi nilai otomatis berdasarkan akumulasi pelanggaran & prestasi.</li>
+                        <li><span class="how-num">4</span>Menyusun narasi evaluasi rapor via algoritma cerdas (Custom AI).</li>
+                        <li><span class="how-num">5</span>Menyimpan hasil draft ke dalam basis data sistem.</li>
+                        <li><span class="how-num">6</span>Proses verifikasi dan validasi akhir oleh para musyrif.</li>
                     </ul>
                 </div>
             </div>
@@ -338,7 +355,7 @@ require_once __DIR__ . '/../../layouts/header.php';
             <!-- Estimasi waktu -->
             <div class="alert alert-secondary small border-0 mt-2" style="border-radius:.75rem;font-size:.8rem;">
                 <i class="fas fa-bolt me-1 text-warning"></i>
-                Estimasi waktu: <strong>Instan</strong> — tidak membutuhkan koneksi AI.
+                Estimasi Proses: <strong>&plusmn; 2 Detik</strong> — Pemrosesan rapot berjalan di sisi server dengan Custom AI tanpa API pihak ketiga.
             </div>
 
         </div>
@@ -353,6 +370,60 @@ document.getElementById('form-generate')?.addEventListener('submit', function() 
     btn.disabled = true;
     btn.innerHTML = '<i class="fas fa-spinner fa-spin me-2"></i>Memproses...';
     btn.classList.replace('btn-success', 'btn-secondary');
+});
+</script>
+
+<!-- Modal Panduan -->
+<div class="modal fade" id="guideModal" tabindex="-1" aria-labelledby="guideModalLabel" aria-hidden="true">
+  <div class="modal-dialog modal-dialog-centered modal-dialog-scrollable">
+    <div class="modal-content border-0 shadow-lg" style="border-radius: 1rem;">
+      <div class="modal-header border-bottom-0 pb-0 mt-2 mx-2">
+        <h5 class="modal-title fw-bolder text-dark" id="guideModalLabel">
+            <i class="fas fa-spinner fa-spin text-primary me-2"></i>Memuat Panduan...
+        </h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+      </div>
+      <div class="modal-body pt-3 px-4 pb-4 text-muted" id="guideModalBody">
+         <div class="text-center py-4">
+             <div class="spinner-border text-primary" role="status">
+                 <span class="visually-hidden">Loading...</span>
+             </div>
+         </div>
+      </div>
+      <div class="modal-footer border-top-0 pt-0 pb-4 px-4">
+        <button type="button" class="btn btn-primary w-100 fw-medium shadow-sm" style="border-radius: 0.75rem;" data-bs-dismiss="modal">Saya Mengerti</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const guideModal = document.getElementById('guideModal');
+    let guideLoaded = false;
+    
+    if (guideModal) {
+        guideModal.addEventListener('show.bs.modal', function () {
+            if (guideLoaded) return;
+            
+            fetch('../api/guide_tahunan.php')
+                .then(response => response.json())
+                .then(res => {
+                    if(res.status === 'success') {
+                        document.getElementById('guideModalLabel').innerHTML = res.data.title;
+                        document.getElementById('guideModalBody').innerHTML = res.data.content;
+                        guideLoaded = true;
+                    } else {
+                        document.getElementById('guideModalLabel').innerHTML = '<i class="fas fa-exclamation-triangle text-danger me-2"></i>Gagal Memuat';
+                        document.getElementById('guideModalBody').innerHTML = '<div class="alert alert-danger">Gagal memuat panduan: ' + (res.message || 'Error tidak diketahui') + '</div>';
+                    }
+                })
+                .catch(err => {
+                    document.getElementById('guideModalLabel').innerHTML = '<i class="fas fa-exclamation-triangle text-danger me-2"></i>Koneksi Error';
+                    document.getElementById('guideModalBody').innerHTML = '<div class="alert alert-danger">Terjadi kesalahan saat menghubungi server.</div>';
+                });
+        });
+    }
 });
 </script>
 
