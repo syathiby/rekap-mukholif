@@ -203,7 +203,7 @@
                 <tr class="catatan-mutu">
                     <td style="color: #FF0000; vertical-align: middle; text-align: center; font-weight: bold; padding: 4px;">Evaluasi <?php echo htmlspecialchars($aspek['aspek']); ?></td>
                     <td colspan="3" style="text-align: justify; padding: 4px 6px; vertical-align: top;">
-                        <?php echo htmlspecialchars($aspek['catatan'] ?? generate_catatan_per_aspek($aspek)); ?>
+                        <?php echo htmlspecialchars($aspek['catatan'] ?? (has_permission('catatan_otomatis') ? generate_catatan_per_aspek($aspek) : '')); ?>
                     </td>
                 </tr>
             <?php endforeach; ?>

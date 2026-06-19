@@ -179,8 +179,13 @@ foreach ($santri_list as $santri) {
         apply_koreksi_nilai($conn, $sid, $tahun_awal, $tahun_akhir, $nilai_snapshot);
 
         // ── Tambahkan catatan per-aspek ke dalam snapshot ────────
+        $can_generate_catatan = has_permission('catatan_otomatis');
         foreach ($nilai_snapshot as &$aspek_data) {
-            $aspek_data['catatan'] = generate_catatan_per_aspek($aspek_data);
+            if ($can_generate_catatan) {
+                $aspek_data['catatan'] = generate_catatan_per_aspek($aspek_data);
+            } else {
+                $aspek_data['catatan'] = ''; // Biarkan kosong jika tidak punya izin
+            }
         }
         unset($aspek_data);
 

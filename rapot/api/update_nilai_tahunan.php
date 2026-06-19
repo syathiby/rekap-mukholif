@@ -68,7 +68,7 @@ try {
     $catatan_global = $rapot['narasi_ai'] ?? '';
 
     // Hitung poin untuk regen notes
-    if ($regenerate_notes) {
+    if ($regenerate_notes && has_permission('catatan_otomatis')) {
         $tahun_awal = (int)explode('/', $rapot['periode'])[0];
         $t2 = $tahun_awal + 1;
         $santri_id = $rapot['santri_id'];

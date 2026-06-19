@@ -148,6 +148,22 @@ foreach ($nilai_aspek as $aspek) {
     }
 }
 
+// Validasi catatan lengkap
+$missing_notes = [];
+$cat_global_cek = trim($rapot['narasi_ai'] ?? '');
+$word_count_global = count(preg_split('/\s+/', $cat_global_cek));
+if (strlen($cat_global_cek) < 15 || preg_match_all('/[a-zA-Z0-9]/', $cat_global_cek) < 10 || $word_count_global < 3) {
+    $missing_notes[] = 'Catatan Keseluruhan (minimal 3 kata & harus jelas)';
+}
+foreach ($nilai_aspek as $aspek) {
+    $cat_cek = trim($aspek['catatan'] ?? '');
+    $word_count_aspek = count(preg_split('/\s+/', $cat_cek));
+    if (strlen($cat_cek) < 10 || preg_match_all('/[a-zA-Z0-9]/', $cat_cek) < 8 || $word_count_aspek < 2) {
+        $missing_notes[] = 'Catatan Mutu: ' . htmlspecialchars($aspek['aspek']) . ' (minimal 2 kata & harus jelas)';
+    }
+}
+$is_notes_complete = empty($missing_notes);
+
 require_once __DIR__ . '/../../layouts/header.php';
 ?>
 
@@ -477,7 +493,7 @@ require_once __DIR__ . '/../../layouts/header.php';
                         $row_count  = count($subs);
                         // +1 untuk baris catatan per mutu
                         $total_rows = $row_count + 1;
-                        $catatan_m  = $aspek['catatan'] ?? generate_catatan_per_aspek($aspek);
+                        $catatan_m  = $aspek['catatan'] ?? ($can_ai ? generate_catatan_per_aspek($aspek) : '');
                     ?>
                     <?php foreach ($subs as $i => $sub):
                         $nf  = (float)($sub['nilai_final'] ?? 0);
@@ -687,9 +703,30 @@ require_once __DIR__ . '/../../layouts/header.php';
                 <?php endif; ?>
 
                 <?php if ($status === 'DRAFT' && $can_create): ?>
-                <button type="button" class="btn btn-success fw-semibold px-4" style="border-radius:.75rem;" onclick="approveRapor()">
-                    <i class="fas fa-check me-2"></i>Approve Rapor
-                </button>
+                    <?php if ($is_notes_complete): ?>
+                    <button type="button" class="btn btn-success fw-semibold px-4" style="border-radius:.75rem;" onclick="approveRapor()">
+                        <i class="fas fa-check me-2"></i>Approve Rapor
+                    </button>
+                    <?php else: ?>
+                    <button type="button" class="btn btn-success fw-semibold px-4" style="border-radius:.75rem;" onclick="showIncompleteAlert()">
+                        <i class="fas fa-check me-2"></i>Approve Rapor
+                    </button>
+                    <script>
+                    function showIncompleteAlert() {
+                        let missing = <?php echo json_encode($missing_notes); ?>;
+                        let listHtml = '<ul style="text-align:left; font-size:0.9rem; color:#b91c1c; margin-top:10px;">';
+                        missing.forEach(item => { listHtml += '<li>' + item + '</li>'; });
+                        listHtml += '</ul>';
+                        
+                        Swal.fire({
+                            title: 'Belum Bisa Approve',
+                            html: '<div style="font-size:0.95rem; color:#334155;">Harap lengkapi catatan berikut di menu <strong>Edit Catatan</strong> sebelum melakukan Approve:</div>' + listHtml,
+                            icon: 'error',
+                            confirmButtonColor: '#1d6fa4'
+                        });
+                    }
+                    </script>
+                    <?php endif; ?>
                 <?php endif; ?>
 
                 <div class="ms-auto">
@@ -725,7 +762,7 @@ require_once __DIR__ . '/../../layouts/header.php';
             <hr>
             <h6 class="fw-bold mb-3">Catatan Per Mutu</h6>
             <?php foreach ($nilai_aspek as $idx => $aspek): 
-                $catatan_m = $aspek['catatan'] ?? generate_catatan_per_aspek($aspek);
+                $catatan_m = $aspek['catatan'] ?? ($can_ai ? generate_catatan_per_aspek($aspek) : '');
             ?>
             <div class="mb-3">
                 <label class="form-label fw-semibold text-primary">Aspek <?= htmlspecialchars($aspek['aspek']) ?></label>

@@ -174,9 +174,30 @@ if (isset($_POST['tutup_buku_massal'])) {
         $stmt_reward_snapshot->execute();
         $stmt_reward_snapshot->close();
 
+        // Snapshot rapot tahunan
+        $sql_rapot_tahunan_snapshot = "
+            INSERT INTO arsip_data_rapot_tahunan (
+                arsip_id, rapot_tahunan_id, santri_id, santri_nama, santri_kelas, periode, kamar,
+                nilai_snapshot, narasi_ai, catatan_musyrif, status, is_fallback,
+                generated_at, approved_at, approved_by_nama
+            )
+            SELECT
+                ?, rt.id, rt.santri_id, s.nama, s.kelas, rt.periode, rt.kamar,
+                rt.nilai_snapshot, rt.narasi_ai, rt.catatan_musyrif, rt.status, rt.is_fallback,
+                rt.generated_at, rt.approved_at, u.nama_lengkap
+            FROM rapot_tahunan rt
+            LEFT JOIN santri s ON rt.santri_id = s.id
+            LEFT JOIN users u ON rt.approved_by = u.id
+        ";
+        $stmt_rapot_tahunan_snapshot = $conn->prepare($sql_rapot_tahunan_snapshot);
+        $stmt_rapot_tahunan_snapshot->bind_param('i', $arsip_id);
+        $stmt_rapot_tahunan_snapshot->execute();
+        $stmt_rapot_tahunan_snapshot->close();
+
         // 2. RESET PELANGGARAN KEBERSIHAN & RAPOT
         $conn->query("DELETE FROM pelanggaran_kebersihan");
         $conn->query("DELETE FROM rapot_kepengasuhan");
+        $conn->query("DELETE FROM rapot_tahunan");
 
         // 3. RESET POIN SANTRI & PELANGGARAN UMUM RINGAN
         // Hitung surplus reward per santri sebelum daftar_reward dihapus

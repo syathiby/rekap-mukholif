@@ -58,6 +58,37 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action'])) {    // Ha
         $user_id = $_SESSION['user_id'] ?? 0;
 
         if ($rapor_id > 0) {
+            $stmt_cek = $conn->prepare("SELECT narasi_ai, nilai_snapshot FROM rapot_tahunan WHERE id = ?");
+            $stmt_cek->bind_param('i', $rapor_id);
+            $stmt_cek->execute();
+            $rapot_cek = $stmt_cek->get_result()->fetch_assoc();
+            $stmt_cek->close();
+            
+            if ($rapot_cek) {
+                $is_complete = true;
+                $narasi = trim($rapot_cek['narasi_ai'] ?? '');
+                $word_count_global = count(preg_split('/\s+/', $narasi));
+                if (strlen($narasi) < 15 || preg_match_all('/[a-zA-Z0-9]/', $narasi) < 10 || $word_count_global < 3) {
+                    $is_complete = false;
+                }
+                
+                $aspeks = json_decode($rapot_cek['nilai_snapshot'] ?? '[]', true) ?? [];
+                foreach ($aspeks as $aspek) {
+                    $cat = trim($aspek['catatan'] ?? '');
+                    $word_count_aspek = count(preg_split('/\s+/', $cat));
+                    if (strlen($cat) < 10 || preg_match_all('/[a-zA-Z0-9]/', $cat) < 8 || $word_count_aspek < 2) {
+                        $is_complete = false;
+                    }
+                }
+                
+                if (!$is_complete) {
+                    http_response_code(400);
+                    header('Content-Type: application/json');
+                    echo json_encode(['status' => 'error', 'message' => 'Catatan mutu dan keseluruhan belum lengkap atau tidak jelas. Harap isi minimal 2-3 kata yang valid.']);
+                    exit;
+                }
+            }
+
             $stmt_app = $conn->prepare("UPDATE rapot_tahunan SET status = 'APPROVED', approved_by = ?, approved_at = NOW() WHERE id = ? AND status = 'DRAFT'");
             $stmt_app->bind_param('ii', $user_id, $rapor_id);
             if ($stmt_app->execute() && $stmt_app->affected_rows > 0) {
