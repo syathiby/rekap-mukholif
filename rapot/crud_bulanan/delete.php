@@ -13,6 +13,21 @@ if (empty($_GET['id'])) {
 
 $rapot_id = (int)$_GET['id'];
 
+$kamar_filter_musyrif = checkMusyrifKamarAccess();
+if ($kamar_filter_musyrif !== null) {
+    $stmt_kamar_check = $conn->prepare("SELECT s.kamar FROM rapot_kepengasuhan r JOIN santri s ON r.santri_id = s.id WHERE r.id = ?");
+    $stmt_kamar_check->bind_param("i", $rapot_id);
+    $stmt_kamar_check->execute();
+    $res_kamar = $stmt_kamar_check->get_result()->fetch_assoc();
+    $stmt_kamar_check->close();
+    
+    if (!$res_kamar || (int)$res_kamar['kamar'] !== $kamar_filter_musyrif) {
+        set_flash_message('Gagal menghapus: Anda tidak memiliki akses ke rapot tersebut (Beda Kamar).', 'danger');
+        header('Location: ../../rapot/index.php');
+        exit;
+    }
+}
+
 try {
     // Ambil info rapot sebelum dihapus untuk log
     $stmt_info = $conn->prepare("SELECT r.bulan, r.tahun, s.nama FROM rapot_kepengasuhan r JOIN santri s ON r.santri_id = s.id WHERE r.id = ?");

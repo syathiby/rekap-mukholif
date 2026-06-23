@@ -19,7 +19,8 @@ $user_id = null;
 $user_data = [
     'nama_lengkap' => '',
     'username' => '',
-    'role' => ''
+    'role' => '',
+    'kamar_id' => ''
 ];
 $page_title = 'Tambah User Baru';
 $page_subtitle = 'Buat akun baru untuk pengguna sistem.';
@@ -32,7 +33,7 @@ $original_role_for_js = 'null';
 if (isset($_GET['id']) && is_numeric($_GET['id'])) {
     $is_edit_mode = true;
     $user_id = (int)$_GET['id'];
-    $stmt = $conn->prepare("SELECT nama_lengkap, username, role FROM users WHERE id = ?");
+    $stmt = $conn->prepare("SELECT nama_lengkap, username, role, kamar_id FROM users WHERE id = ?");
     $stmt->bind_param("i", $user_id);
     $stmt->execute();
     $result = $stmt->get_result();
@@ -80,6 +81,13 @@ $sql_roles = "SELECT DISTINCT role FROM users WHERE role IS NOT NULL AND role !=
 $result_roles = mysqli_query($conn, $sql_roles);
 if ($result_roles) {
     $existing_roles = mysqli_fetch_all($result_roles, MYSQLI_ASSOC);
+}
+
+$existing_kamar = [];
+$sql_kamar = "SELECT DISTINCT kamar FROM santri WHERE kamar IS NOT NULL AND kamar != 0 ORDER BY kamar ASC";
+$result_kamar = mysqli_query($conn, $sql_kamar);
+if ($result_kamar) {
+    $existing_kamar = mysqli_fetch_all($result_kamar, MYSQLI_ASSOC);
 }
 ?>
 
@@ -299,6 +307,19 @@ if ($result_roles) {
                     </div>
                 </div>
 
+                <div class="mb-3" id="kamar_container" style="display: none;">
+                    <label for="kamar_id" class="form-label">Kamar (Khusus Musyrif)</label>
+                    <div class="input-group">
+                        <span class="input-group-text"><i class="fas fa-bed fa-fw"></i></span>
+                        <select class="form-control" id="kamar_id" name="kamar_id">
+                            <option value="">-- Pilih Kamar --</option>
+                            <?php foreach ($existing_kamar as $k): ?>
+                                <option value="<?= htmlspecialchars($k['kamar']) ?>" <?= ((string)$user_data['kamar_id'] === (string)$k['kamar']) ? 'selected' : '' ?>>Kamar <?= htmlspecialchars($k['kamar']) ?></option>
+                            <?php endforeach; ?>
+                        </select>
+                    </div>
+                </div>
+
                 <div class="mb-4">
                     <label for="password" class="form-label">Password</label>
                     <!-- ===== PERBAIKAN DI SINI: Tambahkan class "input-group" ===== -->
@@ -348,6 +369,26 @@ if ($result_roles) {
             
             const isEditMode = <?= $is_edit_mode ? 'true' : 'false' ?>;
             const originalRole = <?= $original_role_for_js ?>;
+            const kamarContainer = document.getElementById('kamar_container');
+            const kamarInput = document.getElementById('kamar_id');
+
+            function toggleKamar() {
+                if (!roleInput) return;
+                const isMusyrif = roleInput.value.trim().toLowerCase() === 'musyrif';
+                if (isMusyrif) {
+                    kamarContainer.style.display = 'block';
+                } else {
+                    kamarContainer.style.display = 'none';
+                    kamarInput.value = ''; // Reset value
+                }
+            }
+
+            if (roleInput) {
+                roleInput.addEventListener('change', toggleKamar);
+                toggleKamar(); // Run on load
+            } else if (originalRole && originalRole.trim().toLowerCase() === 'musyrif') {
+                kamarContainer.style.display = 'block';
+            }
 
             form.addEventListener('submit', function(event) {
                 const newRoleValue = roleInput.value.trim().toLowerCase();

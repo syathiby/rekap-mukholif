@@ -36,6 +36,11 @@ try {
         die('Error: Data rapot tidak ditemukan.');
     }
 
+    $kamar_filter_musyrif = checkMusyrifKamarAccess();
+    if ($kamar_filter_musyrif !== null && (int)$rapot['kamar_santri'] !== $kamar_filter_musyrif) {
+        die('Error: Anda tidak memiliki akses untuk mencetak rapot santri ini (Beda Kamar).');
+    }
+
     // Ambil rincian pelanggaran
     $pelanggaran_list = [];
     $sql_pelanggaran = "
@@ -82,7 +87,7 @@ $santri = [
     'kelas' => $rapot['kelas_santri'] ?? 'N/A'
 ];
 $musyrif = [
-    'nama_lengkap' => $_SESSION['nama_lengkap'] ?? $rapot['nama_musyrif'] ?? 'User Dihapus'
+    'nama_lengkap' => $rapot['nama_musyrif'] ?? 'User Dihapus'
 ];
 
 $logo_path = $base_url . '/assets/img/Kop Syathiby.jpg';

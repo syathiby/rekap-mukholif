@@ -211,4 +211,82 @@ function format_typing($string) {
     if (empty($string)) return $string;
     return ucwords(strtolower(trim($string)));
 }
+
+/**
+ * =================================================================
+ * FUNGSI MUSYRIF KAMAR (RBAC EXTENSION)
+ * =================================================================
+ */
+
+/**
+ * Validasi akses Musyrif terhadap kamar.
+ * Wajib dipanggil di awal setiap endpoint/controller CRUD Rapot.
+ *
+ * @return int|null kamar_id jika musyrif, null jika bukan musyrif.
+ */
+function checkMusyrifKamarAccess() {
+    global $conn;
+    
+    // Jika belum login, biarkan auth middleware yang handle
+    if (empty($_SESSION['user_id'])) return null;
+    
+    // Jika bukan musyrif, tidak ada batasan kamar (return null)
+    if (strtolower($_SESSION['role'] ?? '') !== 'musyrif') {
+        return null; 
+    }
+    
+    // Jika musyrif, ambil data kamar_id terbaru dari DB
+    $stmt = $conn->prepare("SELECT kamar_id FROM users WHERE id = ?");
+    $stmt->bind_param("i", $_SESSION['user_id']);
+    $stmt->execute();
+    $res = $stmt->get_result()->fetch_assoc();
+    $stmt->close();
+    
+    if (!$res || empty($res['kamar_id'])) {
+        // Musyrif tanpa kamar_id -> Akses Ditolak
+        if (isset($_SERVER['HTTP_X_REQUESTED_WITH']) && strtolower($_SERVER['HTTP_X_REQUESTED_WITH']) === 'xmlhttprequest') {
+            http_response_code(403);
+            header('Content-Type: application/json');
+            echo json_encode([
+                "success" => false,
+                "error_code" => "MUSYRIF_KAMAR_NOT_CONFIGURED",
+                "message" => "Kamar Musyrif belum dikonfigurasi. Silakan hubungi Administrator."
+            ]);
+            exit;
+        } else {
+            http_response_code(403);
+            $error_msg = "Akun Musyrif Anda belum terhubung dengan kamar yang menjadi tanggung jawab. Silakan hubungi Administrator untuk melakukan pengaturan kamar terlebih dahulu.";
+            
+            // Render beautiful error page
+            echo '<!DOCTYPE html>
+            <html lang="id">
+            <head>
+                <meta charset="UTF-8">
+                <meta name="viewport" content="width=device-width, initial-scale=1.0">
+                <title>Akses Ditolak</title>
+                <style>
+                    body { font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif; background-color: #f8f9fa; display: flex; align-items: center; justify-content: center; height: 100vh; margin: 0; }
+                    .error-container { background: #fff; padding: 40px; border-radius: 8px; box-shadow: 0 4px 6px rgba(0,0,0,0.1); max-width: 500px; text-align: center; }
+                    .error-icon { font-size: 48px; color: #dc3545; margin-bottom: 20px; }
+                    .error-title { color: #343a40; margin-bottom: 15px; font-size: 24px; }
+                    .error-msg { color: #6c757d; line-height: 1.6; margin-bottom: 25px; }
+                    .btn-back { display: inline-block; background: #0d6efd; color: #fff; text-decoration: none; padding: 10px 20px; border-radius: 4px; transition: background 0.2s; }
+                    .btn-back:hover { background: #0b5ed7; }
+                </style>
+            </head>
+            <body>
+                <div class="error-container">
+                    <div class="error-icon">&#10060;</div>
+                    <h1 class="error-title">Akses Tidak Dapat Dilanjutkan</h1>
+                    <p class="error-msg">' . $error_msg . '</p>
+                    <a href="javascript:history.back()" class="btn-back">Kembali Halaman Sebelumnya</a>
+                </div>
+            </body>
+            </html>';
+            exit;
+        }
+    }
+    
+    return (int)$res['kamar_id'];
+}
 ?>

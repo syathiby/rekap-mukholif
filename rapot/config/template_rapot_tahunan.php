@@ -103,6 +103,7 @@
             margin-top: 25px; 
             text-align: center;
             font-size: 11pt; 
+            page-break-inside: avoid;
         }
         .ttd-container .nama-musyrif {
             margin-top: 60px; 
@@ -317,6 +318,7 @@
         
         <div class="nama-musyrif"><?php echo htmlspecialchars($nama_musyrif); ?></div>
     </div>
+    <div style="clear: both;"></div>
 
 </body>
 </html>

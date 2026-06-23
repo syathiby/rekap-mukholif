@@ -28,15 +28,25 @@ for ($i = 0; $i < 3; $i++) {
     $periode_list[] = "$y1/$y2";
 }
 
-$kamar_list = $conn->query("
-    SELECT DISTINCT kamar FROM santri
-    WHERE kamar IS NOT NULL AND kamar != 0
-    ORDER BY kamar ASC
-")->fetch_all(MYSQLI_ASSOC);
+$kamar_filter_musyrif = checkMusyrifKamarAccess();
+
+if ($kamar_filter_musyrif !== null) {
+    $kamar_list = [['kamar' => (string)$kamar_filter_musyrif]];
+} else {
+    $kamar_list = $conn->query("
+        SELECT DISTINCT kamar FROM santri
+        WHERE kamar IS NOT NULL AND kamar != 0
+        ORDER BY kamar ASC
+    ")->fetch_all(MYSQLI_ASSOC);
+}
 
 // ── Filter aktif ────────────────────────────────────────────
 $filter_periode = $_GET['periode'] ?? $periode_list[0];
 $filter_kamar   = $_GET['kamar']   ?? '';
+
+if ($kamar_filter_musyrif !== null) {
+    $filter_kamar = (string)$kamar_filter_musyrif;
+}
 
 // ── Ambil data kamar + status rapor tahunan ─────────────────
 $rows = [];
@@ -187,6 +197,24 @@ require_once __DIR__ . '/../../layouts/header.php';
         </div>
     </div>
 
+    <?php if ($kamar_filter_musyrif !== null): ?>
+    <!-- Info banner Musyrif -->
+    <div class="d-flex align-items-start gap-3 p-3 p-md-4 mb-4 rounded-4"
+         style="background: linear-gradient(to right, #fefce8, #ffffff); border: 1px solid #fef08a; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.02);">
+        <div class="flex-shrink-0 mt-1">
+            <div style="width: 40px; height: 40px; border-radius: 10px; background: #fef08a; color: #ca8a04; display: flex; align-items: center; justify-content: center;">
+                <i class="fas fa-lock fa-lg"></i>
+            </div>
+        </div>
+        <div>
+            <h6 class="fw-bold mb-1 text-dark" style="font-size: .95rem; letter-spacing: -0.01em;">Hak Akses Musyrif Terkunci</h6>
+            <p class="mb-0 text-secondary info-banner-text" style="font-size: 0.85rem; line-height: 1.5;">
+                Anda login sebagai <strong>Musyrif Kamar <?= htmlspecialchars($kamar_filter_musyrif) ?></strong>. Akses Anda telah dibatasi. Anda hanya dapat melihat dan men-generate rapor tahunan untuk santri di kamar Anda. Data dari kamar lain telah dikunci untuk menjaga privasi.
+            </p>
+        </div>
+    </div>
+    <?php endif; ?>
+
     <!-- Filter -->
     <div class="rt-card p-3 mb-4">
         <form action="" method="GET" class="row g-3 align-items-end">
@@ -199,9 +227,16 @@ require_once __DIR__ . '/../../layouts/header.php';
                 </select>
             </div>
             <div class="col-12 col-md-4">
-                <label class="form-label text-muted small fw-bold mb-1">Filter Kamar</label>
-                <select name="kamar" class="form-select">
-                    <option value="">Semua Kamar</option>
+                <label class="form-label text-muted small fw-bold mb-1">
+                    Filter Kamar
+                    <?php if ($kamar_filter_musyrif !== null): ?>
+                        <span class="badge bg-warning text-dark ms-1" style="font-size: 0.65rem;"><i class="fas fa-lock"></i> Terkunci</span>
+                    <?php endif; ?>
+                </label>
+                <select name="kamar" class="form-select" <?= $kamar_filter_musyrif !== null ? 'style="pointer-events: none; background-color: #e9ecef;" tabindex="-1"' : '' ?>>
+                    <?php if ($kamar_filter_musyrif === null): ?>
+                        <option value="">Semua Kamar</option>
+                    <?php endif; ?>
                     <?php foreach ($kamar_list as $km): ?>
                         <option value="<?= htmlspecialchars($km['kamar']) ?>" <?= $filter_kamar === $km['kamar'] ? 'selected' : '' ?>>
                             <?= htmlspecialchars($km['kamar']) ?>

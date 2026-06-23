@@ -1,70 +1,54 @@
 <?php
-// File: rekap-mukholif/rapot/crud_tahunan/view.php
-// Menampilkan Rapor Tahunan di Browser (sebagai ganti PDF)
+// arsip/pages/arsip_rapot_tahunan_view.php
+// Menampilkan Rapor Tahunan dari Arsip di Browser (sebagai ganti PDF untuk preview)
 
 require_once __DIR__ . '/../../bootstrap/init.php'; 
-require_once __DIR__ . '/../config/helper.php'; 
+require_once __DIR__ . '/../../rapot/config/helper.php'; 
 
-guard('rapot_view');
+guard('arsip_view');
 
+$arsip_id = (int)($_GET['arsip_id'] ?? 0);
 $id = (int)($_GET['id'] ?? 0);
 
-if (!$id) {
-    die('Error: ID Rapot tidak ditemukan.');
+if (!$id || !$arsip_id) {
+    die('Error: ID Rapot atau ID Arsip tidak ditemukan.');
 }
 
 try {
     $stmt = $conn->prepare("
-        SELECT
-            rt.*,
-            s.id   AS santri_id,
-            s.nama AS nama_santri,
-            s.kamar AS kamar_santri,
-            s.kelas AS kelas_santri,
-            u.nama_lengkap AS nama_musyrif
-        FROM rapot_tahunan rt
-        LEFT JOIN santri s ON rt.santri_id = s.id
-        LEFT JOIN users  u ON rt.musyrif_id = u.id
-        WHERE rt.id = ?
+        SELECT rt.*, rt.santri_nama AS nama_santri, rt.kamar, rt.santri_kelas as kelas_santri, rt.approved_by_nama AS nama_musyrif
+        FROM arsip_data_rapot_tahunan rt
+        WHERE rt.id = ? AND rt.arsip_id = ?
     ");
-    $stmt->bind_param('i', $id);
+    $stmt->bind_param('ii', $id, $arsip_id);
     $stmt->execute();
     $rapot = $stmt->get_result()->fetch_assoc();
     $stmt->close();
 
     if (!$rapot) {
-        die('Error: Data rapor tahunan tidak ditemukan.');
+        die('Error: Data rapor tahunan di arsip tidak ditemukan.');
     }
 
-    // Ambil rekap pelanggaran periode ini
-    [$tahun_awal] = explode('/', $rapot['periode']);
-    $tahun_akhir  = (int)$tahun_awal + 1;
-
     $stmt_pel = $conn->prepare("
-        SELECT jp.nama_pelanggaran, COUNT(*) AS jumlah, SUM(jp.poin) as total_poin
-        FROM pelanggaran p
-        JOIN jenis_pelanggaran jp ON p.jenis_pelanggaran_id = jp.id
-        WHERE p.santri_id = ?
-          AND (YEAR(p.tanggal) = ? OR YEAR(p.tanggal) = ?)
-        GROUP BY jp.id, jp.nama_pelanggaran
+        SELECT jenis_pelanggaran_nama as nama_pelanggaran, COUNT(*) AS jumlah, SUM(poin) as total_poin
+        FROM arsip_data_pelanggaran
+        WHERE arsip_id = ? AND santri_id = ? AND tipe = 'Umum'
+        GROUP BY jenis_pelanggaran_nama
         ORDER BY jumlah DESC
     ");
-    $stmt_pel->bind_param('iii', $rapot['santri_id'], $tahun_awal, $tahun_akhir);
+    $stmt_pel->bind_param('ii', $arsip_id, $rapot['santri_id']);
     $stmt_pel->execute();
     $pelanggaran_rekap = $stmt_pel->get_result()->fetch_all(MYSQLI_ASSOC);
     $stmt_pel->close();
 
-    // Ambil rekap reward periode ini
     $stmt_rwd = $conn->prepare("
-        SELECT jr.nama_reward, COUNT(*) AS jumlah, SUM(jr.poin_reward) as total_poin
-        FROM daftar_reward dr
-        JOIN jenis_reward jr ON dr.jenis_reward_id = jr.id
-        WHERE dr.santri_id = ?
-          AND (YEAR(dr.tanggal) = ? OR YEAR(dr.tanggal) = ?)
-        GROUP BY jr.id, jr.nama_reward
+        SELECT jenis_reward_nama as nama_reward, COUNT(*) AS jumlah, SUM(poin_reward) as total_poin
+        FROM arsip_data_reward
+        WHERE arsip_id = ? AND santri_id = ?
+        GROUP BY jenis_reward_nama
         ORDER BY jumlah DESC
     ");
-    $stmt_rwd->bind_param('iii', $rapot['santri_id'], $tahun_awal, $tahun_akhir);
+    $stmt_rwd->bind_param('ii', $arsip_id, $rapot['santri_id']);
     $stmt_rwd->execute();
     $reward_rekap = $stmt_rwd->get_result()->fetch_all(MYSQLI_ASSOC);
     $stmt_rwd->close();
@@ -75,7 +59,7 @@ try {
 
 $santri = [
     'nama'  => $rapot['nama_santri']  ?? 'Santri Dihapus',
-    'kamar' => $rapot['kamar_santri'] ?? $rapot['kamar'] ?? 'N/A',
+    'kamar' => $rapot['kamar'] ?? 'N/A',
     'kelas' => $rapot['kelas_santri'] ?? 'N/A',
 ];
 $periode         = $rapot['periode'];
@@ -108,7 +92,7 @@ echo '<!DOCTYPE html>
 <html>
 <head>
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0, user-scalable=yes">
-    <title>View Rapot - ' . htmlspecialchars($santri['nama']) . '</title>
+    <title>View Rapot Arsip - ' . htmlspecialchars($santri['nama']) . '</title>
     <style>
         body {
             background-color: #525659;
@@ -141,7 +125,7 @@ echo '
     <div class="page-wrapper">';
 
 ob_start();
-include '../config/template_rapot_tahunan.php';
+include '../../rapot/config/template_rapot_tahunan.php';
 $html = ob_get_clean();
 
 // Ganti <pagebreak /> dengan penutup div lama dan pembuka div baru

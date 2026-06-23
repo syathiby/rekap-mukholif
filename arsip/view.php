@@ -35,6 +35,10 @@ $total_reward = $row_rew['c']; $total_poin_reward = $row_rew['poin'];
 $stmt_s5 = $conn->prepare("SELECT COUNT(*) as c FROM arsip_data_rapot WHERE arsip_id = ?");
 $stmt_s5->bind_param('i', $arsip_id); $stmt_s5->execute();
 $total_rapot = $stmt_s5->get_result()->fetch_assoc()['c'];
+
+$stmt_s6 = $conn->prepare("SELECT COUNT(*) as c FROM arsip_data_rapot_tahunan WHERE arsip_id = ?");
+$stmt_s6->bind_param('i', $arsip_id); $stmt_s6->execute();
+$total_rapot_tahunan = $stmt_s6->get_result()->fetch_assoc()['c'];
 ?>
 
 <style>
@@ -243,6 +247,10 @@ $total_rapot = $stmt_s5->get_result()->fetch_assoc()['c'];
             <span class="chip-dot" style="background:#3b82f6;"></span>
             <span class="chip-num"><?= number_format($total_rapot) ?></span> Rapot
         </div>
+        <div class="stat-chip">
+            <span class="chip-dot" style="background:#8b5cf6;"></span>
+            <span class="chip-num"><?= number_format($total_rapot_tahunan) ?></span> Rapot Tahunan
+        </div>
     </div>
 
     <!-- Menu Cards -->
@@ -304,6 +312,22 @@ $total_rapot = $stmt_s5->get_result()->fetch_assoc()['c'];
             <div class="card-body-text">
                 <h6>Grafik Statistik</h6>
                 <p>Visualisasi dan analisis komprehensif dari data arsip periode ini</p>
+            </div>
+            <i class="fas fa-chevron-right card-arrow"></i>
+        </a>
+
+        <!-- Rapot Tahunan -->
+        <a href="pages/arsip_rapot_tahunan.php?id=<?= $arsip_id ?>" class="menu-card" style="border-left: 4px solid #8b5cf6;">
+            <div class="card-icon-wrap" style="background:#f3e8ff;">
+                <i class="fas fa-file-invoice" style="color:#7c3aed;"></i>
+            </div>
+            <div class="card-body-text">
+                <h6>Rapot Tahunan</h6>
+                <p>Data rapor tahunan santri yang telah diarsipkan pada periode ini</p>
+                <span class="card-badge" style="background:#f3e8ff;color:#5b21b6;">
+                    <i class="fas fa-file-invoice fa-xs"></i>
+                    <?= number_format($total_rapot_tahunan) ?> data
+                </span>
             </div>
             <i class="fas fa-chevron-right card-arrow"></i>
         </a>

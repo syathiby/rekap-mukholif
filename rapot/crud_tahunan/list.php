@@ -21,6 +21,13 @@ if (empty($kamar) || empty($periode)) {
     exit;
 }
 
+$kamar_filter_musyrif = checkMusyrifKamarAccess();
+if ($kamar_filter_musyrif !== null && (string)$kamar_filter_musyrif !== $kamar) {
+    set_flash_message('Anda tidak memiliki akses ke kamar ini.', 'danger');
+    header('Location: index.php');
+    exit;
+}
+
 // Flash message ditangani global oleh footer.php
 
 // Handle POST actions

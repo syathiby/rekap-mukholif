@@ -21,8 +21,15 @@ csrf_validate();
 // ============================================================
 // 1. AMBIL INPUT
 // ============================================================
-$kamar_id = (int)$_POST['kamar_id'];
+$kamar_id = $_POST['kamar_id'];
 $periode  = trim($_POST['periode'] ?? '');   // Format: 2024/2025
+
+$kamar_filter_musyrif = checkMusyrifKamarAccess();
+if ($kamar_filter_musyrif !== null && (string)$kamar_filter_musyrif !== (string)$kamar_id) {
+    set_flash_message('Anda tidak memiliki akses ke kamar ini.', 'danger');
+    header('Location: index.php');
+    exit;
+}
 
 if (empty($periode) || !preg_match('/^\d{4}\/\d{4}$/', $periode)) {
     set_flash_message('Format periode tidak valid. Gunakan format: 2024/2025', 'danger');
@@ -236,12 +243,13 @@ foreach ($santri_list as $santri) {
 
         $stmt_save = $conn->prepare("
             INSERT INTO rapot_tahunan
-                (santri_id, periode, kamar, nilai_snapshot, narasi_ai, catatan_musyrif, status, is_fallback, generated_at)
-            VALUES (?, ?, ?, ?, ?, ?, 'DRAFT', 0, NOW())
+                (santri_id, periode, kamar, musyrif_id, nilai_snapshot, narasi_ai, catatan_musyrif, status, is_fallback, generated_at)
+            VALUES (?, ?, ?, ?, ?, ?, ?, 'DRAFT', 0, NOW())
         ");
         // narasi_ai → catatan otomatis | catatan_musyrif → meta (poin)
-        $stmt_save->bind_param('isssss',
-            $sid, $periode, $nama_kamar,
+        $musyrif_id = (int)$_SESSION['user_id'];
+        $stmt_save->bind_param('ississs',
+            $sid, $periode, $nama_kamar, $musyrif_id,
             $snapshot_json,
             $catatan_otomatis,
             $meta_json

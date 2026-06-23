@@ -157,12 +157,21 @@ $(document).ready(function() {
                     confirmButtonText: 'YA, JALANKAN TUTUP BUKU!'
                 }).then((result) => {
                     if(result.isConfirmed) {
-                        let input = document.createElement('input');
-                        input.type = 'hidden';
-                        input.name = submitName;
-                        input.value = submitValue;
-                        form.appendChild(input);
-                        form.submit();
+                        Swal.fire({
+                            title: 'Sedang Memproses...',
+                            html: 'Harap tunggu, jangan tutup atau refresh halaman ini.',
+                            allowOutsideClick: false,
+                            allowEscapeKey: false,
+                            didOpen: () => {
+                                Swal.showLoading();
+                                let input = document.createElement('input');
+                                input.type = 'hidden';
+                                input.name = submitName;
+                                input.value = submitValue;
+                                form.appendChild(input);
+                                form.submit();
+                            }
+                        });
                     }
                 });
             }

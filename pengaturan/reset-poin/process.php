@@ -10,56 +10,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     csrf_validate();
 }
 
-// Fungsi pembantu untuk me-reset poin satu santri
-// Sekarang juga akan menghapus riwayat pelanggaran non-permanen
-function resetPoinSantri($conn, $id_santri, $keterangan, $di_reset_oleh) {
-    // 1. Ambil poin santri saat ini
-    $stmt_get_santri = $conn->prepare("SELECT poin_aktif FROM santri WHERE id = ?");
-    $stmt_get_santri->bind_param("i", $id_santri);
-    $stmt_get_santri->execute();
-    $poin_sebelum_reset = $stmt_get_santri->get_result()->fetch_assoc()['poin_aktif'] ?? 0;
-    $stmt_get_santri->close();
-    
-    // 2. Hitung total poin permanen (Sangat Berat) santri
-    $stmt_get_permanent = $conn->prepare("SELECT SUM(jp.poin) AS total_permanen FROM pelanggaran p JOIN jenis_pelanggaran jp ON p.jenis_pelanggaran_id = jp.id WHERE p.santri_id = ? AND jp.kategori = 'Sangat Berat'");
-    $stmt_get_permanent->bind_param("i", $id_santri);
-    $stmt_get_permanent->execute();
-    $total_permanen = $stmt_get_permanent->get_result()->fetch_assoc()['total_permanen'] ?? 0;
-    $stmt_get_permanent->close();
-
-    // 2b. Hitung total reward (Opsi B: Pertahankan Surplus)
-    $stmt_get_reward = $conn->prepare("SELECT SUM(jr.poin_reward) AS total_reward FROM daftar_reward r JOIN jenis_reward jr ON r.jenis_reward_id = jr.id WHERE r.santri_id = ?");
-    $stmt_get_reward->bind_param("i", $id_santri);
-    $stmt_get_reward->execute();
-    $total_reward = $stmt_get_reward->get_result()->fetch_assoc()['total_reward'] ?? 0;
-    $stmt_get_reward->close();
-
-    $poin_baru = $total_permanen - $total_reward;
-
-    // 3. Hapus semua riwayat pelanggaran non-permanen untuk santri ini
-    $stmt_delete = $conn->prepare("
-        DELETE p FROM pelanggaran p
-        JOIN jenis_pelanggaran jp ON p.jenis_pelanggaran_id = jp.id
-        WHERE p.santri_id = ? AND jp.kategori != 'Sangat Berat'
-    ");
-    $stmt_delete->bind_param("i", $id_santri);
-    $stmt_delete->execute();
-    $stmt_delete->close();
-
-    // 4. Catat ke log reset
-    $stmt_log = $conn->prepare("INSERT INTO log_reset_poin (id_santri, tanggal_reset, total_poin_sebelum_reset, keterangan, di_reset_oleh) VALUES (?, CURDATE(), ?, ?, ?)");
-    $stmt_log->bind_param("iisi", $id_santri, $poin_sebelum_reset, $keterangan, $di_reset_oleh);
-    $stmt_log->execute();
-    $stmt_log->close();
-    
-    // 5. Update poin_aktif santri ke nilai poin yang dihitung ulang (Permanen - Reward)
-    $stmt_update = $conn->prepare("UPDATE santri SET poin_aktif = ? WHERE id = ?");
-    $stmt_update->bind_param("ii", $poin_baru, $id_santri);
-    $stmt_update->execute();
-    $stmt_update->close();
-
-    return true; // Kembalikan true jika semua proses berhasil
-}
+// (Fungsi resetPoinSantri sudah digantikan dengan query massal di bawah)
 
 
 // --- BAGIAN UTAMA: MENENTUKAN AKSI ---
@@ -177,17 +128,18 @@ if (isset($_POST['tutup_buku_massal'])) {
         // Snapshot rapot tahunan
         $sql_rapot_tahunan_snapshot = "
             INSERT INTO arsip_data_rapot_tahunan (
-                arsip_id, rapot_tahunan_id, santri_id, santri_nama, santri_kelas, periode, kamar,
+                arsip_id, rapot_tahunan_id, santri_id, santri_nama, santri_kelas, periode, kamar, musyrif_nama,
                 nilai_snapshot, narasi_ai, catatan_musyrif, status, is_fallback,
                 generated_at, approved_at, approved_by_nama
             )
             SELECT
-                ?, rt.id, rt.santri_id, s.nama, s.kelas, rt.periode, rt.kamar,
+                ?, rt.id, rt.santri_id, s.nama, s.kelas, rt.periode, rt.kamar, u2.nama_lengkap,
                 rt.nilai_snapshot, rt.narasi_ai, rt.catatan_musyrif, rt.status, rt.is_fallback,
                 rt.generated_at, rt.approved_at, u.nama_lengkap
             FROM rapot_tahunan rt
             LEFT JOIN santri s ON rt.santri_id = s.id
             LEFT JOIN users u ON rt.approved_by = u.id
+            LEFT JOIN users u2 ON rt.musyrif_id = u2.id
         ";
         $stmt_rapot_tahunan_snapshot = $conn->prepare($sql_rapot_tahunan_snapshot);
         $stmt_rapot_tahunan_snapshot->bind_param('i', $arsip_id);
@@ -195,51 +147,72 @@ if (isset($_POST['tutup_buku_massal'])) {
         $stmt_rapot_tahunan_snapshot->close();
 
         // 2. RESET PELANGGARAN KEBERSIHAN & RAPOT
-        $conn->query("DELETE FROM pelanggaran_kebersihan");
+        $stmt_del_kebersihan = $conn->prepare("DELETE FROM pelanggaran_kebersihan WHERE DATE(tanggal) BETWEEN ? AND ?");
+        $stmt_del_kebersihan->bind_param('ss', $tgl_mulai, $tgl_selesai);
+        $stmt_del_kebersihan->execute();
+        
+        // Rapot tidak punya filter rentang tanggal, namun kita amankan dengan periode tahun berjalan
+        // Karena sistem saat ini mengarsip seluruh tabel rapot, kita hapus semuanya juga.
         $conn->query("DELETE FROM rapot_kepengasuhan");
         $conn->query("DELETE FROM rapot_tahunan");
 
-        // 3. RESET POIN SANTRI & PELANGGARAN UMUM RINGAN
-        // Hitung surplus reward per santri sebelum daftar_reward dihapus
-        $surplus_per_santri = [];
-        $q_surplus = $conn->query("
-            SELECT dr.santri_id,
-                   COALESCE(SUM(jr.poin_reward), 0) AS total_reward,
-                   (
-                       SELECT COALESCE(SUM(jp.poin), 0)
-                       FROM pelanggaran p
-                       JOIN jenis_pelanggaran jp ON p.jenis_pelanggaran_id = jp.id
-                       WHERE p.santri_id = dr.santri_id
-                   ) AS total_pelanggaran
-            FROM daftar_reward dr
-            JOIN jenis_reward jr ON dr.jenis_reward_id = jr.id
-            GROUP BY dr.santri_id
-        ");
-        if ($q_surplus) {
-            while ($row_s = $q_surplus->fetch_assoc()) {
-                $surplus = (int)$row_s['total_reward'] - (int)$row_s['total_pelanggaran'];
-                if ($surplus > 0) {
-                    $surplus_per_santri[(int)$row_s['santri_id']] = $surplus;
-                }
-            }
-        }
-
-        // Hapus daftar_reward (sudah di-snapshot ke arsip)
-        $conn->query("DELETE FROM daftar_reward");
-
-        $result_santri = mysqli_query($conn, "SELECT id FROM santri");
-        $santri_list = mysqli_fetch_all($result_santri, MYSQLI_ASSOC);
+        // 3. LOG MASAL & UPDATE POIN AKTIF
         
-        $processed_count = 0;
-        foreach ($santri_list as $santri) {
-            resetPoinSantri($conn, $santri['id'], $keterangan, $di_reset_oleh);
-            // Terapkan surplus reward sebagai poin bonus awal tahun baru
-            if (isset($surplus_per_santri[$santri['id']])) {
-                $bonus = -$surplus_per_santri[$santri['id']]; // Negatif karena reward mengurangi poin
-                $conn->query("UPDATE santri SET poin_aktif = poin_aktif + ($bonus) WHERE id = {$santri['id']}");
-            }
-            $processed_count++;
-        }
+        // a. Insert semua santri ke log_reset_poin
+        $stmt_log_massal = $conn->prepare("
+            INSERT INTO log_reset_poin (id_santri, tanggal_reset, total_poin_sebelum_reset, keterangan, di_reset_oleh)
+            SELECT id, CURDATE(), poin_aktif, ?, ?
+            FROM santri
+        ");
+        $stmt_log_massal->bind_param('si', $keterangan, $di_reset_oleh);
+        $stmt_log_massal->execute();
+        $processed_count = $conn->affected_rows; // Ambil jumlah santri yang direset
+
+        // b. Hitung ulang Poin Aktif: LEAST(Total Permanen, Total Pelanggaran - Total Reward)
+        // Ini memungkinkan surplus poin reward menjadi negatif (Skenario B)
+        $sql_update_poin = "
+            UPDATE santri s
+            SET poin_aktif = LEAST(
+                COALESCE((
+                    SELECT SUM(jp.poin) 
+                    FROM pelanggaran p 
+                    JOIN jenis_pelanggaran jp ON p.jenis_pelanggaran_id = jp.id 
+                    WHERE p.santri_id = s.id AND jp.kategori = 'Sangat Berat'
+                    AND DATE(p.tanggal) <= ?
+                ), 0),
+                COALESCE((
+                    SELECT SUM(jp.poin) 
+                    FROM pelanggaran p 
+                    JOIN jenis_pelanggaran jp ON p.jenis_pelanggaran_id = jp.id 
+                    WHERE p.santri_id = s.id
+                    AND DATE(p.tanggal) <= ?
+                ), 0)
+                - 
+                COALESCE((
+                    SELECT SUM(jr.poin_reward) 
+                    FROM daftar_reward dr 
+                    JOIN jenis_reward jr ON dr.jenis_reward_id = jr.id 
+                    WHERE dr.santri_id = s.id
+                    AND DATE(dr.tanggal) <= ?
+                ), 0)
+            )
+        ";
+        $stmt_update_poin = $conn->prepare($sql_update_poin);
+        $stmt_update_poin->bind_param('sss', $tgl_selesai, $tgl_selesai, $tgl_selesai);
+        $stmt_update_poin->execute();
+
+        // 4. HAPUS DATA PELANGGARAN RINGAN-SEDANG & REWARD
+        $stmt_del_pelanggaran = $conn->prepare("
+            DELETE p FROM pelanggaran p
+            JOIN jenis_pelanggaran jp ON p.jenis_pelanggaran_id = jp.id
+            WHERE jp.kategori != 'Sangat Berat' AND DATE(p.tanggal) BETWEEN ? AND ?
+        ");
+        $stmt_del_pelanggaran->bind_param('ss', $tgl_mulai, $tgl_selesai);
+        $stmt_del_pelanggaran->execute();
+
+        $stmt_del_reward = $conn->prepare("DELETE FROM daftar_reward WHERE DATE(tanggal) BETWEEN ? AND ?");
+        $stmt_del_reward->bind_param('ss', $tgl_mulai, $tgl_selesai);
+        $stmt_del_reward->execute();
 
         // 4. UPDATE PERIODE AKTIF KE HARI INI
         $hari_ini_baru = date('Y-m-d');

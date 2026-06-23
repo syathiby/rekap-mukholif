@@ -129,7 +129,8 @@ if ($result) {
             <h3 class="fw-bold text-dark mb-1"><i class="fas fa-users-cog text-primary me-2"></i>Manajemen User</h3>
             <p class="text-muted mb-0">Daftar semua pengguna yang terdaftar di sistem.</p>
         </div>
-        <div class="d-flex align-items-center">
+        <div class="d-flex align-items-center gap-2">
+            <button type="submit" form="bulkDeleteForm" class="btn btn-danger shadow-sm rounded-pill px-4 d-none" id="btnBulkDelete" onclick="return confirm('Yakin ingin menghapus user yang dipilih? Tindakan ini tidak bisa dibatalkan!');"><i class="fas fa-trash-alt me-2"></i> Hapus Terpilih (<span id="selectedCount">0</span>)</button>
             <a href="form-user.php" class="btn btn-primary shadow-sm rounded-pill px-4"><i class="fas fa-user-plus me-2"></i> Tambah User Baru</a>
         </div>
     </div>
@@ -150,11 +151,15 @@ if ($result) {
 
     <!-- Table -->
     <div class="table-container">
+        <form id="bulkDeleteForm" action="bulk-delete-users.php" method="POST">
         <div class="table-responsive">
             <table class="table table-hover align-middle mb-0">
                 <thead>
                     <tr>
-                        <th width="8%" class="text-center">No</th>
+                        <th width="4%" class="text-center">
+                            <input class="form-check-input" type="checkbox" id="selectAll">
+                        </th>
+                        <th width="5%" class="text-center">No</th>
                         <th>Nama Lengkap</th>
                         <th>Username</th>
                         <th width="20%">Jabatan (Role)</th>
@@ -174,6 +179,42 @@ if ($result) {
                         <?php $nomor = 1; ?>
                         <?php foreach ($users as $user) : ?>
                             <tr>
+                                <?php 
+                                $is_admin = (isset($_SESSION['role']) && strtolower($_SESSION['role']) === 'admin');
+                                $user_role_str = strtolower($user['role']);
+                                $is_self = (isset($_SESSION['user_id']) && $user['id'] == $_SESSION['user_id']);
+                                
+                                $can_edit = false;
+                                $can_delete = false;
+
+                                if ($is_admin) {
+                                    if ($user_role_str === 'admin') {
+                                        if ($is_self) $can_edit = true; // Admin cuma bisa edit diri sendiri
+                                    } else {
+                                        $can_edit = true; // Admin bisa edit siapapun selain admin
+                                        $can_delete = true; // Admin bisa hapus siapapun
+                                    }
+                                } else {
+                                    if ($is_self) {
+                                        $can_edit = true; // User bisa edit diri sendiri
+                                    } elseif ($user_role_str !== 'admin' && $user_role_str !== 'pengelola') {
+                                        $can_edit = true; // User bisa edit akun biasa
+                                        $can_delete = true; // User bisa hapus akun biasa
+                                    }
+                                }
+
+                                // Pastikan tidak ada yang bisa hapus akun diri sendiri
+                                if ($is_self) {
+                                    $can_delete = false;
+                                }
+                                ?>
+                                <td class="text-center">
+                                    <?php if ($can_delete) : ?>
+                                        <input class="form-check-input user-checkbox" type="checkbox" name="ids[]" value="<?= $user['id'] ?>">
+                                    <?php else : ?>
+                                        <input class="form-check-input" type="checkbox" disabled>
+                                    <?php endif; ?>
+                                </td>
                                 <td class="text-center fw-semibold"><?= $nomor++ ?></td>
                                 <td class="fw-semibold text-dark"><?= htmlspecialchars($user['nama_lengkap']) ?></td>
                                 <td class="text-muted font-monospace" style="font-size: 0.9rem;"><?= htmlspecialchars($user['username']) ?></td>
@@ -186,36 +227,6 @@ if ($result) {
                                 </td>
                                 <td class="text-center">
                                     <div class="d-inline-flex gap-2">
-                                        <?php 
-                                        $is_admin = (isset($_SESSION['role']) && strtolower($_SESSION['role']) === 'admin');
-                                        $user_role_str = strtolower($user['role']);
-                                        $is_self = (isset($_SESSION['user_id']) && $user['id'] == $_SESSION['user_id']);
-                                        
-                                        $can_edit = false;
-                                        $can_delete = false;
-
-                                        if ($is_admin) {
-                                            if ($user_role_str === 'admin') {
-                                                if ($is_self) $can_edit = true; // Admin cuma bisa edit diri sendiri
-                                            } else {
-                                                $can_edit = true; // Admin bisa edit siapapun selain admin
-                                                $can_delete = true; // Admin bisa hapus siapapun
-                                            }
-                                        } else {
-                                            if ($is_self) {
-                                                $can_edit = true; // User bisa edit diri sendiri
-                                            } elseif ($user_role_str !== 'admin' && $user_role_str !== 'pengelola') {
-                                                $can_edit = true; // User bisa edit akun biasa
-                                                $can_delete = true; // User bisa hapus akun biasa
-                                            }
-                                        }
-
-                                        // Pastikan tidak ada yang bisa hapus akun diri sendiri
-                                        if ($is_self) {
-                                            $can_delete = false;
-                                        }
-                                        ?>
-
                                         <?php if ($can_edit) : ?>
                                             <a href="form-user.php?id=<?= $user['id'] ?>" class="btn-action-edit" title="Edit User">
                                                 <i class="fas fa-pen-to-square"></i>
@@ -235,8 +246,48 @@ if ($result) {
                 </tbody>
             </table>
         </div>
+        </form>
     </div>
 </div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const selectAll = document.getElementById('selectAll');
+    const checkboxes = document.querySelectorAll('.user-checkbox');
+    const btnBulkDelete = document.getElementById('btnBulkDelete');
+    const selectedCount = document.getElementById('selectedCount');
+
+    function updateBulkDeleteButton() {
+        const checkedCount = document.querySelectorAll('.user-checkbox:checked').length;
+        selectedCount.textContent = checkedCount;
+        if (checkedCount > 0) {
+            btnBulkDelete.classList.remove('d-none');
+        } else {
+            btnBulkDelete.classList.add('d-none');
+            selectAll.checked = false;
+        }
+    }
+
+    if (selectAll) {
+        selectAll.addEventListener('change', function() {
+            checkboxes.forEach(cb => {
+                cb.checked = selectAll.checked;
+            });
+            updateBulkDeleteButton();
+        });
+    }
+
+    checkboxes.forEach(cb => {
+        cb.addEventListener('change', function() {
+            const allChecked = Array.from(checkboxes).every(c => c.checked);
+            const anyChecked = Array.from(checkboxes).some(c => c.checked);
+            
+            if(selectAll) selectAll.checked = allChecked;
+            updateBulkDeleteButton();
+        });
+    });
+});
+</script>
 
 <?php
 require_once __DIR__ . '/../../layouts/footer.php';

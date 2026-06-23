@@ -12,14 +12,21 @@ $can_cetak = has_permission('rapot_cetak');
 $can_delete = has_permission('rapot_delete');
 $can_view = has_permission('rapot_view');
 
+// CEK AKSES KAMAR MUSYRIF
+$kamar_filter_musyrif = checkMusyrifKamarAccess();
+
 // 2. Ambil data untuk filter dropdown
 try {
-    $kamar_list_stmt = $conn->query("
-        SELECT DISTINCT kamar FROM santri 
-        WHERE kamar IS NOT NULL AND kamar != 0
-        ORDER BY kamar ASC
-    ");
-    $kamar_list = $kamar_list_stmt->fetch_all(MYSQLI_ASSOC);
+    if ($kamar_filter_musyrif !== null) {
+        $kamar_list = [['kamar' => (string)$kamar_filter_musyrif]];
+    } else {
+        $kamar_list_stmt = $conn->query("
+            SELECT DISTINCT kamar FROM santri 
+            WHERE kamar IS NOT NULL AND kamar != 0
+            ORDER BY kamar ASC
+        ");
+        $kamar_list = $kamar_list_stmt->fetch_all(MYSQLI_ASSOC);
+    }
     $bulan_list = ['Januari', 'Februari', 'Maret', 'April', 'Mei', 'Juni', 'Juli', 'Agustus', 'September', 'Oktober', 'November', 'Desember'];
     $tahun_sekarang = (int)date('Y');
     $tahun_list = [$tahun_sekarang, $tahun_sekarang - 1, $tahun_sekarang - 2];
@@ -53,6 +60,10 @@ if (isset($_GET['kamar']) || isset($_GET['bulan']) || isset($_GET['tahun'])) {
     $filter_tahun = '';
 }
 
+if ($kamar_filter_musyrif !== null) {
+    $filter_kamar = (string)$kamar_filter_musyrif;
+}
+
 // 4. Ambil data rapot dengan paginasi
 try {
     $limit = 100;
@@ -68,6 +79,14 @@ try {
         WHERE 1=1 
     ";
     $params_count = []; $types_count = "";
+    
+    // Terapkan filter wajib jika Musyrif
+    if ($kamar_filter_musyrif !== null) {
+        $sql_count .= " AND s.kamar = ?"; 
+        $params_count[] = $kamar_filter_musyrif; 
+        $types_count .= "i";
+    }
+
     if (!empty($filter_kamar)) { $sql_count .= " AND s.kamar = ?"; $params_count[] = $filter_kamar; $types_count .= "s"; }
     if (!empty($filter_bulan)) { $sql_count .= " AND r.bulan = ?"; $params_count[] = $filter_bulan; $types_count .= "s"; }
     if (!empty($filter_tahun)) { $sql_count .= " AND r.tahun = ?"; $params_count[] = $filter_tahun; $types_count .= "i"; }
@@ -91,6 +110,8 @@ try {
     "; 
     $params = $params_count; 
     $types = $types_count;
+    
+    if ($kamar_filter_musyrif !== null) { $sql .= " AND s.kamar = ?"; }
     if (!empty($filter_kamar)) { $sql .= " AND s.kamar = ?"; }
     if (!empty($filter_bulan)) { $sql .= " AND r.bulan = ?"; }
     if (!empty($filter_tahun)) { $sql .= " AND r.tahun = ?"; }
@@ -195,6 +216,9 @@ if (isset($_GET['ajax']) && $_GET['ajax'] == '1') {
                             <?php if ($can_create): ?>
                                 <a class="dropdown-item" href="crud_bulanan/create.php?duplicate_id=<?php echo $rapot['id']; ?>&kamar=<?php echo urlencode($filter_kamar); ?>" data-bs-toggle="tooltip" title="Duplikat rapot ini ke bulan baru">
                                     <i class="fas fa-copy fa-sm fa-fw me-2 text-gray-400"></i> Duplikat
+                                </a>
+                                <a class="dropdown-item" href="crud_bulanan/create.php?edit_id=<?php echo $rapot['id']; ?>&kamar=<?php echo urlencode($filter_kamar); ?>" data-bs-toggle="tooltip" title="Edit rapot ini">
+                                    <i class="fas fa-edit fa-sm fa-fw me-2 text-gray-400"></i> Edit
                                 </a>
                             <?php endif; ?>
                             <?php if ($can_delete): ?>
@@ -324,14 +348,40 @@ require_once __DIR__ . '/../layouts/header.php';
             </p>
         </div>
     </div>
+    
+    <?php if ($kamar_filter_musyrif !== null): ?>
+    <!-- Info banner Musyrif -->
+    <div class="d-flex align-items-start gap-3 p-3 p-md-4 mb-4 rounded-4"
+         style="background: linear-gradient(to right, #fefce8, #ffffff); border: 1px solid #fef08a; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.02);">
+        <div class="flex-shrink-0 mt-1">
+            <div style="width: 40px; height: 40px; border-radius: 10px; background: #fef08a; color: #ca8a04; display: flex; align-items: center; justify-content: center;">
+                <i class="fas fa-lock fa-lg"></i>
+            </div>
+        </div>
+        <div>
+            <h6 class="fw-bold mb-1 text-dark" style="font-size: .95rem; letter-spacing: -0.01em;">Hak Akses Musyrif Terkunci</h6>
+            <p class="mb-0 text-secondary info-banner-text" style="font-size: 0.85rem; line-height: 1.5;">
+                Anda login sebagai <strong>Musyrif Kamar <?= htmlspecialchars($kamar_filter_musyrif) ?></strong>. Akses Anda telah dibatasi. Anda hanya dapat melihat, mengelola, dan mencetak rapor untuk santri di kamar Anda. Data rapor dari kamar lain secara otomatis disembunyikan dan dikunci untuk menjaga privasi.
+            </p>
+        </div>
+    </div>
+    <?php endif; ?>
+
     <!-- Notifikasi Toast kini ditangani secara global di footer.php -->
     
     <div class="filter-card p-3 p-md-4 mb-4">
         <form action="index.php" method="GET" class="row g-3 align-items-end">
             <div class="col-12 col-md-3">
-                <label class="form-label text-muted small fw-bold mb-1">Filter Kamar</label>
-                <select name="kamar" id="kamar" class="form-select">
-                    <option value="">Semua Kamar</option>
+                <label class="form-label text-muted small fw-bold mb-1">
+                    Filter Kamar
+                    <?php if ($kamar_filter_musyrif !== null): ?>
+                        <span class="badge bg-warning text-dark ms-1" style="font-size: 0.65rem;"><i class="fas fa-lock"></i> Terkunci</span>
+                    <?php endif; ?>
+                </label>
+                <select name="kamar" id="kamar" class="form-select" <?= $kamar_filter_musyrif !== null ? 'style="pointer-events: none; background-color: #e9ecef;" tabindex="-1"' : '' ?>>
+                    <?php if ($kamar_filter_musyrif === null): ?>
+                        <option value="">Semua Kamar</option>
+                    <?php endif; ?>
                     <?php foreach ($kamar_list as $kamar): ?>
                         <option value="<?php echo htmlspecialchars($kamar['kamar']); ?>" <?php echo ($filter_kamar == $kamar['kamar']) ? 'selected' : ''; ?>>
                             <?php echo htmlspecialchars($kamar['kamar']); ?>
@@ -467,6 +517,9 @@ require_once __DIR__ . '/../layouts/header.php';
                                                         <a class="dropdown-item" href="crud_bulanan/create.php?duplicate_id=<?php echo $rapot['id']; ?>&kamar=<?php echo urlencode($filter_kamar); ?>" data-bs-toggle="tooltip" title="Duplikat rapot ini ke bulan baru">
                                                             <i class="fas fa-copy fa-sm fa-fw me-2 text-gray-400"></i> Duplikat
                                                         </a>
+                                                        <a class="dropdown-item" href="crud_bulanan/create.php?edit_id=<?php echo $rapot['id']; ?>&kamar=<?php echo urlencode($filter_kamar); ?>" data-bs-toggle="tooltip" title="Edit rapot ini">
+                                                            <i class="fas fa-edit fa-sm fa-fw me-2 text-gray-400"></i> Edit
+                                                        </a>
                                                     <?php endif; ?>
                                                     <?php if ($can_delete): ?>
                                                         <div class="dropdown-divider"></div>
@@ -524,6 +577,10 @@ require_once __DIR__ . '/../layouts/header.php';
         <div class="bg-light border-start border-4 border-warning rounded p-3 mb-4 small text-dark shadow-sm">
             <i class="fas fa-exclamation-circle text-warning me-1"></i>
             <strong>Sangat Disarankan:</strong> Atur filter <strong>Kamar</strong> terlebih dahulu sebelum menekan "Buat Rapot Baru" agar daftar santri yang termuat sesuai kelas/kamar.
+            <div class="mt-2 text-muted">
+                <i class="fas fa-info-circle text-info me-1"></i>
+                <em>Catatan Khusus: Jika Anda login sebagai <strong>Musyrif</strong>, filter kamar telah dikunci otomatis pada kamar Anda sehingga Anda dapat langsung membuat rapot.</em>
+            </div>
         </div>
 
         <h6 class="text-dark fw-bold mb-2"><i class="fas fa-tasks text-primary me-2"></i>2. Aksi Massal (Bulk Action)</h6>

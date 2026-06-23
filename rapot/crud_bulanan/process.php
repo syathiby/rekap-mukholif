@@ -20,6 +20,22 @@ if (isset($_POST['simpan_rapot'])) {
         exit;
     }
     $musyrif_id = (int)$_SESSION['user_id'];
+    
+    // Validasi Kamar Musyrif vs Santri
+    $kamar_filter_musyrif = checkMusyrifKamarAccess();
+    if ($kamar_filter_musyrif !== null) {
+        $stmt_kamar_check = $conn->prepare("SELECT kamar FROM santri WHERE id = ?");
+        $stmt_kamar_check->bind_param("i", $santri_id);
+        $stmt_kamar_check->execute();
+        $res_kamar = $stmt_kamar_check->get_result()->fetch_assoc();
+        $stmt_kamar_check->close();
+        
+        if (!$res_kamar || (int)$res_kamar['kamar'] !== $kamar_filter_musyrif) {
+            set_flash_message('Gagal menyimpan: Anda tidak memiliki akses ke santri tersebut (Beda Kamar).', 'danger');
+            header('Location: create.php' . ($edit_id > 0 ? "?edit_id=$edit_id" : ""));
+            exit;
+        }
+    }
 
     $puasa_sunnah     = (int)$_POST['puasa_sunnah'];
     $sholat_duha      = (int)$_POST['sholat_duha'];
@@ -41,6 +57,65 @@ if (isset($_POST['simpan_rapot'])) {
     $penampilan       = (int)$_POST['penampilan'];
     $piket            = (int)$_POST['piket'];
     $kerapihan_barang = (int)$_POST['kerapihan_barang'];
+    $edit_id          = isset($_POST['edit_id']) ? (int)$_POST['edit_id'] : 0;
+
+    // Cek Duplikat
+    $sql_cek = "SELECT id FROM rapot_kepengasuhan WHERE santri_id = ? AND bulan = ? AND tahun = ?";
+    if ($edit_id > 0) {
+        $sql_cek .= " AND id != ?";
+    }
+    $stmt_cek = $conn->prepare($sql_cek);
+    if ($edit_id > 0) {
+        $stmt_cek->bind_param("issi", $santri_id, $bulan, $tahun, $edit_id);
+    } else {
+        $stmt_cek->bind_param("iss", $santri_id, $bulan, $tahun);
+    }
+    $stmt_cek->execute();
+    $duplikat_result = $stmt_cek->get_result();
+    if ($duplikat_result->num_rows > 0) {
+        set_flash_message('Gagal menyimpan: Rapot untuk santri ini pada bulan dan tahun tersebut sudah ada.', 'danger');
+        header('Location: create.php' . ($edit_id > 0 ? "?edit_id=$edit_id" : ""));
+        exit;
+    }
+    $stmt_cek->close();
+
+    // Cek Limit 12 Rapot per Tahun Ajaran
+    $bulan_list_indo = [
+        'Januari' => 1, 'Februari' => 2, 'Maret' => 3, 'April' => 4,
+        'Mei' => 5, 'Juni' => 6, 'Juli' => 7, 'Agustus' => 8,
+        'September' => 9, 'Oktober' => 10, 'November' => 11, 'Desember' => 12
+    ];
+    $bulan_num = $bulan_list_indo[$bulan] ?? date('n');
+    $tahun_ajaran_start = ($bulan_num < 7) ? $tahun - 1 : $tahun;
+    
+    $sql_limit = "SELECT id, bulan, tahun FROM rapot_kepengasuhan WHERE santri_id = ?";
+    if ($edit_id > 0) {
+        $sql_limit .= " AND id != ?";
+    }
+    $stmt_limit = $conn->prepare($sql_limit);
+    if ($edit_id > 0) {
+        $stmt_limit->bind_param("ii", $santri_id, $edit_id);
+    } else {
+        $stmt_limit->bind_param("i", $santri_id);
+    }
+    $stmt_limit->execute();
+    $limit_res = $stmt_limit->get_result();
+    $ta_count = 0;
+    while ($r = $limit_res->fetch_assoc()) {
+        $b_num = $bulan_list_indo[$r['bulan']] ?? 1;
+        $b_tahun = (int)$r['tahun'];
+        $b_ta_start = ($b_num < 7) ? $b_tahun - 1 : $b_tahun;
+        if ($b_ta_start == $tahun_ajaran_start) {
+            $ta_count++;
+        }
+    }
+    $stmt_limit->close();
+    
+    if ($ta_count >= 12) {
+        set_flash_message('Gagal menyimpan: Santri ini sudah mencapai batas maksimal 12 rapot pada tahun ajaran tersebut.', 'danger');
+        header('Location: create.php' . ($edit_id > 0 ? "?edit_id=$edit_id" : ""));
+        exit;
+    }
 
     try {
         // Memulai Transaksi Database (ACID)
@@ -92,47 +167,73 @@ if (isset($_POST['simpan_rapot'])) {
         }
         $stmt_reward->close();
 
-        $sql_insert = "
-            INSERT INTO rapot_kepengasuhan (
-                santri_id, musyrif_id, bulan, tahun,
-                puasa_sunnah, sholat_duha, sholat_malam, sedekah, sunnah_tidur, ibadah_lainnya,
-                lisan, sikap, kesopanan, muamalah,
-                tidur, keterlambatan, seragam, makan, arahan, bahasa_arab,
-                mandi, penampilan, piket, kerapihan_barang,
-                total_poin_pelanggaran_saat_itu, total_poin_reward_saat_itu, catatan_musyrif
-            ) VALUES (
-                ?, ?, ?, ?,
-                ?, ?, ?, ?, ?, ?,
-                ?, ?, ?, ?,
-                ?, ?, ?, ?, ?, ?,
-                ?, ?, ?, ?,
-                ?, ?, ?
-            )
-        ";
+        if ($edit_id > 0) {
+            $sql_query = "
+                UPDATE rapot_kepengasuhan SET
+                    santri_id = ?, musyrif_id = ?, bulan = ?, tahun = ?,
+                    puasa_sunnah = ?, sholat_duha = ?, sholat_malam = ?, sedekah = ?, sunnah_tidur = ?, ibadah_lainnya = ?,
+                    lisan = ?, sikap = ?, kesopanan = ?, muamalah = ?,
+                    tidur = ?, keterlambatan = ?, seragam = ?, makan = ?, arahan = ?, bahasa_arab = ?,
+                    mandi = ?, penampilan = ?, piket = ?, kerapihan_barang = ?,
+                    total_poin_pelanggaran_saat_itu = ?, total_poin_reward_saat_itu = ?, catatan_musyrif = ?
+                WHERE id = ?
+            ";
+        } else {
+            $sql_query = "
+                INSERT INTO rapot_kepengasuhan (
+                    santri_id, musyrif_id, bulan, tahun,
+                    puasa_sunnah, sholat_duha, sholat_malam, sedekah, sunnah_tidur, ibadah_lainnya,
+                    lisan, sikap, kesopanan, muamalah,
+                    tidur, keterlambatan, seragam, makan, arahan, bahasa_arab,
+                    mandi, penampilan, piket, kerapihan_barang,
+                    total_poin_pelanggaran_saat_itu, total_poin_reward_saat_itu, catatan_musyrif
+                ) VALUES (
+                    ?, ?, ?, ?,
+                    ?, ?, ?, ?, ?, ?,
+                    ?, ?, ?, ?,
+                    ?, ?, ?, ?, ?, ?,
+                    ?, ?, ?, ?,
+                    ?, ?, ?
+                )
+            ";
+        }
 
-        $stmt_insert = $conn->prepare($sql_insert);
-        if (!$stmt_insert) {
+        $stmt_query = $conn->prepare($sql_query);
+        if (!$stmt_query) {
             throw new Exception("Prepare failed: " . $conn->error);
         }
 
         $types = "iiss" . str_repeat("i", 22) . "s";
-        $success = $stmt_insert->bind_param(
-            $types,
-            $santri_id, $musyrif_id, $bulan, $tahun,
-            $puasa_sunnah, $sholat_duha, $sholat_malam, $sedekah, $sunnah_tidur, $ibadah_lainnya,
-            $lisan, $sikap, $kesopanan, $muamalah,
-            $tidur, $keterlambatan, $seragam, $makan, $arahan, $bahasa_arab,
-            $mandi, $penampilan, $piket, $kerapihan_barang,
-            $total_poin_pelanggaran, $total_poin_reward, $catatan
-        );
-
-        if (!$success) {
-            throw new Exception("Bind param failed: " . $stmt_insert->error);
+        if ($edit_id > 0) {
+            $types .= "i";
+            $success = $stmt_query->bind_param(
+                $types,
+                $santri_id, $musyrif_id, $bulan, $tahun,
+                $puasa_sunnah, $sholat_duha, $sholat_malam, $sedekah, $sunnah_tidur, $ibadah_lainnya,
+                $lisan, $sikap, $kesopanan, $muamalah,
+                $tidur, $keterlambatan, $seragam, $makan, $arahan, $bahasa_arab,
+                $mandi, $penampilan, $piket, $kerapihan_barang,
+                $total_poin_pelanggaran, $total_poin_reward, $catatan, $edit_id
+            );
+        } else {
+            $success = $stmt_query->bind_param(
+                $types,
+                $santri_id, $musyrif_id, $bulan, $tahun,
+                $puasa_sunnah, $sholat_duha, $sholat_malam, $sedekah, $sunnah_tidur, $ibadah_lainnya,
+                $lisan, $sikap, $kesopanan, $muamalah,
+                $tidur, $keterlambatan, $seragam, $makan, $arahan, $bahasa_arab,
+                $mandi, $penampilan, $piket, $kerapihan_barang,
+                $total_poin_pelanggaran, $total_poin_reward, $catatan
+            );
         }
 
-        $executed = $stmt_insert->execute();
+        if (!$success) {
+            throw new Exception("Bind param failed: " . $stmt_query->error);
+        }
+
+        $executed = $stmt_query->execute();
         if (!$executed) {
-            throw new Exception("Execute failed: " . $stmt_insert->error);
+            throw new Exception("Execute failed: " . $stmt_query->error);
         }
 
         // Catat log aktivitas (Gunakan Prepared Statement)
@@ -146,16 +247,26 @@ if (isset($_POST['simpan_rapot'])) {
         }
         $stmt_santri_log->close();
 
-        write_activity_log('CREATE', 'rapot', "Menginput nilai rapot kepengasuhan untuk '" . htmlspecialchars($nama_santri) . "' periode $bulan $tahun", [
-            'santri_id'   => $santri_id,
-            'nama_santri' => $nama_santri,
-            'bulan'       => $bulan,
-            'tahun'       => $tahun,
-        ]);
+        if ($edit_id > 0) {
+            write_activity_log('UPDATE', 'rapot', "Mengupdate nilai rapot kepengasuhan untuk '" . htmlspecialchars($nama_santri) . "' periode $bulan $tahun", [
+                'rapot_id'    => $edit_id,
+                'santri_id'   => $santri_id,
+                'nama_santri' => $nama_santri,
+                'bulan'       => $bulan,
+                'tahun'       => $tahun,
+            ]);
+            set_flash_message('Rapot berhasil diupdate!', 'success');
+        } else {
+            write_activity_log('CREATE', 'rapot', "Menginput nilai rapot kepengasuhan untuk '" . htmlspecialchars($nama_santri) . "' periode $bulan $tahun", [
+                'santri_id'   => $santri_id,
+                'nama_santri' => $nama_santri,
+                'bulan'       => $bulan,
+                'tahun'       => $tahun,
+            ]);
+            set_flash_message('Rapot baru berhasil disimpan!', 'success');
+        }
 
         $conn->commit(); // Selesaikan transaksi dengan sukses
-
-        set_flash_message('Rapot baru berhasil disimpan!', 'success');
         header('Location: ../index.php');
         exit;
 

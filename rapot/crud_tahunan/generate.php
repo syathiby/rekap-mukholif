@@ -22,6 +22,13 @@ if (!preg_match('/^\d{4}\/\d{4}$/', $periode)) {
     exit;
 }
 
+$kamar_filter_musyrif = checkMusyrifKamarAccess();
+if ($kamar_filter_musyrif !== null && (string)$kamar_filter_musyrif !== $kamar) {
+    set_flash_message('Anda tidak memiliki akses ke kamar ini.', 'danger');
+    header('Location: index.php');
+    exit;
+}
+
 $page_title = "Generate Rapor Tahunan — Kamar $kamar";
 
 // Ambil daftar santri

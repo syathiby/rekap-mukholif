@@ -20,9 +20,19 @@ $nama_lengkap = trim($_POST['nama_lengkap'] ?? '');
 $username     = trim($_POST['username'] ?? '');
 $password     = $_POST['password'] ?? '';
 $role         = trim(strtolower($_POST['role'] ?? ''));
+$kamar_id     = (isset($_POST['kamar_id']) && $_POST['kamar_id'] !== '') ? (int)$_POST['kamar_id'] : null;
+
+if ($role !== 'musyrif') {
+    $kamar_id = null;
+}
 
 if (empty($nama_lengkap) || empty($username) || empty($role)) {
     $_SESSION['error_message'] = "❌ Nama, username, dan role wajib diisi.";
+    header("Location: $redirect_url");
+    exit;
+}
+if ($role === 'musyrif' && empty($kamar_id)) {
+    $_SESSION['error_message'] = "❌ Kamar wajib dipilih untuk role Musyrif.";
     header("Location: $redirect_url");
     exit;
 }
@@ -182,11 +192,11 @@ if ($is_edit_mode) {
 
     if (!empty($password)) {
         $hashedPassword = password_hash($password, PASSWORD_DEFAULT);
-        $stmt_update = $conn->prepare("UPDATE users SET nama_lengkap = ?, username = ?, role = ?, password = ? WHERE id = ?");
-        $stmt_update->bind_param("ssssi", $nama_lengkap, $username, $role, $hashedPassword, $user_id);
+        $stmt_update = $conn->prepare("UPDATE users SET nama_lengkap = ?, username = ?, role = ?, password = ?, kamar_id = ? WHERE id = ?");
+        $stmt_update->bind_param("ssssii", $nama_lengkap, $username, $role, $hashedPassword, $kamar_id, $user_id);
     } else {
-        $stmt_update = $conn->prepare("UPDATE users SET nama_lengkap = ?, username = ?, role = ? WHERE id = ?");
-        $stmt_update->bind_param("sssi", $nama_lengkap, $username, $role, $user_id);
+        $stmt_update = $conn->prepare("UPDATE users SET nama_lengkap = ?, username = ?, role = ?, kamar_id = ? WHERE id = ?");
+        $stmt_update->bind_param("sssii", $nama_lengkap, $username, $role, $kamar_id, $user_id);
     }
 
     if ($stmt_update->execute()) {
@@ -195,6 +205,7 @@ if ($is_edit_mode) {
             'nama_lengkap' => $nama_lengkap,
             'username' => $username,
             'role' => $role,
+            'kamar_id' => $kamar_id,
             'password_changed' => !empty($password)
         ]);
 
@@ -216,8 +227,8 @@ if ($is_edit_mode) {
 } else {
     $hashedPassword = password_hash($password, PASSWORD_DEFAULT);
     
-    $stmt_insert = $conn->prepare("INSERT INTO users (nama_lengkap, username, password, role) VALUES (?, ?, ?, ?)");
-    $stmt_insert->bind_param("ssss", $nama_lengkap, $username, $hashedPassword, $role); 
+    $stmt_insert = $conn->prepare("INSERT INTO users (nama_lengkap, username, password, role, kamar_id) VALUES (?, ?, ?, ?, ?)");
+    $stmt_insert->bind_param("ssssi", $nama_lengkap, $username, $hashedPassword, $role, $kamar_id); 
 
     if ($stmt_insert->execute()){
         $new_user_id = $conn->insert_id;
@@ -225,7 +236,8 @@ if ($is_edit_mode) {
             'id' => $new_user_id,
             'nama_lengkap' => $nama_lengkap,
             'username' => $username,
-            'role' => $role
+            'role' => $role,
+            'kamar_id' => $kamar_id
         ]);
 
         // --- LOGIKA BARU: Insert izin default ---

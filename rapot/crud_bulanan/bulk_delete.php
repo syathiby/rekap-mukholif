@@ -23,6 +23,31 @@ if (empty($sanitized_ids)) {
     exit;
 }
 
+$kamar_filter_musyrif = checkMusyrifKamarAccess();
+if ($kamar_filter_musyrif !== null) {
+    $placeholders_check = implode(',', array_fill(0, count($sanitized_ids), '?'));
+    $types_check = str_repeat('i', count($sanitized_ids));
+    $stmt_check = $conn->prepare("SELECT s.kamar FROM rapot_kepengasuhan r JOIN santri s ON r.santri_id = s.id WHERE r.id IN ($placeholders_check)");
+    $stmt_check->bind_param($types_check, ...$sanitized_ids);
+    $stmt_check->execute();
+    $res_check = $stmt_check->get_result();
+    
+    $has_unauthorized = false;
+    while ($row = $res_check->fetch_assoc()) {
+        if ((int)$row['kamar'] !== $kamar_filter_musyrif) {
+            $has_unauthorized = true;
+            break;
+        }
+    }
+    $stmt_check->close();
+    
+    if ($has_unauthorized) {
+        set_flash_message('Gagal menghapus: Anda tidak memiliki akses ke satu atau lebih rapot tersebut (Beda Kamar).', 'danger');
+        header('Location: ../../rapot/index.php');
+        exit;
+    }
+}
+
 try {
     $count        = count($sanitized_ids);
     $placeholders = implode(',', array_fill(0, $count, '?'));

@@ -23,7 +23,7 @@ try {
         SELECT rt.*, s.nama AS nama_santri, s.kamar, s.kelas, u.nama_lengkap AS nama_musyrif
         FROM rapot_tahunan rt
         LEFT JOIN santri s ON rt.santri_id = s.id
-        LEFT JOIN users  u ON rt.approved_by = u.id
+        LEFT JOIN users  u ON rt.musyrif_id = u.id
         WHERE rt.santri_id = ? AND rt.periode = ?
         LIMIT 1
     ");
@@ -37,6 +37,13 @@ try {
 
 if (!$rapot) {
     set_flash_message('Data rapor tahunan tidak ditemukan.', 'warning');
+    header('Location: index.php');
+    exit;
+}
+
+$kamar_filter_musyrif = checkMusyrifKamarAccess();
+if ($kamar_filter_musyrif !== null && (string)$kamar_filter_musyrif !== (string)$rapot['kamar']) {
+    set_flash_message('Anda tidak memiliki akses ke rapot ini.', 'danger');
     header('Location: index.php');
     exit;
 }

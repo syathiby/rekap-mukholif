@@ -8,37 +8,64 @@ require_once __DIR__ . '/../config/helper.php';
 
 guard('rapot_create');
 
-$data_duplikat = null;
+$data_sumber = null;
 $page_title = "Buat Rapot Kepengasuhan Baru";
 
 // ==========================================================
-//       LOGIKA DUPLIKAT
+//       LOGIKA DUPLIKAT & EDIT
 // ==========================================================
-if (isset($_GET['duplicate_id'])) {
-    $rapot_id_lama = (int)$_GET['duplicate_id'];
+$data_sumber = null;
+$is_edit = false;
+
+if (isset($_GET['duplicate_id']) || isset($_GET['edit_id'])) {
+    $rapot_id_lama = isset($_GET['edit_id']) ? (int)$_GET['edit_id'] : (int)$_GET['duplicate_id'];
+    $is_edit = isset($_GET['edit_id']);
     try {
-        $stmt_duplikat = $conn->prepare("SELECT * FROM rapot_kepengasuhan WHERE id = ?");
-        $stmt_duplikat->bind_param("i", $rapot_id_lama);
-        $stmt_duplikat->execute();
-        $data_duplikat = $stmt_duplikat->get_result()->fetch_assoc();
-        $stmt_duplikat->close();
-        if ($data_duplikat) {
-            $page_title = "Duplikat Rapot Kepengasuhan";
+        $stmt_sumber = $conn->prepare("SELECT * FROM rapot_kepengasuhan WHERE id = ?");
+        $stmt_sumber->bind_param("i", $rapot_id_lama);
+        $stmt_sumber->execute();
+        $data_sumber = $stmt_sumber->get_result()->fetch_assoc();
+        $stmt_sumber->close();
+        
+        if ($data_sumber) {
+            $page_title = $is_edit ? "Edit Rapot Kepengasuhan" : "Duplikat Rapot Kepengasuhan";
+        } else {
+            $is_edit = false; // reset if not found
         }
     } catch (Exception $e) {
-        $data_duplikat = null;
+        $data_sumber = null;
+        $is_edit = false;
     }
 }
 
 // ==========================================================
 // AMBIL DATA SANTRI
 // ==========================================================
+$kamar_filter_musyrif = checkMusyrifKamarAccess();
+
+if ($data_sumber && $kamar_filter_musyrif !== null) {
+    $stmt_kamar = $conn->prepare("SELECT kamar FROM santri WHERE id = ?");
+    $stmt_kamar->bind_param("i", $data_sumber['santri_id']);
+    $stmt_kamar->execute();
+    $res_kamar = $stmt_kamar->get_result()->fetch_assoc();
+    $stmt_kamar->close();
+    if (!$res_kamar || (int)$res_kamar['kamar'] !== $kamar_filter_musyrif) {
+        set_flash_message('Anda tidak memiliki akses ke rapot ini (Beda Kamar).', 'danger');
+        header('Location: ../index.php');
+        exit;
+    }
+}
+
 $filter_kamar_create = isset($_GET['kamar']) ? $_GET['kamar'] : ($_SESSION['filter_rapot']['kamar'] ?? '');
 try {
     $sql_santri = "SELECT id, nama, kamar FROM santri WHERE kamar IS NOT NULL AND kamar != '' AND kamar != '0'";
     $params_santri = [];
     $types_santri = "";
-    if (!empty($filter_kamar_create) && !$data_duplikat) {
+    if ($kamar_filter_musyrif !== null) {
+        $sql_santri .= " AND kamar = ?";
+        $params_santri[] = $kamar_filter_musyrif;
+        $types_santri .= "i";
+    } elseif (!empty($filter_kamar_create) && !$data_sumber) {
         $sql_santri .= " AND kamar = ?";
         $params_santri[] = $filter_kamar_create;
         $types_santri .= "s";
@@ -62,11 +89,11 @@ $bulan_list = [
     'Juli', 'Agustus', 'September', 'Oktober', 'November', 'Desember'
 ];
 
-if ($data_duplikat) {
-    $bulan_lama_idx = array_search($data_duplikat['bulan'], $bulan_list);
+if ($data_sumber) {
+    $bulan_lama_idx = array_search($data_sumber['bulan'], $bulan_list);
     if ($bulan_lama_idx !== false) {
         $bulan_default = $bulan_list[($bulan_lama_idx + 1) % 12];
-        $tahun_default = ($bulan_lama_idx == 11) ? (int)$data_duplikat['tahun'] + 1 : (int)$data_duplikat['tahun'];
+        $tahun_default = ($bulan_lama_idx == 11) ? (int)$data_sumber['tahun'] + 1 : (int)$data_sumber['tahun'];
     } else {
         $bulan_default = $bulan_list[(int)date('n') - 1];
         $tahun_default = (int)date('Y');
@@ -190,6 +217,9 @@ require_once __DIR__ . '/../../layouts/header.php';
 
     <form action="process.php" method="POST" id="form-rapot">
         <input type="hidden" name="csrf_token" value="<?php echo csrf_generate(); ?>">
+        <?php if ($is_edit && $data_sumber): ?>
+            <input type="hidden" name="edit_id" value="<?php echo $data_sumber['id']; ?>">
+        <?php endif; ?>
 
         <div class="card form-card border-start border-4 border-secondary">
             <div class="card-header bg-white py-3">
@@ -201,13 +231,13 @@ require_once __DIR__ . '/../../layouts/header.php';
                                 <div class="form-group mb-0">
                                     <label for="santri_id" class="fw-bold mb-2">Pilih Santri</label>
                                     <select name="santri_id" id="santri_id" class="form-control" required>
-                                        <?php if (empty($santri_list) && !empty($filter_kamar_create) && !$data_duplikat): ?>
+                                        <?php if (empty($santri_list) && !empty($filter_kamar_create) && !$data_sumber): ?>
                                             <option value="">-- Tidak ada santri di kamar <?php echo htmlspecialchars($filter_kamar_create); ?> --</option>
                                         <?php else: ?>
                                             <option value="">-- Pilih Santri --</option>
                                         <?php endif; ?>
                                         <?php foreach ($santri_list as $santri): ?>
-                                            <option value="<?php echo $santri['id']; ?>" <?php echo ($data_duplikat && $data_duplikat['santri_id'] == $santri['id']) ? 'selected' : ''; ?>>
+                                            <option value="<?php echo $santri['id']; ?>" <?php echo ($data_sumber && $data_sumber['santri_id'] == $santri['id']) ? 'selected' : ''; ?>>
                                                 (Kamar <?php echo htmlspecialchars($santri['kamar'], ENT_QUOTES, 'UTF-8'); ?>) - <?php echo htmlspecialchars($santri['nama'], ENT_QUOTES, 'UTF-8'); ?>
                                             </option>
                                         <?php endforeach; ?>
@@ -233,14 +263,19 @@ require_once __DIR__ . '/../../layouts/header.php';
                                 </div>
                             </div>
                         </div>
+                        <div class="row mt-3">
+                            <div class="col-12">
+                                <div id="rapot-progress-container"></div>
+                            </div>
+                        </div>
                     </div>
                 </div>
 
                 <?php
-                function buatTombolPilihan($key, $data_duplikat = null) {
+                function buatTombolPilihan($key, $data_sumber = null) {
                     $html = "<div class='btn-group btn-group-toggle flex-wrap' data-bs-toggle='buttons'>";
                     $dropdown_options_html = generatePenilaianDropdown($key);
-                    $checked_value = $data_duplikat ? ($data_duplikat[$key] ?? null) : null;
+                    $checked_value = $data_sumber ? ($data_sumber[$key] ?? null) : null;
                     preg_match_all('/<option value="(\d+)">([^<]+)<\/option>/', $dropdown_options_html, $matches, PREG_SET_ORDER);
                     
                     foreach ($matches as $match) {
@@ -263,12 +298,12 @@ require_once __DIR__ . '/../../layouts/header.php';
                         <h6 class="m-0 fw-bold text-success"><i class="fas fa-pray me-2"></i>Mutu: Ibadah</h6>
                     </div>
                     <div class="card-body bg-white">
-                        <div class="mb-3"><label class="question-label">Puasa Sunnah</label><?php echo buatTombolPilihan('puasa_sunnah', $data_duplikat); ?></div>
-                        <div class="mb-3"><label class="question-label">Sholat Duha</label><?php echo buatTombolPilihan('sholat_duha', $data_duplikat); ?></div>
-                        <div class="mb-3"><label class="question-label">Sholat Malam</label><?php echo buatTombolPilihan('sholat_malam', $data_duplikat); ?></div>
-                        <div class="mb-3"><label class="question-label">Sedekah & Berbagi</label><?php echo buatTombolPilihan('sedekah', $data_duplikat); ?></div>
-                        <div class="mb-3"><label class="question-label">Sunnah sebelum tidur</label><?php echo buatTombolPilihan('sunnah_tidur', $data_duplikat); ?></div>
-                        <div class="mb-3"><label class="question-label">Ibadah lainnya</label><?php echo buatTombolPilihan('ibadah_lainnya', $data_duplikat); ?></div>
+                        <div class="mb-3"><label class="question-label">Puasa Sunnah</label><?php echo buatTombolPilihan('puasa_sunnah', $data_sumber); ?></div>
+                        <div class="mb-3"><label class="question-label">Sholat Duha</label><?php echo buatTombolPilihan('sholat_duha', $data_sumber); ?></div>
+                        <div class="mb-3"><label class="question-label">Sholat Malam</label><?php echo buatTombolPilihan('sholat_malam', $data_sumber); ?></div>
+                        <div class="mb-3"><label class="question-label">Sedekah & Berbagi</label><?php echo buatTombolPilihan('sedekah', $data_sumber); ?></div>
+                        <div class="mb-3"><label class="question-label">Sunnah sebelum tidur</label><?php echo buatTombolPilihan('sunnah_tidur', $data_sumber); ?></div>
+                        <div class="mb-3"><label class="question-label">Ibadah lainnya</label><?php echo buatTombolPilihan('ibadah_lainnya', $data_sumber); ?></div>
                     </div>
                 </div>
 
@@ -277,10 +312,10 @@ require_once __DIR__ . '/../../layouts/header.php';
                         <h6 class="m-0 fw-bold text-primary"><i class="fas fa-smile-beam me-2"></i>Mutu: Akhlaq</h6>
                     </div>
                     <div class="card-body bg-white">
-                        <div class="mb-3"><label class="question-label">Lisan</label><?php echo buatTombolPilihan('lisan', $data_duplikat); ?></div>
-                        <div class="mb-3"><label class="question-label">Sikap & tingkah laku</label><?php echo buatTombolPilihan('sikap', $data_duplikat); ?></div>
-                        <div class="mb-3"><label class="question-label">Kesopanan</label><?php echo buatTombolPilihan('kesopanan', $data_duplikat); ?></div>
-                        <div class="mb-3"><label class="question-label">Muamalah</label><?php echo buatTombolPilihan('muamalah', $data_duplikat); ?></div>
+                        <div class="mb-3"><label class="question-label">Lisan</label><?php echo buatTombolPilihan('lisan', $data_sumber); ?></div>
+                        <div class="mb-3"><label class="question-label">Sikap & tingkah laku</label><?php echo buatTombolPilihan('sikap', $data_sumber); ?></div>
+                        <div class="mb-3"><label class="question-label">Kesopanan</label><?php echo buatTombolPilihan('kesopanan', $data_sumber); ?></div>
+                        <div class="mb-3"><label class="question-label">Muamalah</label><?php echo buatTombolPilihan('muamalah', $data_sumber); ?></div>
                     </div>
                 </div>
 
@@ -289,12 +324,12 @@ require_once __DIR__ . '/../../layouts/header.php';
                         <h6 class="m-0 fw-bold text-warning"><i class="fas fa-clock me-2"></i>Mutu: Kedisiplinan</h6>
                     </div>
                     <div class="card-body bg-white">
-                        <div class="mb-3"><label class="question-label">Tidur</label><?php echo buatTombolPilihan('tidur', $data_duplikat); ?></div>
-                        <div class="mb-3"><label class="question-label">Keterlambatan</label><?php echo buatTombolPilihan('keterlambatan', $data_duplikat); ?></div>
-                        <div class="mb-3"><label class="question-label">Seragam</label><?php echo buatTombolPilihan('seragam', $data_duplikat); ?></div>
-                        <div class="mb-3"><label class="question-label">Makan</label><?php echo buatTombolPilihan('makan', $data_duplikat); ?></div>
-                        <div class="mb-3"><label class="question-label">Mengikuti arahan</label><?php echo buatTombolPilihan('arahan', $data_duplikat); ?></div>
-                        <div class="mb-3"><label class="question-label">Berbahasa arab di kamar</label><?php echo buatTombolPilihan('bahasa_arab', $data_duplikat); ?></div>
+                        <div class="mb-3"><label class="question-label">Tidur</label><?php echo buatTombolPilihan('tidur', $data_sumber); ?></div>
+                        <div class="mb-3"><label class="question-label">Keterlambatan</label><?php echo buatTombolPilihan('keterlambatan', $data_sumber); ?></div>
+                        <div class="mb-3"><label class="question-label">Seragam</label><?php echo buatTombolPilihan('seragam', $data_sumber); ?></div>
+                        <div class="mb-3"><label class="question-label">Makan</label><?php echo buatTombolPilihan('makan', $data_sumber); ?></div>
+                        <div class="mb-3"><label class="question-label">Mengikuti arahan</label><?php echo buatTombolPilihan('arahan', $data_sumber); ?></div>
+                        <div class="mb-3"><label class="question-label">Berbahasa arab di kamar</label><?php echo buatTombolPilihan('bahasa_arab', $data_sumber); ?></div>
                     </div>
                 </div>
 
@@ -303,10 +338,10 @@ require_once __DIR__ . '/../../layouts/header.php';
                         <h6 class="m-0 fw-bold text-info"><i class="fas fa-broom me-2"></i>Mutu: Kebersihan & Kerapihan</h6>
                     </div>
                     <div class="card-body bg-white">
-                        <div class="mb-3"><label class="question-label">Mandi</label><?php echo buatTombolPilihan('mandi', $data_duplikat); ?></div>
-                        <div class="mb-3"><label class="question-label">Penampilan & berpakaian</label><?php echo buatTombolPilihan('penampilan', $data_duplikat); ?></div>
-                        <div class="mb-3"><label class="question-label">Piket</label><?php echo buatTombolPilihan('piket', $data_duplikat); ?></div>
-                        <div class="mb-3"><label class="question-label">Kerapihan barang</label><?php echo buatTombolPilihan('kerapihan_barang', $data_duplikat); ?></div>
+                        <div class="mb-3"><label class="question-label">Mandi</label><?php echo buatTombolPilihan('mandi', $data_sumber); ?></div>
+                        <div class="mb-3"><label class="question-label">Penampilan & berpakaian</label><?php echo buatTombolPilihan('penampilan', $data_sumber); ?></div>
+                        <div class="mb-3"><label class="question-label">Piket</label><?php echo buatTombolPilihan('piket', $data_sumber); ?></div>
+                        <div class="mb-3"><label class="question-label">Kerapihan barang</label><?php echo buatTombolPilihan('kerapihan_barang', $data_sumber); ?></div>
                     </div>
                 </div>
 
@@ -356,7 +391,7 @@ require_once __DIR__ . '/../../layouts/header.php';
                             <?php endif; ?>
                         </div>
                         <div class="form-group mb-0">
-                            <textarea name="catatan_musyrif" id="catatan_musyrif" class="form-control bg-light border-0" rows="5" style="border-radius: 0.75rem;" placeholder="Ketik manual atau klik tombol 'Buat Otomatis'..."><?php echo $data_duplikat ? htmlspecialchars($data_duplikat['catatan_musyrif']) : ''; ?></textarea>
+                            <textarea name="catatan_musyrif" id="catatan_musyrif" class="form-control bg-light border-0" rows="5" style="border-radius: 0.75rem;" placeholder="Ketik manual atau klik tombol 'Buat Otomatis'..."><?php echo $data_sumber ? htmlspecialchars($data_sumber['catatan_musyrif']) : ''; ?></textarea>
                         </div>
                     </div>
                 </div>
@@ -461,6 +496,10 @@ $(document).ready(function() {
             $('#card-rincian-poin, #card-rincian-reward').html('<div class="text-center p-3"><i class="fas fa-spinner fa-spin fa-2x text-muted"></i></div>');
 
             var data = { santri_id: santri, bulan: bulan, tahun: tahun };
+            var edit_id_val = $('input[name="edit_id"]').val();
+            if (edit_id_val) {
+                data.edit_id = edit_id_val;
+            }
 
             $.post('../api/get_pelanggaran_santri.php', data, function(res) {
                 $('#card-rincian-poin').html(res);
@@ -472,6 +511,10 @@ $(document).ready(function() {
                 $('#card-rincian-reward').html(res);
             }).fail(function() {
                 $('#card-rincian-reward').html('<div class="alert alert-danger mb-0">Gagal memuat data reward.</div>');
+            });
+
+            $.post('../api/get_rapot_count.php', data, function(res) {
+                $('#rapot-progress-container').html(res);
             });
         }, 300);
     }
