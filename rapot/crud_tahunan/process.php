@@ -148,8 +148,18 @@ foreach ($santri_list as $santri) {
         continue;
     }
 
-    // Skip santri yang belum punya rapot bulanan
-    if (empty($rapot_bulanan)) {
+    // Hitung jumlah bulan unik dan cek eksistensi 'Juni'
+    $unique_bulan = [];
+    $has_juni = false;
+    foreach ($rapot_bulanan as $rb) {
+        $unique_bulan[$rb['bulan']] = true;
+        if ($rb['bulan'] === 'Juni') {
+            $has_juni = true;
+        }
+    }
+
+    // Skip santri yang belum memenuhi syarat mutlak (min 10 bulan & wajib Juni)
+    if (count($unique_bulan) < 10 || !$has_juni) {
         $skip++;
         continue;
     }
@@ -279,14 +289,14 @@ if ($gagal > 0 && $sukses === 0) {
 // 4. REDIRECT DENGAN PESAN
 // ============================================================
 if ($sukses === 0 && $skip > 0) {
-    set_flash_message("Tidak ada data rapot bulanan yang cukup. Pastikan rapot bulanan sudah diisi terlebih dahulu.", 'warning');
+    set_flash_message("Tidak ada santri yang memenuhi syarat mutlak (minimal 10 bulan berbeda & wajib ada bulan Juni).", 'warning');
     header('Location: generate.php?kamar=' . urlencode($nama_kamar) . '&periode=' . urlencode($periode));
 } elseif ($gagal > 0) {
-    set_flash_message("Generate selesai: {$sukses} berhasil, {$gagal} gagal, {$skip} dilewati (belum ada rapot bulanan).", 'warning');
+    set_flash_message("Generate selesai: {$sukses} berhasil, {$gagal} gagal, {$skip} dilewati (tidak penuhi syarat mutlak).", 'warning');
     header('Location: index.php?kamar=' . urlencode($nama_kamar) . '&periode=' . urlencode($periode));
 } else {
     $msg = "Rapor tahunan berhasil di-generate untuk {$sukses} santri.";
-    if ($skip > 0) $msg .= " {$skip} santri dilewati karena belum ada rapot bulanan.";
+    if ($skip > 0) $msg .= " {$skip} santri dilewati karena belum memenuhi syarat mutlak (10 bulan & Juni).";
     $msg .= " Silakan review dan approve.";
     set_flash_message($msg, 'success');
     header('Location: index.php?kamar=' . urlencode($nama_kamar) . '&periode=' . urlencode($periode));

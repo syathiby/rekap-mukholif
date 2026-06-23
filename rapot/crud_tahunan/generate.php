@@ -63,7 +63,9 @@ $santri_ids = array_column($santri_list, 'id');
 if (!empty($santri_ids)) {
     $placeholders = implode(',', array_fill(0, count($santri_ids), '?'));
     $sql_cek = "
-        SELECT santri_id, COUNT(*) as total 
+        SELECT santri_id, 
+               COUNT(DISTINCT bulan) as total_bulan,
+               SUM(CASE WHEN bulan = 'Juni' THEN 1 ELSE 0 END) as has_juni
         FROM rapot_kepengasuhan 
         WHERE santri_id IN ($placeholders) AND (tahun = ? OR tahun = ?)
         GROUP BY santri_id
@@ -80,8 +82,10 @@ if (!empty($santri_ids)) {
     $result_cek = $stmt_cek->get_result();
     
     $map_counts = [];
+    $map_juni = [];
     while ($row = $result_cek->fetch_assoc()) {
-        $map_counts[$row['santri_id']] = (int)$row['total'];
+        $map_counts[$row['santri_id']] = (int)$row['total_bulan'];
+        $map_juni[$row['santri_id']] = (int)$row['has_juni'] > 0;
     }
     $stmt_cek->close();
 
@@ -109,12 +113,17 @@ if (!empty($santri_ids)) {
     foreach ($santri_list as $s) {
         $sid_cek = (int)$s['id'];
         $jumlah = $map_counts[$sid_cek] ?? 0;
+        $has_juni = $map_juni[$sid_cek] ?? false;
         $status = $map_status[$sid_cek] ?? '';
         
-        if ($jumlah > 0) $santri_dengan_data++;
+        $is_eligible = ($jumlah >= 10 && $has_juni);
+
+        if ($is_eligible) $santri_dengan_data++;
         $santri_info[$sid_cek] = [
             'jumlah_bulan' => $jumlah,
-            'status' => $status
+            'has_juni'     => $has_juni,
+            'status'       => $status,
+            'is_eligible'  => $is_eligible
         ];
     }
 }
@@ -164,7 +173,7 @@ require_once __DIR__ . '/../../layouts/header.php';
 
     /* ─── Santri row ─── */
     .santri-row {
-        display: flex; align-items: center; gap: 1rem;
+        display: flex; align-items: center; gap: 1rem; flex-wrap: wrap;
         padding: .875rem 1.25rem; border-bottom: 1px solid #f1f5f9;
         transition: background .15s;
     }
@@ -177,10 +186,16 @@ require_once __DIR__ . '/../../layouts/header.php';
         display: flex; align-items: center; justify-content: center;
         box-shadow: 0 2px 4px rgba(29,78,122,.15);
     }
-    .s-nama { font-weight: 600; font-size: .9rem; color: var(--c-text); }
+    .s-info { flex: 1; min-width: 180px; }
+    .s-nama { font-weight: 600; font-size: .9rem; color: var(--c-text); line-height: 1.2; margin-bottom: .15rem; }
     .s-kelas { font-size: .78rem; color: var(--c-muted); }
+    
+    .s-badge-wrap { 
+        display: flex; gap: .35rem; align-items: center; flex-wrap: wrap; 
+        justify-content: flex-end; margin-left: auto;
+    }
     .s-badge {
-        margin-left: auto; font-size: .7rem; font-weight: 600;
+        font-size: .7rem; font-weight: 600;
         padding: .2rem .6rem; border-radius: 9999px; white-space: nowrap;
     }
     .badge-ok  { background: var(--c-success-light); color: var(--c-success); }
@@ -234,8 +249,9 @@ require_once __DIR__ . '/../../layouts/header.php';
     }
 
     @media (max-width: 576px) {
-        .santri-row { padding: .75rem 1rem; }
+        .santri-row { padding: .75rem 1rem; gap: .75rem; }
         .s-avatar   { width: 36px; height: 36px; font-size: .8rem; }
+        .s-badge-wrap { width: 100%; justify-content: flex-start; margin-left: 0; padding-left: calc(36px + .75rem); }
     }
 </style>
 
@@ -276,19 +292,22 @@ require_once __DIR__ . '/../../layouts/header.php';
         <div class="col-lg-8">
 
             <?php if ($existing > 0): ?>
-            <div class="alert alert-warning mb-3" style="border-radius:.875rem;">
-                <i class="fas fa-info-circle me-2"></i>
-                Sudah ada <strong><?= $existing ?> rapor tahunan</strong> yang di-generate sebelumnya.<br>
-                Secara default, <strong>hanya rapor DRAFT yang akan ditimpa ulang</strong> (rapor APPROVED/DOWNLOADED aman).<br>
-                Jika Anda mencentang opsi di bawah, sistem akan <strong>memaksa menghapus dan menimpa ulang semua rapor</strong> tanpa menyebabkan data ganda.
+            <div class="d-flex align-items-center p-3 mb-3" style="background:#fefce8; border:1px solid #fef08a; border-radius:.75rem; color:#854d0e;">
+                <i class="fas fa-info-circle fs-5 me-3" style="color:#eab308;"></i>
+                <div class="small lh-sm">
+                    <strong><?= $existing ?> rapor sebelumnya ditemukan.</strong> 
+                    Secara default, hanya rapor DRAFT yang ditimpa ulang. Centang opsi di bawah jika ingin menimpa paksa semua rapor.
+                </div>
             </div>
             <?php endif; ?>
 
             <?php if ($santri_dengan_data < count($santri_list)): ?>
-            <div class="alert alert-info mb-3" style="border-radius:.875rem;">
-                <i class="fas fa-info-circle me-2"></i>
-                <strong><?= count($santri_list) - $santri_dengan_data ?> santri</strong> belum memiliki data rapot bulanan
-                untuk periode <?= htmlspecialchars($periode) ?> — akan dilewati otomatis.
+            <div class="d-flex align-items-center p-3 mb-4" style="background:#fef2f2; border:1px solid #fecaca; border-radius:.75rem; color:#991b1b;">
+                <i class="fas fa-exclamation-circle fs-5 me-3" style="color:#ef4444;"></i>
+                <div class="small lh-sm">
+                    <strong><?= count($santri_list) - $santri_dengan_data ?> santri dilewati otomatis.</strong>
+                    Syarat rapot tahunan: minimal 10 bulan berbeda & wajib ada rapot bulan Juni. Lengkapi rapot bulanan terlebih dahulu.
+                </div>
             </div>
             <?php endif; ?>
 
@@ -308,27 +327,36 @@ require_once __DIR__ . '/../../layouts/header.php';
                         </span>
                     </div>
                     <?php foreach ($santri_list as $s):
-                        $has_data = ($santri_info[(int)$s['id']]['jumlah_bulan'] ?? 0) > 0;
-                        $jml_bln  = $santri_info[(int)$s['id']]['jumlah_bulan'] ?? 0;
-                        $status_rapor = $santri_info[(int)$s['id']]['status'] ?? '';
+                        $info = $santri_info[(int)$s['id']] ?? ['jumlah_bulan' => 0, 'has_juni' => false, 'status' => '', 'is_eligible' => false];
+                        $is_eligible = $info['is_eligible'];
+                        $jml_bln  = $info['jumlah_bulan'];
+                        $has_juni = $info['has_juni'];
+                        $status_rapor = $info['status'];
                     ?>
                     <div class="santri-row">
                         <div class="s-avatar"><?= strtoupper(substr($s['nama'], 0, 2)) ?></div>
-                        <div>
+                        <div class="s-info">
                             <div class="s-nama"><?= htmlspecialchars($s['nama']) ?></div>
                             <div class="s-kelas"><i class="fas fa-graduation-cap me-1"></i>Kelas <?= htmlspecialchars($s['kelas'] ?? 'N/A') ?></div>
                         </div>
-                        <span class="s-badge <?= $has_data ? 'badge-ok' : 'badge-no' ?>">
-                            <?php if ($has_data): ?>
-                                <?php if (in_array($status_rapor, ['APPROVED', 'EXPORTED'])): ?>
-                                    <i class="fas fa-shield-alt me-1 text-primary"></i>Sudah <?= $status_rapor === 'EXPORTED' ? 'DOWNLOADED' : $status_rapor ?> (Aman)
-                                <?php else: ?>
-                                    <i class="fas fa-check me-1"></i><?= $jml_bln ?> bulan data
-                                <?php endif; ?>
+                        <div class="s-badge-wrap">
+                            <?php if ($is_eligible): ?>
+                                <span class="s-badge badge-ok">
+                                    <?php if (in_array($status_rapor, ['APPROVED', 'EXPORTED'])): ?>
+                                        <i class="fas fa-shield-alt me-1 text-primary"></i>Sudah <?= $status_rapor === 'EXPORTED' ? 'DOWNLOADED' : $status_rapor ?>
+                                    <?php else: ?>
+                                        <i class="fas fa-check me-1"></i>Siap (<?= $jml_bln ?> bln)
+                                    <?php endif; ?>
+                                </span>
                             <?php else: ?>
-                            <i class="fas fa-minus me-1"></i>Belum ada data
+                                <?php if ($jml_bln < 10): ?>
+                                    <span class="s-badge" style="background:#fee2e2; color:#b91c1c;"><i class="fas fa-times me-1"></i>Data <?= $jml_bln ?>/10 bln</span>
+                                <?php endif; ?>
+                                <?php if (!$has_juni): ?>
+                                    <span class="s-badge" style="background:#fee2e2; color:#b91c1c;"><i class="fas fa-times me-1"></i>Tanpa Juni</span>
+                                <?php endif; ?>
                             <?php endif; ?>
-                        </span>
+                        </div>
                     </div>
                     <?php endforeach; ?>
                 </div>
