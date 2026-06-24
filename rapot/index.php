@@ -107,67 +107,101 @@ try {
         JOIN santri s ON r.santri_id = s.id
         LEFT JOIN users u ON r.musyrif_id = u.id
         WHERE 1=1 
-    "; 
-    $params = $params_count; 
-    $types = $types_count;
-    
-    if ($kamar_filter_musyrif !== null) { $sql .= " AND s.kamar = ?"; }
-    if (!empty($filter_kamar)) { $sql .= " AND s.kamar = ?"; }
-    if (!empty($filter_bulan)) { $sql .= " AND r.bulan = ?"; }
-    if (!empty($filter_tahun)) { $sql .= " AND r.tahun = ?"; }
-    
-    $sql .= " ORDER BY s.kamar ASC, s.nama ASC LIMIT ? OFFSET ?";
-    $types .= "ii";
+    ";
+    $params = [];
+    $types  = "";
+
+    // Filter wajib musyrif
+    if ($kamar_filter_musyrif !== null) {
+        $sql     .= " AND s.kamar = ?";
+        $params[] = $kamar_filter_musyrif;
+        $types   .= "i";
+    }
+    // Filter opsional dari form
+    if (!empty($filter_kamar)) { $sql .= " AND s.kamar = ?"; $params[] = $filter_kamar; $types .= "s"; }
+    if (!empty($filter_bulan)) { $sql .= " AND r.bulan = ?"; $params[] = $filter_bulan; $types .= "s"; }
+    if (!empty($filter_tahun)) { $sql .= " AND r.tahun = ?"; $params[] = $filter_tahun; $types .= "i"; }
+
+    $sql    .= " ORDER BY r.tahun DESC, FIELD(r.bulan, 'Januari', 'Februari', 'Maret', 'April', 'Mei', 'Juni', 'Juli', 'Agustus', 'September', 'Oktober', 'November', 'Desember') ASC, s.kamar ASC, s.nama ASC LIMIT ? OFFSET ?";
+    $types  .= "ii";
     $params[] = $limit;
     $params[] = $offset;
-    
+
     $stmt = $conn->prepare($sql);
     if (!empty($params)) { $stmt->bind_param($types, ...$params); }
     $stmt->execute();
     $rapot_list = $stmt->get_result()->fetch_all(MYSQLI_ASSOC);
+
 } catch (Exception $e) {
     die("Error fetching rapot list: ". $e->getMessage());
 }
 
 // Helper: Generate HTML Paginasi
-function render_pagination($current_page, $total_pages) {
-    if ($total_pages <= 1) return '';
-    $html = '<nav aria-label="Navigasi Halaman" class="mt-3"><ul class="pagination justify-content-center mb-0">';
+function render_pagination($current_page, $total_pages, $total_data = 0, $limit = 100) {
+    if ($total_data == 0) return '';
+    $start_item = (($current_page - 1) * $limit) + 1;
+    $end_item = min($current_page * $limit, $total_data);
     
-    $prev_disabled = ($current_page <= 1) ? 'disabled' : '';
-    $prev_page = $current_page - 1;
-    $html .= "<li class='page-item {$prev_disabled}'><a class='page-link' href='#' data-page='{$prev_page}'>&laquo; Prev</a></li>";
+    $html = '<div class="d-flex flex-column flex-md-row justify-content-between align-items-center mt-2 pt-3 border-top w-100">';
     
-    $start_page = max(1, $current_page - 2);
-    $end_page = min($total_pages, $current_page + 2);
+    // Info text
+    $html .= '<div class="text-muted small mb-3 mb-md-0">';
+    $html .= "Menampilkan <strong>{$start_item}</strong> sampai <strong>{$end_item}</strong> dari <strong>{$total_data}</strong> data";
+    $html .= '</div>';
     
-    if ($start_page > 1) {
-        $html .= "<li class='page-item'><a class='page-link' href='#' data-page='1'>1</a></li>";
-        if ($start_page > 2) {
-            $html .= "<li class='page-item disabled'><span class='page-link'>...</span></li>";
+    if ($total_pages > 1) {
+        $html .= '<nav aria-label="Navigasi Halaman" class="w-100 mt-2 mt-md-0"><ul class="pagination pagination-sm mb-0 flex-wrap justify-content-center justify-content-md-end" style="gap: 0.35rem;">';
+        
+        $prev_page = $current_page - 1;
+        
+        // Tombol Previous
+        if ($current_page > 1) {
+            $html .= "<li class='page-item'><a class='page-link rounded px-3 text-dark fw-medium shadow-sm border w-auto' href='javascript:void(0)' data-page='{$prev_page}'><i class='fas fa-chevron-left fa-sm me-1'></i> Previous</a></li>";
+        } else {
+            $html .= "<li class='page-item disabled'><span class='page-link rounded px-3 text-muted fw-medium border bg-light w-auto'><i class='fas fa-chevron-left fa-sm me-1'></i> Previous</span></li>";
         }
-    }
-    
-    for ($i = $start_page; $i <= $end_page; $i++) {
-        $active = ($i == $current_page) ? 'active' : '';
-        $html .= "<li class='page-item {$active}'><a class='page-link' href='#' data-page='{$i}'>{$i}</a></li>";
-    }
-    
-    if ($end_page < $total_pages) {
-        if ($end_page < $total_pages - 1) {
-            $html .= "<li class='page-item disabled'><span class='page-link'>...</span></li>";
+        
+        $start_page = max(1, $current_page - 1);
+        $end_page = min($total_pages, $current_page + 1);
+        
+        if ($start_page > 1) {
+            $html .= "<li class='page-item'><a class='page-link rounded text-dark border shadow-sm' href='javascript:void(0)' data-page='1'>1</a></li>";
+            if ($start_page > 2) {
+                $html .= "<li class='page-item disabled'><span class='page-link rounded text-muted border-0 bg-transparent'>...</span></li>";
+            }
         }
-        $html .= "<li class='page-item'><a class='page-link' href='#' data-page='{$total_pages}'>{$total_pages}</a></li>";
+        
+        for ($i = $start_page; $i <= $end_page; $i++) {
+            if ($i == $current_page) {
+                $html .= "<li class='page-item active'><span class='page-link rounded px-3 bg-primary text-white border-primary shadow-sm'>{$i}</span></li>";
+            } else {
+                $html .= "<li class='page-item'><a class='page-link rounded text-dark border shadow-sm' href='javascript:void(0)' data-page='{$i}'>{$i}</a></li>";
+            }
+        }
+        
+        if ($end_page < $total_pages) {
+            if ($end_page < $total_pages - 1) {
+                $html .= "<li class='page-item disabled'><span class='page-link rounded text-muted border-0 bg-transparent'>...</span></li>";
+            }
+            $html .= "<li class='page-item'><a class='page-link rounded text-dark border shadow-sm' href='javascript:void(0)' data-page='{$total_pages}'>{$total_pages}</a></li>";
+        }
+        
+        $next_page = $current_page + 1;
+        
+        // Tombol Next
+        if ($current_page < $total_pages) {
+            $html .= "<li class='page-item'><a class='page-link rounded px-3 text-dark fw-medium shadow-sm border w-auto' href='javascript:void(0)' data-page='{$next_page}'>Next <i class='fas fa-chevron-right fa-sm ms-1'></i></a></li>";
+        } else {
+            $html .= "<li class='page-item disabled'><span class='page-link rounded px-3 text-muted fw-medium border bg-light w-auto'>Next <i class='fas fa-chevron-right fa-sm ms-1'></i></span></li>";
+        }
+        
+        $html .= '</ul></nav>';
     }
     
-    $next_disabled = ($current_page >= $total_pages) ? 'disabled' : '';
-    $next_page = $current_page + 1;
-    $html .= "<li class='page-item {$next_disabled}'><a class='page-link' href='#' data-page='{$next_page}'>Next &raquo;</a></li>";
-    
-    $html .= '</ul></nav>';
+    $html .= '</div>';
     return $html;
 }
-$pagination_html = render_pagination($page, $total_pages);
+$pagination_html = render_pagination($page, $total_pages, $total_data, $limit);
 
 // 4.5. HANDLE AJAX REQUEST
 if (isset($_GET['ajax']) && $_GET['ajax'] == '1') {
@@ -846,9 +880,10 @@ document.addEventListener('DOMContentLoaded', function() {
 
     // Pagination Click Listener
     document.addEventListener('click', function(e) {
-        if (e.target.closest('#pagination-container') && e.target.tagName === 'A') {
+        const link = e.target.closest('#pagination-container a.page-link');
+        if (link) {
             e.preventDefault();
-            const page = e.target.dataset.page;
+            const page = link.dataset.page;
             if (page) {
                 fetchRapotData(page);
             }

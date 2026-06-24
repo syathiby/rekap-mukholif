@@ -362,10 +362,6 @@ require_once __DIR__ . '/../../layouts/header.php';
                             <span class="small fw-semibold text-dark">Request Limit (Free)</span>
                             <span class="small text-muted">1.500 / hari</span>
                         </li>
-                        <li class="list-group-item px-0 py-2 d-flex justify-content-between align-items-center bg-transparent border-bottom-0">
-                            <span class="small fw-semibold text-dark">Fungsi Utama</span>
-                            <span class="small text-muted">Generate Narasi Rapor</span>
-                        </li>
                     </ul>
                 </div>
             </div>

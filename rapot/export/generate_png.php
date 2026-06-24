@@ -9,6 +9,7 @@ guard('rapot_cetak');
 $mode = $_GET['mode'] ?? 'page';
 
 if (empty($_GET['id'])) {
+    http_response_code(400);
     die('Error: ID Rapot tidak ditemukan.');
 }
 $rapot_id = (int)$_GET['id'];
@@ -33,11 +34,13 @@ try {
     $stmt->close();
 
     if (!$rapot) {
+        http_response_code(404);
         die('Error: Data rapot tidak ditemukan.');
     }
 
     $kamar_filter_musyrif = checkMusyrifKamarAccess();
     if ($kamar_filter_musyrif !== null && (int)$rapot['kamar_santri'] !== $kamar_filter_musyrif) {
+        http_response_code(403);
         die('Error: Anda tidak memiliki akses untuk mencetak rapot santri ini (Beda Kamar).');
     }
 
@@ -78,6 +81,7 @@ try {
     $stmt_reward->close();
 
 } catch (Exception $e) {
+    http_response_code(500);
     die('Error querying database: ' . $e->getMessage());
 }
 

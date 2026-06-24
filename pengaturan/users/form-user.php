@@ -93,13 +93,13 @@ if ($result_kamar) {
 
 <style>
     :root {
-        --primary-color: #198754;
-        --primary-hover: #157347;
-        --text-dark: #334155;
+        --primary-color: #3b82f6;
+        --primary-hover: #2563eb;
+        --text-dark: #0f172a;
         --text-light: #64748b;
         --border-color: #e2e8f0;
         --card-bg: #ffffff;
-        --body-bg: #f1f5f9;
+        --body-bg: #f8fafc;
     }
     
     * {
@@ -108,128 +108,140 @@ if ($result_kamar) {
         box-sizing: border-box;
     }
     .main-container {
-            display: flex;
-            justify-content: center;
-            align-items: flex-start;
-            min-height: 100vh;
-            padding: 2rem 1rem;
-        }
-        
-        .form-content-wrapper { 
-            max-width: 550px;
-            width: 100%;
-        }
+        display: flex;
+        justify-content: center;
+        align-items: flex-start;
+        min-height: calc(100vh - 100px);
+        padding: 2rem 1rem;
+    }
+    
+    .form-content-wrapper { 
+        max-width: 550px;
+        width: 100%;
+    }
 
-        .page-header { 
-            text-align: left; 
-            margin-bottom: 1.5rem; 
-        }
-        .page-header h1 { 
-            font-size: 2rem; 
-            font-weight: 700; 
-            color: var(--text-dark); 
-            display: flex; 
-            align-items: center; 
-            gap: 0.75rem; 
-        }
-        .page-header h1 i { 
-            color: var(--primary-color); 
-        }
-        .page-header p { 
-            font-size: 1rem; 
-            color: var(--text-light); 
-            margin-top: 0.25rem; 
-        }
-        .form-card { 
-            border: 1px solid var(--border-color); 
-            border-radius: 0.75rem; 
-            box-shadow: 0 4px 25px rgba(0,0,0,0.07); 
-            padding: 2.5rem;
-            background-color: var(--card-bg);
-        }
-        .form-label { 
-            font-weight: 600; 
-            color: var(--text-dark); 
-            margin-bottom: 0.5rem; 
-            display: block;
-        }
-        .input-group {
-            position: relative;
-        }
-        .input-group .input-group-text {
-            position: absolute;
-            left: 1px; top: 1px; bottom: 1px;
-            z-index: 10;
-            display: flex;
-            align-items: center;
-            padding: 0 1rem;
-            background-color: transparent;
-            border: none;
-            color: var(--text-light);
-        }
-        .input-group .form-control {
-            padding-left: 3rem;
-            border-radius: 0.5rem !important;
-            border: 1px solid var(--border-color);
-            transition: all 0.2s ease;
-            height: 48px;
-            width: 100%;
-            padding-top: 0.5rem;
-            padding-bottom: 0.5rem;
-            font-size: 1rem;
-        }
-        .form-control:focus { 
-            border-color: var(--primary-color); 
-            box-shadow: 0 0 0 3px rgba(25, 135, 84, 0.1);
-        }
-        .password-wrapper { 
-            position: relative; 
-        }
-        .password-wrapper .form-control {
-            padding-left: 3rem;
-        }
-        .password-toggle { 
-            position: absolute; 
-            right: 12px; 
-            top: 50%; 
-            transform: translateY(-50%); 
-            background: none; 
-            border: none; 
-            color: var(--text-light); 
-            cursor: pointer; 
-            z-index: 11;
-        }
-        .btn-submit { 
-            background-color: var(--primary-color); 
-            color: white;
-            border: none; 
-            font-weight: 600; 
-            padding: 0.8rem; 
-            font-size: 1rem; 
-            transition: all 0.2s ease;
-            border-radius: 0.5rem;
-            box-shadow: 0 4px 10px rgba(25, 135, 84, 0.2);
-            width: 100%;
-            cursor: pointer;
-        }
-        .btn-submit:hover { 
-            background-color: var(--primary-hover); 
-            transform: translateY(-2px);
-            box-shadow: 0 6px 12px rgba(25, 135, 84, 0.3);
-        }
-        .mb-3 { margin-bottom: 1.5rem !important; }
-        .mb-4 { margin-bottom: 2rem !important; }
-        .alert { padding: 1rem; margin-bottom: 1.5rem; border-radius: 0.5rem; }
-        .alert-success { background-color: #d1e7dd; color: #0f5132; border: 1px solid #badbcc; }
-        .alert-danger { background-color: #f8d7da; color: #842029; border: 1px solid #f5c2c7; }
-
-        .form-text {
-            display: block;
-            margin-top: 0.5rem;
-            font-size: 0.85rem;
-            color: var(--text-light);
-        }
-    </style>
+    .page-header { 
+        text-align: left; 
+        margin-bottom: 2rem; 
+    }
+    .page-header h1 { 
+        font-size: 1.75rem; 
+        font-weight: 700; 
+        color: var(--text-dark); 
+        display: flex; 
+        align-items: center; 
+        gap: 0.75rem; 
+    }
+    .page-header h1 i { 
+        color: var(--primary-color); 
+        background: rgba(59, 130, 246, 0.1);
+        padding: 0.5rem;
+        border-radius: 0.5rem;
+        font-size: 1.25rem;
+    }
+    .page-header p { 
+        font-size: 0.95rem; 
+        color: var(--text-light); 
+        margin-top: 0.5rem; 
+    }
+    .form-card { 
+        border: 1px solid var(--border-color); 
+        border-radius: 1rem; 
+        box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05), 0 2px 4px -1px rgba(0, 0, 0, 0.03);
+        padding: 2.5rem;
+        background-color: var(--card-bg);
+    }
+    .form-label { 
+        font-weight: 600; 
+        color: var(--text-dark); 
+        margin-bottom: 0.5rem; 
+        display: block;
+        font-size: 0.9rem;
+    }
+    .input-group {
+        position: relative;
+    }
+    .input-group .input-group-text {
+        position: absolute;
+        left: 1px; top: 1px; bottom: 1px;
+        z-index: 10;
+        display: flex;
+        align-items: center;
+        padding: 0 1rem;
+        background-color: transparent;
+        border: none;
+        color: var(--text-light);
+    }
+    .input-group .form-control {
+        padding-left: 2.8rem;
+        border-radius: 0.75rem !important;
+        border: 1px solid var(--border-color);
+        transition: all 0.2s ease;
+        height: 48px;
+        width: 100%;
+        font-size: 0.95rem;
+        background-color: #f8fafc;
+    }
+    .form-control:focus { 
+        border-color: var(--primary-color); 
+        box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.15);
+        background-color: #fff;
+    }
+    .password-wrapper { 
+        position: relative; 
+    }
+    .password-wrapper .form-control {
+        padding-left: 2.8rem;
+    }
+    .password-toggle { 
+        position: absolute; 
+        right: 12px; 
+        top: 50%; 
+        transform: translateY(-50%); 
+        background: none; 
+        border: none; 
+        color: var(--text-light); 
+        cursor: pointer; 
+        z-index: 11;
+        padding: 0.5rem;
+    }
+    .password-toggle:hover {
+        color: var(--text-dark);
+    }
+    .btn-submit { 
+        background: linear-gradient(135deg, var(--primary-color), var(--primary-hover));
+        color: white;
+        border: none; 
+        font-weight: 600; 
+        padding: 0.8rem; 
+        font-size: 1rem; 
+        transition: all 0.2s ease;
+        border-radius: 0.75rem;
+        box-shadow: 0 4px 6px -1px rgba(59, 130, 246, 0.3);
+        width: 100%;
+        cursor: pointer;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 0.5rem;
+    }
+    .btn-submit:hover { 
+        transform: translateY(-2px);
+        box-shadow: 0 6px 8px -1px rgba(59, 130, 246, 0.4);
+    }
+    .mb-3 { margin-bottom: 1.5rem !important; }
+    .mb-4 { margin-bottom: 2rem !important; }
+    .form-text {
+        display: block;
+        margin-top: 0.5rem;
+        font-size: 0.8rem;
+        color: var(--text-light);
+    }
+    .alert-danger {
+        border-radius: 0.75rem;
+        font-size: 0.9rem;
+    }
+</style>
 </head>
 <body> 
     <div class="main-container">
@@ -241,13 +253,6 @@ if ($result_kamar) {
                 </h1>
                 <p><?= $page_subtitle ?></p>
             </div>
-
-            <?php if (isset($_SESSION['success_message']) && $_SESSION['success_message']): ?>
-                <div class="alert alert-success"><?= $_SESSION['success_message']; unset($_SESSION['success_message']); ?></div>
-            <?php endif; ?>
-            <?php if (isset($_SESSION['error_message']) && $_SESSION['error_message']): ?>
-                <div class="alert alert-danger"><?= $_SESSION['error_message']; unset($_SESSION['error_message']); ?></div>
-            <?php endif; ?>
 
             <form action="<?= $form_action ?>" method="POST" class="form-card">
                 <input type="hidden" name="csrf_token" value="<?= htmlspecialchars($csrf_token) ?>">

@@ -71,15 +71,15 @@ if (isset($_POST['ids']) && is_array($_POST['ids']) && !empty($_POST['ids'])) {
     }
 
     if ($success_count > 0 && $error_count == 0) {
-        $_SESSION['success_message'] = "✅ Berhasil menghapus $success_count user terpilih.";
+        $_SESSION['flash_message'] = ['type' => 'success', 'message' => "Berhasil menghapus $success_count user terpilih."];
     } elseif ($success_count > 0 && $error_count > 0) {
-        $_SESSION['success_message'] = "✅ Berhasil menghapus $success_count user terpilih, namun $error_count data gagal/ditolak (karena akses).";
+        $_SESSION['flash_message'] = ['type' => 'warning', 'message' => "Berhasil menghapus $success_count user terpilih, namun $error_count data gagal dihapus."];
     } else {
-        $_SESSION['error_message'] = "❌ Gagal menghapus user atau Anda tidak memiliki izin untuk menghapus user yang dipilih.";
+        $_SESSION['flash_message'] = ['type' => 'error', 'message' => "Gagal menghapus user atau izin ditolak."];
     }
 } else {
     // Kalo akses file ini tanpa ID, kasih notif error
-    $_SESSION['error_message'] = "❌ Tidak ada user yang dipilih untuk dihapus.";
+    $_SESSION['flash_message'] = ['type' => 'error', 'message' => "Tidak ada user yang dipilih untuk dihapus."];
 }
 
 $conn->close();

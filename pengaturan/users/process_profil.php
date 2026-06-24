@@ -27,7 +27,7 @@ $old_password = $_POST['old_password'] ?? '';
 $new_password = $_POST['new_password'] ?? '';
 
 if (empty($username_baru) || empty($old_password)) {
-    $_SESSION['error_message'] = "Username dan Password Lama wajib diisi.";
+    $_SESSION['flash_message'] = ['type' => 'error', 'message' => "Username dan Password Lama wajib diisi."];
     header("Location: profil.php");
     exit;
 }
@@ -43,7 +43,7 @@ if (!has_permission('user_manage')) {
     $stmt_limit->close();
 
     if ($limit_data['count'] >= 3) {
-        $_SESSION['error_message'] = "Akses ditolak! Anda telah mencapai batas maksimal perubahan profil (3 kali) pada bulan ini.";
+        $_SESSION['flash_message'] = ['type' => 'error', 'message' => "Akses ditolak! Anda telah mencapai batas maksimal perubahan profil (3 kali) pada bulan ini."];
         header("Location: profil.php");
         exit;
     }
@@ -55,7 +55,7 @@ $stmt_user->bind_param("i", $user_id);
 $stmt_user->execute();
 $res_user = $stmt_user->get_result();
 if ($res_user->num_rows !== 1) {
-    $_SESSION['error_message'] = "Data user tidak ditemukan.";
+    $_SESSION['flash_message'] = ['type' => 'error', 'message' => "Data user tidak ditemukan."];
     header("Location: profil.php");
     exit;
 }
@@ -77,7 +77,7 @@ if (password_verify($old_password, $user_data['password'])) {
 }
 
 if (!$password_valid) {
-    $_SESSION['error_message'] = "Konfirmasi gagal: Password lama yang Anda masukkan salah.";
+    $_SESSION['flash_message'] = ['type' => 'error', 'message' => "Konfirmasi gagal: Password lama yang Anda masukkan salah."];
     header("Location: profil.php");
     exit;
 }
@@ -98,7 +98,7 @@ if (strtolower($username_baru) !== strtolower($user_data['username'])) {
     $stmt_check->store_result();
     if ($stmt_check->num_rows > 0) {
         $stmt_check->close();
-        $_SESSION['error_message'] = "Username '" . htmlspecialchars($username_baru) . "' sudah digunakan oleh pengguna lain.";
+        $_SESSION['flash_message'] = ['type' => 'error', 'message' => "Username '" . htmlspecialchars($username_baru) . "' sudah digunakan oleh pengguna lain."];
         header("Location: profil.php");
         exit;
     }
@@ -141,13 +141,13 @@ if ($stmt_update->execute()) {
             'username_baru' => $username_baru,
             'password_diganti' => $pwd_changed
         ]);
-        $_SESSION['success_message'] = "Profil Anda berhasil diperbarui!";
+        $_SESSION['flash_message'] = ['type' => 'success', 'message' => "Profil Anda berhasil diperbarui!"];
     } else {
-        $_SESSION['success_message'] = "Data disimpan (namun tidak ada perubahan yang terdeteksi).";
+        $_SESSION['flash_message'] = ['type' => 'info', 'message' => "Data disimpan (namun tidak ada perubahan yang terdeteksi)."];
     }
 
 } else {
-    $_SESSION['error_message'] = "Terjadi kesalahan saat menyimpan pembaruan sistem.";
+    $_SESSION['flash_message'] = ['type' => 'error', 'message' => "Terjadi kesalahan saat menyimpan pembaruan sistem."];
 }
 
 $stmt_update->close();

@@ -71,10 +71,10 @@ if (isset($_GET['id']) && is_numeric($_GET['id'])) {
             'role' => $role_to_delete
         ]);
         // Kalo berhasil, kasih notif sukses
-        $_SESSION['success_message'] = "✅ User berhasil dihapus.";
+        $_SESSION['flash_message'] = ['type' => 'success', 'message' => "User berhasil dihapus."];
     } else {
         // Kalo gagal, kasih notif error
-        $_SESSION['error_message'] = "❌ Gagal menghapus user.";
+        $_SESSION['flash_message'] = ['type' => 'error', 'message' => "Gagal menghapus user."];
     }
     $stmt->close();
 } else {

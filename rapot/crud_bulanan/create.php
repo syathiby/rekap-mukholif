@@ -8,7 +8,6 @@ require_once __DIR__ . '/../config/helper.php';
 
 guard('rapot_create');
 
-$data_sumber = null;
 $page_title = "Buat Rapot Kepengasuhan Baru";
 
 // ==========================================================
@@ -16,6 +15,7 @@ $page_title = "Buat Rapot Kepengasuhan Baru";
 // ==========================================================
 $data_sumber = null;
 $is_edit = false;
+
 
 if (isset($_GET['duplicate_id']) || isset($_GET['edit_id'])) {
     $rapot_id_lama = isset($_GET['edit_id']) ? (int)$_GET['edit_id'] : (int)$_GET['duplicate_id'];
@@ -90,18 +90,26 @@ $bulan_list = [
 ];
 
 if ($data_sumber) {
-    $bulan_lama_idx = array_search($data_sumber['bulan'], $bulan_list);
-    if ($bulan_lama_idx !== false) {
-        $bulan_default = $bulan_list[($bulan_lama_idx + 1) % 12];
-        $tahun_default = ($bulan_lama_idx == 11) ? (int)$data_sumber['tahun'] + 1 : (int)$data_sumber['tahun'];
+    if ($is_edit) {
+        // === MODE EDIT: Pertahankan bulan & tahun ASLI rapot yang diedit ===
+        $bulan_default = $data_sumber['bulan'];
+        $tahun_default = (int)$data_sumber['tahun'];
     } else {
-        $bulan_default = $bulan_list[(int)date('n') - 1];
-        $tahun_default = (int)date('Y');
+        // === MODE DUPLIKAT: Advance +1 bulan dari rapot sumber ===
+        $bulan_lama_idx = array_search($data_sumber['bulan'], $bulan_list);
+        if ($bulan_lama_idx !== false) {
+            $bulan_default = $bulan_list[($bulan_lama_idx + 1) % 12];
+            $tahun_default = ($bulan_lama_idx == 11) ? (int)$data_sumber['tahun'] + 1 : (int)$data_sumber['tahun'];
+        } else {
+            $bulan_default = $bulan_list[(int)date('n') - 1];
+            $tahun_default = (int)date('Y');
+        }
     }
 } else {
     $bulan_default = $bulan_list[(int)date('n') - 1];
     $tahun_default = (int)date('Y');
 }
+
 
 require_once __DIR__ . '/../../layouts/header.php';
 ?>
@@ -192,19 +200,50 @@ require_once __DIR__ . '/../../layouts/header.php';
     }
 </style>
 
+<?php
+    // Tentukan atribut badge & ikon sesuai mode
+    if ($is_edit && $data_sumber) {
+        $mode_badge_class  = 'bg-warning text-dark';
+        $mode_badge_icon   = 'fa-pencil-alt';
+        $mode_badge_label  = 'Mode Edit';
+        $circle_color      = 'color:#b45309;';
+        $circle_style      = 'background-color:#fef3c7; color:#b45309;';
+        $circle_icon       = 'fa-pencil-alt';
+        $subtitle_text     = 'Anda sedang <strong>mengedit</strong> data rapot yang sudah ada. Perubahan akan langsung tersimpan.';
+    } elseif (!$is_edit && $data_sumber) {
+        $mode_badge_class  = 'bg-info text-white';
+        $mode_badge_icon   = 'fa-copy';
+        $mode_badge_label  = 'Duplikat';
+        $circle_style      = 'background-color:#cff4fc; color:#0c6271;';
+        $circle_icon       = 'fa-copy';
+        $subtitle_text     = 'Anda sedang <strong>menduplikat</strong> rapot ke bulan berikutnya. Pastikan nilai & catatan sudah sesuai.';
+    } else {
+        $mode_badge_class  = 'bg-success text-white';
+        $mode_badge_icon   = 'fa-plus-circle';
+        $mode_badge_label  = 'Buat Baru';
+        $circle_style      = 'background-color:#dbeafe; color:#1d4ed8;';
+        $circle_icon       = 'fa-edit';
+        $subtitle_text     = 'Isi nilai rapot bulanan santri satu per satu secara teliti.';
+    }
+?>
 <div class="container-fluid pb-5">
     <!-- Redesigned Page Header -->
     <div class="page-title-card">
         <div class="d-flex align-items-center gap-3">
-            <div class="bg-primary bg-opacity-10 text-primary rounded-circle d-flex align-items-center justify-content-center" style="width: 48px; height: 48px;">
-                <i class="fas fa-edit fs-5"></i>
+            <div class="rounded-circle d-flex align-items-center justify-content-center flex-shrink-0" style="width:48px; height:48px; <?php echo $circle_style; ?>">
+                <i class="fas <?php echo $circle_icon; ?> fs-5"></i>
             </div>
             <div>
-                <h3 class="fw-bold mb-1 text-dark" style="letter-spacing: -0.5px;">
-                    <?php echo htmlspecialchars($page_title, ENT_QUOTES, 'UTF-8'); ?>
-                </h3>
-                <p class="text-secondary mb-0 small">
-                    <i class="fas fa-info-circle me-1"></i> Isi nilai rapot bulanan santri satu per satu secara teliti.
+                <div class="d-flex align-items-center gap-2 flex-wrap">
+                    <h3 class="fw-bold mb-0 text-dark" style="letter-spacing: -0.5px;">
+                        <?php echo htmlspecialchars($page_title, ENT_QUOTES, 'UTF-8'); ?>
+                    </h3>
+                    <span class="badge <?php echo $mode_badge_class; ?> rounded-pill px-3 py-1 fw-semibold" style="font-size: 0.72rem; letter-spacing: 0.03em;">
+                        <i class="fas <?php echo $mode_badge_icon; ?> me-1"></i><?php echo $mode_badge_label; ?>
+                    </span>
+                </div>
+                <p class="text-secondary mb-0 small mt-1">
+                    <i class="fas fa-info-circle me-1"></i> <?php echo $subtitle_text; ?>
                 </p>
             </div>
         </div>
@@ -237,11 +276,29 @@ require_once __DIR__ . '/../../layouts/header.php';
                                             <option value="">-- Pilih Santri --</option>
                                         <?php endif; ?>
                                         <?php foreach ($santri_list as $santri): ?>
-                                            <option value="<?php echo $santri['id']; ?>" <?php echo ($data_sumber && $data_sumber['santri_id'] == $santri['id']) ? 'selected' : ''; ?>>
+                                            <option
+                                                value="<?php echo $santri['id']; ?>"
+                                                data-nama="<?php echo htmlspecialchars($santri['nama'], ENT_QUOTES, 'UTF-8'); ?>"
+                                                data-kamar="<?php echo htmlspecialchars($santri['kamar'], ENT_QUOTES, 'UTF-8'); ?>"
+                                                <?php echo ($data_sumber && $data_sumber['santri_id'] == $santri['id']) ? 'selected' : ''; ?>>
                                                 (Kamar <?php echo htmlspecialchars($santri['kamar'], ENT_QUOTES, 'UTF-8'); ?>) - <?php echo htmlspecialchars($santri['nama'], ENT_QUOTES, 'UTF-8'); ?>
                                             </option>
                                         <?php endforeach; ?>
                                     </select>
+                                    <!-- Info: akan diisi JS setelah cek existing rapot -->
+                                    <div id="info-existing-santri" class="mt-2" style="display:none;">
+                                        <div class="alert alert-info alert-sm py-2 px-3 mb-0 small d-flex align-items-start gap-2" style="border-radius: 0.6rem; font-size: 0.8rem;">
+                                            <i class="fas fa-info-circle mt-1 flex-shrink-0 text-info"></i>
+                                            <span>Santri yang <strong>sudah memiliki rapot</strong> untuk bulan &amp; tahun yang dipilih akan ditampilkan dengan tanda <strong class="text-danger">✗</strong> dan tidak dapat dipilih. Ganti bulan/tahun untuk melihat pilihan lain.</span>
+                                        </div>
+                                    </div>
+                                    <!-- Warning: muncul jika santri yang dipilih ternyata sudah punya rapot -->
+                                    <div id="warning-duplicate-santri" class="mt-2" style="display:none;">
+                                        <div class="alert alert-danger py-2 px-3 mb-0 small d-flex align-items-start gap-2" style="border-radius: 0.6rem; font-size: 0.8rem;">
+                                            <i class="fas fa-exclamation-triangle mt-1 flex-shrink-0"></i>
+                                            <span id="warning-duplicate-text">Santri ini sudah memiliki rapot untuk bulan dan tahun yang dipilih. Rapot baru tidak dapat disimpan.</span>
+                                        </div>
+                                    </div>
                                 </div>
                             </div>
                             <div class="col-md-4">
@@ -259,7 +316,9 @@ require_once __DIR__ . '/../../layouts/header.php';
                             <div class="col-md-3">
                                 <div class="form-group mb-0">
                                     <label for="tahun" class="fw-bold mb-2">Tahun</label>
-                                    <input type="number" name="tahun" id="tahun" class="form-control" value="<?php echo $tahun_default; ?>" required>
+                                    <input type="number" name="tahun" id="tahun" class="form-control"
+                                           value="<?php echo $tahun_default; ?>"
+                                           min="2000" max="2099" required>
                                 </div>
                             </div>
                         </div>
@@ -270,6 +329,7 @@ require_once __DIR__ . '/../../layouts/header.php';
                         </div>
                     </div>
                 </div>
+
 
                 <?php
                 function buatTombolPilihan($key, $data_sumber = null) {
@@ -442,19 +502,170 @@ $(document).ready(function() {
         modalTriggerElement = null;
     });
 
-    // === VALIDASI FORM ===
+    // ================================================================
+    // === FILTER EXISTING RAPOT (CEGAH DUPLIKAT) =====================
+    // ================================================================
+    // Set ini menyimpan santri_id yang sudah punya rapot di bulan+tahun terpilih.
+    var existingRapotIds = new Set();
+    var hasDuplicate = false; // flag: apakah santri yg dipilih sudah punya rapot?
+    var existingFilterTimeout = null;
+
+    var existingXhr = null; // track in-flight XHR untuk di-abort jika ada request baru
+
+    /**
+     * Fetch daftar santri_id yang sudah punya rapot di bulan+tahun yang dipilih,
+     * lalu update tampilan dropdown: disable opsi yang sudah ada, tampilkan info.
+     */
+    function filterExistingRapot() {
+        var bulan = $('#bulan').val();
+        var tahun = parseInt($('#tahun').val(), 10);
+
+        // Reset semua opsi terlebih dahulu
+        resetDropdownOptions();
+
+        // Abort request sebelumnya jika masih berjalan (cegah race condition)
+        if (existingXhr) {
+            existingXhr.abort();
+            existingXhr = null;
+        }
+
+        if (!bulan || !tahun || tahun < 2000 || tahun > 2099) {
+            existingRapotIds.clear();
+            $('#info-existing-santri').hide();
+            checkSelectedSantriDuplicate();
+            return;
+        }
+
+        // Debounce 250ms (terutama penting saat user ketik di input tahun)
+        clearTimeout(existingFilterTimeout);
+        // Capture nilai bulan/tahun saat ini agar closure tetap valid
+        var requestedBulan = bulan;
+        var requestedTahun = tahun;
+        existingFilterTimeout = setTimeout(function() {
+            var postData = { bulan: requestedBulan, tahun: requestedTahun };
+            var edit_id_val = $('input[name="edit_id"]').val();
+            if (edit_id_val) postData.edit_id = edit_id_val;
+
+            existingXhr = $.post('../api/get_existing_rapot.php', postData, function(res) {
+                existingXhr = null;
+                // Pastikan response masih relevan (bulan/tahun saat ini sama dengan yang di-request)
+                if ($('#bulan').val() !== requestedBulan || parseInt($('#tahun').val(), 10) !== requestedTahun) return;
+                if (res && Array.isArray(res.existing)) {
+                    existingRapotIds = new Set(res.existing.map(Number));
+                    applyDropdownFilter(requestedBulan, requestedTahun);
+                }
+            }, 'json').fail(function(xhr, status) {
+                existingXhr = null;
+                if (status === 'abort') return; // diabort secara sengaja, abaikan
+                // Gagal fetch = biarkan semua opsi aktif (aman, backend tetap protect)
+                existingRapotIds.clear();
+                applyDropdownFilter(requestedBulan, requestedTahun);
+            });
+        }, 250);
+    }
+
+
+    /**
+     * Reset semua opsi dropdown ke kondisi awal (tidak disabled, tidak ada prefix).
+     */
+    function resetDropdownOptions() {
+        $('#santri_id option').each(function() {
+            var $opt = $(this);
+            if ($opt.val() === '') return; // skip placeholder
+            var nama   = $opt.data('nama')   || '';
+            var kamar  = $opt.data('kamar')  || '';
+            $opt.prop('disabled', false);
+            $opt.text('(Kamar ' + kamar + ') - ' + nama);
+        });
+        // Refresh Select2 untuk menerapkan perubahan
+        $('#santri_id').trigger('change.select2');
+    }
+
+    /**
+     * Terapkan filter: disable opsi yang sudah ada rapotnya,
+     * tambahkan prefix tanda ✗ pada nama mereka.
+     */
+    function applyDropdownFilter(bulan, tahun) {
+        var currentVal = parseInt($('#santri_id').val(), 10);
+        var anyExisting = existingRapotIds.size > 0;
+
+        $('#santri_id option').each(function() {
+            var $opt = $(this);
+            if ($opt.val() === '') return; // skip placeholder
+            var id     = parseInt($opt.val(), 10);
+            var nama   = $opt.data('nama')  || '';
+            var kamar  = $opt.data('kamar') || '';
+
+            if (existingRapotIds.has(id)) {
+                // Santri ini sudah punya rapot di bulan+tahun ini
+                $opt.prop('disabled', true);
+                $opt.text('✗ Sudah ada – (Kamar ' + kamar + ') ' + nama);
+            } else {
+                $opt.prop('disabled', false);
+                $opt.text('(Kamar ' + kamar + ') - ' + nama);
+            }
+        });
+
+        // Refresh Select2
+        $('#santri_id').trigger('change.select2');
+
+        // Tampilkan info banner jika ada santri yang sudah punya rapot
+        if (anyExisting) {
+            $('#info-existing-santri').show();
+        } else {
+            $('#info-existing-santri').hide();
+        }
+
+        // Cek apakah santri yang sedang dipilih masuk dalam daftar existing
+        checkSelectedSantriDuplicate();
+    }
+
+    /**
+     * Cek apakah santri yang sedang dipilih sudah punya rapot.
+     * Tampilkan warning merah dan block tombol simpan jika ya.
+     */
+    function checkSelectedSantriDuplicate() {
+        var selectedId = parseInt($('#santri_id').val(), 10);
+        var bulan = $('#bulan').val();
+        var tahun = $('#tahun').val();
+
+        if (selectedId && existingRapotIds.has(selectedId)) {
+            hasDuplicate = true;
+            $('#warning-duplicate-text').text(
+                'Santri ini sudah memiliki rapot untuk ' + bulan + ' ' + tahun +
+                '. Rapot baru tidak dapat disimpan. Pilih santri lain atau ubah bulan/tahun.'
+            );
+            $('#warning-duplicate-santri').show();
+        } else {
+            hasDuplicate = false;
+            $('#warning-duplicate-santri').hide();
+        }
+
+        // Re-evaluate form validity setelah flag berubah
+        checkFormValidity();
+    }
+
+    // ================================================================
+    // === VALIDASI FORM ===============================================
+    // ================================================================
     var autoCatatanBtn = $('#btn-auto-catatan');
     var simpanBtn = $('#btn-simpan');
     var formRapot = $('#form-rapot');
 
     function checkFormValidity() {
-        var isBaseOk = ($('#santri_id').val() !== '' && $('#bulan').val() !== '' && $('#tahun').val() !== '');
+        var santriVal  = $('#santri_id').val();
+        var bulanVal   = $('#bulan').val();
+        var tahunVal   = $('#tahun').val();
+        var tahunNum   = parseInt(tahunVal, 10);
+        var tahunOk    = tahunNum >= 2000 && tahunNum <= 2099;
+
+        var isBaseOk = (santriVal !== '' && bulanVal !== '' && tahunVal !== '' && tahunOk && !hasDuplicate);
         var totalChecked = formRapot.find('input[type="radio"]:checked').length;
-        var catatanText = $('#catatan_musyrif').val().trim();
+        var catatanText  = $('#catatan_musyrif').val().trim();
         var catatanValid = catatanText.length >= 15 && (catatanText.match(/[a-zA-Z0-9]/g) || []).length >= 10;
         
         var isAutoBtnValid = isBaseOk && (totalChecked >= 20);
-        var isFormValid = isAutoBtnValid && catatanValid;
+        var isFormValid    = isAutoBtnValid && catatanValid;
 
         autoCatatanBtn.prop('disabled', !isAutoBtnValid);
         simpanBtn.prop('disabled', !isFormValid);
@@ -465,23 +676,50 @@ $(document).ready(function() {
 
         var wrapperAutoCatatan = document.getElementById('wrapper-auto-catatan');
         if (wrapperAutoCatatan) {
-            updateTooltip(wrapperAutoCatatan, isAutoBtnValid ? 'Buat catatan berdasarkan nilai di atas' : 'Harap isi semua data penilaian terlebih dahulu');
+            var autoBtnMsg = isAutoBtnValid
+                ? 'Buat catatan berdasarkan nilai di atas'
+                : (hasDuplicate ? 'Santri ini sudah memiliki rapot di bulan & tahun ini' : 'Harap isi semua data penilaian terlebih dahulu');
+            updateTooltip(wrapperAutoCatatan, autoBtnMsg);
         }
-        updateTooltip(document.getElementById('wrapper-simpan'), isFormValid ? 'Simpan data rapot' : 'Harap lengkapi penilaian dan isi catatan (min 15 karakter jelas)');
+
+        var simpanMsg = isFormValid
+            ? 'Simpan data rapot'
+            : (hasDuplicate
+                ? 'Santri ini sudah memiliki rapot di bulan & tahun ini — tidak bisa disimpan'
+                : 'Harap lengkapi penilaian dan isi catatan (min 15 karakter jelas)');
+        updateTooltip(document.getElementById('wrapper-simpan'), simpanMsg);
     }
 
     checkFormValidity();
     formRapot.on('change', checkFormValidity);
-    $('#santri_id').on('change', checkFormValidity);
     $('#catatan_musyrif').on('input change', checkFormValidity);
 
-    // === AUTO FETCH POIN & REWARD ===
+    // Saat santri dipilih: cek apakah dia duplikat
+    $('#santri_id').on('change', function() {
+        checkSelectedSantriDuplicate();
+        autoFetchPoinReward();
+    });
+
+    // Saat bulan/tahun berubah: re-filter dropdown DAN fetch ulang poin+reward
+    // Untuk #tahun: pakai 'input' juga agar filter jalan saat user ketik, bukan hanya saat blur
+    $('#bulan').on('change', function() {
+        filterExistingRapot();
+        autoFetchPoinReward();
+    });
+    $('#tahun').on('change input', function() {
+        filterExistingRapot();
+        autoFetchPoinReward();
+    });
+
+    // ================================================================
+    // === AUTO FETCH POIN & REWARD ====================================
+    // ================================================================
     let fetchTimeout = null;
 
     function autoFetchPoinReward() {
         var santri = $('#santri_id').val();
-        var bulan = $('#bulan').val();
-        var tahun = $('#tahun').val();
+        var bulan  = $('#bulan').val();
+        var tahun  = $('#tahun').val();
 
         if (!santri || !bulan || !tahun) {
             $('#card-rincian-poin, #card-rincian-reward').html('<div class="text-muted small text-center mt-3">Menunggu pemilihan santri, bulan, dan tahun...</div>');
@@ -519,18 +757,21 @@ $(document).ready(function() {
         }, 300);
     }
 
-    // Trigger auto-fetch saat ada perubahan
-    $('#santri_id, #bulan, #tahun').on('change', autoFetchPoinReward);
-
     // Manual refresh via button
-    $('#btn-cek-data').on('click', autoFetchPoinReward);
+    $('#btn-cek-data').on('click', function() {
+        filterExistingRapot();
+        autoFetchPoinReward();
+    });
 
-    // Jalankan sekali saat halaman pertama kali load (jika duplikat)
+    // Jalankan filter + fetch sekali saat halaman pertama kali load
+    filterExistingRapot();
     if ($('#santri_id').val() && $('#bulan').val() && $('#tahun').val()) {
         autoFetchPoinReward();
     }
 
-    // === AUTO CATATAN ===
+    // ================================================================
+    // === AUTO CATATAN ================================================
+    // ================================================================
     $('#btn-auto-catatan').on('click', function() {
         var btn = $(this);
         var originalText = btn.html();
@@ -548,6 +789,7 @@ $(document).ready(function() {
     });
 });
 </script>
+
 
 <!-- MODAL PANDUAN -->
 <div class="modal fade" id="guideModal" tabindex="-1" aria-labelledby="guideModalLabel" aria-hidden="true">

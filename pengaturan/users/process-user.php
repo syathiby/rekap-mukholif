@@ -27,17 +27,17 @@ if ($role !== 'musyrif') {
 }
 
 if (empty($nama_lengkap) || empty($username) || empty($role)) {
-    $_SESSION['error_message'] = "❌ Nama, username, dan role wajib diisi.";
+    $_SESSION['flash_message'] = ['type' => 'error', 'message' => 'Nama, username, dan role wajib diisi.'];
     header("Location: $redirect_url");
     exit;
 }
 if ($role === 'musyrif' && empty($kamar_id)) {
-    $_SESSION['error_message'] = "❌ Kamar wajib dipilih untuk role Musyrif.";
+    $_SESSION['flash_message'] = ['type' => 'error', 'message' => 'Kamar wajib dipilih untuk role Musyrif.'];
     header("Location: $redirect_url");
     exit;
 }
 if (!$is_edit_mode && empty($password)) {
-    $_SESSION['error_message'] = "❌ Password wajib diisi untuk user baru.";
+    $_SESSION['flash_message'] = ['type' => 'error', 'message' => 'Password wajib diisi untuk user baru.'];
     header("Location: $redirect_url");
     exit;
 }
@@ -179,7 +179,7 @@ $stmt_check->execute();
 $stmt_check->store_result();
 
 if ($stmt_check->num_rows > 0) {
-    $_SESSION['error_message'] = "❌ Username '".htmlspecialchars($username)."' sudah digunakan.";
+    $_SESSION['flash_message'] = ['type' => 'error', 'message' => "Username '".htmlspecialchars($username)."' sudah digunakan."];
     $stmt_check->close();
     header("Location: $redirect_url");
     exit;
@@ -209,7 +209,6 @@ if ($is_edit_mode) {
             'password_changed' => !empty($password)
         ]);
 
-        // --- LOGIKA BARU: Update izin jika role berubah ---
         if (isset($role_asli) && $role !== $role_asli && $role !== 'admin') {
             $conn->query("DELETE FROM user_permissions WHERE user_id = $user_id");
             $stmt_perms = $conn->prepare("INSERT INTO user_permissions (user_id, permission_id) SELECT ?, permission_id FROM role_permissions WHERE role = ?");
@@ -218,9 +217,16 @@ if ($is_edit_mode) {
             $stmt_perms->close();
         }
 
-        $_SESSION['success_message'] = "✅ Data user '".htmlspecialchars($username)."' berhasil diperbarui!";
+        $_SESSION['flash_message'] = [
+            'type' => 'success',
+            'message' => "Data user '".htmlspecialchars($username)."' berhasil diperbarui!"
+        ];
+        $redirect_url = "index.php"; // Redirect to index.php
     } else {
-        $_SESSION['error_message'] = "❌ Gagal memperbarui data user.";
+        $_SESSION['flash_message'] = [
+            'type' => 'error',
+            'message' => "Gagal memperbarui data user."
+        ];
     }
     $stmt_update->close();
 
@@ -248,10 +254,16 @@ if ($is_edit_mode) {
             $stmt_perms->close();
         }
 
-        $_SESSION['success_message'] = "✅ User '".htmlspecialchars($username)."' berhasil dibuat!";
-        $redirect_url = "form-user.php"; // Redirect ke form kosong setelah berhasil
+        $_SESSION['flash_message'] = [
+            'type' => 'success',
+            'message' => "User '".htmlspecialchars($username)."' berhasil dibuat!"
+        ];
+        $redirect_url = "index.php"; // Redirect to index.php after successful insert
     } else {
-        $_SESSION['error_message'] = "❌ Gagal menyimpan data ke database.";
+        $_SESSION['flash_message'] = [
+            'type' => 'error',
+            'message' => "Gagal menyimpan data ke database."
+        ];
     }
     $stmt_insert->close();
 }

@@ -66,10 +66,10 @@ while ($row = $res_pl->fetch_assoc()) {
 }
 $stmt_pl->close();
 
-$sql_rew_list = "SELECT jenis_reward_nama as nama_reward, SUM(poin_reward) AS poin, COUNT(*) as jumlah
+$sql_rew_list = "SELECT nama_reward, SUM(poin_reward) AS poin, COUNT(*) as jumlah
                  FROM arsip_data_reward
                  WHERE arsip_id = ? AND santri_id = ?
-                 GROUP BY jenis_reward_nama
+                 GROUP BY nama_reward
                  ORDER BY poin DESC";
 $stmt_rl = $conn->prepare($sql_rew_list);
 $stmt_rl->bind_param('ii', $arsip_id, $santri_id);

@@ -23,14 +23,14 @@ $page_title = "Daftar Rapor Tahunan — Arsip Kamar $kamar";
 // Ambil semua rapor tahunan untuk kamar + periode di arsip
 try {
     $stmt = $conn->prepare("
-        SELECT s.santri_id, s.nama AS nama_santri, s.kelas,
+        SELECT s.santri_id, s.santri_nama AS nama_santri, s.santri_kelas AS kelas,
                rt.id as rapor_id, rt.status, rt.is_fallback, rt.generated_at, rt.approved_at,
                rt.approved_by_nama AS nama_approver,
                1 as data_bulanan
         FROM arsip_data_santri s
         LEFT JOIN arsip_data_rapot_tahunan rt ON s.santri_id = rt.santri_id AND rt.periode = ? AND rt.arsip_id = ?
-        WHERE s.arsip_id = ? AND s.kamar = ?
-        ORDER BY s.nama ASC
+        WHERE s.arsip_id = ? AND s.santri_kamar = ?
+        ORDER BY s.santri_nama ASC
     ");
     $stmt->bind_param('siis', $periode, $arsip_id, $arsip_id, $kamar);
     $stmt->execute();

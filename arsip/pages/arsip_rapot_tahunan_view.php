@@ -42,10 +42,10 @@ try {
     $stmt_pel->close();
 
     $stmt_rwd = $conn->prepare("
-        SELECT jenis_reward_nama as nama_reward, COUNT(*) AS jumlah, SUM(poin_reward) as total_poin
+        SELECT nama_reward, COUNT(*) AS jumlah, SUM(poin_reward) as total_poin
         FROM arsip_data_reward
         WHERE arsip_id = ? AND santri_id = ?
-        GROUP BY jenis_reward_nama
+        GROUP BY nama_reward
         ORDER BY jumlah DESC
     ");
     $stmt_rwd->bind_param('ii', $arsip_id, $rapot['santri_id']);

@@ -128,6 +128,14 @@ require_once __DIR__ . '/../../layouts/header.php';
 .row-delete { background:#fef2f2 !important; }
 .row-fatal  { background:#fff5f5 !important; border-left:4px solid #e53e3e !important; }
 
+/* ── Filter badges (summary bar) ─────────────────── */
+.filter-badge { cursor:pointer; transition:opacity .15s; user-select:none; opacity:1; }
+.filter-badge:hover { opacity:.78; }
+.filter-badge.active { outline:2.5px solid #334155; outline-offset:2px; opacity:1; }
+.filter-badge.active::before { content:"✕ "; font-size:.7rem; }
+.preview-row-hidden { display:none !important; }
+#no-filter-result { display:none; }
+
 .diff-old { font-size:.8rem; color:#ef4444; text-decoration:line-through; text-decoration-color:#ef4444; text-decoration-thickness:1.5px; background:#fef2f2; padding:2px 6px; border-radius:4px; border:1px solid #fca5a5; margin-right:20px; position:relative; display:inline-block; opacity:0.85; }
 .diff-old::after { content:"➔"; position:absolute; right:-18px; top:50%; transform:translateY(-50%); color:#94a3b8; font-size:0.85rem; text-decoration:none !important; display:inline-block; }
 .diff-new { font-size:.85rem; font-weight:600; color:#059669; background:#ecfdf5; padding:2px 6px; border-radius:4px; border:1px solid #6ee7b7; display:inline-block; }
@@ -398,12 +406,13 @@ require_once __DIR__ . '/../../layouts/header.php';
 
                 <!-- Ringkasan -->
                 <div class="px-3 pt-3 pb-2 border-bottom bg-light d-flex flex-wrap gap-2 align-items-center">
-                    <span class="act-badge act-insert">+ INSERT: <?= $cnt_insert ?></span>
-                    <span class="act-badge act-update">~ UPDATE: <?= $cnt_update ?></span>
-                    <span class="act-badge act-delete">– DELETE: <?= $cnt_delete ?></span>
+                    <span class="act-badge act-insert filter-badge" data-filter="INSERT" title="Klik untuk filter INSERT">+ INSERT: <?= $cnt_insert ?></span>
+                    <span class="act-badge act-update filter-badge" data-filter="UPDATE" title="Klik untuk filter UPDATE">~ UPDATE: <?= $cnt_update ?></span>
+                    <span class="act-badge act-delete filter-badge" data-filter="DELETE" title="Klik untuk filter DELETE">– DELETE: <?= $cnt_delete ?></span>
                     <?php if ($cnt_fatal): ?>
-                        <span class="act-badge act-fatal"><i class="bi bi-exclamation-octagon-fill me-1"></i>FATAL: <?= $cnt_fatal ?></span>
+                        <span class="act-badge act-fatal filter-badge" data-filter="FATAL" title="Klik untuk filter FATAL"><i class="bi bi-exclamation-octagon-fill me-1"></i>FATAL: <?= $cnt_fatal ?></span>
                     <?php endif; ?>
+                    <span class="ms-auto text-muted" style="font-size:.72rem"><i class="bi bi-funnel me-1"></i>Klik badge untuk filter</span>
                 </div>
 
                 <!-- Peringatan FATAL -->
@@ -428,7 +437,10 @@ require_once __DIR__ . '/../../layouts/header.php';
                 <?php endif; ?>
 
                 <!-- Tabel pratinjau -->
-                <div class="table-responsive" style="max-height:520px;overflow-y:auto">
+                <div id="no-filter-result" class="text-center py-4 text-muted" style="font-size:.88rem">
+                    <i class="bi bi-inbox fs-4 d-block mb-2"></i>Tidak ada data untuk filter ini.
+                </div>
+                <div class="table-responsive" style="max-height:520px;overflow-y:auto" id="preview-table-wrap">
                     <table class="table table-hover table-bordered mb-0 align-middle" style="font-size:.88rem; white-space: nowrap;">
                         <thead class="table-light" style="position:sticky;top:0;z-index:1">
                             <tr>
@@ -445,8 +457,22 @@ require_once __DIR__ . '/../../layouts/header.php';
                                 <?php endif; ?>
                             </tr>
                         </thead>
-                        <tbody>
-                        <?php foreach ($preview_data as $row):
+                        <tbody id="preview-tbody">
+                        <?php
+                        // ── Urutkan: FATAL → INSERT → UPDATE → DELETE → lainnya, lalu by nama
+                        $action_order = ['FATAL'=>0,'INSERT'=>1,'UPDATE'=>2,'DELETE'=>3];
+                        usort($preview_data, function($a, $b) use ($action_order) {
+                            $aKey = !empty($a['is_fatal']) ? 'FATAL' : ($a['action'] ?? '');
+                            $bKey = !empty($b['is_fatal']) ? 'FATAL' : ($b['action'] ?? '');
+                            $aOrd = $action_order[$aKey] ?? 9;
+                            $bOrd = $action_order[$bKey] ?? 9;
+                            if ($aOrd !== $bOrd) return $aOrd - $bOrd;
+                            // secondary sort by name
+                            $aN = $a['data']['nama'] ?? $a['data']['nama_pelanggaran'] ?? $a['data']['nama_reward'] ?? '';
+                            $bN = $b['data']['nama'] ?? $b['data']['nama_pelanggaran'] ?? $b['data']['nama_reward'] ?? '';
+                            return strcasecmp($aN, $bN);
+                        });
+                        foreach ($preview_data as $row):
                             $is_fatal = !empty($row['is_fatal']);
                             $act      = $row['action'];
                             $rowCls   = match(true) {
@@ -467,7 +493,7 @@ require_once __DIR__ . '/../../layouts/header.php';
                             $d  = $row['data'];
                             $od = $row['old_data'] ?? [];
                         ?>
-                        <tr class="<?= $rowCls ?>">
+                        <tr class="<?= $rowCls ?>" data-action="<?= $is_fatal ? 'FATAL' : $act ?>">
                             <td class="text-center"><span class="act-badge <?= $badgeCls ?>"><?= $actLabel ?></span></td>
                             <td class="text-center fw-bold <?= $is_fatal ? 'text-danger' : 'text-muted' ?>"><?= htmlspecialchars($d['id'] ?? '—') ?></td>
 
@@ -595,16 +621,79 @@ require_once __DIR__ . '/../../layouts/header.php';
 </div><!-- /container -->
 
 <script>
+// ── Sync stats (block-scoped) ──────────────────────────────────────────────
+{
 <?php if ($preview_data !== null): ?>
-const syncStats = {
+window._syncStats = {
     insert: <?= $cnt_insert ?>,
     fatal:  <?= $cnt_fatal ?>,
     update: <?= $cnt_update ?>,
     delete: <?= $cnt_delete ?>
 };
 <?php else: ?>
-const syncStats = { insert:0, fatal:0, update:0, delete:0 };
+window._syncStats = { insert:0, fatal:0, update:0, delete:0 };
 <?php endif; ?>
+}
+
+// ── Badge filter (IIFE, zero global leak) ──────────────────────────────────
+(function() {
+    const badges    = document.querySelectorAll('.filter-badge');
+    const tbody     = document.getElementById('preview-tbody');
+    const noResult  = document.getElementById('no-filter-result');
+    const tableWrap = document.getElementById('preview-table-wrap');
+    if (!badges.length || !tbody) return;
+
+    let activeFilter = null;
+
+    function applyFilter(filter) {
+        const rows = tbody.querySelectorAll('tr');
+        let visible = 0;
+        rows.forEach(row => {
+            if (!filter || row.dataset.action === filter) {
+                row.classList.remove('preview-row-hidden');
+                visible++;
+            } else {
+                row.classList.add('preview-row-hidden');
+            }
+        });
+        // show/hide empty state
+        if (noResult && tableWrap) {
+            if (visible === 0) {
+                noResult.style.display = 'block';
+                tableWrap.style.display = 'none';
+            } else {
+                noResult.style.display = 'none';
+                tableWrap.style.display = '';
+            }
+        }
+        // scroll the TABLE CONTAINER (not the element) to top of first match
+        if (filter && tableWrap && visible > 0) {
+            const firstVisible = tbody.querySelector('tr:not(.preview-row-hidden)');
+            if (firstVisible) {
+                // offsetTop relative to tableWrap
+                tableWrap.scrollTop = Math.max(0, firstVisible.offsetTop - 8);
+            }
+        } else if (!filter && tableWrap) {
+            tableWrap.scrollTop = 0;
+        }
+    }
+
+    badges.forEach(badge => {
+        badge.addEventListener('click', function() {
+            const filter = this.dataset.filter;
+            if (activeFilter === filter) {
+                activeFilter = null;
+                badges.forEach(b => b.classList.remove('active'));
+                applyFilter(null);
+            } else {
+                activeFilter = filter;
+                badges.forEach(b => b.classList.remove('active'));
+                this.classList.add('active');
+                applyFilter(filter);
+            }
+        });
+    });
+})();
 
 // ── File name display ──────────────────────────────────────────────────────
 document.getElementById('file_impor')?.addEventListener('change', function(e) {
@@ -633,6 +722,9 @@ const tipeSelect = document.getElementById('tipe_data');
 const modeSelect = document.getElementById('mode_sinkronisasi');
 const archWarn   = document.getElementById('archive-warn');
 const tplMap     = { santri:'#btn-tpl-santri', jenis_pelanggaran:'#btn-tpl-pelanggaran', jenis_reward:'#btn-tpl-reward' };
+
+// replace syncStats references (was renamed to _syncStats) ──────────────────
+const syncStats = window._syncStats || { insert:0, fatal:0, update:0, delete:0 };
 
 function updateTpl() {
     if (!tipeSelect) return;

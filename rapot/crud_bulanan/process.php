@@ -10,13 +10,42 @@ if (isset($_POST['simpan_rapot'])) {
 
     csrf_validate(); // Validasi CSRF
 
+    // === PARSE INPUT DASAR (edit_id harus di atas agar tersedia untuk redirect) ===
+    $edit_id   = isset($_POST['edit_id']) ? (int)$_POST['edit_id'] : 0;
     $santri_id = (int)$_POST['santri_id'];
-    $bulan     = $_POST['bulan'];
-    $tahun     = (int)$_POST['tahun'];
-    $catatan   = trim($_POST['catatan_musyrif'] ?? '');
+    $bulan     = isset($_POST['bulan']) ? trim($_POST['bulan']) : '';
+    $tahun     = (int)($_POST['tahun'] ?? 0);
+
+    // Validasi bulan — harus salah satu dari 12 bulan yang valid
+    $bulan_list_indo = [
+        'Januari' => 1, 'Februari' => 2, 'Maret'    => 3, 'April'    => 4,
+        'Mei'     => 5, 'Juni'     => 6, 'Juli'     => 7, 'Agustus'  => 8,
+        'September' => 9, 'Oktober' => 10, 'November' => 11, 'Desember' => 12
+    ];
+    if (!array_key_exists($bulan, $bulan_list_indo)) {
+        set_flash_message('Gagal menyimpan: Bulan tidak valid.', 'danger');
+        header('Location: create.php' . ($edit_id > 0 ? "?edit_id=$edit_id" : ''));
+        exit;
+    }
+
+    // Validasi tahun — harus dalam rentang wajar
+    if ($tahun < 2000 || $tahun > 2099) {
+        set_flash_message('Gagal menyimpan: Tahun tidak valid. Harus antara 2000 dan 2099.', 'danger');
+        header('Location: create.php' . ($edit_id > 0 ? "?edit_id=$edit_id" : ''));
+        exit;
+    }
+
+    // Validasi santri_id
+    if ($santri_id <= 0) {
+        set_flash_message('Gagal menyimpan: Santri tidak valid.', 'danger');
+        header('Location: create.php' . ($edit_id > 0 ? "?edit_id=$edit_id" : ''));
+        exit;
+    }
+
+    $catatan    = trim($_POST['catatan_musyrif'] ?? '');
     if (strlen($catatan) < 15 || preg_match_all('/[a-zA-Z0-9]/', $catatan) < 10) {
         set_flash_message('Gagal menyimpan: Catatan tidak valid. Harap isi catatan dengan jelas (minimal 15 karakter huruf/angka).', 'danger');
-        header('Location: create.php');
+        header('Location: create.php' . ($edit_id > 0 ? "?edit_id=$edit_id" : ''));
         exit;
     }
     $musyrif_id = (int)$_SESSION['user_id'];
@@ -57,7 +86,28 @@ if (isset($_POST['simpan_rapot'])) {
     $penampilan       = (int)$_POST['penampilan'];
     $piket            = (int)$_POST['piket'];
     $kerapihan_barang = (int)$_POST['kerapihan_barang'];
-    $edit_id          = isset($_POST['edit_id']) ? (int)$_POST['edit_id'] : 0;
+    // $edit_id sudah di-parse di atas (sebelum validasi kamar)
+
+    // Verifikasi Akses untuk Edit (IDOR Protection)
+    if ($edit_id > 0) {
+        $stmt_check_edit = $conn->prepare("SELECT s.kamar FROM rapot_kepengasuhan r JOIN santri s ON r.santri_id = s.id WHERE r.id = ?");
+        $stmt_check_edit->bind_param("i", $edit_id);
+        $stmt_check_edit->execute();
+        $res_edit = $stmt_check_edit->get_result()->fetch_assoc();
+        $stmt_check_edit->close();
+
+        if (!$res_edit) {
+            set_flash_message('Gagal menyimpan: Rapot yang diedit tidak ditemukan.', 'danger');
+            header('Location: create.php');
+            exit;
+        }
+
+        if ($kamar_filter_musyrif !== null && (int)$res_edit['kamar'] !== $kamar_filter_musyrif) {
+            set_flash_message('Gagal menyimpan: Anda tidak memiliki akses untuk mengedit rapot tersebut (Beda Kamar).', 'danger');
+            header('Location: ../index.php');
+            exit;
+        }
+    }
 
     // Cek Duplikat
     $sql_cek = "SELECT id FROM rapot_kepengasuhan WHERE santri_id = ? AND bulan = ? AND tahun = ?";
@@ -80,12 +130,8 @@ if (isset($_POST['simpan_rapot'])) {
     $stmt_cek->close();
 
     // Cek Limit 12 Rapot per Tahun Ajaran
-    $bulan_list_indo = [
-        'Januari' => 1, 'Februari' => 2, 'Maret' => 3, 'April' => 4,
-        'Mei' => 5, 'Juni' => 6, 'Juli' => 7, 'Agustus' => 8,
-        'September' => 9, 'Oktober' => 10, 'November' => 11, 'Desember' => 12
-    ];
-    $bulan_num = $bulan_list_indo[$bulan] ?? date('n');
+    // (gunakan $bulan_list_indo yang sudah didefinisikan di atas)
+    $bulan_num = $bulan_list_indo[$bulan]; // selalu valid karena sudah dicek
     $tahun_ajaran_start = ($bulan_num < 7) ? $tahun - 1 : $tahun;
     
     $sql_limit = "SELECT id, bulan, tahun FROM rapot_kepengasuhan WHERE santri_id = ?";
@@ -122,14 +168,11 @@ if (isset($_POST['simpan_rapot'])) {
         $conn->begin_transaction();
 
         // Persiapan rentang tanggal untuk optimasi index (Ganti FIND_IN_SET)
-        $bulan_list_indo = [
-            'Januari' => 1, 'Februari' => 2, 'Maret' => 3, 'April' => 4,
-            'Mei' => 5, 'Juni' => 6, 'Juli' => 7, 'Agustus' => 8,
-            'September' => 9, 'Oktober' => 10, 'November' => 11, 'Desember' => 12
-        ];
-        $bulan_num = $bulan_list_indo[$bulan] ?? date('n');
+        // $bulan_list_indo sudah didefinisikan di atas — langsung pakai
+        $bulan_num  = $bulan_list_indo[$bulan]; // valid, sudah divalidasi di atas
         $start_date = sprintf('%04d-%02d-01', $tahun, $bulan_num);
-        $end_date = date('Y-m-t', strtotime($start_date));
+        $end_date   = date('Y-m-t', strtotime($start_date));
+
 
         // Kalkulasi Total Poin Pelanggaran
         $total_poin_pelanggaran = 0;
