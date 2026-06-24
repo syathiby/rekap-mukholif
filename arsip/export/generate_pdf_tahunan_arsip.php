@@ -152,10 +152,11 @@ try {
 
     if ($rapor_id) {
         $nama_clean = preg_replace('/[^a-zA-Z0-9 ]/', '', $rapot_list[0]['nama_santri']);
-        $nama_file  = "Arsip Rapor Tahunan {$nama_clean} - {$periode}.pdf";
+        $periode_clean = str_replace('/', '-', $periode);
+        $nama_file  = "Arsip Rapor Tahunan {$nama_clean} - {$periode_clean}.pdf";
     } else {
         $kamar_clean = preg_replace('/[^a-zA-Z0-9 ]/', '', $kamar);
-        $periode_clean = str_replace('/', '_', $periode);
+        $periode_clean = str_replace('/', '-', $periode);
         $nama_file  = "Arsip Rapor Tahunan Kamar {$kamar_clean} - {$periode_clean}.pdf";
     }
 

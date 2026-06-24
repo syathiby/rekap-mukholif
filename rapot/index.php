@@ -986,7 +986,8 @@ document.addEventListener('DOMContentLoaded', function() {
                 filename: data.filename 
             }));
             sessionStorage.setItem('bulkProcessList', JSON.stringify(bulkList));
-            window.open('crud_bulanan/bulk_processor.php?type=pdf', '_blank');
+            const zipName = encodeURIComponent('Rapot Bulanan Bulk PDF');
+            window.open('crud_bulanan/bulk_processor.php?type=pdf&zipName=' + zipName, '_blank');
         });
     }
     
@@ -1015,7 +1016,8 @@ document.addEventListener('DOMContentLoaded', function() {
                 return;
             }
             sessionStorage.setItem('bulkProcessList', bulkListString);
-            window.open('crud_bulanan/bulk_processor.php?type=png', '_blank');
+            const zipName = encodeURIComponent('Rapot Bulanan Bulk PNG');
+            window.open('crud_bulanan/bulk_processor.php?type=png&zipName=' + zipName, '_blank');
             pngWarningModal.hide();
         });
     }

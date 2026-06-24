@@ -496,9 +496,10 @@ require_once __DIR__ . '/../../layouts/header.php';
                         // Tambahkan ke bulk_list jika APPROVED atau EXPORTED
                         if (in_array($status, ['APPROVED', 'EXPORTED'])) {
                             $nama_clean = preg_replace('/[^a-zA-Z0-9 ]/', '', $r['nama_santri']);
+                            $periode_clean = str_replace('/', '-', $periode);
                             $bulk_list[] = [
                                 'id' => $r['rapor_id'],
-                                'filename' => "Rapor Tahunan {$nama_clean} - {$periode}"
+                                'filename' => "Rapor Tahunan {$nama_clean} - {$periode_clean}"
                             ];
                         }
                         ?>
@@ -630,7 +631,8 @@ document.addEventListener('DOMContentLoaded', function() {
                 return;
             }
             sessionStorage.setItem('bulkProcessList', JSON.stringify(bulkList));
-            window.open('../crud_bulanan/bulk_processor.php?type=pdf&jenis=tahunan', '_blank');
+            const zipName = encodeURIComponent('Rapor Tahunan Kamar <?= rawurlencode($kamar) ?> Periode <?= rawurlencode(str_replace("/", "-", $periode)) ?>');
+            window.open('../crud_bulanan/bulk_processor.php?type=pdf&jenis=tahunan&zipName=' + zipName, '_blank');
         });
     }
 });

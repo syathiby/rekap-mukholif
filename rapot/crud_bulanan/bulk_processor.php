@@ -167,7 +167,8 @@ $head_content = $head_matches[1] ?? '';
             zip.generateAsync({ type: 'blob' }).then(function (content) {
                 const link = document.createElement('a');
                 link.href     = URL.createObjectURL(content);
-                link.download = `rapot_${type}_${Date.now()}.zip`;
+                const zipFilename = params.get('zipName') ? decodeURIComponent(params.get('zipName')) + '.zip' : `Rapot Bulk ${type.toUpperCase()}.zip`;
+                link.download = zipFilename;
                 document.body.appendChild(link);
                 link.click();
                 document.body.removeChild(link);
