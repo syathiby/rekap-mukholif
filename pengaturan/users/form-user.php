@@ -84,7 +84,7 @@ if ($result_roles) {
 }
 
 $existing_kamar = [];
-$sql_kamar = "SELECT DISTINCT kamar FROM santri WHERE kamar IS NOT NULL AND kamar != 0 ORDER BY kamar ASC";
+$sql_kamar = "SELECT DISTINCT kamar FROM santri WHERE kamar IS NOT NULL AND kamar != '' ORDER BY LENGTH(kamar) ASC, kamar ASC";
 $result_kamar = mysqli_query($conn, $sql_kamar);
 if ($result_kamar) {
     $existing_kamar = mysqli_fetch_all($result_kamar, MYSQLI_ASSOC);

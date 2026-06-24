@@ -35,8 +35,8 @@ if ($kamar_filter_musyrif !== null) {
 } else {
     $kamar_list = $conn->query("
         SELECT DISTINCT kamar FROM santri
-        WHERE kamar IS NOT NULL AND kamar != 0
-        ORDER BY kamar ASC
+        WHERE kamar IS NOT NULL AND kamar != ''
+        ORDER BY LENGTH(kamar) ASC, kamar ASC
     ")->fetch_all(MYSQLI_ASSOC);
 }
 
@@ -67,7 +67,11 @@ foreach ($kamar_list as $km) {
         SELECT COUNT(DISTINCT s.id) as total 
         FROM santri s
         JOIN rapot_kepengasuhan rk ON s.id = rk.santri_id
-        WHERE s.kamar = ? AND (rk.tahun = ? OR rk.tahun = ?)
+        WHERE s.kamar = ? AND (
+            (rk.tahun = ? AND rk.bulan IN ('Juli','Agustus','September','Oktober','November','Desember')) 
+            OR 
+            (rk.tahun = ? AND rk.bulan IN ('Januari','Februari','Maret','April','Mei','Juni'))
+        )
     ");
     $a_stmt->bind_param("sii", $nama_kamar, $tahun_awal, $tahun_akhir);
     $a_stmt->execute();

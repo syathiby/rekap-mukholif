@@ -129,7 +129,11 @@ try {
         SELECT s.id as santri_id, s.nama AS nama_santri, s.kelas,
                rt.id as rapor_id, rt.status, rt.is_fallback, rt.generated_at, rt.approved_at,
                u.nama_lengkap AS nama_approver,
-               (SELECT COUNT(*) FROM rapot_kepengasuhan rk WHERE rk.santri_id = s.id AND (rk.tahun = ? OR rk.tahun = ?)) as data_bulanan
+               (SELECT COUNT(*) FROM rapot_kepengasuhan rk WHERE rk.santri_id = s.id AND (
+                   (rk.tahun = ? AND rk.bulan IN ('Juli','Agustus','September','Oktober','November','Desember')) 
+                   OR 
+                   (rk.tahun = ? AND rk.bulan IN ('Januari','Februari','Maret','April','Mei','Juni'))
+               )) as data_bulanan
         FROM santri s
         LEFT JOIN rapot_tahunan rt ON s.id = rt.santri_id AND rt.periode = ?
         LEFT JOIN users u ON rt.approved_by = u.id

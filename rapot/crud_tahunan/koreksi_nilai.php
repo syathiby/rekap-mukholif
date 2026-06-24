@@ -6,15 +6,17 @@
  * Mengambil rekap pelanggaran per santri dalam 1 periode tahunan
  */
 function fetch_pelanggaran_tahunan($conn, $santri_id, $tahun_awal, $tahun_akhir) {
+    $tgl_awal = "$tahun_awal-07-01";
+    $tgl_akhir = "$tahun_akhir-06-30";
     $stmt = $conn->prepare("
         SELECT jp.nama_pelanggaran, SUM(jp.poin) as total_poin, COUNT(*) as jumlah
         FROM pelanggaran p
         JOIN jenis_pelanggaran jp ON p.jenis_pelanggaran_id = jp.id
         WHERE p.santri_id = ?
-          AND (YEAR(p.tanggal) = ? OR YEAR(p.tanggal) = ?)
+          AND p.tanggal BETWEEN ? AND ?
         GROUP BY jp.id, jp.nama_pelanggaran
     ");
-    $stmt->bind_param('iii', $santri_id, $tahun_awal, $tahun_akhir);
+    $stmt->bind_param('iss', $santri_id, $tgl_awal, $tgl_akhir);
     $stmt->execute();
     $result = $stmt->get_result()->fetch_all(MYSQLI_ASSOC);
     $stmt->close();
@@ -25,15 +27,17 @@ function fetch_pelanggaran_tahunan($conn, $santri_id, $tahun_awal, $tahun_akhir)
  * Mengambil rekap reward per santri dalam 1 periode tahunan
  */
 function fetch_reward_tahunan($conn, $santri_id, $tahun_awal, $tahun_akhir) {
+    $tgl_awal = "$tahun_awal-07-01";
+    $tgl_akhir = "$tahun_akhir-06-30";
     $stmt = $conn->prepare("
         SELECT jr.nama_reward, SUM(jr.poin_reward) as total_poin, COUNT(*) as jumlah
         FROM daftar_reward rwd
         JOIN jenis_reward jr ON rwd.jenis_reward_id = jr.id
         WHERE rwd.santri_id = ?
-          AND (YEAR(rwd.tanggal) = ? OR YEAR(rwd.tanggal) = ?)
+          AND rwd.tanggal BETWEEN ? AND ?
         GROUP BY jr.id, jr.nama_reward
     ");
-    $stmt->bind_param('iii', $santri_id, $tahun_awal, $tahun_akhir);
+    $stmt->bind_param('iss', $santri_id, $tgl_awal, $tgl_akhir);
     $stmt->execute();
     $result = $stmt->get_result()->fetch_all(MYSQLI_ASSOC);
     $stmt->close();

@@ -86,21 +86,24 @@ $nilai_aspek = json_decode($rapot['nilai_snapshot'] ?? '[]', true) ?? [];
 
 // Hitung poin real dari database
 $tahun_awal = (int)explode('/', $periode)[0];
+$tahun_akhir = $tahun_awal + 1;
+$tgl_awal = "$tahun_awal-07-01";
+$tgl_akhir = "$tahun_akhir-06-30";
+
 $sql_pel = "SELECT SUM(jp.poin) as total FROM pelanggaran p
             JOIN jenis_pelanggaran jp ON p.jenis_pelanggaran_id = jp.id
-            WHERE p.santri_id = ? AND (YEAR(p.tanggal) = ? OR YEAR(p.tanggal) = ?)";
+            WHERE p.santri_id = ? AND p.tanggal BETWEEN ? AND ?";
 $stmt_pel = $conn->prepare($sql_pel);
-$t2 = $tahun_awal + 1;
-$stmt_pel->bind_param('iii', $santri_id, $tahun_awal, $t2);
+$stmt_pel->bind_param('iss', $santri_id, $tgl_awal, $tgl_akhir);
 $stmt_pel->execute();
 $total_pelanggaran = (int)$stmt_pel->get_result()->fetch_assoc()['total'];
 $stmt_pel->close();
 
 $sql_rew = "SELECT SUM(jr.poin_reward) as total FROM daftar_reward rwd
             JOIN jenis_reward jr ON rwd.jenis_reward_id = jr.id
-            WHERE rwd.santri_id = ? AND (YEAR(rwd.tanggal) = ? OR YEAR(rwd.tanggal) = ?)";
+            WHERE rwd.santri_id = ? AND rwd.tanggal BETWEEN ? AND ?";
 $stmt_rew = $conn->prepare($sql_rew);
-$stmt_rew->bind_param('iii', $santri_id, $tahun_awal, $t2);
+$stmt_rew->bind_param('iss', $santri_id, $tgl_awal, $tgl_akhir);
 $stmt_rew->execute();
 $total_reward = (int)$stmt_rew->get_result()->fetch_assoc()['total'];
 $stmt_rew->close();
@@ -108,11 +111,11 @@ $stmt_rew->close();
 $sql_pel_list = "SELECT jp.nama_pelanggaran, SUM(jp.poin) AS poin, COUNT(*) as jumlah
                  FROM pelanggaran pel
                  JOIN jenis_pelanggaran jp ON pel.jenis_pelanggaran_id = jp.id
-                 WHERE pel.santri_id = ? AND (YEAR(pel.tanggal) = ? OR YEAR(pel.tanggal) = ?)
+                 WHERE pel.santri_id = ? AND pel.tanggal BETWEEN ? AND ?
                  GROUP BY jp.id
                  ORDER BY poin DESC";
 $stmt_pl = $conn->prepare($sql_pel_list);
-$stmt_pl->bind_param('iii', $santri_id, $tahun_awal, $t2);
+$stmt_pl->bind_param('iss', $santri_id, $tgl_awal, $tgl_akhir);
 $stmt_pl->execute();
 $res_pl = $stmt_pl->get_result();
 $pelanggaran_list = [];
@@ -124,11 +127,11 @@ $stmt_pl->close();
 $sql_rew_list = "SELECT jr.nama_reward, SUM(jr.poin_reward) AS poin, COUNT(*) as jumlah
                  FROM daftar_reward rwd
                  JOIN jenis_reward jr ON rwd.jenis_reward_id = jr.id
-                 WHERE rwd.santri_id = ? AND (YEAR(rwd.tanggal) = ? OR YEAR(rwd.tanggal) = ?)
+                 WHERE rwd.santri_id = ? AND rwd.tanggal BETWEEN ? AND ?
                  GROUP BY jr.id
                  ORDER BY poin DESC";
 $stmt_rl = $conn->prepare($sql_rew_list);
-$stmt_rl->bind_param('iii', $santri_id, $tahun_awal, $t2);
+$stmt_rl->bind_param('iss', $santri_id, $tgl_awal, $tgl_akhir);
 $stmt_rl->execute();
 $res_rl = $stmt_rl->get_result();
 $reward_list = [];

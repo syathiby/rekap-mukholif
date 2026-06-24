@@ -136,7 +136,11 @@ foreach ($santri_list as $santri) {
                    total_poin_pelanggaran_saat_itu, total_poin_reward_saat_itu
             FROM rapot_kepengasuhan
             WHERE santri_id = ?
-              AND (tahun = ? OR tahun = ?)
+              AND (
+                  (tahun = ? AND bulan IN ('Juli','Agustus','September','Oktober','November','Desember')) 
+                  OR 
+                  (tahun = ? AND bulan IN ('Januari','Februari','Maret','April','Mei','Juni'))
+              )
             ORDER BY tahun, FIND_IN_SET(bulan, 'Januari,Februari,Maret,April,Mei,Juni,Juli,Agustus,September,Oktober,November,Desember')
         ");
         $stmt_rb->bind_param('iii', $sid, $tahun_awal, $tahun_akhir);
@@ -207,20 +211,23 @@ foreach ($santri_list as $santri) {
         unset($aspek_data);
 
         // ── Total pelanggaran & reward setahun (Query langsung agar akurat) ───────────────────
+        $tgl_awal  = "$tahun_awal-07-01";
+        $tgl_akhir = "$tahun_akhir-06-30";
+
         $sql_pel = "SELECT SUM(jp.poin) as total FROM pelanggaran p
                     JOIN jenis_pelanggaran jp ON p.jenis_pelanggaran_id = jp.id
-                    WHERE p.santri_id = ? AND (YEAR(p.tanggal) = ? OR YEAR(p.tanggal) = ?)";
+                    WHERE p.santri_id = ? AND p.tanggal BETWEEN ? AND ?";
         $stmt_pel = $conn->prepare($sql_pel);
-        $stmt_pel->bind_param('iii', $sid, $tahun_awal, $tahun_akhir);
+        $stmt_pel->bind_param('iss', $sid, $tgl_awal, $tgl_akhir);
         $stmt_pel->execute();
         $total_pelanggaran = (int)$stmt_pel->get_result()->fetch_assoc()['total'];
         $stmt_pel->close();
 
         $sql_rew = "SELECT SUM(jr.poin_reward) as total FROM daftar_reward rwd
                     JOIN jenis_reward jr ON rwd.jenis_reward_id = jr.id
-                    WHERE rwd.santri_id = ? AND (YEAR(rwd.tanggal) = ? OR YEAR(rwd.tanggal) = ?)";
+                    WHERE rwd.santri_id = ? AND rwd.tanggal BETWEEN ? AND ?";
         $stmt_rew = $conn->prepare($sql_rew);
-        $stmt_rew->bind_param('iii', $sid, $tahun_awal, $tahun_akhir);
+        $stmt_rew->bind_param('iss', $sid, $tgl_awal, $tgl_akhir);
         $stmt_rew->execute();
         $total_reward = (int)$stmt_rew->get_result()->fetch_assoc()['total'];
         $stmt_rew->close();

@@ -262,25 +262,113 @@ require_once __DIR__ . '/../../layouts/header.php';
     </div>
 </div>
 
+<style>
+/* Custom Alert Modal Styles */
+.alert-modal-content {
+    border-radius: 20px;
+    border: none;
+}
+.alert-icon-wrapper {
+    width: 60px;
+    height: 60px;
+    border-radius: 50%;
+    background-color: #fee2e2;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin: 0 auto 1rem auto;
+    border: 4px solid #fef2f2;
+}
+.alert-icon-wrapper i {
+    font-size: 1.75rem;
+    color: #ef4444;
+}
+.alert-title {
+    font-weight: 800;
+    font-size: 1.2rem;
+    color: #1e293b;
+    margin-bottom: 0.5rem;
+}
+.alert-text {
+    font-size: 0.85rem;
+    color: #64748b;
+    line-height: 1.5;
+    margin-bottom: 1rem;
+}
+.alert-warning-box {
+    background-color: #fff7ed;
+    border: 1px solid #fed7aa;
+    border-radius: 10px;
+    padding: 0.75rem;
+    color: #c2410c;
+    font-size: 0.8rem;
+    font-weight: 600;
+    margin-bottom: 1.5rem;
+}
+.alert-btn-cancel {
+    background-color: #f1f5f9;
+    color: #475569;
+    border: none;
+    font-weight: 700;
+    font-size: 0.9rem;
+    padding: 10px 20px;
+    border-radius: 10px;
+    transition: all 0.2s;
+    width: 100%;
+}
+.alert-btn-cancel:hover {
+    background-color: #e2e8f0;
+    color: #1e293b;
+}
+.alert-btn-confirm {
+    background-color: #ef4444;
+    color: white;
+    border: none;
+    font-weight: 700;
+    font-size: 0.9rem;
+    padding: 10px 20px;
+    border-radius: 10px;
+    transition: all 0.2s;
+    width: 100%;
+}
+.alert-btn-confirm:hover {
+    background-color: #dc2626;
+    color: white;
+}
+.alert-actions {
+    display: flex;
+    gap: 10px;
+    justify-content: center;
+}
+
+@media (max-width: 576px) {
+    .alert-actions {
+        flex-direction: column-reverse;
+    }
+}
+</style>
+
 <!-- Modal Konfirmasi Restore -->
-<div class="modal fade" id="confirmRestoreModal" tabindex="-1" aria-labelledby="confirmRestoreModalLabel" aria-hidden="true">
-  <div class="modal-dialog modal-dialog-centered">
-    <div class="modal-content border-0 shadow-lg">
-      <div class="modal-header bg-danger text-white border-0">
-        <h5 class="modal-title fw-bold" id="confirmRestoreModalLabel"><i class="fas fa-exclamation-triangle me-2"></i> PERINGATAN BAHAYA!</h5>
-        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
-      </div>
-      <div class="modal-body p-4">
-        <p class="text-dark mb-3" style="font-size: 0.95rem; line-height: 1.6;">Proses restore akan menghapus <strong>SELURUH data yang ada saat ini</strong> dan menggantinya secara total dengan data dari file backup.</p>
-        <div class="p-3 bg-danger bg-opacity-10 rounded border border-danger border-opacity-25">
-            <p class="text-danger fw-bold mb-0" style="font-size: 0.9rem;"><i class="fas fa-exclamation-circle me-1"></i> Tindakan ini tidak dapat dibatalkan. Apakah Anda benar-benar yakin ingin melanjutkan?</p>
+<div class="modal fade" id="confirmRestoreModal" tabindex="-1" aria-hidden="true">
+  <div class="modal-dialog modal-dialog-centered modal-sm">
+    <div class="modal-content shadow-lg alert-modal-content text-center">
+      <div class="modal-body p-3 p-sm-4">
+        <div class="alert-icon-wrapper">
+            <i class="fas fa-exclamation-triangle"></i>
         </div>
-      </div>
-      <div class="modal-footer border-0 pt-0 pb-4 px-4 d-flex justify-content-end gap-2">
-        <button type="button" class="btn btn-light px-4 py-2 text-secondary fw-bold shadow-sm" data-bs-dismiss="modal">Batal</button>
-        <button type="button" class="btn btn-danger px-4 py-2 fw-bold shadow-sm" id="confirmRestoreBtn">
-            <i class="fas fa-check me-2"></i>Ya, Lanjutkan Restore
-        </button>
+        <h4 class="alert-title">Peringatan Bahaya!</h4>
+        <p class="alert-text px-2">
+            Restore akan menghapus <strong>semua data saat ini</strong> dan menggantinya dengan file backup.
+        </p>
+        <div class="alert-warning-box mx-2">
+            <i class="fas fa-exclamation-circle me-1"></i> Tidak dapat dibatalkan. Yakin lanjut?
+        </div>
+        <div class="alert-actions px-2">
+            <button type="button" class="btn alert-btn-cancel" data-bs-dismiss="modal">Batal</button>
+            <button type="button" class="btn alert-btn-confirm" id="confirmRestoreBtn">
+                <i class="fas fa-check me-1"></i> Ya, Restore
+            </button>
+        </div>
       </div>
     </div>
   </div>

@@ -286,7 +286,7 @@ if ($is_ajax) {
 
 // ─── BUKAN AJAX: Ambil option filter dropdown ────────────────────────
 $bagian_result = mysqli_query($conn, "SELECT DISTINCT bagian FROM jenis_pelanggaran WHERE bagian IS NOT NULL AND bagian != '' ORDER BY bagian ASC");
-$kamar_result  = mysqli_query($conn, "SELECT DISTINCT kamar FROM santri WHERE kamar IS NOT NULL AND kamar != '' ORDER BY kamar ASC");
+$kamar_result  = mysqli_query($conn, "SELECT DISTINCT kamar FROM santri WHERE kamar IS NOT NULL AND kamar != '' ORDER BY LENGTH(kamar) ASC, kamar ASC");
 $kelas_result  = mysqli_query($conn, "SELECT DISTINCT kelas FROM santri WHERE kelas IS NOT NULL AND kelas != '' ORDER BY kelas ASC");
 $jp_result     = mysqli_query($conn, "SELECT DISTINCT jp.id, jp.nama_pelanggaran FROM pelanggaran p JOIN jenis_pelanggaran jp ON p.jenis_pelanggaran_id = jp.id ORDER BY jp.nama_pelanggaran ASC");
 

@@ -22,8 +22,8 @@ try {
     } else {
         $kamar_list_stmt = $conn->query("
             SELECT DISTINCT kamar FROM santri 
-            WHERE kamar IS NOT NULL AND kamar != 0
-            ORDER BY kamar ASC
+            WHERE kamar IS NOT NULL AND kamar != ''
+            ORDER BY LENGTH(kamar) ASC, kamar ASC
         ");
         $kamar_list = $kamar_list_stmt->fetch_all(MYSQLI_ASSOC);
     }

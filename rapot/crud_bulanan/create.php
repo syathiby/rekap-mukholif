@@ -70,7 +70,7 @@ try {
         $params_santri[] = $filter_kamar_create;
         $types_santri .= "s";
     }
-    $sql_santri .= " ORDER BY kamar, nama";
+    $sql_santri .= " ORDER BY LENGTH(kamar) ASC, kamar ASC, nama ASC";
     $stmt = $conn->prepare($sql_santri);
     if (!empty($params_santri)) {
         $stmt->bind_param($types_santri, ...$params_santri);

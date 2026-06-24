@@ -67,7 +67,12 @@ if (!empty($santri_ids)) {
                COUNT(DISTINCT bulan) as total_bulan,
                SUM(CASE WHEN bulan = 'Juni' THEN 1 ELSE 0 END) as has_juni
         FROM rapot_kepengasuhan 
-        WHERE santri_id IN ($placeholders) AND (tahun = ? OR tahun = ?)
+        WHERE santri_id IN ($placeholders) 
+          AND (
+              (tahun = ? AND bulan IN ('Juli','Agustus','September','Oktober','November','Desember')) 
+              OR 
+              (tahun = ? AND bulan IN ('Januari','Februari','Maret','April','Mei','Juni'))
+          )
         GROUP BY santri_id
     ";
     $stmt_cek = $conn->prepare($sql_cek);

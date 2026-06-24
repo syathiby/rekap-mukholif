@@ -117,16 +117,19 @@ try {
         [$tahun_awal] = explode('/', $rapot['periode']);
         $tahun_akhir  = (int)$tahun_awal + 1;
 
+        $tgl_awal = "$tahun_awal-07-01";
+        $tgl_akhir = "$tahun_akhir-06-30";
+
         $stmt_pel = $conn->prepare("
             SELECT jp.nama_pelanggaran, COUNT(*) AS jumlah, SUM(jp.poin) as total_poin
             FROM pelanggaran p
             JOIN jenis_pelanggaran jp ON p.jenis_pelanggaran_id = jp.id
             WHERE p.santri_id = ?
-              AND (YEAR(p.tanggal) = ? OR YEAR(p.tanggal) = ?)
+              AND p.tanggal BETWEEN ? AND ?
             GROUP BY jp.id, jp.nama_pelanggaran
             ORDER BY jumlah DESC
         ");
-        $stmt_pel->bind_param('iii', $rapot['santri_id'], $tahun_awal, $tahun_akhir);
+        $stmt_pel->bind_param('iss', $rapot['santri_id'], $tgl_awal, $tgl_akhir);
         $stmt_pel->execute();
         $pelanggaran_rekap = $stmt_pel->get_result()->fetch_all(MYSQLI_ASSOC);
         $stmt_pel->close();
@@ -137,11 +140,11 @@ try {
             FROM daftar_reward dr
             JOIN jenis_reward jr ON dr.jenis_reward_id = jr.id
             WHERE dr.santri_id = ?
-              AND (YEAR(dr.tanggal) = ? OR YEAR(dr.tanggal) = ?)
+              AND dr.tanggal BETWEEN ? AND ?
             GROUP BY jr.id, jr.nama_reward
             ORDER BY jumlah DESC
         ");
-        $stmt_rwd->bind_param('iii', $rapot['santri_id'], $tahun_awal, $tahun_akhir);
+        $stmt_rwd->bind_param('iss', $rapot['santri_id'], $tgl_awal, $tgl_akhir);
         $stmt_rwd->execute();
         $reward_rekap = $stmt_rwd->get_result()->fetch_all(MYSQLI_ASSOC);
         $stmt_rwd->close();

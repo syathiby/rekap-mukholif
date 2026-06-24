@@ -33,7 +33,7 @@ $filter_periode = $_GET['periode'] ?? ($periode_list[0] ?? '');
 // Get kamars from arsip_data_rapot_tahunan
 $kamar_list = [];
 if (!empty($filter_periode)) {
-    $k_stmt = $conn->prepare("SELECT DISTINCT kamar FROM arsip_data_rapot_tahunan WHERE arsip_id = ? AND periode = ? ORDER BY kamar ASC");
+    $k_stmt = $conn->prepare("SELECT DISTINCT kamar FROM arsip_data_rapot_tahunan WHERE arsip_id = ? AND periode = ? ORDER BY LENGTH(kamar) ASC, kamar ASC");
     $k_stmt->bind_param('is', $arsip_id, $filter_periode);
     $k_stmt->execute();
     $res_k = $k_stmt->get_result();
