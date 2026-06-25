@@ -190,7 +190,40 @@ class ExcelTemplate {
         // Print settings, footer, lalu auto-fit
         self::applyPrintSettings($sheet, $titleName, $headerLastCol);
         self::renderFooterNote($sheet, $palette, $headerLastCol, $dataEndRow);
-        self::autoFitColumns($sheet, $tableHeaderRow, $dataEndRow, $dataLastCol, $headerLastCol);
+        self::autoFitColumns($sheet, $tableHeaderRow, $dataEndRow, $dataLastCol, $headerLastCol, false);
+    }
+
+    // ═══════════════════════════════════════════════════════════════
+    // EXPORT MASTER DATA (RAW STYLE)
+    // ═══════════════════════════════════════════════════════════════
+
+    public static function applyRawStyle(
+        Worksheet &$sheet,
+        string $themeType = self::THEME_GENERAL
+    ): void {
+        // Font premium global
+        $sheet->getParent()->getDefaultStyle()->getFont()->setName('Segoe UI')->setSize(10);
+
+        $palette = self::getThemePalette($themeType);
+
+        $dataLastCol = $sheet->getHighestColumn();
+        $originalHighestRow = $sheet->getHighestRow();
+
+        $tableHeaderRow = 1; 
+        $dataStartRow   = 2;          
+        $dataEndRow     = $originalHighestRow;
+
+        self::styleTableHeader($sheet, $palette, $dataLastCol, $tableHeaderRow);
+        
+        if ($dataEndRow >= $dataStartRow) {
+            self::styleDataRows($sheet, $palette, $dataLastCol, $dataStartRow, $dataEndRow);
+        }
+        
+        self::applyTableNavigation($sheet, $dataLastCol, $tableHeaderRow, $dataStartRow);
+        
+        // Auto-fit kolom dengan isRaw = true agar kolom pertama tidak terkunci lebarnya
+        $fitEndRow = ($dataEndRow >= $dataStartRow) ? $dataEndRow : $tableHeaderRow;
+        self::autoFitColumns($sheet, $tableHeaderRow, $fitEndRow, $dataLastCol, $dataLastCol, true);
     }
 
     // ═══════════════════════════════════════════════════════════════
@@ -513,6 +546,10 @@ class ExcelTemplate {
         int $startRow,
         int $endRow
     ): void {
+        if ($startRow > $endRow) {
+            return;
+        }
+
         $fullRange = 'A' . $startRow . ':' . $lastCol . $endRow;
 
         // Border tabel + alignment vertikal massal (O(1))
@@ -635,7 +672,8 @@ class ExcelTemplate {
         int $startRow,
         int $endRow,
         string $dataLastCol,
-        string $headerLastCol
+        string $headerLastCol,
+        bool $isRaw = false
     ): void {
         $dataIdx   = \PhpOffice\PhpSpreadsheet\Cell\Coordinate::columnIndexFromString($dataLastCol);
         $headerIdx = \PhpOffice\PhpSpreadsheet\Cell\Coordinate::columnIndexFromString($headerLastCol);
@@ -643,8 +681,8 @@ class ExcelTemplate {
         for ($c = 1; $c <= $headerIdx; $c++) {
             $cl = \PhpOffice\PhpSpreadsheet\Cell\Coordinate::stringFromColumnIndex($c);
 
-            // Kolom A → kunci di 6 (menampung "No" tanpa melar)
-            if ($c === 1) {
+            // Kolom A → kunci di 6 (menampung "No" tanpa melar), kecuali pada mode Raw
+            if ($c === 1 && !$isRaw) {
                 $sheet->getColumnDimension($cl)->setWidth(6);
                 continue;
             }

@@ -17,7 +17,7 @@ if (!isset($_POST['csrf_token']) || !isset($_SESSION['csrf_token']) || !hash_equ
 use PhpOffice\PhpSpreadsheet\Spreadsheet;
 use PhpOffice\PhpSpreadsheet\Writer\Xlsx;
 
-require_once __DIR__ . '/template-export.php';
+require_once __DIR__ . '/../classes/ExcelTemplate.php';
 
 // =================================================================================
 // KONSTANTA IDENTITAS LEMBAGA
@@ -397,21 +397,9 @@ if (isset($_POST['export'])) {
         }
     }
 
-    ExcelTemplate::applyExecutiveStyle(
+    ExcelTemplate::applyRawStyle(
         $sheet,
-        'Data Induk Profil Santri Aktif',
-        ExcelTemplate::THEME_GENERAL,
-        [
-            'institution'  => LEMBAGA_NAMA,
-            'address'      => LEMBAGA_ALAMAT,
-            'period'       => LEMBAGA_PERIODE,
-            'printed_by'   => $printed_by,
-            'doc_number'   => 'ASUH/DATA/' . date('Y') . '/001',
-            'summary_data' => [
-                ['label' => 'Total Santri Aktif',   'value' => $totalSantri . ' santri'],
-                ['label' => 'Status Data',          'value' => 'Terverifikasi'],
-            ],
-        ]
+        ExcelTemplate::THEME_GENERAL
     );
 
     $namaFile = 'Master_Data_Santri_' . date('d-m-Y') . '.xlsx';
@@ -457,22 +445,9 @@ if (isset($_POST['export'])) {
         }
     }
 
-    ExcelTemplate::applyExecutiveStyle(
+    ExcelTemplate::applyRawStyle(
         $sheet,
-        'Data Master Klasifikasi Jenis Pelanggaran',
-        ExcelTemplate::THEME_GENERAL,
-        [
-            'institution'  => LEMBAGA_NAMA,
-            'address'      => LEMBAGA_ALAMAT,
-            'period'       => LEMBAGA_PERIODE,
-            'printed_by'   => $printed_by,
-            'doc_number'   => 'ASUH/DATA/' . date('Y') . '/002',
-            'summary_data' => [
-                ['label' => 'Total Jenis',   'value' => $totalJenis . ' jenis'],
-                ['label' => 'Bagian',        'value' => count($totalBagian) . ' bagian'],
-                ['label' => 'Tingkat',       'value' => implode(', ', array_keys($totalKategori))],
-            ],
-        ]
+        ExcelTemplate::THEME_GENERAL
     );
 
     $namaFile = 'Master_Data_Jenis_Pelanggaran_' . date('d-m-Y') . '.xlsx';
@@ -512,21 +487,9 @@ if (isset($_POST['export'])) {
         }
     }
 
-    ExcelTemplate::applyExecutiveStyle(
+    ExcelTemplate::applyRawStyle(
         $sheet,
-        'Data Master Klasifikasi Jenis Reward',
-        ExcelTemplate::THEME_REWARD,
-        [
-            'institution'  => LEMBAGA_NAMA,
-            'address'      => LEMBAGA_ALAMAT,
-            'period'       => LEMBAGA_PERIODE,
-            'printed_by'   => $printed_by,
-            'doc_number'   => 'ASUH/DATA/' . date('Y') . '/003',
-            'summary_data' => [
-                ['label' => 'Total Jenis Reward', 'value' => $totalJenis . ' jenis'],
-                ['label' => 'Akumulasi Poin',     'value' => $totalPoin . ' poin'],
-            ],
-        ]
+        ExcelTemplate::THEME_REWARD
     );
 
     $namaFile = 'Master_Data_Jenis_Reward_' . date('d-m-Y') . '.xlsx';
