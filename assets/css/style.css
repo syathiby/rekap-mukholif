@@ -590,12 +590,10 @@ a {
     background-size: 400% 400%;
     animation: gradientBg 15s ease infinite;
     min-height: 100vh;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    padding: 1.5rem;
+    display: block;
+    padding: 6vh 1.5rem 8rem 1.5rem; /* Extra bottom padding so PWA button doesn't block form */
     position: relative;
-    overflow: hidden;
+    overflow: visible !important; /* Ensure scrolling works everywhere */
 }
 
 .login-card-wrapper {
@@ -611,6 +609,7 @@ a {
     z-index: 10;
     position: relative;
     animation: fadeInUp 0.6s ease-out forwards;
+    margin: 0 auto;
 }
 
 @keyframes fadeInUp {

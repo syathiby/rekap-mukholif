@@ -546,22 +546,24 @@ $teladan_onclick = !$can_view_santri_teladan ? 'onclick="event.preventDefault();
                                     <?php if(count($top_violators) > 0): ?>
                                         <?php foreach($top_violators as $violator): ?>
                                             <div class="student-item d-flex align-items-center p-3 border rounded bg-white shadow-sm">
-                                                <div class="student-avatar rounded-circle text-white d-flex align-items-center justify-content-center me-3 fw-bold" style="background: linear-gradient(135deg, #ef4444, #b91c1c); box-shadow: 0 3px 8px rgba(239,68,68,0.2);">
+                                                <div class="student-avatar flex-shrink-0 rounded-circle text-white d-flex align-items-center justify-content-center me-3 fw-bold" style="background: linear-gradient(135deg, #ef4444, #b91c1c); box-shadow: 0 3px 8px rgba(239,68,68,0.2);">
                                                     <?= htmlspecialchars(substr($violator['nama'], 0, 1)) ?>
                                                 </div>
-                                                <div class="flex-grow-1">
-                                                    <div class="fw-bold text-dark text-truncate" style="max-width: 180px;"><?= htmlspecialchars($violator['nama']) ?></div>
+                                                <div class="flex-grow-1" style="min-width: 0; padding-right: 10px;">
+                                                    <div class="fw-bold text-dark text-truncate" style="max-width: 100%;"><?= htmlspecialchars($violator['nama']) ?></div>
                                                     <div class="text-muted" style="font-size: 11px;">
                                                         <span class="me-2"><i class="fas fa-home opacity-75"></i> Km. <?= htmlspecialchars($violator['kamar']) ?></span>
                                                     </div>
                                                     <div class="mt-1">
-                                                        <span class="badge bg-light text-secondary border px-2 py-1" style="font-size: 10px;">
+                                                        <span class="badge bg-light text-secondary border px-2 py-1 text-truncate" style="font-size: 10px; max-width: 100%;">
                                                             Poin Bersih: <strong class="text-dark"><?= max(0, (int)$violator['poin_bersih_periode']) ?></strong>
                                                         </span>
                                                     </div>
                                                 </div>
-                                                <div class="badge text-white rounded-pill px-3 py-2 fw-bold" style="background-color: #ef4444; font-size: 14px;">
-                                                    <?= (int)$violator['total_poin'] ?>
+                                                <div class="flex-shrink-0">
+                                                    <div class="badge text-white rounded-pill px-3 py-2 fw-bold" style="background-color: #ef4444; font-size: 14px;">
+                                                        <?= (int)$violator['total_poin'] ?>
+                                                    </div>
                                                 </div>
                                             </div>
                                         <?php endforeach; ?>
@@ -590,12 +592,12 @@ $teladan_onclick = !$can_view_santri_teladan ? 'onclick="event.preventDefault();
                                             $str_rapot = ($rapot > 0) ? number_format($rapot, 1, '.', '') : '-';
                                         ?>
                                             <div class="student-item d-flex align-items-center p-3 border rounded bg-white shadow-sm position-relative">
-                                                <div class="student-avatar rounded-circle text-white d-flex align-items-center justify-content-center me-3 fw-bold" style="background: linear-gradient(135deg, #10b981, #059669); box-shadow: 0 3px 8px rgba(16,185,129,0.2);">
+                                                <div class="student-avatar flex-shrink-0 rounded-circle text-white d-flex align-items-center justify-content-center me-3 fw-bold" style="background: linear-gradient(135deg, #10b981, #059669); box-shadow: 0 3px 8px rgba(16,185,129,0.2);">
                                                     <?= htmlspecialchars(substr($student['nama'], 0, 1)) ?>
                                                 </div>
-                                                <div class="flex-grow-1">
-                                                    <div class="fw-bold text-dark text-truncate" style="max-width: 180px;"><?= htmlspecialchars($student['nama']) ?></div>
-                                                    <div class="text-muted" style="font-size: 11px;">
+                                                <div class="flex-grow-1" style="min-width: 0; padding-right: 10px;">
+                                                    <div class="fw-bold text-dark text-truncate" style="max-width: 100%;"><?= htmlspecialchars($student['nama']) ?></div>
+                                                    <div class="text-muted text-truncate" style="font-size: 11px; max-width: 100%;">
                                                         <span class="me-2"><i class="fas fa-home opacity-75"></i> Km. <?= htmlspecialchars($student['kamar']) ?></span>
                                                         <span><i class="fas fa-graduation-cap opacity-75"></i> Kls <?= htmlspecialchars($student['kelas']) ?></span>
                                                     </div>
@@ -604,7 +606,9 @@ $teladan_onclick = !$can_view_santri_teladan ? 'onclick="event.preventDefault();
                                                         <div class="mini-stat text-primary"><i class="fas fa-star"></i> <span style="font-size: 12px;"> <?= $str_rapot ?></span></div>
                                                     </div>
                                                 </div>
-                                                <div class="rank-badge-sm <?= $rank_class ?>"><?= $no ?></div>
+                                                <div class="flex-shrink-0">
+                                                    <div class="rank-badge-sm <?= $rank_class ?>"><?= $no ?></div>
+                                                </div>
                                             </div>
                                         <?php $no++; endforeach; ?>
                                     <?php else: ?>
@@ -622,17 +626,19 @@ $teladan_onclick = !$can_view_santri_teladan ? 'onclick="event.preventDefault();
                                     <?php if(count($top_histori) > 0): ?>
                                         <?php foreach($top_histori as $histori): ?>
                                             <div class="student-item d-flex align-items-center p-3 border rounded bg-white shadow-sm">
-                                                <div class="student-avatar rounded-circle text-white d-flex align-items-center justify-content-center me-3 fw-bold" style="background: linear-gradient(135deg, #64748b, #334155); box-shadow: 0 3px 8px rgba(100,116,139,0.2);">
+                                                <div class="student-avatar flex-shrink-0 rounded-circle text-white d-flex align-items-center justify-content-center me-3 fw-bold" style="background: linear-gradient(135deg, #64748b, #334155); box-shadow: 0 3px 8px rgba(100,116,139,0.2);">
                                                     <?= htmlspecialchars(substr($histori['nama'], 0, 1)) ?>
                                                 </div>
-                                                <div class="flex-grow-1">
-                                                    <div class="fw-bold text-dark text-truncate" style="max-width: 180px;"><?= htmlspecialchars($histori['nama']) ?></div>
+                                                <div class="flex-grow-1" style="min-width: 0; padding-right: 10px;">
+                                                    <div class="fw-bold text-dark text-truncate" style="max-width: 100%;"><?= htmlspecialchars($histori['nama']) ?></div>
                                                     <div class="text-muted" style="font-size: 11px;">
                                                         <span class="me-2"><i class="fas fa-home opacity-75"></i> Km. <?= htmlspecialchars($histori['kamar']) ?></span>
                                                     </div>
                                                 </div>
-                                                <div class="badge text-white rounded-pill px-3 py-2 fw-bold" style="background-color: #475569; font-size: 14px;" data-bs-toggle="tooltip" title="Poin Histori (All-Time)">
-                                                    <?= (int)$histori['poin_aktif'] ?>
+                                                <div class="flex-shrink-0">
+                                                    <div class="badge text-white rounded-pill px-3 py-2 fw-bold" style="background-color: #475569; font-size: 14px;" data-bs-toggle="tooltip" title="Poin Histori (All-Time)">
+                                                        <?= (int)$histori['poin_aktif'] ?>
+                                                    </div>
                                                 </div>
                                             </div>
                                         <?php endforeach; ?>
@@ -655,11 +661,27 @@ $teladan_onclick = !$can_view_santri_teladan ? 'onclick="event.preventDefault();
         $now = new DateTime;
         $ago = new DateTime($datetime);
         $diff = $now->diff($ago);
-        $diff->w = floor($diff->d / 7);
-        $diff->d -= $diff->w * 7;
+        
+        $w = floor($diff->d / 7);
+        $d = $diff->d - ($w * 7);
+        
+        $parts = [
+            'y' => $diff->y,
+            'm' => $diff->m,
+            'w' => $w,
+            'd' => $d,
+            'h' => $diff->h,
+            'i' => $diff->i,
+            's' => $diff->s,
+        ];
+        
         $string = [ 'y' => 'tahun', 'm' => 'bulan', 'w' => 'minggu', 'd' => 'hari', 'h' => 'jam', 'i' => 'menit', 's' => 'detik' ];
         foreach ($string as $k => &$v) {
-            if ($diff->$k) $v = $diff->$k . ' ' . $v . ($diff->$k > 1 ? '' : ''); else unset($string[$k]);
+            if ($parts[$k]) {
+                $v = $parts[$k] . ' ' . $v;
+            } else {
+                unset($string[$k]);
+            }
         }
         if (!$full) $string = array_slice($string, 0, 1);
         return $string ? implode(', ', $string) . ' yang lalu' : 'baru saja';

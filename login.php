@@ -339,6 +339,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 Masuk Sistem
             </button>
         </form>
+
+        <!-- Minimalist Footer -->
+        <div class="text-center mt-4" style="font-size: 0.75rem; color: #64748b;">
+            &copy; 2025 Built by <a href="https://ajsk.vercel.app/" target="_blank" rel="noopener noreferrer" class="text-decoration-none fw-bold" style="color: var(--primary);">AJSK.</a>
+        </div>
     </div>
 
     <!-- ── Tombol Install PWA (muncul otomatis jika bisa di-install) ── -->
