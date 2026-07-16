@@ -60,10 +60,10 @@ if (isset($_POST['tutup_buku_massal'])) {
             FROM pelanggaran p 
             JOIN santri s ON p.santri_id = s.id 
             JOIN jenis_pelanggaran jp ON p.jenis_pelanggaran_id = jp.id 
-            WHERE DATE(p.tanggal) BETWEEN ? AND ?";
+            WHERE DATE(p.tanggal) >= ?";
         
         $stmt_pelanggaran_snapshot = $conn->prepare($sql_pelanggaran_snapshot);
-        $stmt_pelanggaran_snapshot->bind_param('iss', $arsip_id, $tgl_mulai, $tgl_selesai);
+        $stmt_pelanggaran_snapshot->bind_param('is', $arsip_id, $tgl_mulai);
         $stmt_pelanggaran_snapshot->execute();
         $stmt_pelanggaran_snapshot->close();
 
@@ -74,10 +74,10 @@ if (isset($_POST['tutup_buku_massal'])) {
             SELECT ?, pk.kamar, pk.catatan, pk.tanggal, pk.dicatat_oleh, u.nama_lengkap
             FROM pelanggaran_kebersihan pk
             LEFT JOIN users u ON pk.dicatat_oleh = u.id
-            WHERE DATE(pk.tanggal) BETWEEN ? AND ?";
+            WHERE DATE(pk.tanggal) >= ?";
         
         $stmt_kebersihan_snapshot = $conn->prepare($sql_kebersihan_snapshot);
-        $stmt_kebersihan_snapshot->bind_param('iss', $arsip_id, $tgl_mulai, $tgl_selesai);
+        $stmt_kebersihan_snapshot->bind_param('is', $arsip_id, $tgl_mulai);
         $stmt_kebersihan_snapshot->execute();
         $stmt_kebersihan_snapshot->close();
 
@@ -147,8 +147,8 @@ if (isset($_POST['tutup_buku_massal'])) {
         $stmt_rapot_tahunan_snapshot->close();
 
         // 2. RESET PELANGGARAN KEBERSIHAN & RAPOT
-        $stmt_del_kebersihan = $conn->prepare("DELETE FROM pelanggaran_kebersihan WHERE DATE(tanggal) BETWEEN ? AND ?");
-        $stmt_del_kebersihan->bind_param('ss', $tgl_mulai, $tgl_selesai);
+        $stmt_del_kebersihan = $conn->prepare("DELETE FROM pelanggaran_kebersihan WHERE DATE(tanggal) >= ?");
+        $stmt_del_kebersihan->bind_param('s', $tgl_mulai);
         $stmt_del_kebersihan->execute();
         
         // Rapot tidak punya filter rentang tanggal, namun kita amankan dengan periode tahun berjalan
@@ -178,14 +178,12 @@ if (isset($_POST['tutup_buku_massal'])) {
                     FROM pelanggaran p 
                     JOIN jenis_pelanggaran jp ON p.jenis_pelanggaran_id = jp.id 
                     WHERE p.santri_id = s.id AND jp.kategori = 'Sangat Berat'
-                    AND DATE(p.tanggal) <= ?
                 ), 0),
                 COALESCE((
                     SELECT SUM(jp.poin) 
                     FROM pelanggaran p 
                     JOIN jenis_pelanggaran jp ON p.jenis_pelanggaran_id = jp.id 
                     WHERE p.santri_id = s.id
-                    AND DATE(p.tanggal) <= ?
                 ), 0)
                 - 
                 COALESCE((
@@ -193,25 +191,23 @@ if (isset($_POST['tutup_buku_massal'])) {
                     FROM daftar_reward dr 
                     JOIN jenis_reward jr ON dr.jenis_reward_id = jr.id 
                     WHERE dr.santri_id = s.id
-                    AND DATE(dr.tanggal) <= ?
                 ), 0)
             )
         ";
         $stmt_update_poin = $conn->prepare($sql_update_poin);
-        $stmt_update_poin->bind_param('sss', $tgl_selesai, $tgl_selesai, $tgl_selesai);
         $stmt_update_poin->execute();
 
         // 4. HAPUS DATA PELANGGARAN RINGAN-SEDANG & REWARD
         $stmt_del_pelanggaran = $conn->prepare("
             DELETE p FROM pelanggaran p
             JOIN jenis_pelanggaran jp ON p.jenis_pelanggaran_id = jp.id
-            WHERE jp.kategori != 'Sangat Berat' AND DATE(p.tanggal) BETWEEN ? AND ?
+            WHERE jp.kategori != 'Sangat Berat' AND DATE(p.tanggal) >= ?
         ");
-        $stmt_del_pelanggaran->bind_param('ss', $tgl_mulai, $tgl_selesai);
+        $stmt_del_pelanggaran->bind_param('s', $tgl_mulai);
         $stmt_del_pelanggaran->execute();
 
-        $stmt_del_reward = $conn->prepare("DELETE FROM daftar_reward WHERE DATE(tanggal) BETWEEN ? AND ?");
-        $stmt_del_reward->bind_param('ss', $tgl_mulai, $tgl_selesai);
+        $stmt_del_reward = $conn->prepare("DELETE FROM daftar_reward WHERE DATE(tanggal) >= ?");
+        $stmt_del_reward->bind_param('s', $tgl_mulai);
         $stmt_del_reward->execute();
 
         // 4. UPDATE PERIODE AKTIF KE HARI INI

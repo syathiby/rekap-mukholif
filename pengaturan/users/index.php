@@ -177,11 +177,11 @@ $stmt->close();
             <h3 class="fw-bold text-dark mb-1"><i class="fas fa-users-cog text-primary me-2"></i>Manajemen User</h3>
             <p class="text-muted mb-0">Kelola pengguna, perbarui profil, dan kontrol akses sistem.</p>
         </div>
-        <div class="d-flex align-items-center gap-2">
-            <button type="submit" form="bulkDeleteForm" class="btn btn-danger shadow-sm rounded-pill px-4 d-none" id="btnBulkDelete" onclick="return confirm('Yakin ingin menghapus user yang dipilih? Tindakan ini tidak bisa dibatalkan!');">
-                <i class="fas fa-trash-alt me-2"></i> Hapus Terpilih (<span id="selectedCount">0</span>)
+        <div class="d-flex flex-wrap justify-content-start justify-content-md-end align-items-center gap-2">
+            <button type="button" class="btn btn-outline-danger shadow-sm rounded-pill px-4 d-none d-inline-flex align-items-center" id="btnBulkDelete" onclick="if(confirm('Yakin ingin menghapus user yang dipilih? Tindakan ini tidak bisa dibatalkan!')) document.getElementById('bulkDeleteForm').submit();" style="white-space: nowrap;">
+                <i class="fas fa-trash-alt me-2"></i> Hapus (<span id="selectedCount" class="fw-bold mx-1">0</span>)
             </button>
-            <a href="form-user.php" class="btn btn-primary shadow-sm rounded-pill px-4" style="background: linear-gradient(135deg, #3b82f6, #2563eb); border: none;">
+            <a href="form-user.php" class="btn btn-primary shadow-sm rounded-pill px-4" style="background: linear-gradient(135deg, #3b82f6, #2563eb); border: none; white-space: nowrap;">
                 <i class="fas fa-user-plus me-2"></i> Tambah User
             </a>
         </div>
@@ -199,12 +199,17 @@ $stmt->close();
             </div>
             <div class="col-12 col-md-6">
                 <label class="form-label text-muted small fw-bold mb-1"><i class="fas fa-filter me-1"></i> Filter Jabatan</label>
-                <select id="roleFilter" name="role_filter" class="form-select">
-                    <option value="">Semua Jabatan</option>
-                    <?php foreach ($roles as $r): ?>
-                        <option value="<?= htmlspecialchars($r['id']) ?>" <?= $role_filter === $r['id'] ? 'selected' : '' ?>><?= htmlspecialchars($r['role_name']) ?></option>
-                    <?php endforeach; ?>
-                </select>
+                <div class="d-flex gap-2">
+                    <select id="roleFilter" name="role_filter" class="form-select">
+                        <option value="">Semua Jabatan</option>
+                        <?php foreach ($roles as $r): ?>
+                            <option value="<?= htmlspecialchars($r['id']) ?>" <?= $role_filter === $r['id'] ? 'selected' : '' ?>><?= htmlspecialchars($r['role_name']) ?></option>
+                        <?php endforeach; ?>
+                    </select>
+                    <button type="button" id="btnResetFilter" class="btn btn-light border text-secondary fw-medium px-3 d-none" title="Reset Filter">
+                        <i class="fas fa-sync-alt"></i>
+                    </button>
+                </div>
             </div>
             <!-- Tombol manual dihilangkan agar UI lebih clean karena sudah auto-load via AJAX -->
         </form>
@@ -356,17 +361,47 @@ document.addEventListener('DOMContentLoaded', function() {
     let debounceTimer;
     const searchInput = document.getElementById('searchInput');
     const roleFilter = document.getElementById('roleFilter');
+    const btnResetFilter = document.getElementById('btnResetFilter');
     const tableContainer = document.querySelector('.table-container');
 
+    const STORAGE_KEY_SEARCH = 'user_manage_search';
+    const STORAGE_KEY_ROLE = 'user_manage_role';
+    const STORAGE_KEY_SELECTED = 'user_manage_selected';
+
+    // Helper: State memori Centangan (Checkboxes)
+    function getStoredSelected() {
+        const data = sessionStorage.getItem(STORAGE_KEY_SELECTED);
+        return data ? new Set(JSON.parse(data)) : new Set();
+    }
+    function saveStoredSelected(set) {
+        sessionStorage.setItem(STORAGE_KEY_SELECTED, JSON.stringify(Array.from(set)));
+    }
+
+    // Helper: State memori Filter
+    function saveFilters() {
+        if(searchInput) sessionStorage.setItem(STORAGE_KEY_SEARCH, searchInput.value);
+        if(roleFilter) sessionStorage.setItem(STORAGE_KEY_ROLE, roleFilter.value);
+        toggleResetButton();
+    }
+
+    function toggleResetButton() {
+        if (!btnResetFilter) return;
+        if ((searchInput && searchInput.value) || (roleFilter && roleFilter.value)) {
+            btnResetFilter.classList.remove('d-none');
+        } else {
+            btnResetFilter.classList.add('d-none');
+        }
+    }
+
     function fetchFilteredData() {
-        // Efek loading transparan
+        if(!tableContainer) return;
         tableContainer.style.opacity = '0.4';
+        saveFilters(); // Simpan setiap kali fetch
         
         const url = new URL(window.location.href);
-        url.searchParams.set('search', searchInput.value);
-        url.searchParams.set('role_filter', roleFilter.value);
+        if(searchInput) url.searchParams.set('search', searchInput.value);
+        if(roleFilter) url.searchParams.set('role_filter', roleFilter.value);
         
-        // Update URL tanpa reload
         window.history.replaceState({}, '', url);
 
         fetch(url)
@@ -374,11 +409,12 @@ document.addEventListener('DOMContentLoaded', function() {
             .then(html => {
                 const parser = new DOMParser();
                 const doc = parser.parseFromString(html, 'text/html');
-                const newTable = doc.querySelector('.table-container').innerHTML;
-                tableContainer.innerHTML = newTable;
+                const newTableContainer = doc.querySelector('.table-container');
+                if(newTableContainer) {
+                    tableContainer.innerHTML = newTableContainer.innerHTML;
+                }
                 tableContainer.style.opacity = '1';
                 
-                // Pasang kembali event listener pada checkbox
                 bindCheckboxEvents();
             })
             .catch(error => {
@@ -387,55 +423,113 @@ document.addEventListener('DOMContentLoaded', function() {
             });
     }
 
+    // Event Listeners Filter
     if (searchInput) {
         searchInput.addEventListener('input', () => {
             clearTimeout(debounceTimer);
-            debounceTimer = setTimeout(fetchFilteredData, 300); // 300ms debounce sangat responsif
+            debounceTimer = setTimeout(fetchFilteredData, 300);
         });
     }
-
     if (roleFilter) {
         roleFilter.addEventListener('change', fetchFilteredData);
     }
+    if (btnResetFilter) {
+        btnResetFilter.addEventListener('click', () => {
+            if(searchInput) searchInput.value = '';
+            if(roleFilter) roleFilter.value = '';
+            fetchFilteredData();
+        });
+    }
 
+    // Checkbox Logic
     function bindCheckboxEvents() {
         const selectAll = document.getElementById('selectAll');
         const checkboxes = document.querySelectorAll('.user-checkbox');
         const btnBulkDelete = document.getElementById('btnBulkDelete');
         const selectedCount = document.getElementById('selectedCount');
 
+        let selectedSet = getStoredSelected();
+
+        // Terapkan state centangan dari memori ke UI yang baru dirender
+        checkboxes.forEach(cb => {
+            cb.checked = selectedSet.has(cb.value);
+        });
+
         function updateBulkDeleteButton() {
             if(!btnBulkDelete) return;
-            const checkedCount = document.querySelectorAll('.user-checkbox:checked').length;
-            if(selectedCount) selectedCount.textContent = checkedCount;
-            if (checkedCount > 0) {
+            const count = selectedSet.size;
+            if(selectedCount) selectedCount.textContent = count;
+            if (count > 0) {
                 btnBulkDelete.classList.remove('d-none');
             } else {
                 btnBulkDelete.classList.add('d-none');
-                if(selectAll) selectAll.checked = false;
+            }
+        }
+
+        function handleSelectionChange() {
+            checkboxes.forEach(cb => {
+                if (cb.checked) {
+                    selectedSet.add(cb.value);
+                } else {
+                    selectedSet.delete(cb.value);
+                }
+            });
+            saveStoredSelected(selectedSet);
+            updateBulkDeleteButton();
+            
+            if (selectAll) {
+                const totalCheckboxes = checkboxes.length;
+                const checkedCount = document.querySelectorAll('.user-checkbox:checked').length;
+                selectAll.checked = (totalCheckboxes > 0 && totalCheckboxes === checkedCount);
             }
         }
 
         if (selectAll) {
             selectAll.addEventListener('change', function() {
-                checkboxes.forEach(cb => {
-                    cb.checked = selectAll.checked;
-                });
-                updateBulkDeleteButton();
+                checkboxes.forEach(cb => { cb.checked = selectAll.checked; });
+                handleSelectionChange();
             });
+            // Update initial state of selectAll
+            const totalCheckboxes = checkboxes.length;
+            const checkedCount = document.querySelectorAll('.user-checkbox:checked').length;
+            selectAll.checked = (totalCheckboxes > 0 && totalCheckboxes === checkedCount);
         }
 
         checkboxes.forEach(cb => {
-            cb.addEventListener('change', function() {
-                const allChecked = Array.from(checkboxes).every(c => c.checked);
-                if(selectAll) selectAll.checked = allChecked;
-                updateBulkDeleteButton();
-            });
+            cb.addEventListener('change', handleSelectionChange);
         });
+
+        updateBulkDeleteButton();
     }
 
-    // Bind event awal
-    bindCheckboxEvents();
+    // INIT PAGE LOAD
+    const urlParams = new URLSearchParams(window.location.search);
+    // Jika tidak ada filter di URL, tapi ada di memori, auto-load memori
+    if (!urlParams.has('search') && !urlParams.has('role_filter')) {
+        const storedSearch = sessionStorage.getItem(STORAGE_KEY_SEARCH);
+        const storedRole = sessionStorage.getItem(STORAGE_KEY_ROLE);
+        
+        let needsFetch = false;
+        if (storedSearch !== null && searchInput && storedSearch !== searchInput.value) {
+            searchInput.value = storedSearch;
+            needsFetch = true;
+        }
+        if (storedRole !== null && roleFilter && storedRole !== roleFilter.value) {
+            roleFilter.value = storedRole;
+            needsFetch = true;
+        }
+        
+        toggleResetButton();
+        if (needsFetch) {
+            fetchFilteredData();
+        } else {
+            bindCheckboxEvents();
+        }
+    } else {
+        // Jika ada di URL, pastikan filter sinkron dengan URL (sudah di PHP) dan simpan ke memori
+        saveFilters();
+        bindCheckboxEvents();
+    }
 });
 </script>
 

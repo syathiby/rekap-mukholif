@@ -141,6 +141,7 @@ if (!$dashboard_data) {
             s.nama, 
             s.kamar, 
             SUM(jp.poin) as total_poin,
+            COUNT(p.id) as total_pelanggaran,
             COALESCE(rwd.total_reward, 0) as total_reward,
             (SUM(jp.poin) - COALESCE(rwd.total_reward, 0)) AS poin_bersih_periode
         FROM pelanggaran p
@@ -155,7 +156,7 @@ if (!$dashboard_data) {
         ) rwd ON s.id = rwd.santri_id
         WHERE p.tanggal BETWEEN '$start_date_sql' AND '$end_date_sql'
         GROUP BY s.id
-        ORDER BY total_poin DESC, s.nama ASC
+        ORDER BY total_poin DESC, total_pelanggaran DESC, s.nama ASC
         LIMIT 5
     ");
     $top_violators = [];

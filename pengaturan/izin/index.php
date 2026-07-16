@@ -25,8 +25,22 @@ if ($selectedUserId && $selectedUserId === $loggedInUserId) {
 // Ambil semua user untuk dropdown (kecuali admin dan user yang sedang login)
 // --- LOGIKA BARU: Jika bukan admin, jangan tampilkan user dengan role 'pengelola' ---
 $is_admin = (isset($_SESSION['role']) && strtolower($_SESSION['role']) === 'admin');
-$role_condition = $is_admin ? "role != 'admin'" : "role NOT IN ('admin', 'pengelola')";
-$usersResult = $conn->query("SELECT id, nama_lengkap, username FROM users WHERE $role_condition AND id != $loggedInUserId ORDER BY nama_lengkap ASC");
+$role_condition = $is_admin ? "u.role != 'admin'" : "u.role NOT IN ('admin', 'pengelola')";
+$usersResult = $conn->query("
+    SELECT u.id, u.nama_lengkap, u.username, r.role_name 
+    FROM users u
+    LEFT JOIN roles r ON u.role = r.id
+    WHERE $role_condition AND u.id != $loggedInUserId 
+    ORDER BY r.role_name ASC, u.nama_lengkap ASC
+");
+
+$groupedUsers = [];
+if ($usersResult) {
+    while ($user = $usersResult->fetch_assoc()) {
+        $roleName = $user['role_name'] ?: 'Lainnya';
+        $groupedUsers[$roleName][] = $user;
+    }
+}
 
 $permissions = [];
 $userPermissions = [];
@@ -105,11 +119,15 @@ if ($selectedUserId) {
                     <div class="shadow-sm rounded-3">
                         <select class="form-select form-select-lg" name="user_id" id="user_id" onchange="this.form.submit()" style="cursor:pointer;">
                             <option value="">-- Pilih username pengguna --</option>
-                            <?php mysqli_data_seek($usersResult, 0); while($user = $usersResult->fetch_assoc()): ?>
-                                <option value="<?= $user['id'] ?>" <?= ($selectedUserId == $user['id']) ? 'selected' : '' ?>>
-                                    <?= htmlspecialchars($user['nama_lengkap']) ?> (@<?= htmlspecialchars($user['username']) ?>)
-                                </option>
-                            <?php endwhile; ?>
+                            <?php foreach ($groupedUsers as $roleName => $users): ?>
+                                <optgroup label="💼 <?= htmlspecialchars($roleName) ?>">
+                                    <?php foreach ($users as $user): ?>
+                                        <option value="<?= $user['id'] ?>" <?= ($selectedUserId == $user['id']) ? 'selected' : '' ?>>
+                                            <?= htmlspecialchars($user['nama_lengkap']) ?> (@<?= htmlspecialchars($user['username']) ?>)
+                                        </option>
+                                    <?php endforeach; ?>
+                                </optgroup>
+                            <?php endforeach; ?>
                         </select>
                     </div>
                 </form>

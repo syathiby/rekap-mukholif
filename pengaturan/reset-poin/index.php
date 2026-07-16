@@ -84,10 +84,11 @@ require_once __DIR__ . '/../../layouts/header.php';
                                         <h5 class="card-title fw-bold text-danger-emphasis mb-2">Aksi Tutup Buku Otomatis</h5>
                                         <p class="card-text mb-0">
                                             Fitur ini akan secara otomatis: <br>
-                                            1. <strong>Mengarsipkan</strong> seluruh data pelanggaran, kebersihan, rapot kepengasuhan (bulanan), dan rapot tahunan (dari Periode Aktif s/d Hari Ini) ke Gudang Arsip.<br>
-                                            2. <strong>Menghapus</strong> seluruh data rapot (bulanan & tahunan), pelanggaran ringan-sedang, dan pelanggaran kebersihan dari laci utama.<br>
-                                            3. <strong>Mempertahankan</strong> pelanggaran Sangat Berat dan seluruh Surplus Poin Reward.<br>
-                                            4. <strong>Memperbarui</strong> Periode Aktif ke hari esok.
+                                            1. <strong>Mengarsipkan (Sapu Jagat)</strong> seluruh data sejak awal Periode Aktif tanpa batas waktu (termasuk yang salah input tanggal).<br>
+                                            2. <strong>Menghapus Bersih</strong> seluruh data tersebut dari laci utama, <u>kecuali</u> Pelanggaran Sangat Berat yang dipertahankan abadi.<br>
+                                            3. <strong>Menghapus Bersih</strong> seluruh data rapot bulanan dan tahunan.<br>
+                                            4. <strong>Mempertahankan</strong> seluruh Surplus Poin Reward (jika ada).<br>
+                                            5. <strong>Memperbarui</strong> Periode Aktif ke hari esok.
                                         </p>
                                     </div>
                                 </div>

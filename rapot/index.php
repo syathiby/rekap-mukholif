@@ -454,13 +454,13 @@ require_once __DIR__ . '/../layouts/header.php';
     <form method="POST" action="" id="bulkActionForm">
         <input type="hidden" name="csrf_token" value="<?php echo csrf_generate(); ?>">
         
-        <div class="card shadow-sm mb-3 card-action-bulk">
-            <div class="row g-3 align-items-center">
+        <div class="card shadow-sm mb-3 card-action-bulk border-0">
+            <div class="d-flex flex-column flex-lg-row justify-content-between align-items-lg-center gap-3">
                 <!-- Group Kiri: Create -->
-                <div class="col-12 col-md-auto d-flex gap-2 mb-3 mb-md-0 flex-wrap">
+                <div class="d-flex gap-2 flex-wrap flex-grow-1">
                     <?php if ($can_create): ?>
                         <a href="crud_bulanan/create.php?kamar=<?php echo urlencode($filter_kamar); ?>" id="btn-create-rapot" class="btn btn-success flex-grow-1 flex-md-grow-0 fw-medium">
-                            <i class="fas fa-plus-circle me-1"></i> Buat Rapot Baru
+                            <i class="fas fa-plus-circle me-1"></i> Buat Rapot Bulanan
                         </a>
                         <a href="crud_tahunan/index.php" class="btn btn-primary flex-grow-1 flex-md-grow-0 fw-medium">
                             <i class="fas fa-star me-1"></i> Rapor Tahunan
@@ -469,8 +469,8 @@ require_once __DIR__ . '/../layouts/header.php';
                 </div>
 
                 <!-- Group Kanan: Bulk Action -->
-                <div class="col-12 col-md d-flex gap-2 justify-content-md-end align-items-center flex-wrap">
-                    <div id="selected-count-info" class="d-none">
+                <div class="d-flex gap-2 flex-wrap justify-content-start justify-content-lg-end align-items-center">
+                    <div id="selected-count-info" class="d-none w-100 w-sm-auto text-lg-end mb-2 mb-sm-0">
                         <span class="badge bg-secondary px-3 py-2 rounded-pill shadow-sm" style="font-size:0.85rem;">0 data terpilih</span>
                     </div>
                     <?php if ($can_cetak): ?>
