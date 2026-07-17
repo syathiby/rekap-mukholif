@@ -275,15 +275,32 @@ require_once __DIR__ . '/../../layouts/header.php';
                                         <?php else: ?>
                                             <option value="">-- Pilih Santri --</option>
                                         <?php endif; ?>
-                                        <?php foreach ($santri_list as $santri): ?>
+                                        <?php
+                                        $unique_kamars = array_unique(array_column($santri_list, 'kamar'));
+                                        $is_multi_kamar = count($unique_kamars) > 1;
+                                        $current_kamar = null;
+                                        foreach ($santri_list as $santri): 
+                                            if ($is_multi_kamar && $current_kamar !== $santri['kamar']) {
+                                                if ($current_kamar !== null) {
+                                                    echo '</optgroup>';
+                                                }
+                                                $current_kamar = $santri['kamar'];
+                                                echo '<optgroup label="Kamar ' . htmlspecialchars($current_kamar, ENT_QUOTES, 'UTF-8') . '">';
+                                            }
+                                        ?>
                                             <option
                                                 value="<?php echo $santri['id']; ?>"
                                                 data-nama="<?php echo htmlspecialchars($santri['nama'], ENT_QUOTES, 'UTF-8'); ?>"
                                                 data-kamar="<?php echo htmlspecialchars($santri['kamar'], ENT_QUOTES, 'UTF-8'); ?>"
                                                 <?php echo ($data_sumber && $data_sumber['santri_id'] == $santri['id']) ? 'selected' : ''; ?>>
-                                                (Kamar <?php echo htmlspecialchars($santri['kamar'], ENT_QUOTES, 'UTF-8'); ?>) - <?php echo htmlspecialchars($santri['nama'], ENT_QUOTES, 'UTF-8'); ?>
+                                                <?php echo htmlspecialchars($santri['nama'], ENT_QUOTES, 'UTF-8'); ?>
                                             </option>
                                         <?php endforeach; ?>
+                                        <?php 
+                                        if ($is_multi_kamar && $current_kamar !== null) {
+                                            echo '</optgroup>';
+                                        }
+                                        ?>
                                     </select>
                                     <!-- Info: akan diisi JS setelah cek existing rapot -->
                                     <div id="info-existing-santri" class="mt-2" style="display:none;">
@@ -468,11 +485,67 @@ require_once __DIR__ . '/../../layouts/header.php';
 
 <script>
 $(document).ready(function() {
-    $('#santri_id').select2({ 
-        theme: "bootstrap-5", 
-        dropdownParent: $('#santri_id').parent(),
-        width: '100%'
-    });
+    function customSelect2Matcher(params, data) {
+        if ($.trim(params.term) === '') {
+            return data;
+        }
+        if (typeof data.text === 'undefined') {
+            return null;
+        }
+
+        var term = params.term.toLowerCase();
+        
+        if (data.children && data.children.length > 0) {
+            var groupLabel = data.text.toLowerCase();
+            if (groupLabel.indexOf(term) > -1) {
+                return data;
+            }
+            
+            var match = $.extend(true, {}, data);
+            var matchedChildren = [];
+            for (var c = 0; c < data.children.length; c++) {
+                var child = data.children[c];
+                var childText = child.text.toLowerCase();
+                var childKamar = (child.element && child.element.getAttribute('data-kamar')) ? child.element.getAttribute('data-kamar').toLowerCase() : "";
+                
+                if (childText.indexOf(term) > -1 || 
+                    childKamar.indexOf(term) > -1 || 
+                    ("kamar " + childKamar).indexOf(term) > -1) {
+                    matchedChildren.push(child);
+                }
+            }
+            
+            if (matchedChildren.length > 0) {
+                match.children = matchedChildren;
+                return match;
+            }
+            return null;
+        }
+
+        var text = data.text.toLowerCase();
+        var childKamar = (data.element && data.element.getAttribute('data-kamar')) ? data.element.getAttribute('data-kamar').toLowerCase() : "";
+        if (text.indexOf(term) > -1 || 
+            childKamar.indexOf(term) > -1 || 
+            ("kamar " + childKamar).indexOf(term) > -1) {
+            return data;
+        }
+
+        return null;
+    }
+
+    function initSelect2() {
+        if ($('#santri_id').data('select2')) {
+            $('#santri_id').select2('destroy');
+        }
+        $('#santri_id').select2({ 
+            theme: "bootstrap-5", 
+            dropdownParent: $('#santri_id').parent(),
+            width: '100%',
+            matcher: customSelect2Matcher
+        });
+    }
+
+    initSelect2();
 
     var tooltipTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggle="tooltip"]'));
     var tooltipList = tooltipTriggerList.map(function(tooltipTriggerEl) {
@@ -572,13 +645,13 @@ $(document).ready(function() {
         $('#santri_id option').each(function() {
             var $opt = $(this);
             if ($opt.val() === '') return; // skip placeholder
-            var nama   = $opt.data('nama')   || '';
-            var kamar  = $opt.data('kamar')  || '';
+            var nama   = $opt.attr('data-nama')   || '';
             $opt.prop('disabled', false);
-            $opt.text('(Kamar ' + kamar + ') - ' + nama);
+            $opt.text(nama);
         });
-        // Refresh Select2 untuk menerapkan perubahan
-        $('#santri_id').trigger('change.select2');
+        
+        // Refresh Select2 by destroying and reinitializing to reflect new text
+        initSelect2();
     }
 
     /**
@@ -593,21 +666,20 @@ $(document).ready(function() {
             var $opt = $(this);
             if ($opt.val() === '') return; // skip placeholder
             var id     = parseInt($opt.val(), 10);
-            var nama   = $opt.data('nama')  || '';
-            var kamar  = $opt.data('kamar') || '';
+            var nama   = $opt.attr('data-nama')  || '';
 
             if (existingRapotIds.has(id)) {
                 // Santri ini sudah punya rapot di bulan+tahun ini
                 $opt.prop('disabled', true);
-                $opt.text('✗ Sudah ada – (Kamar ' + kamar + ') ' + nama);
+                $opt.text('✗ Sudah ada – ' + nama);
             } else {
                 $opt.prop('disabled', false);
-                $opt.text('(Kamar ' + kamar + ') - ' + nama);
+                $opt.text(nama);
             }
         });
 
-        // Refresh Select2
-        $('#santri_id').trigger('change.select2');
+        // Refresh Select2 by destroying and reinitializing
+        initSelect2();
 
         // Tampilkan info banner jika ada santri yang sudah punya rapot
         if (anyExisting) {
