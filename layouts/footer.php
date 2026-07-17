@@ -5,8 +5,8 @@
 
 <?php
 // Deteksi path aktif untuk Bottom Nav
-$project_path = defined('BASE_URL') ? parse_url(BASE_URL, PHP_URL_PATH) : '';
-$req_path = str_replace($project_path, '', parse_url($_SERVER['REQUEST_URI'], PHP_URL_PATH));
+$project_path = defined('BASE_URL') ? (parse_url(BASE_URL, PHP_URL_PATH) ?? '') : '';
+$req_path = str_replace($project_path, '', parse_url($_SERVER['REQUEST_URI'], PHP_URL_PATH) ?? '');
 $req_path = '/' . ltrim($req_path, '/');
 
 // Cek izin untuk menu bottom nav

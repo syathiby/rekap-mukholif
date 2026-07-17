@@ -1,6 +1,6 @@
 # Laporan Peningkatan Keamanan & Hak Akses (RBAC)
 
-Dokumen ini menjelaskan perbaikan dan peningkatan pada sistem autentikasi (Login/Logout) serta mekanisme otorisasi berbasis peran (Role-Based Access Control) di aplikasi Rekap Mukholif.
+Dokumen ini menjelaskan perbaikan dan peningkatan pada sistem autentikasi (Login/Logout) serta mekanisme otorisasi berbasis peran (Role-Based Access Control) di aplikasi AsuhTrack.
 
 ---
 

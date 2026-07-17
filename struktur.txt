@@ -1,6 +1,6 @@
 =============================================================================
                   DOKUMENTASI STRUKTUR DIREKTORI & FILE LENGKAP               
-                            Sistem Rekap Mukholif                           
+                            Sistem AsuhTrack                           
 =============================================================================
 Dokumen ini difungsikan sebagai panduan komprehensif bagi developer manusia 
 maupun agen AI (AI Programming Logic) agar dapat memahami kerangka arsitektur, 
@@ -24,6 +24,7 @@ pola routing, dan fungsi SETIAP FILE di dalam web app ini dengan cepat.
 |-- offline.php              (Halaman fallback saat aplikasi tidak ada koneksi internet / PWA)
 |-- sw.js                    (Service Worker untuk caching dan kapabilitas PWA)
 |-- struktur.txt             (File dokumentasi ini sendiri)
+|-- tree_output.txt          (Output struktur folder sementara)
 
 📁 arsip/                       [MODUL: Arsip Data Historis Akhir Tahun]
 |-- index.php                   (Halaman utama daftar arsip tahunan)
@@ -32,14 +33,25 @@ pola routing, dan fungsi SETIAP FILE di dalam web app ini dengan cepat.
 |   |-- delete.php              (Logika penghapusan seluruh arsip secara permanen)
 |-- 📂 export/                  (Modul pencetakan arsip)
 |   |-- export_arsip.php        (Tampilan opsi ekspor arsip ke Excel)
+|   |-- generate_pdf_tahunan_arsip.php (Cetak PDF rapot tahunan arsip)
 |   |-- process_export_arsip.php (Logika query pembentukan file Excel arsip)
 |-- 📂 pages/                   (Halaman antarmuka detail isi arsip)
+|   |-- arsip_chart.php         (Grafik analitik arsip)
+|   |-- arsip_kamar.php         (Data historis kamar)
 |   |-- arsip_kebersihan.php    (Rekap poin sanksi kebersihan per kamar di tahun lalu)
-|   |-- arsip_pelanggaran.php   (Daftar santri dengan pelanggaran pada arsip tersebut)
-|   |-- arsip_rapot.php         (Halaman penelusuran rapot historis santri)
-|   |-- arsip_santri.php        (Rekapitulasi total poin pelanggaran tiap santri historis)
+|   |-- arsip_per_santri.php    (Data arsip per individu santri)
+|   |-- arsip_rapot_tahunan.php (Rapot tahunan arsip)
+|   |-- arsip_rapot_tahunan_detail.php (Detail rapot tahunan arsip)
+|   |-- arsip_rapot_tahunan_list.php (Daftar rapot tahunan arsip)
+|   |-- arsip_rapot_tahunan_view.php (Tampilan rapot tahunan arsip)
+|   |-- detail_arsip_kamar.php  (Rincian log historis kamar)
+|   |-- detail_arsip_kebersihan.php (Rincian log historis kebersihan)
+|   |-- detail_arsip_santri.php (Rincian log historis santri)
 |   |-- detail_kebersihan_arsip.php (Rincian log harian pelanggaran kebersihan historis)
 |   |-- detail_pelanggaran_arsip.php(Rincian log harian pelanggaran individu historis)
+|   |-- detail_reward_arsip.php (Rincian log reward historis)
+|   |-- info_banner.php         (Banner informasi halaman arsip)
+|   |-- replace.php             (Skrip pergantian data/tampilan arsip)
 
 📁 assets/                      [MODUL: Statik & Frontend Assets]
 |-- Thumbs.db                   (Cache thumbnail Windows OS)
@@ -56,6 +68,14 @@ pola routing, dan fungsi SETIAP FILE di dalam web app ini dengan cepat.
 |-- helpers.php                 (Kumpulan fungsi bantuan utilitas global PHP)
 |-- init.php                    (Gerbang utama yang memuat sesi, koneksi DB, dan konfigurasi)
 
+📁 cache/                       [MODUL: Penyimpanan Cache Sementara]
+|-- 📂 dashboard/               (Cache untuk data statistik dashboard)
+|-- 📂 guide/                   (Cache untuk panduan sistem)
+|-- 📂 rate_limit/              (Cache untuk limitasi request/API)
+
+📁 classes/                     [MODUL: Class OOP]
+|-- ExcelTemplate.php           (Class untuk pengolahan template Excel)
+
 📁 config/                      [MODUL: Konfigurasi Core & Database]
 |-- app.php                     (Konfigurasi base URL, nama aplikasi, timezone)
 |-- auth.php                    (Fungsi pengecekan login, guard hak akses, otentikasi)
@@ -68,7 +88,14 @@ pola routing, dan fungsi SETIAP FILE di dalam web app ini dengan cepat.
 📁 export/                      [MODUL: Export Global Excel]
 |-- index.php                   (Antarmuka pemilihan tipe data dan rentang tanggal untuk di-export)
 |-- process-export.php          (Logika query kompilasi data ke format Spreadsheet)
-|-- template-export.php         (Mungkin dipakai untuk layout/template raw data export)
+
+📁 guide/                       [MODUL: Panduan Aplikasi]
+|-- index.php                   (Halaman utama panduan aplikasi)
+|-- 📂 subguide/                (Detail sub-panduan)
+|   |-- fitur_sinkronisasi_santri.md
+|   |-- update_keamanan_dan_akses.md
+|   |-- update_ui_ux.md
+|   |-- upgrade_report.md
 
 📁 jenis-pelanggaran/           [MODUL: Master Kamus Pelanggaran (Poin System)]
 |-- bulk-edit.php               (Mengedit bobot poin banyak pelanggaran sekaligus)
@@ -102,6 +129,8 @@ pola routing, dan fungsi SETIAP FILE di dalam web app ini dengan cepat.
 
 📁 pengaturan/                  [MODUL: Pengaturan Sistem Admin]
 |-- index.php                   (Menu sentral manajemen konfigurasi)
+|-- 📂 api_key/                 (Pengaturan API Key sistem)
+|   |-- index.php, process.php
 |-- 📂 backup-restore/          (Modul pencadangan data)
 |   |-- export.php              (Menghasilkan file .sql mentah untuk diunduh)
 |   |-- import.php              (Upload file .sql untuk menimpa/memulihkan database)
@@ -119,7 +148,7 @@ pola routing, dan fungsi SETIAP FILE di dalam web app ini dengan cepat.
 |   |-- bulk.php                (Update multi-izin sekaligus)
 |   |-- index.php               (Daftar perizinan individu user)
 |   |-- manage_roles.php        (Manajemen role (admin, musyrif, asatidz))
-|   |-- process*.php            (Berbagai skrip processor untuk izin/role)
+|   |-- process.php, process_bulk.php, process_manage_roles.php, process_role.php (Berbagai skrip processor untuk izin/role)
 |   |-- role.php                (Antarmuka pemetaan izin ke suatu role)
 |-- 📂 log-aktifitas/           (Catatan error/warning aplikasi tingkat lanjut)
 |   |-- detail_log.php          (Lihat stack trace / rincian log)
@@ -132,38 +161,46 @@ pola routing, dan fungsi SETIAP FILE di dalam web app ini dengan cepat.
 |   |-- index.php               (UI peringatan & form nama arsip tutup buku)
 |   |-- process.php             (SANGAT KRUSIAL: Skrip snapshot seluruh data poin & rapot 
 |                                ke tabel arsip, lalu menghapus bersih data tahun aktif)
-|   |-- search_santri.php       (AJAX search (jika ada opsi reset spesifik))
 |-- 📂 users/                   (Manajemen Akun Login)
+|   |-- bulk-delete-users.php   (Hapus pengguna secara massal)
+|   |-- delete-user.php         (Logika DB hapus user)
 |   |-- form-user.php           (Form tambah/edit pengguna sistem)
 |   |-- index.php               (Daftar user admin/musyrif)
-|   |-- profil.php              (Pengaturan profil saya/login)
-|   |-- process-user.php & process_profil.php & delete-user.php (Logika DB user)
+|   |-- process-user.php & process_profil.php (Logika DB user)
+|   |-- profil.php              (Pengaturan profil profil/login)
 
 📁 rapot/                       [MODUL: Rapor Perilaku & Kepengasuhan]
 |-- index.php                   (Tabel daftar rekap nilai rapot santri bulan berjalan)
-|-- create.php                  (Form input massal rapot per kamar/individu)
-|-- view.php                    (Lihat detail rapot satu santri yang sudah jadi)
 |-- 📂 api/                     (Endpoint REST/AJAX)
 |   |-- generate_catatan.php    (AI/Auto-generate deskripsi rapot berdasarkan poin)
+|   |-- get_existing_rapot.php  (Cek rapot yang sudah ada)
 |   |-- get_pelanggaran_santri.php (Ambil daftar pelanggaran santri bulan ini)
+|   |-- get_rapot_count.php     (Hitung total rapot)
 |   |-- get_reward_santri.php   (Ambil daftar reward bulan ini)
+|   |-- guide_tahunan.php       (Panduan rapot tahunan API)
+|   |-- guide_tahunan_detail.php (Detail panduan rapot tahunan)
+|   |-- update_nilai_tahunan.php (API update nilai tahunan)
 |-- 📂 config/                  (Setup khusus rapot)
 |   |-- helper.php              (Fungsi kalkulasi rata-rata rapot dll)
-|   |-- template_rapot.php      (Template raw text untuk catatan rapot)
-|-- 📂 crud/                    (Skrip Modifikasi Rapot)
-|   |-- bulk_delete.php, bulk_processor.php, delete.php, process.php (Sistem insert/hapus/update)
-|-- 📂 export/                  (Modul Cetak PDF)
-|   |-- generate_pdf.php        (Render rapot menjadi dokumen PDF resmi A4)
+|   |-- template_rapot_bulanan.php (Template raw text catatan rapot bulanan)
+|   |-- template_rapot_tahunan.php (Template raw text catatan rapot tahunan)
+|-- 📂 crud_bulanan/            (Skrip Modifikasi Rapot Bulanan)
+|   |-- bulk_delete.php, bulk_processor.php, create.php, delete.php, process.php, view.php (Sistem insert/hapus/update bulanan)
+|-- 📂 crud_tahunan/            (Skrip Modifikasi Rapot Tahunan)
+|   |-- delete.php, detail.php, generate.php, index.php, koreksi_nilai.php, list.php, process.php, view.php (Sistem tahunan)
+|-- 📂 export/                  (Modul Cetak PDF/PNG)
+|   |-- generate_pdf.php        (Render rapot bulanan menjadi dokumen PDF resmi A4)
+|   |-- generate_pdf_tahunan.php(Render rapot tahunan menjadi PDF)
 |   |-- generate_png.php        (Render rapot menjadi gambar instan untuk dishare via WA)
 
 📁 rekap/                       [MODUL: Analisis & Papan Peringkat (Leaderboards)]
-|-- index.php                   (Dashboard utama statistik pelanggaran & grafik donat)
 |-- chart.php                   (Rendering script untuk chart.js / komponen grafik)
 |-- detail_kamar.php            (Statistik poin diurutkan per asrama/kamar)
 |-- detail_kebersihan.php       (Fokus pada statistik pelanggaran kebersihan asrama)
 |-- detail_pelanggaran.php      (Daftar *timeline* log harian pelanggaran santri)
 |-- detail_per_santri.php       (Halaman profil lengkap 1 santri: Rapor + Grafik + History Poin)
 |-- get_harian_data.php         (API ambil data tren grafik per hari)
+|-- index.php                   (Dashboard utama statistik pelanggaran & grafik donat)
 |-- info_banner.php             (Komponen *widget* peringatan khusus di dashboard)
 |-- kebersihan.php              (Papan peringkat asrama terbersih / terkotor)
 |-- peringkat_kamar.php         (Papan peringkat kamar secara umum)
@@ -176,15 +213,20 @@ pola routing, dan fungsi SETIAP FILE di dalam web app ini dengan cepat.
 |   |-- index.php
 |-- 📂 input/                   (Pemberian/Input reward ke santri)
 |   |-- create.php              (Form input reward individu/massal)
-|   |-- process.php & delete.php & search_santri.php
+|   |-- delete.php
+|   |-- process.php
+|   |-- search_santri.php
 |-- 📂 jenis/                   (Master Data jenis-jenis reward & poinnya)
-|   |-- index.php, create.php, edit.php, delete.php, bulk-edit.php, bulk-delete.php, process.php
+|   |-- bulk-delete.php, bulk-edit.php, create.php, delete.php, edit.php, index.php, process.php
 
 📁 santri/                      [MODUL: Master Data Murid]
 |-- index.php                   (Tabel rekap nama santri, kelas, kamar, status)
 |-- create.php & edit.php & delete.php (CRUD individu)
 |-- bulk-create.php & bulk-edit.php & bulk-delete.php (CRUD massal / via centang tabel)
 |-- search.php                  (Endpoint auto-complete)
+
+📁 vendor/                      [MODUL: Composer Dependencies]
+|-- (Direktori dependensi PHP pihak ketiga seperti mPDF, PhpSpreadsheet, dll)
 
 =============================================================================
 💡 CATATAN ARSITEKTUR & PENJELASAN LOGIKA KRUSIAL UNTUK AI/DEVELOPER
@@ -228,5 +270,5 @@ pola routing, dan fungsi SETIAP FILE di dalam web app ini dengan cepat.
      menyuplai data untuk *Select2/Autocomplete/Fetch API* di antarmuka frontend (tanpa reload).
 
 =============================================================================
-[Generated by Antigravity AI - Sistem Rekap Mukholif]
+[Generated by Antigravity AI - Sistem AsuhTrack]
 =============================================================================

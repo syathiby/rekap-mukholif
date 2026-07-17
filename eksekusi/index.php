@@ -112,7 +112,7 @@ $pelanggaranQuery = mysqli_query($conn, "
                                 <label class="form-label fw-semibold text-dark mb-2" style="font-size:0.9rem;">Jenis Hukuman <span class="text-danger">*</span></label>
                                 <div class="input-group-modern">
                                     <i class="fas fa-gavel text-primary"></i>
-                                    <input type="text" name="jenis_hukuman" class="form-control input-modern" required placeholder="Contoh: Membersihkan selokan">
+                                    <input type="text" name="jenis_hukuman" class="form-control input-modern" required placeholder="Contoh: Membersihkan Math'am">
                                 </div>
                             </div>
 

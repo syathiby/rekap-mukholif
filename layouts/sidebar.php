@@ -14,8 +14,8 @@ if (!defined('BASE_URL')) {
 
 // Jurus Jitu Deteksi Menu Aktif:
 // Ambil path relatif setelah folder project
-$project_path = parse_url(BASE_URL, PHP_URL_PATH);
-$req_path = str_replace($project_path, '', parse_url($_SERVER['REQUEST_URI'], PHP_URL_PATH));
+$project_path = parse_url(BASE_URL, PHP_URL_PATH) ?? '';
+$req_path = str_replace($project_path, '', parse_url($_SERVER['REQUEST_URI'], PHP_URL_PATH) ?? '');
 $req_path = '/' . ltrim($req_path, '/');
 
 // Cek izin input pelanggaran untuk link sidebar dinamis

@@ -1,6 +1,6 @@
 # Laporan Peningkatan Antarmuka Pengguna (UI) & Pengalaman Pengguna (UX)
 
-Dokumen ini merangkum seluruh pembaruan desain dan antarmuka yang telah diterapkan pada sistem Rekap Mukholif. Tujuan utama dari pembaruan ini adalah untuk memberikan pengalaman yang lebih modern, minimalis, profesional, dan nyaman bagi pengguna.
+Dokumen ini merangkum seluruh pembaruan desain dan antarmuka yang telah diterapkan pada sistem AsuhTrack. Tujuan utama dari pembaruan ini adalah untuk memberikan pengalaman yang lebih modern, minimalis, profesional, dan nyaman bagi pengguna.
 
 ---
 

@@ -1050,8 +1050,9 @@ document.addEventListener('DOMContentLoaded', function() {
                 tampilkanNotif('Error: Form tidak ditemukan.', 'danger');
                 return;
             }
-            form.innerHTML = '';
             form.action = 'crud_bulanan/bulk_delete.php';
+            form.querySelectorAll('input[name="ids[]"]').forEach(el => el.remove());
+            
             checkedIDs.forEach(function(id) {
                 const input = document.createElement('input');
                 input.type = 'hidden';
