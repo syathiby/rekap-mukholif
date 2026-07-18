@@ -21,7 +21,7 @@ if ($resRoles) {
 $search = $_GET['search'] ?? '';
 $role_filter = $_GET['role_filter'] ?? '';
 
-$sql = "SELECT id, nama_lengkap, username, role FROM users WHERE 1=1";
+$sql = "SELECT id, nama_lengkap, username, role, kamar_id FROM users WHERE 1=1";
 $params = [];
 $types = "";
 
@@ -307,7 +307,14 @@ $stmt->close();
                                             <?= strtoupper(substr($user['nama_lengkap'], 0, 1)) ?>
                                         </div>
                                         <div>
-                                            <div class="fw-bold text-dark"><?= htmlspecialchars($user['nama_lengkap']) ?></div>
+                                            <div class="fw-bold text-dark d-flex align-items-center flex-wrap gap-2">
+                                                <span><?= htmlspecialchars($user['nama_lengkap']) ?></span>
+                                                <?php if(strtolower($user['role']) === 'musyrif' && !empty($user['kamar_id'])): ?>
+                                                    <span class="badge bg-white border text-secondary fw-normal shadow-sm" style="font-size: 0.68rem; padding: 0.3rem 0.6rem; border-radius: 6px;">
+                                                        <i class="fas fa-bed text-muted me-1"></i>Kamar <?= htmlspecialchars($user['kamar_id']) ?>
+                                                    </span>
+                                                <?php endif; ?>
+                                            </div>
                                             <?php if($is_self): ?>
                                                 <span class="badge bg-success bg-opacity-10 text-success border border-success border-opacity-25 mt-1" style="font-size: 0.65rem;">Anda Sendiri</span>
                                             <?php endif; ?>

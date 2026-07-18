@@ -11,6 +11,18 @@ if (empty($kamar)) {
     die("<div class='container mt-5'><div class='alert alert-danger'>Pilih kamar terlebih dahulu.</div></div>");
 }
 
+$sql_musyrif = "SELECT GROUP_CONCAT(nama_lengkap SEPARATOR ', ') as nama_lengkap FROM users WHERE kamar_id = ? AND role = 'musyrif'";
+$stmt_musyrif = mysqli_prepare($conn, $sql_musyrif);
+mysqli_stmt_bind_param($stmt_musyrif, "s", $kamar);
+mysqli_stmt_execute($stmt_musyrif);
+$res_musyrif = mysqli_stmt_get_result($stmt_musyrif);
+$musyrif_name = '-';
+if ($row_m = mysqli_fetch_assoc($res_musyrif)) {
+    if (!empty($row_m['nama_lengkap'])) {
+        $musyrif_name = $row_m['nama_lengkap'];
+    }
+}
+
 $start_dt_time = $start_date . ' 00:00:00';
 $end_dt_time   = $end_date . ' 23:59:59';
 
@@ -163,8 +175,13 @@ body { background-color: #f8f9fa; font-family: 'Poppins', sans-serif; color: #33
                 </div>
                 Detail Kamar <?= htmlspecialchars($kamar) ?>
             </h2>
-            <div class="subtitle">
-                <i class="far fa-calendar-alt me-1"></i> Periode Filter: <?= date('d M Y', strtotime($start_date)) ?> s/d <?= date('d M Y', strtotime($end_date)) ?>
+            <div class="subtitle d-flex flex-wrap align-items-center gap-2 mt-2">
+                <span><i class="far fa-calendar-alt me-1"></i> Periode Filter: <?= date('d M Y', strtotime($start_date)) ?> s/d <?= date('d M Y', strtotime($end_date)) ?></span>
+                <?php if ($musyrif_name !== '-'): ?>
+                    <span class="badge bg-white border text-secondary fw-normal shadow-sm" style="font-size: 0.75rem; padding: 0.35rem 0.6rem; border-radius: 6px;">
+                        <i class="fas fa-user-tie text-muted me-1"></i>Musyrif: <?= htmlspecialchars($musyrif_name) ?>
+                    </span>
+                <?php endif; ?>
             </div>
         </div>
         <a href="peringkat_kamar.php?start_date=<?= $start_date ?>&end_date=<?= $end_date ?>" class="btn-back">

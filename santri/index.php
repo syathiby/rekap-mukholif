@@ -250,11 +250,7 @@ mysqli_stmt_close($stmt_count);
 
     @media (max-width: 768px) {
         .page-title-card h2 { font-size: 1.25rem; }
-        .filter-buttons {
-            display: grid;
-            grid-template-columns: 1fr auto;
-            gap: 0.5rem;
-        }
+
     }
 </style>
 
@@ -271,7 +267,7 @@ mysqli_stmt_close($stmt_count);
             <p class="text-muted mb-0">Kelola data santri secara terpusat</p>
         </div>
         <div class="d-flex align-items-center">
-            <span class="badge bg-white border text-dark fs-6 px-3 py-2 rounded-pill shadow-sm">
+            <span class="badge bg-white border text-dark fs-6 px-3 py-2 rounded-pill shadow-sm" id="totalSantriBadge">
                 <i class="fas fa-database me-1 text-primary"></i>
                 <?php echo number_format($total) . " Santri"; ?>
             </span>
@@ -280,7 +276,7 @@ mysqli_stmt_close($stmt_count);
     
     <div class="filter-card p-3 p-md-4 mb-4">
         <form class="row g-3" method="GET" action="index.php" id="filterForm">
-            <div class="col-12 col-md-4">
+            <div class="col-12 col-md-3">
                 <input class="form-control" type="search" name="nama" placeholder="Cari Nama Santri..." value="<?= htmlspecialchars($nama_search) ?>">
             </div>
             <div class="col-12 col-md-3">
@@ -289,9 +285,9 @@ mysqli_stmt_close($stmt_count);
             <div class="col-12 col-md-3">
                 <input class="form-control" type="search" name="kamar" placeholder="Filter Kamar..." value="<?= htmlspecialchars($kamar_search) ?>">
             </div>
-            <div class="col-12 col-md-2 filter-buttons">
-                <button class="btn btn-primary" type="submit"><i class="fas fa-filter me-1"></i> Cari</button>
-                <a href="index.php?reset=1" class="btn btn-outline-secondary" id="resetFilterBtn" title="Reset Filter"><i class="fas fa-times"></i></a>
+            <div class="col-12 col-md-3 d-flex gap-2">
+                <button class="btn btn-primary flex-grow-1" type="submit"><i class="fas fa-filter me-1"></i> Cari</button>
+                <a href="index.php?reset=1" class="btn btn-outline-danger" id="resetFilterBtn" title="Reset Filter"><i class="fas fa-times"></i></a>
             </div>
         </form>
     </div>
@@ -299,32 +295,34 @@ mysqli_stmt_close($stmt_count);
     <form method="POST" action="" id="bulkDeleteForm">
         <input type="hidden" name="csrf_token" value="<?= htmlspecialchars($csrf_token) ?>">
         <div class="card shadow-sm mb-3 card-action-bulk">
-            <div class="row g-2 align-items-center">
+            <div class="d-flex flex-column flex-md-row justify-content-between gap-3">
                 <!-- Group Kiri: Tambah & Bulk Input -->
-                <div class="col-12 col-md-auto d-flex gap-2 flex-grow-1">
+                <div class="d-flex gap-2 flex-grow-1 flex-md-grow-0">
                     <?php if ($can_create): ?>
-                        <a href="create.php" class="btn btn-success flex-grow-1 flex-md-grow-0 fw-medium">
-                            <i class="fas fa-user-plus me-1"></i> Tambah Santri
+                        <a href="create.php" class="btn btn-success flex-grow-1 fw-medium text-nowrap">
+                            <i class="fas fa-user-plus"></i><span class="d-none d-sm-inline ms-2">Tambah Santri</span><span class="d-inline d-sm-none ms-1">Tambah</span>
                         </a>
-                        <a href="bulk-create.php" class="btn btn-info text-white flex-grow-1 flex-md-grow-0 fw-medium">
-                            <i class="fas fa-file-import me-1"></i> Bulk Input
+                        <a href="bulk-create.php" class="btn btn-info text-white flex-grow-1 fw-medium text-nowrap">
+                            <i class="fas fa-file-import"></i><span class="d-none d-sm-inline ms-2">Bulk Input</span><span class="d-inline d-sm-none ms-1">Import</span>
                         </a>
                     <?php endif; ?>
                 </div>
 
                 <!-- Group Kanan: Bulk Edit & Hapus -->
-                <div class="col-12 col-md-auto d-flex gap-2 justify-content-md-end align-items-center">
-                    <div id="selected-count-info" class="d-none me-2"></div>
-                    <?php if ($can_edit): ?>
-                        <a href="bulk-edit.php" class="btn btn-warning flex-grow-1 flex-md-grow-0 fw-medium text-dark" id="bulkEditBtn">
-                            <i class="fas fa-pen-to-square me-1"></i> Bulk Edit
-                        </a>
-                    <?php endif; ?>
-                    <?php if ($can_delete): ?>
-                        <button type="submit" class="btn btn-danger flex-grow-1 flex-md-grow-0 fw-medium" id="bulkDeleteBtn" disabled form="bulkDeleteForm">
-                            <i class="fas fa-user-minus me-1"></i> Hapus Terpilih
-                        </button>
-                    <?php endif; ?>
+                <div class="d-flex gap-2 align-items-center flex-grow-1 flex-md-grow-0 justify-content-between justify-content-md-end flex-wrap">
+                    <div id="selected-count-info" class="d-none badge bg-secondary px-3 py-2 fs-6"></div>
+                    <div class="d-flex gap-2 flex-grow-1 flex-md-grow-0">
+                        <?php if ($can_edit): ?>
+                            <a href="bulk-edit.php" class="btn btn-warning flex-grow-1 fw-medium text-dark text-nowrap" id="bulkEditBtn">
+                                <i class="fas fa-pen-to-square"></i><span class="d-none d-sm-inline ms-2">Bulk Edit</span><span class="d-inline d-sm-none ms-1">Edit</span>
+                            </a>
+                        <?php endif; ?>
+                        <?php if ($can_delete): ?>
+                            <button type="submit" class="btn btn-danger flex-grow-1 fw-medium text-nowrap" id="bulkDeleteBtn" disabled form="bulkDeleteForm">
+                                <i class="fas fa-trash-alt"></i><span class="d-none d-sm-inline ms-2">Hapus Terpilih</span><span class="d-inline d-sm-none ms-1">Hapus</span>
+                            </button>
+                        <?php endif; ?>
+                    </div>
                 </div>
             </div>
         </div>
@@ -434,77 +432,82 @@ mysqli_stmt_close($stmt_count);
                 </table>
             </div>
         </div>
+        
+        <?php
+        // ─── PAGINATION HTML ───────────────────────────────────────────────
+        // Menampilkan info pagination walau hanya 1 halaman, jika ada data
+        if ($total > 0):
+            $from = $offset + 1;
+            $to   = min($offset + $per_page, $total);
+            // Buat URL dasar untuk pagination (pertahankan filter yang aktif)
+            $pagination_base_params = [];
+            if (!empty($nama_search))  $pagination_base_params['nama']  = $nama_search;
+            if (!empty($kelas_search)) $pagination_base_params['kelas'] = $kelas_search;
+            if (!empty($kamar_search)) $pagination_base_params['kamar'] = $kamar_search;
+        ?>
+        <div class="d-flex flex-column flex-md-row justify-content-between align-items-center mt-3 px-1 gap-3" id="pagination-nav">
+            <span class="text-muted small text-center text-md-start">
+                Menampilkan <strong><?= $from ?>–<?= $to ?></strong> dari <strong><?= number_format($total) ?></strong> santri
+            </span>
+            
+            <?php if ($total_pages > 1): ?>
+            <nav>
+                <ul class="pagination pagination-sm mb-0 justify-content-center flex-wrap">
+                    <?php
+                    // Tombol Sebelumnya
+                    if ($page > 1):
+                        $prev_params = array_merge($pagination_base_params, ['page' => $page - 1]);
+                    ?>
+                    <li class="page-item">
+                        <a class="page-link text-nowrap" href="index.php?<?= http_build_query($prev_params) ?>">
+                            <i class="fas fa-chevron-left"></i> <span class="d-none d-sm-inline ms-1">Sebelumnya</span>
+                        </a>
+                    </li>
+                    <?php else: ?>
+                    <li class="page-item disabled"><span class="page-link text-nowrap"><i class="fas fa-chevron-left"></i> <span class="d-none d-sm-inline ms-1">Sebelumnya</span></span></li>
+                    <?php endif; ?>
+
+                    <?php
+                    // Nomor halaman (tampilkan maksimal 5 halaman di sekitar halaman aktif)
+                    $start_p = max(1, $page - 2);
+                    $end_p   = min($total_pages, $page + 2);
+                    if ($start_p > 1): ?>
+                        <li class="page-item"><a class="page-link" href="index.php?<?= http_build_query(array_merge($pagination_base_params, ['page' => 1])) ?>">1</a></li>
+                        <?php if ($start_p > 2): ?><li class="page-item disabled"><span class="page-link">…</span></li><?php endif; ?>
+                    <?php endif;
+                    for ($p = $start_p; $p <= $end_p; $p++):
+                        $p_params = array_merge($pagination_base_params, ['page' => $p]);
+                    ?>
+                    <li class="page-item <?= ($p === $page) ? 'active' : '' ?>">
+                        <a class="page-link" href="index.php?<?= http_build_query($p_params) ?>"><?= $p ?></a>
+                    </li>
+                    <?php endfor;
+                    if ($end_p < $total_pages):
+                        if ($end_p < $total_pages - 1): ?><li class="page-item disabled"><span class="page-link">…</span></li><?php endif; ?>
+                        <li class="page-item"><a class="page-link" href="index.php?<?= http_build_query(array_merge($pagination_base_params, ['page' => $total_pages])) ?>"><?= $total_pages ?></a></li>
+                    <?php endif; ?>
+
+                    <?php
+                    // Tombol Berikutnya
+                    if ($page < $total_pages):
+                        $next_params = array_merge($pagination_base_params, ['page' => $page + 1]);
+                    ?>
+                    <li class="page-item">
+                        <a class="page-link text-nowrap" href="index.php?<?= http_build_query($next_params) ?>">
+                            <span class="d-none d-sm-inline me-1">Berikutnya</span> <i class="fas fa-chevron-right"></i>
+                        </a>
+                    </li>
+                    <?php else: ?>
+                    <li class="page-item disabled"><span class="page-link text-nowrap"><span class="d-none d-sm-inline me-1">Berikutnya</span> <i class="fas fa-chevron-right"></i></span></li>
+                    <?php endif; ?>
+                </ul>
+            </nav>
+            <?php endif; ?>
+        </div>
+        <?php endif; ?>
+        
         </div> <!-- Close table-data-wrapper -->
     </form> </div>
-
-<?php
-// ─── PAGINATION HTML ───────────────────────────────────────────────
-if ($total_pages > 1):
-    $from = $offset + 1;
-    $to   = min($offset + $per_page, $total);
-    // Buat URL dasar untuk pagination (pertahankan filter yang aktif)
-    $pagination_base_params = [];
-    if (!empty($nama_search))  $pagination_base_params['nama']  = $nama_search;
-    if (!empty($kelas_search)) $pagination_base_params['kelas'] = $kelas_search;
-    if (!empty($kamar_search)) $pagination_base_params['kamar'] = $kamar_search;
-?>
-<div class="d-flex flex-column flex-md-row justify-content-between align-items-center mt-3 px-1 gap-2" id="pagination-nav">
-    <span class="text-muted small">
-        Menampilkan <strong><?= $from ?>–<?= $to ?></strong> dari <strong><?= number_format($total) ?></strong> santri
-    </span>
-    <nav>
-        <ul class="pagination pagination-sm mb-0">
-            <?php
-            // Tombol Sebelumnya
-            if ($page > 1):
-                $prev_params = array_merge($pagination_base_params, ['page' => $page - 1]);
-            ?>
-            <li class="page-item">
-                <a class="page-link" href="index.php?<?= http_build_query($prev_params) ?>">
-                    <i class="fas fa-chevron-left"></i> Sebelumnya
-                </a>
-            </li>
-            <?php else: ?>
-            <li class="page-item disabled"><span class="page-link"><i class="fas fa-chevron-left"></i> Sebelumnya</span></li>
-            <?php endif; ?>
-
-            <?php
-            // Nomor halaman (tampilkan maksimal 5 halaman di sekitar halaman aktif)
-            $start_p = max(1, $page - 2);
-            $end_p   = min($total_pages, $page + 2);
-            if ($start_p > 1): ?>
-                <li class="page-item"><a class="page-link" href="index.php?<?= http_build_query(array_merge($pagination_base_params, ['page' => 1])) ?>">1</a></li>
-                <?php if ($start_p > 2): ?><li class="page-item disabled"><span class="page-link">…</span></li><?php endif; ?>
-            <?php endif;
-            for ($p = $start_p; $p <= $end_p; $p++):
-                $p_params = array_merge($pagination_base_params, ['page' => $p]);
-            ?>
-            <li class="page-item <?= ($p === $page) ? 'active' : '' ?>">
-                <a class="page-link" href="index.php?<?= http_build_query($p_params) ?>"><?= $p ?></a>
-            </li>
-            <?php endfor;
-            if ($end_p < $total_pages):
-                if ($end_p < $total_pages - 1): ?><li class="page-item disabled"><span class="page-link">…</span></li><?php endif; ?>
-                <li class="page-item"><a class="page-link" href="index.php?<?= http_build_query(array_merge($pagination_base_params, ['page' => $total_pages])) ?>"><?= $total_pages ?></a></li>
-            <?php endif; ?>
-
-            <?php
-            // Tombol Berikutnya
-            if ($page < $total_pages):
-                $next_params = array_merge($pagination_base_params, ['page' => $page + 1]);
-            ?>
-            <li class="page-item">
-                <a class="page-link" href="index.php?<?= http_build_query($next_params) ?>">
-                    Berikutnya <i class="fas fa-chevron-right"></i>
-                </a>
-            </li>
-            <?php else: ?>
-            <li class="page-item disabled"><span class="page-link">Berikutnya <i class="fas fa-chevron-right"></i></span></li>
-            <?php endif; ?>
-        </ul>
-    </nav>
-</div>
-<?php endif; ?>
 
 
 <div class="modal fade" id="infoModal" tabindex="-1" aria-labelledby="infoModalLabel" aria-hidden="true">
@@ -767,6 +770,10 @@ document.addEventListener('DOMContentLoaded', function() {
             success: function(html) {
                 const newTable = $(html).find('#table-data-wrapper').html();
                 $('#table-data-wrapper').html(newTable);
+                
+                const newBadge = $(html).find('#totalSantriBadge').html();
+                if(newBadge) $('#totalSantriBadge').html(newBadge);
+                
                 window.history.pushState(null, '', url);
                 
                 // Re-bind listeners because elements were swapped

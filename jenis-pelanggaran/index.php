@@ -212,36 +212,8 @@ if ($can_edit || $can_delete) $colspan++; // Tambah 1 untuk Aksi
             align-items: flex-start !important;
             gap: 1rem;
         }
-        .page-title-card .btn-group {
-            width: 100%;
-            display: flex;
-            justify-content: flex-end;
-        }
         .page-title-card h3 {
             font-size: 1.25rem;
-        }
-        .filter-card .col-md-4, .filter-card .col-md-3, .filter-card .col-md-2 {
-            margin-bottom: 0.75rem;
-        }
-        .filter-card .row > *:last-child {
-            margin-bottom: 0;
-        }
-
-        .card-action-bulk .d-flex {
-            flex-direction: column;
-            gap: 0.75rem;
-            align-items: stretch !important;
-        }
-        .card-action-bulk .bulk-buttons-container {
-            width: 100%;
-            display: flex;
-            gap: 0.5rem;
-        }
-        .card-action-bulk .bulk-buttons-container .btn {
-            flex-grow: 1; /* Biar tombolnya sama rata */
-        }
-        .card-action-bulk .text-muted {
-            text-align: center;
         }
     }
 </style>
@@ -275,14 +247,14 @@ if ($can_edit || $can_delete) $colspan++; // Tambah 1 untuk Aksi
         <?php unset($_SESSION['message']); ?>
     <?php endif; ?>
     
-    <div class="filter-card">
+    <div class="filter-card p-3 p-md-4 mb-4">
         <form method="GET" action="" id="filterForm"> 
             <div class="row g-3 align-items-end">
-                <div class="col-md-4">
+                <div class="col-12 col-md-3">
                     <label for="search" class="form-label">Cari Nama Pelanggaran</label>
                     <input type="text" name="search" id="search" class="form-control" placeholder="Ketik di sini..." value="<?= htmlspecialchars($filter_search); ?>">
                 </div>
-                <div class="col-md-3">
+                <div class="col-12 col-md-3">
                     <label for="bagian" class="form-label">Filter Bagian</label>
                     <select name="bagian" id="bagian" class="form-select">
                         <option value="">-- Semua Bagian --</option>
@@ -294,7 +266,7 @@ if ($can_edit || $can_delete) $colspan++; // Tambah 1 untuk Aksi
                         <?php endwhile; ?>
                     </select>
                 </div>
-                <div class="col-md-3">
+                <div class="col-12 col-md-3">
                     <label for="kategori" class="form-label">Filter Kategori</label>
                     <select name="kategori" id="kategori" class="form-select">
                         <option value="">-- Semua Kategori --</option>
@@ -304,9 +276,9 @@ if ($can_edit || $can_delete) $colspan++; // Tambah 1 untuk Aksi
                         <option value="Sangat Berat" <?= ($filter_kategori == 'Sangat Berat') ? 'selected' : '' ?>>Sangat Berat</option>
                     </select>
                 </div>
-                <div class="col-md-2 d-flex">
-                    <button type="submit" class="btn btn-primary w-100 me-2 d-none"><i class="fas fa-search"></i> Cari</button> 
-                    <a href="index.php" id="resetFilterBtn" class="btn btn-outline-secondary w-100" title="Reset Filter"><i class="fas fa-sync-alt"></i> Reset</a>
+                <div class="col-12 col-md-3 d-flex gap-2">
+                    <button type="submit" class="btn btn-primary flex-grow-1"><i class="fas fa-filter me-1"></i> Cari</button> 
+                    <a href="index.php" id="resetFilterBtn" class="btn btn-outline-danger" title="Reset Filter"><i class="fas fa-times"></i></a>
                 </div>
             </div>
         </form>
@@ -315,29 +287,25 @@ if ($can_edit || $can_delete) $colspan++; // Tambah 1 untuk Aksi
     <form method="POST" action="" id="bulkActionForm">
         <input type="hidden" name="csrf_token" value="<?= $_SESSION['csrf_token'] ?>">
         <div class="card shadow-sm mb-3 card-action-bulk">
-            <div class="d-flex justify-content-between align-items-center">
-                <div class="d-flex align-items-center">
-                    <div class="bulk-buttons-container d-flex gap-2">
+            <div class="d-flex flex-column flex-md-row justify-content-between align-items-md-center gap-3">
+                <div class="d-flex gap-2 align-items-center flex-grow-1 flex-md-grow-0 justify-content-between justify-content-md-start flex-wrap">
+                    <div id="selected-count-info" class="d-none badge bg-secondary px-3 py-2 fs-6"></div>
+                    <div class="d-flex gap-2 flex-grow-1 flex-md-grow-0">
                         <?php if ($can_edit): ?>
-                            <button type="button" class="btn btn-bulk-edit" id="bulkEditBtn" disabled title="Edit Terpilih">
-                                <i class="fas fa-edit me-1"></i> 
-                                <span class="d-none d-sm-inline">Edit Terpilih</span>
+                            <button type="button" class="btn btn-bulk-edit flex-grow-1 fw-medium text-nowrap" id="bulkEditBtn" disabled>
+                                <i class="fas fa-edit"></i> <span class="d-none d-sm-inline ms-1">Edit Terpilih</span><span class="d-inline d-sm-none ms-1">Edit</span>
                             </button>
                         <?php endif; ?>
                         <?php if ($can_delete): ?>
-                            <button type="submit" class="btn btn-bulk-delete" id="bulkDeleteBtn" disabled title="Hapus Terpilih">
-                                <i class="fas fa-trash-alt me-1"></i> 
-                                <span class="d-none d-sm-inline">Hapus Terpilih</span>
+                            <button type="submit" class="btn btn-bulk-delete flex-grow-1 fw-medium text-nowrap" id="bulkDeleteBtn" disabled>
+                                <i class="fas fa-trash-alt"></i> <span class="d-none d-sm-inline ms-1">Hapus Terpilih</span><span class="d-inline d-sm-none ms-1">Hapus</span>
                             </button>
                         <?php endif; ?>
                     </div>
-                    
-                    <div id="selected-count-info" class="ms-3 d-none">
-                        </div>
                 </div>
 
-                <div class="text-muted">
-                    Total Data: <strong><?= mysqli_num_rows($result); ?></strong>
+                <div class="text-muted text-center text-md-end">
+                    Total Data: <strong id="totalDataBadge"><?= mysqli_num_rows($result); ?></strong>
                 </div>
             </div>
         </div>
@@ -633,6 +601,10 @@ document.addEventListener('DOMContentLoaded', function() {
             success: function(html) {
                 const newTable = $(html).find('#table-data-wrapper').html();
                 $('#table-data-wrapper').html(newTable);
+                
+                const newBadge = $(html).find('#totalDataBadge').html();
+                if(newBadge) $('#totalDataBadge').html(newBadge);
+                
                 window.history.pushState(null, '', url);
                 
                 // Re-bind listeners because elements were swapped

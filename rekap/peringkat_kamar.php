@@ -89,6 +89,15 @@ while ($r = mysqli_fetch_assoc($res_kbs)) {
     if (isset($raw_data[$r['kamar']])) $raw_data[$r['kamar']]['pelanggaran_kebersihan'] = (int)$r['total'];
 }
 
+// 🔹 Kueri Tambahan: Ambil Musyrif per Kamar
+$q_musyrif = mysqli_query($conn, "SELECT kamar_id, GROUP_CONCAT(nama_lengkap SEPARATOR ', ') as nama_lengkap FROM users WHERE role = 'musyrif' AND kamar_id IS NOT NULL AND kamar_id != '' GROUP BY kamar_id");
+$musyrif_map = [];
+if ($q_musyrif) {
+    while ($rm = mysqli_fetch_assoc($q_musyrif)) {
+        $musyrif_map[$rm['kamar_id']] = $rm['nama_lengkap'];
+    }
+}
+
 // 🔹 Merakit dan Menghitung Agregat Rata-rata per Kamar
 $kamar_data = [];
 
@@ -108,7 +117,8 @@ foreach ($raw_data as $d) {
         'avg_kasus' => $avg_kasus,
         'avg_reward' => $avg_rwd,
         'avg_rapot' => $avg_rpt,
-        'pelanggaran_kebersihan' => $kbs
+        'pelanggaran_kebersihan' => $kbs,
+        'musyrif' => $musyrif_map[$d['kamar']] ?? '-'
     ];
 }
 
@@ -285,6 +295,12 @@ body { background-color: #f8f9fa; font-family: 'Poppins', sans-serif; color: #33
                         
                         <div style="font-size: 13px; color: #64748b; margin-bottom: 15px;">
                             <i class="fas fa-users me-1"></i> Terdiri dari <?= $jml_santri ?> santri
+                            <?php if($row['musyrif'] !== '-'): ?>
+                            <br>
+                            <span class="badge bg-white text-secondary border mt-2 fw-normal shadow-sm" style="font-size: 0.72rem; padding: 0.35rem 0.6rem; border-radius: 6px; display: inline-block;">
+                                <i class="fas fa-user-tie text-muted me-1"></i>Musyrif: <?= htmlspecialchars($row['musyrif']) ?>
+                            </span>
+                            <?php endif; ?>
                         </div>
 
                         <div class="stats-container">
