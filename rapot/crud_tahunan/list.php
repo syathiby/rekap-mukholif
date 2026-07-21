@@ -126,7 +126,7 @@ try {
     $tahun_akhir = (int)$tahun_awal + 1;
     
     $stmt = $conn->prepare("
-        SELECT s.id as santri_id, s.nama AS nama_santri, s.kelas,
+        SELECT s.id as santri_id, s.nis, s.nama AS nama_santri, s.kelas,
                rt.id as rapor_id, rt.status, rt.is_fallback, rt.generated_at, rt.approved_at,
                u.nama_lengkap AS nama_approver,
                (SELECT COUNT(*) FROM rapot_kepengasuhan rk WHERE rk.santri_id = s.id AND (
@@ -517,6 +517,7 @@ require_once __DIR__ . '/../../layouts/header.php';
                         <?php endif; ?>
                     <?php endif; ?>
                     
+                    <span class="s-kelas"><i class="fas fa-id-card me-1"></i>NIS <?= htmlspecialchars($r['nis'] ?? '-') ?></span>
                     <span class="s-kelas"><i class="fas fa-graduation-cap me-1"></i>Kelas <?= htmlspecialchars($r['kelas'] ?? 'N/A') ?></span>
                     <?php if ($punya_rapor && !empty($r['generated_at'])): ?>
                     <span class="s-date d-none d-md-inline"><?= date('d M Y', strtotime($r['generated_at'])) ?></span>

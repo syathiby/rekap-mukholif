@@ -19,11 +19,14 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
         }
 
         // Ambil data mentah dari form
+        $nis_input = $_POST['nis'] ?? '';
         $nama_input = $_POST['nama'] ?? '';
         $kelas_input = $_POST['kelas'] ?? '';
         $kamar_input = $_POST['kamar'] ?? '';
 
         // Bersihkan dan validasi
+        $nis = trim($nis_input);
+        if ($nis === '') { $nis = null; } // allow null
         $nama = trim($nama_input);
         $kelas_mentah = trim($kelas_input);
         $kamar_mentah = trim($kamar_input);
@@ -36,8 +39,21 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
         $kelas_bersih = intval($kelas_mentah);
         $kamar_bersih = intval($kamar_mentah);
 
+        // Cek apakah NIS sudah dipakai oleh santri lain
+        if ($nis !== null) {
+            $stmt_check = mysqli_prepare($conn, "SELECT id FROM santri WHERE nis = ? AND id != ?");
+            mysqli_stmt_bind_param($stmt_check, "si", $nis, $id);
+            mysqli_stmt_execute($stmt_check);
+            $res_check = mysqli_stmt_get_result($stmt_check);
+            if (mysqli_num_rows($res_check) > 0) {
+                mysqli_stmt_close($stmt_check);
+                throw new Exception("Gagal! NIS '$nis' sudah terdaftar atas nama santri lain.");
+            }
+            mysqli_stmt_close($stmt_check);
+        }
+
         // Ambil data lama dulu buat log
-        $stmt_old = mysqli_prepare($conn, "SELECT nama, kelas, kamar FROM santri WHERE id = ?");
+        $stmt_old = mysqli_prepare($conn, "SELECT nis, nama, kelas, kamar FROM santri WHERE id = ?");
         mysqli_stmt_bind_param($stmt_old, "i", $id);
         mysqli_stmt_execute($stmt_old);
         $res_old = mysqli_stmt_get_result($stmt_old);
@@ -45,10 +61,10 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
         mysqli_stmt_close($stmt_old);
 
         // Update data using prepared statement
-        $stmt = mysqli_prepare($conn, "UPDATE santri SET nama=?, kelas=?, kamar=? WHERE id=?");
+        $stmt = mysqli_prepare($conn, "UPDATE santri SET nis=?, nama=?, kelas=?, kamar=? WHERE id=?");
         
-        // Tipe data sudah benar: s (string), i (integer), i (integer), i (integer)
-        mysqli_stmt_bind_param($stmt, "siii", $nama, $kelas_bersih, $kamar_bersih, $id);
+        // Tipe data sudah benar: s (string), s (string), i (integer), i (integer), i (integer)
+        mysqli_stmt_bind_param($stmt, "ssiii", $nis, $nama, $kelas_bersih, $kamar_bersih, $id);
         
         if (mysqli_stmt_execute($stmt)) {
             // Catat log edit
@@ -57,6 +73,7 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
                     'id' => $id,
                     'old' => $old_data,
                     'new' => [
+                        'nis' => $nis,
                         'nama' => $nama,
                         'kelas' => $kelas_bersih,
                         'kamar' => $kamar_bersih
@@ -95,7 +112,7 @@ if ($id === 0) {
 }
 
 // Fetch santri data using prepared statement
-$stmt = mysqli_prepare($conn, "SELECT nama, kelas, kamar FROM santri WHERE id = ?");
+$stmt = mysqli_prepare($conn, "SELECT nis, nama, kelas, kamar FROM santri WHERE id = ?");
 mysqli_stmt_bind_param($stmt, "i", $id);
 mysqli_stmt_execute($stmt);
 $result = mysqli_stmt_get_result($stmt);
@@ -144,6 +161,15 @@ if (!$row) {
 
                     <form method="post" id="editForm">
                         <input type="hidden" name="csrf_token" value="<?= htmlspecialchars($csrf_token) ?>">
+                        
+                        <div class="mb-4">
+                            <label for="nis" class="form-label fw-medium text-secondary">Nomor Induk Santri (NIS)</label>
+                            <div class="input-group-modern">
+                                <i class="fas fa-id-card"></i>
+                                <input type="text" id="nis" name="nis" class="form-control input-modern" 
+                                       value="<?= htmlspecialchars($row['nis'] ?? '') ?>" placeholder="Kosongkan jika belum ada">
+                            </div>
+                        </div>
                         <div class="mb-4">
                             <label for="nama" class="form-label fw-medium text-secondary">Nama Lengkap</label>
                             <div class="input-group-modern">

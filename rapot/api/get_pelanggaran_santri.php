@@ -20,14 +20,15 @@ if (empty($santri_id) || empty($bulan) || empty($tahun)) {
 // 4. Ambil data pelanggaran
 try {
     $sql = "
-        SELECT jp.nama_pelanggaran, jp.poin
+        SELECT jp.nama_pelanggaran, SUM(jp.poin) as poin, COUNT(*) as jumlah
         FROM pelanggaran p
         JOIN jenis_pelanggaran jp ON p.jenis_pelanggaran_id = jp.id
         WHERE p.santri_id = ? 
           AND MONTH(p.tanggal) = FIND_IN_SET(?, 'Januari,Februari,Maret,April,Mei,Juni,Juli,Agustus,September,Oktober,November,Desember')
           AND YEAR(p.tanggal) = ?
           AND jp.poin > 0
-        ORDER BY p.tanggal DESC
+        GROUP BY jp.nama_pelanggaran
+        ORDER BY MAX(p.tanggal) DESC
     ";
     
     $stmt = $conn->prepare($sql);
@@ -56,9 +57,10 @@ if (empty($pelanggaran_list)) {
     $html .= '<ul class="list-group list-group-flush">';
     foreach ($pelanggaran_list as $pelanggaran) {
         $total_poin += $pelanggaran['poin'];
+        $jml_txt = $pelanggaran['jumlah'] > 1 ? " ({$pelanggaran['jumlah']}x)" : "";
         $html .= '
             <li class="list-group-item d-flex justify-content-between align-items-center">
-                ' . htmlspecialchars($pelanggaran['nama_pelanggaran']) . '
+                ' . htmlspecialchars($pelanggaran['nama_pelanggaran']) . $jml_txt . '
                 <span class="badge bg-danger rounded-pill">' . $pelanggaran['poin'] . ' Poin</span>
             </li>
         ';

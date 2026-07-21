@@ -20,13 +20,14 @@ if (empty($santri_id) || empty($bulan) || empty($tahun)) {
 // 4. Ambil data reward dari tabel daftar_reward & jenis_reward
 try {
     $sql = "
-        SELECT jr.nama_reward, jr.poin_reward
+        SELECT jr.nama_reward, SUM(jr.poin_reward) AS poin_reward, COUNT(*) as jumlah
         FROM daftar_reward dr
         JOIN jenis_reward jr ON dr.jenis_reward_id = jr.id
         WHERE dr.santri_id = ? 
           AND MONTH(dr.tanggal) = FIND_IN_SET(?, 'Januari,Februari,Maret,April,Mei,Juni,Juli,Agustus,September,Oktober,November,Desember')
           AND YEAR(dr.tanggal) = ?
-        ORDER BY dr.tanggal DESC
+        GROUP BY jr.nama_reward
+        ORDER BY MAX(dr.tanggal) DESC
     ";
     
     $stmt = $conn->prepare($sql);
@@ -55,9 +56,10 @@ if (empty($reward_list)) {
     $html .= '<ul class="list-group list-group-flush">';
     foreach ($reward_list as $reward) {
         $total_poin_reward += $reward['poin_reward'];
+        $jml_txt = $reward['jumlah'] > 1 ? " ({$reward['jumlah']}x)" : "";
         $html .= '
             <li class="list-group-item d-flex justify-content-between align-items-center">
-                ' . htmlspecialchars($reward['nama_reward']) . '
+                ' . htmlspecialchars($reward['nama_reward']) . $jml_txt . '
                 <span class="badge bg-success rounded-pill">+' . $reward['poin_reward'] . ' Poin</span>
             </li>
         ';

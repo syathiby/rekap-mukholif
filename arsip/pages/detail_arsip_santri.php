@@ -48,7 +48,7 @@ if (!empty($filter_sort_order)) $back_qs .= "&sort_order=" . urlencode($filter_s
 if (!empty($filter_formula)) $back_qs .= "&formula=" . urlencode($filter_formula);
 
 // ─── 4. Info Santri ───────────────────────────────────────────────────────────
-$stmt_santri = $conn->prepare("SELECT santri_id AS id, santri_nama AS nama, santri_kelas AS kelas, santri_kamar AS kamar, total_poin_saat_arsip AS poin_aktif FROM arsip_data_santri WHERE arsip_id = ? AND santri_id = ?");
+$stmt_santri = $conn->prepare("SELECT santri_id AS id, santri_nis, santri_nama AS nama, santri_kelas AS kelas, santri_kamar AS kamar, total_poin_saat_arsip AS poin_aktif FROM arsip_data_santri WHERE arsip_id = ? AND santri_id = ?");
 $stmt_santri->bind_param("ii", $arsip_id, $santri_id);
 $stmt_santri->execute();
 $santri = $stmt_santri->get_result()->fetch_assoc();
@@ -515,6 +515,7 @@ require_once __DIR__ . '/../../layouts/header.php';
     <!-- Hero summary -->
     <div class="profile-hero p-3 p-md-4 mb-4 bg-white border shadow-sm" style="border-radius: 16px; position: relative;">
         <div class="d-flex flex-column align-items-center mb-3">
+
             <!-- Icon Avatar -->
             <div class="character-icon-wrapper <?= $karakter_class ?> bg-light mb-3" style="width: 75px; height: 75px; border-radius: 18px; display: flex; align-items: center; justify-content: center; border: 1px solid #f1f5f9; margin: 0 !important;">
                 <i class="fas <?= $karakter_icon ?> character-icon" style="font-size: 2.2rem; margin: 0;"></i>
@@ -524,6 +525,7 @@ require_once __DIR__ . '/../../layouts/header.php';
             <div class="text-center">
                 <h2 class="fw-bold mb-1 text-dark" style="letter-spacing: -0.5px; font-size: 1.6rem;"><?= htmlspecialchars($santri['nama']) ?></h2>
                 <div class="text-secondary" style="font-size: 0.85rem; font-weight: 500;">
+                    <i class="fas fa-id-card me-1 opacity-50"></i> NIS: <?= htmlspecialchars($santri['santri_nis'] ?? '-') ?> &nbsp;<span class="text-muted mx-1">•</span>&nbsp;
                     <i class="fas fa-user-graduate me-1 opacity-50"></i> Kls <?= htmlspecialchars($santri['kelas']) ?> &nbsp;<span class="text-muted mx-1">•</span>&nbsp;
                     <i class="fas fa-bed me-1 opacity-50"></i> Kmr <?= htmlspecialchars($santri['kamar']) ?>
                 </div>

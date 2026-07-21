@@ -26,7 +26,7 @@ if (!empty($filter_kategori)) $filter_qs .= "&kategori=" . urlencode($filter_kat
 if (!empty($filter_jp)) $filter_qs .= "&jenis_pelanggaran=" . urlencode($filter_jp);
 
 // ─── 4. Info Santri ───────────────────────────────────────────────────────────
-$stmt_santri = $conn->prepare("SELECT id, nama, kelas, kamar, poin_aktif FROM santri WHERE id = ?");
+$stmt_santri = $conn->prepare("SELECT id, nis, nama, kelas, kamar, poin_aktif FROM santri WHERE id = ?");
 $stmt_santri->bind_param("i", $santri_id);
 $stmt_santri->execute();
 $santri = $stmt_santri->get_result()->fetch_assoc();
@@ -516,9 +516,12 @@ require_once __DIR__ . '/../layouts/header.php';
             <!-- Info -->
             <div class="text-center">
                 <h2 class="fw-bold mb-1 text-dark" style="letter-spacing: -0.5px; font-size: 1.6rem;"><?= htmlspecialchars($santri['nama']) ?></h2>
-                <div class="text-secondary" style="font-size: 0.85rem; font-weight: 500;">
-                    <i class="fas fa-user-graduate me-1 opacity-50"></i> Kls <?= htmlspecialchars($santri['kelas']) ?> &nbsp;<span class="text-muted mx-1">•</span>&nbsp;
-                    <i class="fas fa-bed me-1 opacity-50"></i> Kmr <?= htmlspecialchars($santri['kamar']) ?>
+                <div class="text-secondary mb-3" style="font-size: 0.85rem; font-weight: 500;">
+                    <div class="mb-1"><i class="fas fa-id-card me-1 opacity-50"></i> NIS: <span class="text-dark fw-bold"><?= htmlspecialchars($santri['nis'] ?? '-') ?></span></div>
+                    <div>
+                        <i class="fas fa-user-graduate me-1 opacity-50"></i> Kls <?= htmlspecialchars($santri['kelas']) ?> &nbsp;<span class="text-muted mx-1">•</span>&nbsp;
+                        <i class="fas fa-bed me-1 opacity-50"></i> Kmr <?= htmlspecialchars($santri['kamar']) ?>
+                    </div>
                 </div>
             </div>
         </div>

@@ -23,7 +23,7 @@ $page_title = "Daftar Rapor Tahunan — Arsip Kamar $kamar";
 // Ambil semua rapor tahunan untuk kamar + periode di arsip
 try {
     $stmt = $conn->prepare("
-        SELECT s.santri_id, s.santri_nama AS nama_santri, s.santri_kelas AS kelas,
+        SELECT s.santri_id, s.santri_nis, s.santri_nama AS nama_santri, s.santri_kelas AS kelas,
                rt.id as rapor_id, rt.status, rt.is_fallback, rt.generated_at, rt.approved_at,
                rt.approved_by_nama AS nama_approver,
                1 as data_bulanan
@@ -339,6 +339,7 @@ require_once __DIR__ . '/../../layouts/header.php';
                         <span class="chip" style="background:#e2e8f0; color:#64748b;"><i class="fas fa-minus"></i> Belum ada rapor</span>
                     <?php endif; ?>
                     
+                    <span class="s-kelas"><i class="fas fa-id-card me-1"></i>NIS <?= htmlspecialchars($r['santri_nis'] ?? '-') ?></span>
                     <span class="s-kelas"><i class="fas fa-graduation-cap me-1"></i>Kelas <?= htmlspecialchars($r['kelas'] ?? 'N/A') ?></span>
                     <?php if ($punya_rapor && !empty($r['generated_at'])): ?>
                     <span class="s-date d-none d-md-inline"><?= date('d M Y', strtotime($r['generated_at'])) ?></span>

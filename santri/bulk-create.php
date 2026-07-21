@@ -17,8 +17,12 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
     $error_count = 0;
     $errors = [];
     
-    $query = "INSERT INTO santri (nama, kelas, kamar) VALUES (?, ?, ?)";
+    $query = "INSERT INTO santri (nis, nama, kelas, kamar) VALUES (?, ?, ?, ?)";
     $stmt = mysqli_prepare($conn, $query);
+
+    // Siapkan statement untuk ngecek NIS duplikat di database
+    $stmt_check = mysqli_prepare($conn, "SELECT id FROM santri WHERE nis = ?");
+    $seen_nis = []; // Untuk melacak duplikat di dalam file CSV yang sama
 
     foreach ($santri_list as $index => $line) {
         $line_number = $index + 1;
@@ -27,8 +31,11 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
 
         $data = array_map('trim', explode(',', $line));
             
-        if (count($data) === 3) {
-            list($nama, $kelas_raw, $kamar_raw) = $data;
+        if (count($data) >= 3 && count($data) <= 4) {
+            $nama = $data[0];
+            $kelas_raw = $data[1];
+            $kamar_raw = $data[2];
+            $nis = isset($data[3]) && trim($data[3]) !== '' ? trim($data[3]) : null;
             
             if (empty($nama) || empty($kelas_raw) || empty($kamar_raw)) {
                 $errors[] = "Baris $line_number: Data tidak lengkap";
@@ -39,7 +46,29 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
             $kelas = intval($kelas_raw);
             $kamar = intval($kamar_raw);
 
-            mysqli_stmt_bind_param($stmt, "sii", $nama, $kelas, $kamar);
+            // Validasi duplikat NIS
+            if ($nis !== null) {
+                // 1. Cek duplikat di dalam file CSV yang sama
+                if (in_array($nis, $seen_nis)) {
+                    $errors[] = "Baris $line_number ($nama): Gagal - NIS '$nis' ganda/kembar di dalam file CSV ini.";
+                    $error_count++;
+                    continue;
+                }
+                
+                // 2. Cek duplikat di database
+                mysqli_stmt_bind_param($stmt_check, "s", $nis);
+                mysqli_stmt_execute($stmt_check);
+                $res_check = mysqli_stmt_get_result($stmt_check);
+                if (mysqli_num_rows($res_check) > 0) {
+                    $errors[] = "Baris $line_number ($nama): Gagal - NIS '$nis' sudah terdaftar di database.";
+                    $error_count++;
+                    continue;
+                }
+                
+                $seen_nis[] = $nis;
+            }
+
+            mysqli_stmt_bind_param($stmt, "ssii", $nis, $nama, $kelas, $kamar);
             
             if (mysqli_stmt_execute($stmt)) {
                 $success_count++;
@@ -54,6 +83,7 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
     }
     
     mysqli_stmt_close($stmt);
+    if (isset($stmt_check)) { mysqli_stmt_close($stmt_check); }
     
     $_SESSION['bulk_upload_result'] = [
         'success' => $success_count,
@@ -153,10 +183,10 @@ require_once __DIR__ . '/../layouts/header.php';
                 <h5><i class="fas fa-info-circle text-primary me-2"></i>Petunjuk Format Data</h5>
                 <div class="example-box">
                     <p>Gunakan format berikut untuk setiap santri (pisahkan dengan koma):</p>
-                    <p class="mb-1"><strong>Nama,Kelas,Kamar</strong></p>
+                    <p class="mb-1"><strong>Nama,Kelas,Kamar,NIS(Opsional)</strong></p>
                     <p class="text-muted small mb-2">Contoh:</p>
-                    <pre class="mb-0">Raffa,10,4
-Fauzan,11,2
+                    <pre class="mb-0">Raffa,10,4,123456
+Fauzan,11,2,
 Luqman,12,3</pre>
                 </div>
             </div>

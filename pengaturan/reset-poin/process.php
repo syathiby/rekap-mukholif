@@ -44,7 +44,7 @@ if (isset($_POST['tutup_buku_massal'])) {
         $stmt_arsip->close();
 
         // Snapshot santri
-        $sql_santri_snapshot = "INSERT INTO arsip_data_santri (arsip_id, santri_id, santri_nama, santri_kelas, santri_kamar, total_poin_saat_arsip) SELECT ?, id, nama, kelas, kamar, poin_aktif FROM santri";
+        $sql_santri_snapshot = "INSERT INTO arsip_data_santri (arsip_id, santri_id, santri_nis, santri_nama, santri_kelas, santri_kamar, total_poin_saat_arsip) SELECT ?, id, nis, nama, kelas, kamar, poin_aktif FROM santri";
         $stmt_santri_snapshot = $conn->prepare($sql_santri_snapshot);
         $stmt_santri_snapshot->bind_param('i', $arsip_id);
         $stmt_santri_snapshot->execute();

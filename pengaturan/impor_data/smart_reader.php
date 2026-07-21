@@ -4,7 +4,7 @@
  * AI-Like Smart Data Reader for Excel/CSV Import
  *
  * Mendukung tipe data:
- *  - santri            (nama, kelas, kamar)
+ *  - santri            (nis, nama, kelas, kamar)
  *  - jenis_pelanggaran (nama_pelanggaran, bagian, poin, kategori)
  *  - jenis_reward      (nama_reward, poin_reward, deskripsi)
  */

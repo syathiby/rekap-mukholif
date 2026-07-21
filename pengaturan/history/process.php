@@ -7,6 +7,7 @@ require_once __DIR__ . '/../../bootstrap/init.php';
 
 // Pastikan user punya hak akses buat manage history
 guard('history_manage');
+csrf_validate();
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['id'])) {
     $id = intval($_POST['id']);
@@ -37,7 +38,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['id'])) {
     ]);
 
     if ($id <= 0) {
-        $_SESSION['pesan_error'] = "ID pelanggaran tidak valid!";
+        $_SESSION['flash_message'] = [
+            'type' => 'error',
+            'message' => "ID pelanggaran tidak valid!"
+        ];
         header("Location: $redirect_url");
         exit;
     }
@@ -104,7 +108,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['id'])) {
 
             // 3. KEMBALIKAN (KURANGI) POIN SANTRI
             if ($data['poin'] > 0) {
-                $stmt_update = $conn->prepare("UPDATE santri SET poin_aktif = poin_aktif - ? WHERE id = ?");
+                $stmt_update = $conn->prepare("UPDATE santri SET poin_aktif = GREATEST(0, poin_aktif - ?) WHERE id = ?");
                 $stmt_update->bind_param("ii", $data['poin'], $data['santri_id']);
                 $stmt_update->execute();
             }
@@ -161,19 +165,28 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['id'])) {
         // Kalau semua lancar, COMMIT transaksi
         mysqli_commit($conn);
 
-        $_SESSION['pesan_sukses'] = "Data berhasil dihapus dan tercatat di riwayat log penghapusan.";
+        $_SESSION['flash_message'] = [
+            'type' => 'success',
+            'message' => "Data berhasil dihapus dan tercatat di riwayat log penghapusan."
+        ];
         header("Location: $redirect_url");
         exit;
 
     } catch (Exception $e) {
         // Kalau ada error, ROLLBACK
         mysqli_rollback($conn);
-        $_SESSION['pesan_error'] = "Gagal membatalkan: " . $e->getMessage();
+        $_SESSION['flash_message'] = [
+            'type' => 'error',
+            'message' => "Gagal membatalkan: " . $e->getMessage()
+        ];
         header("Location: $redirect_url");
         exit;
     }
 } else {
-    $_SESSION['pesan_error'] = "Akses tidak valid!";
+    $_SESSION['flash_message'] = [
+        'type' => 'error',
+        'message' => "Akses tidak valid!"
+    ];
     header('Location: index.php');
     exit;
 }

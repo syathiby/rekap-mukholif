@@ -47,7 +47,7 @@ $jp_stmt->bind_param("i", $arsip_id); $jp_stmt->execute(); $jp_result = $jp_stmt
 // TIPE 0: DATA SEMUA SANTRI
 // ================================================================
 if ($tipe === 'semua') {
-    $sql = "SELECT s.santri_id AS id, s.santri_nama AS nama, s.santri_kelas AS kelas, s.santri_kamar AS kamar
+    $sql = "SELECT s.santri_id AS id, s.santri_nis, s.santri_nama AS nama, s.santri_kelas AS kelas, s.santri_kamar AS kamar
             FROM arsip_data_santri s
             WHERE s.arsip_id = ?";
     $params = [$arsip_id]; $types = "i";
@@ -70,7 +70,7 @@ if ($tipe === 'daftar_hitam') {
     $filter_bagian   = $_GET['bagian']           ?? null;
     $filter_jp       = $_GET['jenis_pelanggaran'] ?? null;
 
-    $sql = "SELECT s.santri_id AS id, s.santri_nama AS nama, s.santri_kelas AS kelas, s.santri_kamar AS kamar, s.total_poin_saat_arsip AS poin_aktif,
+    $sql = "SELECT s.santri_id AS id, s.santri_nis, s.santri_nama AS nama, s.santri_kelas AS kelas, s.santri_kamar AS kamar, s.total_poin_saat_arsip AS poin_aktif,
                    COALESCE(sub.total_pelanggaran_periode, 0) AS total_pelanggaran_periode,
                    COALESCE(sub.total_poin_periode, 0) AS total_poin_periode,
                    sub.detail_kasus
@@ -115,7 +115,7 @@ if ($tipe === 'peringkat') {
 
     if ($formula === 'neraca') {
         // ── Formula Neraca: reward - pelanggaran (tanpa rapot) ──────────────
-        $sql = "SELECT s.santri_id AS id, s.santri_nama AS nama, s.santri_kelas AS kelas, s.santri_kamar AS kamar,
+        $sql = "SELECT s.santri_id AS id, s.santri_nis, s.santri_nama AS nama, s.santri_kelas AS kelas, s.santri_kamar AS kamar,
                        (COALESCE(sub_p.total_poin_pelanggaran, 0) - COALESCE(sub_r.total_poin_reward, 0)) AS skor,
                        COALESCE(sub_p.total_pelanggaran_periode, 0) AS total_pelanggaran,
                        COALESCE(sub_p.total_poin_pelanggaran, 0)    AS poin_pelanggaran,
@@ -147,7 +147,7 @@ if ($tipe === 'peringkat') {
 
     } else {
         // ── Formula Semua Aspek: rapot×20 + reward - poin_pelanggaran ────────────────
-        $sql  = "SELECT s.santri_id AS id, s.santri_nama AS nama, s.santri_kelas AS kelas, s.santri_kamar AS kamar, ";
+        $sql  = "SELECT s.santri_id AS id, s.santri_nis, s.santri_nama AS nama, s.santri_kelas AS kelas, s.santri_kamar AS kamar, ";
         $sql .= ($hide_violators ? "0" : "COALESCE(pel.total_pelanggaran, 0)") . " AS poin_pelanggaran, ";
         $sql .= ($hide_violators ? "0" : "COALESCE(pel.jml_pelanggaran, 0)")   . " AS total_pelanggaran, ";
         $sql .= "COALESCE(rwd.total_reward, 0) AS poin_reward, 0 AS total_reward,
@@ -500,7 +500,7 @@ elseif ($tipe === 'daftar_hitam'):
                     </td>
                     <td>
                         <span class="fw-bold text-dark fs-6 text-decoration-none"><?= htmlspecialchars($row['nama']) ?></span>
-                        <small class="text-muted d-block mt-1">Kls: <?= htmlspecialchars($row['kelas']) ?> &bull; Kmr: <?= htmlspecialchars($row['kamar']) ?></small>
+                        <small class="text-muted d-block mt-1">NIS: <?= htmlspecialchars($row['santri_nis'] ?? '-') ?> &bull; Kls: <?= htmlspecialchars($row['kelas']) ?> &bull; Kmr: <?= htmlspecialchars($row['kamar']) ?></small>
                         <?php $pa = (int)$row['poin_aktif']; ?>
                         <?php if ($pa > 0): ?><small class="poin-aktif-info text-danger"><i class="fas fa-history fa-xs"></i> Histori: <?= $pa ?></small>
                         <?php elseif ($pa < 0): ?><small class="poin-aktif-info text-success"><i class="fas fa-star fa-xs text-warning"></i> Surplus: <?= abs($pa) ?> Reward</small>
@@ -593,8 +593,8 @@ if (empty($santri_data)) {
                         <?php if ($no <= 3): ?><i class="fas fa-trophy rank-icon"></i><?php else: ?><span class="fw-bold fs-6 text-muted"><?= $no ?></span><?php endif; ?>
                     </td>
                     <td>
-                        <span class="fw-bold text-dark text-decoration-none"><?= htmlspecialchars($row['nama']) ?></span>
-                        <small class="text-muted d-block">Kls <?= htmlspecialchars($row['kelas']) ?> &bull; Kmr <?= htmlspecialchars($row['kamar']) ?></small>
+                        <div class="fw-bold text-dark"><?= htmlspecialchars($row['nama']) ?></div>
+                        <div class="small text-muted">NIS: <?= htmlspecialchars($row['santri_nis'] ?? '-') ?> <span class="mx-1">&bull;</span> Kls <?= htmlspecialchars($row['kelas']) ?> <span class="mx-1">&bull;</span> Kmr <?= htmlspecialchars($row['kamar']) ?></div>
                     </td>
                     <?php if ($formula_cur === 'neraca'): 
                         $pb = $skor;

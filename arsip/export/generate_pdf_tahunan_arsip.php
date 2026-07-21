@@ -24,8 +24,9 @@ try {
     if ($rapor_id) {
         // Ambil data rapor tahunan
         $stmt = $conn->prepare("
-            SELECT rt.*, rt.santri_nama AS nama_santri, rt.kamar, rt.santri_kelas as kelas_santri, rt.approved_by_nama AS nama_musyrif
+            SELECT rt.*, s.santri_nis, rt.santri_nama AS nama_santri, rt.kamar, rt.santri_kelas as kelas_santri, rt.approved_by_nama AS nama_musyrif
             FROM arsip_data_rapot_tahunan rt
+            LEFT JOIN arsip_data_santri s ON rt.santri_id = s.santri_id AND rt.arsip_id = s.arsip_id
             WHERE rt.id = ?
         ");
         $stmt->bind_param('i', $rapor_id);
@@ -47,8 +48,9 @@ try {
         $periode = $rapot['periode'];
     } else {
         $stmt = $conn->prepare("
-            SELECT rt.*, rt.santri_nama AS nama_santri, rt.kamar, rt.santri_kelas as kelas_santri, rt.approved_by_nama AS nama_musyrif
+            SELECT rt.*, s.santri_nis, rt.santri_nama AS nama_santri, rt.kamar, rt.santri_kelas as kelas_santri, rt.approved_by_nama AS nama_musyrif
             FROM arsip_data_rapot_tahunan rt
+            LEFT JOIN arsip_data_santri s ON rt.santri_id = s.santri_id AND rt.arsip_id = s.arsip_id
             WHERE rt.arsip_id = ? AND rt.kamar = ? AND rt.periode = ? AND rt.status IN ('APPROVED', 'EXPORTED')
             ORDER BY rt.santri_nama ASC
         ");
@@ -112,6 +114,7 @@ try {
 
         // Siapkan variabel untuk template
         $santri = [
+            'nis'   => $rapot['santri_nis']   ?? '-',
             'nama'  => $rapot['nama_santri']  ?? 'Santri Dihapus',
             'kamar' => $rapot['kamar'] ?? 'N/A',
             'kelas' => $rapot['kelas_santri'] ?? 'N/A',

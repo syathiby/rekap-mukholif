@@ -148,7 +148,8 @@ ob_start();
         </td>
         <td class="py-3">
             <div class="fw-bold text-dark mb-1"><?= htmlspecialchars($row['nama']) ?></div>
-            <div class="d-flex gap-2">
+            <div class="d-flex flex-wrap gap-2">
+                <span class="badge bg-light text-secondary border" title="NIS">NIS <?= htmlspecialchars($row['nis'] ?? '-') ?></span>
                 <span class="badge bg-light text-secondary border">Kls <?= htmlspecialchars($row['kelas']) ?></span>
                 <span class="badge bg-light text-secondary border">Kmr <?= htmlspecialchars($row['kamar']) ?></span>
             </div>

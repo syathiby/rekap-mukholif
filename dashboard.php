@@ -97,7 +97,7 @@ if (!$dashboard_data) {
     // =============================================================
     $recent_violations_res = mysqli_query($conn, "
         (
-            SELECT p.id, s.nama, s.kamar, jp.nama_pelanggaran, p.tanggal, u.nama_lengkap AS pencatat
+            SELECT p.id, s.nis, s.nama, s.kamar, jp.nama_pelanggaran, p.tanggal, u.nama_lengkap AS pencatat
             FROM pelanggaran p
             JOIN santri s ON p.santri_id = s.id
             JOIN jenis_pelanggaran jp ON p.jenis_pelanggaran_id = jp.id
@@ -106,7 +106,7 @@ if (!$dashboard_data) {
         )
         UNION ALL
         (
-            SELECT pk.id, 'Penghuni Kamar' AS nama, pk.kamar, 'Kebersihan Kamar' AS nama_pelanggaran, pk.tanggal, u.nama_lengkap AS pencatat
+            SELECT pk.id, NULL AS nis, 'Penghuni Kamar' AS nama, pk.kamar, 'Kebersihan Kamar' AS nama_pelanggaran, pk.tanggal, u.nama_lengkap AS pencatat
             FROM pelanggaran_kebersihan pk
             LEFT JOIN users u ON pk.dicatat_oleh = u.id
             WHERE pk.tanggal >= DATE_SUB(NOW(), INTERVAL 7 DAY)
@@ -138,6 +138,7 @@ if (!$dashboard_data) {
 
     $top_violators_res = mysqli_query($conn, "
         SELECT 
+            s.nis,
             s.nama, 
             s.kamar, 
             SUM(jp.poin) as total_poin,
@@ -175,7 +176,7 @@ if (!$dashboard_data) {
     $where_rapot = empty($valid_months) ? "1=0" : "(" . implode(" OR ", $valid_months) . ")";
 
     $best_students_res = mysqli_query($conn, "
-        SELECT s.id, s.nama, s.kelas, s.kamar,
+        SELECT s.id, s.nis, s.nama, s.kelas, s.kamar,
                COALESCE(rwd.total_reward, 0) AS total_reward,
                COALESCE(rpt.avg_rapot, 0) AS avg_rapot
         FROM santri s
@@ -206,7 +207,7 @@ if (!$dashboard_data) {
     while($row = mysqli_fetch_assoc($best_students_res)) $best_students[] = $row;
 
     $top_histori_res = mysqli_query($conn, "
-        SELECT id, nama, kelas, kamar, poin_aktif
+        SELECT id, nis, nama, kelas, kamar, poin_aktif
         FROM santri
         WHERE poin_aktif > 0
         ORDER BY poin_aktif DESC, nama ASC
@@ -441,7 +442,12 @@ $teladan_onclick = !$can_view_santri_teladan ? 'onclick="event.preventDefault();
                                                 <td><?= $no++ ?></td>
                                                 <td>
                                                     <div class="fw-medium text-dark"><?= htmlspecialchars($violation['nama']) ?></div>
-                                                    <div class="text-muted small"><i class="fas fa-home"></i> Km. <?= htmlspecialchars($violation['kamar']) ?></div>
+                                                    <div class="text-muted small">
+                                                        <?php if (!empty($violation['nis'])): ?>
+                                                        <i class="fas fa-id-card"></i> <?= htmlspecialchars($violation['nis']) ?> <span class="mx-1">&bull;</span>
+                                                        <?php endif; ?>
+                                                        <i class="fas fa-home"></i> Km. <?= htmlspecialchars($violation['kamar']) ?>
+                                                    </div>
                                                 </td>
                                                 <td>
                                                     <span class="badge bg-light text-dark border text-wrap text-start">
@@ -484,7 +490,12 @@ $teladan_onclick = !$can_view_santri_teladan ? 'onclick="event.preventDefault();
                                             </div>
                                             <div class="mobile-violation-content flex-grow-1">
                                                 <div class="d-flex justify-content-between align-items-start mb-1">
-                                                    <div class="fw-bold text-dark text-break pe-2"><?= htmlspecialchars($violation['nama'] ?? 'Penghuni Kamar') ?></div>
+                                                    <div class="fw-bold text-dark text-break pe-2">
+                                                        <?= htmlspecialchars($violation['nama'] ?? 'Penghuni Kamar') ?>
+                                                        <?php if (!empty($violation['nis'])): ?>
+                                                        <div class="text-muted mt-1" style="font-size: 0.75rem; font-weight: normal;">NIS: <?= htmlspecialchars($violation['nis']) ?></div>
+                                                        <?php endif; ?>
+                                                    </div>
                                                     <div class="text-muted text-xs text-end flex-shrink-0"><?= $time_ago ?></div>
                                                 </div>
                                                 <div class="mobile-violation-title fw-medium text-danger mb-2">
@@ -553,6 +564,9 @@ $teladan_onclick = !$can_view_santri_teladan ? 'onclick="event.preventDefault();
                                                 <div class="flex-grow-1" style="min-width: 0; padding-right: 10px;">
                                                     <div class="fw-bold text-dark text-truncate" style="max-width: 100%;"><?= htmlspecialchars($violator['nama']) ?></div>
                                                     <div class="text-muted" style="font-size: 11px;">
+                                                        <?php if (!empty($violator['nis'])): ?>
+                                                        <span class="me-2"><i class="fas fa-id-card opacity-75"></i> <?= htmlspecialchars($violator['nis']) ?></span>
+                                                        <?php endif; ?>
                                                         <span class="me-2"><i class="fas fa-home opacity-75"></i> Km. <?= htmlspecialchars($violator['kamar']) ?></span>
                                                     </div>
                                                     <div class="mt-1">
@@ -599,6 +613,9 @@ $teladan_onclick = !$can_view_santri_teladan ? 'onclick="event.preventDefault();
                                                 <div class="flex-grow-1" style="min-width: 0; padding-right: 10px;">
                                                     <div class="fw-bold text-dark text-truncate" style="max-width: 100%;"><?= htmlspecialchars($student['nama']) ?></div>
                                                     <div class="text-muted text-truncate" style="font-size: 11px; max-width: 100%;">
+                                                        <?php if (!empty($student['nis'])): ?>
+                                                        <span class="me-2"><i class="fas fa-id-card opacity-75"></i> <?= htmlspecialchars($student['nis']) ?></span>
+                                                        <?php endif; ?>
                                                         <span class="me-2"><i class="fas fa-home opacity-75"></i> Km. <?= htmlspecialchars($student['kamar']) ?></span>
                                                         <span><i class="fas fa-graduation-cap opacity-75"></i> Kls <?= htmlspecialchars($student['kelas']) ?></span>
                                                     </div>
@@ -633,6 +650,9 @@ $teladan_onclick = !$can_view_santri_teladan ? 'onclick="event.preventDefault();
                                                 <div class="flex-grow-1" style="min-width: 0; padding-right: 10px;">
                                                     <div class="fw-bold text-dark text-truncate" style="max-width: 100%;"><?= htmlspecialchars($histori['nama']) ?></div>
                                                     <div class="text-muted" style="font-size: 11px;">
+                                                        <?php if (!empty($histori['nis'])): ?>
+                                                        <span class="me-2"><i class="fas fa-id-card opacity-75"></i> <?= htmlspecialchars($histori['nis']) ?></span>
+                                                        <?php endif; ?>
                                                         <span class="me-2"><i class="fas fa-home opacity-75"></i> Km. <?= htmlspecialchars($histori['kamar']) ?></span>
                                                     </div>
                                                 </div>

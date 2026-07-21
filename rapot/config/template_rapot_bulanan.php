@@ -164,14 +164,16 @@
 
     <table class="tabel-identitas">
         <tr>
-            <td width="10%">Bulan:</td>
-            <td width="55%"><?php echo htmlspecialchars($rapot['bulan']) . ' ' . htmlspecialchars($rapot['tahun']); ?></td>
+            <td width="10%">Nama:</td>
+            <td width="55%" style="font-weight: bold;"><?php echo htmlspecialchars($santri['nama']); ?></td>
             <td width="10%">Kamar:</td>
             <td width="25%"><?php echo htmlspecialchars($santri['kamar']); ?></td>
         </tr>
         <tr>
-            <td>Nama:</td>
-            <td colspan="3"><?php echo htmlspecialchars($santri['nama']); ?></td>
+            <td>NIS:</td>
+            <td><?php echo htmlspecialchars($santri['nis'] ?? '-'); ?></td>
+            <td>Bulan:</td>
+            <td><?php echo htmlspecialchars($rapot['bulan']) . ' ' . htmlspecialchars($rapot['tahun']); ?></td>
         </tr>
     </table>
 

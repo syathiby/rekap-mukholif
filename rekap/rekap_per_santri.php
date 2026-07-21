@@ -49,7 +49,7 @@ if ($tipe === 'daftar_hitam') {
     $filter_kategori = $_GET['kategori']          ?? null;
     $filter_jp       = $_GET['jenis_pelanggaran'] ?? null;
 
-    $sql = "SELECT s.id, s.nama, s.kelas, s.kamar, s.poin_aktif,
+    $sql = "SELECT s.id, s.nis, s.nama, s.kelas, s.kamar, s.poin_aktif,
                    COALESCE(sub.total_pelanggaran_periode, 0) AS total_pelanggaran_periode,
                    COALESCE(sub.total_poin_periode, 0) AS total_poin_periode,
                    sub.detail_kasus
@@ -94,7 +94,7 @@ if ($tipe === 'peringkat') {
 
     if ($formula === 'neraca') {
         // ── Formula Neraca: reward - pelanggaran (tanpa rapot) ──────────────
-        $sql = "SELECT s.id, s.nama, s.kelas, s.kamar,
+        $sql = "SELECT s.id, s.nis, s.nama, s.kelas, s.kamar,
                        (COALESCE(sub_p.total_poin_pelanggaran, 0) - COALESCE(sub_r.total_poin_reward, 0)) AS skor,
                        COALESCE(sub_p.total_pelanggaran_periode, 0) AS total_pelanggaran,
                        COALESCE(sub_p.total_poin_pelanggaran, 0)    AS poin_pelanggaran,
@@ -139,7 +139,7 @@ if ($tipe === 'peringkat') {
         $start_dt_time = $start_date . ' 00:00:00';
         $end_dt_time   = $end_date   . ' 23:59:59';
 
-        $sql  = "SELECT s.id, s.nama, s.kelas, s.kamar, ";
+        $sql  = "SELECT s.id, s.nis, s.nama, s.kelas, s.kamar, ";
         $sql .= ($hide_violators ? "0" : "COALESCE(pel.total_pelanggaran, 0)") . " AS poin_pelanggaran, ";
         $sql .= ($hide_violators ? "0" : "COALESCE(pel.jml_pelanggaran, 0)")   . " AS total_pelanggaran, ";
         $sql .= "COALESCE(rwd.total_reward, 0) AS poin_reward, 0 AS total_reward,
@@ -468,7 +468,8 @@ if ($tipe === 'daftar_hitam'):
                     </td>
                     <td>
                         <span class="fw-bold text-dark fs-6 text-decoration-none"><?= htmlspecialchars($row['nama']) ?></span>
-                        <small class="text-muted d-block mt-1">Kls: <?= htmlspecialchars($row['kelas']) ?> &bull; Kmr: <?= htmlspecialchars($row['kamar']) ?></small>
+                        <small class="text-muted d-block mt-1 mb-1">NIS: <span class="fw-medium"><?= htmlspecialchars($row['nis'] ?? '-') ?></span></small>
+                        <small class="text-muted d-block mb-1">Kls: <?= htmlspecialchars($row['kelas']) ?> &bull; Kmr: <?= htmlspecialchars($row['kamar']) ?></small>
                         <?php $pa = (int)$row['poin_aktif']; ?>
                         <?php if ($pa > 0): ?><small class="poin-aktif-info text-danger"><i class="fas fa-history fa-xs"></i> Histori: <?= $pa ?></small>
                         <?php elseif ($pa < 0): ?><small class="poin-aktif-info text-success"><i class="fas fa-star fa-xs text-warning"></i> Surplus: <?= abs($pa) ?> Reward</small>
@@ -562,6 +563,7 @@ if (empty($santri_data)) {
                     </td>
                     <td>
                         <span class="fw-bold text-dark text-decoration-none"><?= htmlspecialchars($row['nama']) ?></span>
+                        <small class="text-muted d-block mb-1">NIS: <span class="fw-medium"><?= htmlspecialchars($row['nis'] ?? '-') ?></span></small>
                         <small class="text-muted d-block">Kls <?= htmlspecialchars($row['kelas']) ?> &bull; Kmr <?= htmlspecialchars($row['kamar']) ?></small>
                     </td>
                     <?php if ($formula_cur === 'neraca'): 

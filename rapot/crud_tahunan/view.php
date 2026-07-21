@@ -18,6 +18,7 @@ try {
         SELECT
             rt.*,
             s.id   AS santri_id,
+            s.nis,
             s.nama AS nama_santri,
             s.kamar AS kamar_santri,
             s.kelas AS kelas_santri,
@@ -76,6 +77,7 @@ try {
 }
 
 $santri = [
+    'nis'   => $rapot['nis']          ?? '-',
     'nama'  => $rapot['nama_santri']  ?? 'Santri Dihapus',
     'kamar' => $rapot['kamar_santri'] ?? $rapot['kamar'] ?? 'N/A',
     'kelas' => $rapot['kelas_santri'] ?? 'N/A',

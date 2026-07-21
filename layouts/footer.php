@@ -174,11 +174,19 @@ if (function_exists('has_permission')) {
             text: textMessage || "Tindakan ini tidak dapat dibatalkan!",
             icon: 'warning',
             showCancelButton: true,
-            confirmButtonColor: '#d33',
-            cancelButtonColor: '#6c757d',
             confirmButtonText: 'Ya, Lanjutkan!',
             cancelButtonText: 'Batal',
-            reverseButtons: true
+            reverseButtons: true,
+            width: '22em',
+            padding: '1.2em',
+            customClass: {
+                popup: 'rounded-4 shadow',
+                title: 'fs-6 fw-bold text-dark mb-1',
+                htmlContainer: 'text-secondary small m-0',
+                confirmButton: 'btn btn-danger btn-sm px-3 rounded-pill fw-medium',
+                cancelButton: 'btn btn-light btn-sm border px-3 rounded-pill fw-medium text-dark me-2'
+            },
+            buttonsStyling: false
         }).then((result) => {
             if (result.isConfirmed) {
                 if (formToSubmit) {

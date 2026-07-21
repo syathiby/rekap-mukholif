@@ -18,7 +18,7 @@ try {
     $sql = "
         SELECT 
             r.*, 
-            s.id AS santri_id, s.nama AS nama_santri, s.kamar AS kamar_santri, s.kelas AS kelas_santri,
+            s.id AS santri_id, s.nis, s.nama AS nama_santri, s.kamar AS kamar_santri, s.kelas AS kelas_santri,
             u.nama_lengkap AS nama_musyrif
         FROM rapot_kepengasuhan r
         LEFT JOIN santri s ON r.santri_id = s.id
@@ -47,14 +47,15 @@ try {
     // Ambil rincian pelanggaran
     $pelanggaran_list = [];
     $sql_pelanggaran = "
-        SELECT jp.nama_pelanggaran, jp.poin
+        SELECT jp.nama_pelanggaran, SUM(jp.poin) as poin, COUNT(*) as jumlah
         FROM pelanggaran p
         JOIN jenis_pelanggaran jp ON p.jenis_pelanggaran_id = jp.id
         WHERE p.santri_id = ? 
           AND MONTH(p.tanggal) = FIND_IN_SET(?, 'Januari,Februari,Maret,April,Mei,Juni,Juli,Agustus,September,Oktober,November,Desember')
           AND YEAR(p.tanggal) = ?
           AND jp.poin > 0
-        ORDER BY p.tanggal DESC
+        GROUP BY jp.nama_pelanggaran
+        ORDER BY MAX(p.tanggal) DESC
     ";
     $stmt_pelanggaran = $conn->prepare($sql_pelanggaran);
     $stmt_pelanggaran->bind_param("isi", $rapot['santri_id'], $rapot['bulan'], $rapot['tahun']);
@@ -65,14 +66,15 @@ try {
     // === TAMBAHAN: Ambil rincian REWARD ===
     $reward_list = [];
     $sql_reward = "
-        SELECT jr.nama_reward, jr.poin_reward AS poin
+        SELECT jr.nama_reward, SUM(jr.poin_reward) AS poin, COUNT(*) as jumlah
         FROM daftar_reward rwd
         JOIN jenis_reward jr ON rwd.jenis_reward_id = jr.id
         WHERE rwd.santri_id = ? 
           AND MONTH(rwd.tanggal) = FIND_IN_SET(?, 'Januari,Februari,Maret,April,Mei,Juni,Juli,Agustus,September,Oktober,November,Desember')
           AND YEAR(rwd.tanggal) = ?
-          AND jr.poin_reward > 0  -- DIPERBAIKI: gunakan poin_reward, bukan poin
-        ORDER BY rwd.tanggal DESC
+          AND jr.poin_reward > 0
+        GROUP BY jr.nama_reward
+        ORDER BY MAX(rwd.tanggal) DESC
     ";
     $stmt_reward = $conn->prepare($sql_reward);
     $stmt_reward->bind_param("isi", $rapot['santri_id'], $rapot['bulan'], $rapot['tahun']);
@@ -86,6 +88,7 @@ try {
 }
 
 $santri = [
+    'nis' => $rapot['nis'] ?? '-',
     'nama' => $rapot['nama_santri'] ?? 'Santri Dihapus',
     'kamar' => $rapot['kamar_santri'] ?? 'N/A',
     'kelas' => $rapot['kelas_santri'] ?? 'N/A'
@@ -177,8 +180,8 @@ if ($mode === 'html') {
                 loaderCard.classList.add('success');
                 loaderIcon.innerHTML = '<i class="fas fa-check-circle"></i>';
                 loadingMessage.innerText = "Download Berhasil!";
-                subMessage.innerText = "Anda akan diarahkan kembali...";
-                setTimeout(function() { window.location.href = 'index.php'; }, 2000);
+                subMessage.innerText = "Tab ini akan tertutup otomatis...";
+                setTimeout(function() { window.close(); }, 2000);
             }).catch(function(error) {
                 loaderCard.classList.add('error');
                 loaderIcon.innerHTML = '<i class="fas fa-times-circle"></i>';

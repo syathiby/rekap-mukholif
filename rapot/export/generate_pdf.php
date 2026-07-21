@@ -19,7 +19,7 @@ try {
     $sql = "
         SELECT 
             r.*, 
-            s.id AS santri_id, s.nama AS nama_santri, s.kamar AS kamar_santri, s.kelas AS kelas_santri,
+            s.id AS santri_id, s.nis, s.nama AS nama_santri, s.kamar AS kamar_santri, s.kelas AS kelas_santri,
             u.nama_lengkap AS nama_musyrif
         FROM rapot_kepengasuhan r
         LEFT JOIN santri s ON r.santri_id = s.id
@@ -89,6 +89,7 @@ try {
 }
 
 $santri = [
+    'nis' => $rapot['nis'] ?? '-',
     'nama' => $rapot['nama_santri'] ?? 'Santri Dihapus',
     'kamar' => $rapot['kamar_santri'] ?? 'N/A',
     'kelas' => $rapot['kelas_santri'] ?? 'N/A'

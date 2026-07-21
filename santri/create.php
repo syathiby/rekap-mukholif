@@ -13,11 +13,14 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
     csrf_validate();
     try {
         // Ambil data mentah dari form
+        $nis_input = $_POST['nis'] ?? '';
         $nama_input = $_POST['nama'] ?? '';
         $kelas_input = $_POST['kelas'] ?? '';
         $kamar_input = $_POST['kamar'] ?? '';
         
         // Bersihkan dan validasi
+        $nis = trim($nis_input);
+        if ($nis === '') { $nis = null; } // allow null
         $nama = trim($nama_input);
         $kelas_mentah = trim($kelas_input);
         $kamar_mentah = trim($kamar_input);
@@ -29,15 +32,29 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
         $kelas_bersih = intval($kelas_mentah);
         $kamar_bersih = intval($kamar_mentah);
 
+        // Cek apakah NIS sudah ada di database (jika NIS diisi)
+        if ($nis !== null) {
+            $stmt_check = mysqli_prepare($conn, "SELECT id FROM santri WHERE nis = ?");
+            mysqli_stmt_bind_param($stmt_check, "s", $nis);
+            mysqli_stmt_execute($stmt_check);
+            $res_check = mysqli_stmt_get_result($stmt_check);
+            if (mysqli_num_rows($res_check) > 0) {
+                mysqli_stmt_close($stmt_check);
+                throw new Exception("Gagal! NIS '$nis' sudah terdaftar atas nama santri lain.");
+            }
+            mysqli_stmt_close($stmt_check);
+        }
+
         // Insert data menggunakan prepared statement
-        $stmt = mysqli_prepare($conn, "INSERT INTO santri (nama, kelas, kamar) VALUES (?, ?, ?)");
+        $stmt = mysqli_prepare($conn, "INSERT INTO santri (nis, nama, kelas, kamar) VALUES (?, ?, ?, ?)");
         
-        mysqli_stmt_bind_param($stmt, "sii", $nama, $kelas_bersih, $kamar_bersih);
+        mysqli_stmt_bind_param($stmt, "ssii", $nis, $nama, $kelas_bersih, $kamar_bersih);
         
         if (mysqli_stmt_execute($stmt)) {
             $new_id = mysqli_insert_id($conn);
             write_activity_log('CREATE', 'santri', "Menambahkan santri baru: '" . htmlspecialchars($nama) . "' (Kelas: $kelas_bersih, Kamar: $kamar_bersih)", [
                 'id' => $new_id,
+                'nis' => $nis,
                 'nama' => $nama,
                 'kelas' => $kelas_bersih,
                 'kamar' => $kamar_bersih
@@ -81,6 +98,15 @@ require_once __DIR__ . '/../layouts/header.php';
                 <div class="card-body p-4 p-md-5">
                     <form method="post" id="santriForm">
                         <input type="hidden" name="csrf_token" value="<?= htmlspecialchars($csrf_token) ?>">
+                        
+                        <div class="mb-4">
+                            <label for="nis" class="form-label fw-medium text-secondary">Nomor Induk Santri (NIS)</label>
+                            <div class="input-group-modern">
+                                <i class="fas fa-id-card"></i>
+                                <input type="text" id="nis" name="nis" class="form-control input-modern" 
+                                       placeholder="Kosongkan jika belum ada">
+                            </div>
+                        </div>
                         <div class="mb-4">
                             <label for="nama" class="form-label fw-medium text-secondary">Nama Lengkap</label>
                             <div class="input-group-modern">

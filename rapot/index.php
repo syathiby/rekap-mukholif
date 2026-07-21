@@ -37,8 +37,7 @@ try {
 // 3. PROSES FILTER (Session-based)
 if (isset($_GET['reset'])) {
     unset($_SESSION['filter_rapot']);
-    echo "<script>sessionStorage.removeItem('selectedRapotData');</script>";
-    header('Location: index.php');
+    header('Location: index.php?clearsession=1');
     exit;
 }
 if (isset($_GET['kamar']) || isset($_GET['bulan']) || isset($_GET['tahun'])) {
@@ -101,7 +100,7 @@ try {
     $sql = "
         SELECT 
             r.id, r.bulan, r.tahun, r.dibuat_pada,
-            s.nama AS nama_santri, s.kamar AS kamar_santri,
+            s.nis, s.nama AS nama_santri, s.kamar AS kamar_santri,
             u.nama_lengkap AS nama_musyrif
         FROM rapot_kepengasuhan r
         JOIN santri s ON r.santri_id = s.id
@@ -224,7 +223,10 @@ if (isset($_GET['ajax']) && $_GET['ajax'] == '1') {
                            data-filename="<?php echo htmlspecialchars($filename_base); ?>">
                 </td>
                 <td class="align-middle text-center"><?php echo $offset + $index + 1; ?></td>
-                <td class="align-middle fw-bold text-dark"><?php echo htmlspecialchars($rapot['nama_santri'] ?? 'Santri Dihapus'); ?></td>
+                <td class="align-middle fw-bold text-dark">
+                    <?php echo htmlspecialchars($rapot['nama_santri'] ?? 'Santri Dihapus'); ?>
+                    <div class="small text-muted fw-normal">NIS: <?php echo htmlspecialchars($rapot['nis'] ?? '-'); ?></div>
+                </td>
                 <td class="align-middle text-center"><?php echo htmlspecialchars($rapot['kamar_santri'] ?? 'N/A'); ?></td>
                 <td class="align-middle"><?php echo htmlspecialchars($rapot['bulan']) . ' ' . $rapot['tahun']; ?></td>
                 <td class="align-middle d-none d-md-table-cell"><?php echo htmlspecialchars($rapot['nama_musyrif'] ?? 'User Dihapus'); ?></td>
@@ -240,7 +242,7 @@ if (isset($_GET['ajax']) && $_GET['ajax'] == '1') {
                                 </a>
                             <?php endif; ?>
                             <?php if ($can_cetak): ?>
-                                <a class="dropdown-item" href="export/generate_pdf.php?id=<?php echo $rapot['id']; ?>" target="_blank" data-bs-toggle="tooltip" title="Unduh PDF">
+                                <a class="dropdown-item" href="export/generate_pdf.php?id=<?php echo $rapot['id']; ?>" data-bs-toggle="tooltip" title="Unduh PDF">
                                     <i class="fas fa-file-pdf fa-sm fa-fw me-2 text-gray-400"></i> Unduh PDF
                                 </a>
                                 <a class="dropdown-item" href="export/generate_png.php?id=<?php echo $rapot['id']; ?>" target="_blank" data-bs-toggle="tooltip" title="Unduh PNG (Maks 2MB)">
@@ -540,7 +542,7 @@ require_once __DIR__ . '/../layouts/header.php';
                                                         </a>
                                                     <?php endif; ?>
                                                     <?php if ($can_cetak): ?>
-                                                        <a class="dropdown-item" href="export/generate_pdf.php?id=<?php echo $rapot['id']; ?>" target="_blank" data-bs-toggle="tooltip" title="Unduh PDF">
+                                                        <a class="dropdown-item" href="export/generate_pdf.php?id=<?php echo $rapot['id']; ?>" data-bs-toggle="tooltip" title="Unduh PDF">
                                                             <i class="fas fa-file-pdf fa-sm fa-fw me-2 text-gray-400"></i> Unduh PDF
                                                         </a>
                                                         <a class="dropdown-item" href="export/generate_png.php?id=<?php echo $rapot['id']; ?>" target="_blank" data-bs-toggle="tooltip" title="Unduh PNG (Maks 2MB)">
@@ -1075,6 +1077,15 @@ document.addEventListener('DOMContentLoaded', function() {
         });
     });
     
+    // === Cek Perintah Clear Session dari URL ===
+    const urlParams = new URLSearchParams(window.location.search);
+    if (urlParams.has('clearsession')) {
+        sessionStorage.removeItem(STORAGE_KEY);
+        urlParams.delete('clearsession');
+        const newUrl = window.location.pathname + (urlParams.toString() ? '?' + urlParams.toString() : '');
+        window.history.replaceState({}, document.title, newUrl);
+    }
+
     // === INISIALISASI SAAT HALAMAN LOAD ===
     loadSelections();
     toggleActionButtons();

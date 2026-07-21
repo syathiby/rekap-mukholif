@@ -34,16 +34,17 @@ $templates = [
     'santri' => [
         'filename'    => 'Template_Impor_Santri.xlsx',
         'sheet_title' => 'Data Santri',
-        'headers'     => ['ID', 'Nama Santri', 'Kelas', 'Kamar'],
-        'col_widths'  => [10, 42, 12, 12],
+        'headers'     => ['ID', 'NIS', 'Nama Santri', 'Kelas', 'Kamar'],
+        'col_widths'  => [10, 20, 42, 12, 12],
         'examples'    => [
-            [1,  'Ahmad Fauzan Maulana',    '1', '3'],
-            [2,  'Muhammad Rizky Pratama',  '2', '5'],
-            ['', 'Siti Aisyah Rahmawati',   '3', '7'],
-            ['', 'Yusuf Ibrahim Al-Farisi', '4', '8'],
+            [1,  '20240001', 'Ahmad Fauzan Maulana',    '1', '3'],
+            [2,  '20240002', 'Muhammad Rizky Pratama',  '2', '5'],
+            ['', '',         'Siti Aisyah Rahmawati',   '3', '7'],
+            ['', '',         'Yusuf Ibrahim Al-Farisi', '4', '8'],
         ],
         'notes' => [
             'Kolom ID dapat dikosongkan untuk data baru (ID akan dibuat otomatis).',
+            'Kolom NIS (Nomor Induk Santri) bersifat opsional, boleh dikosongkan.',
             'Kolom Nama Santri WAJIB diisi di setiap baris.',
         ],
     ],

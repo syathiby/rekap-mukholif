@@ -172,7 +172,10 @@ $santri = $conn->query("SELECT * FROM santri ORDER BY nama ASC");
                                     <td class="text-center">
                                         <input type="checkbox" name="santri_ids[]" value="<?= $row['id'] ?>" class="form-check-input santri-checkbox" form="mainForm">
                                     </td>
-                                    <td><?= htmlspecialchars($row['nama']) ?></td>
+                                    <td>
+                                        <div class="fw-bold"><?= htmlspecialchars($row['nama']) ?></div>
+                                        <div class="small text-muted">NIS: <?= htmlspecialchars($row['nis'] ?? '-') ?></div>
+                                    </td>
                                     <td><span class="badge bg-info text-dark"><?= htmlspecialchars($row['kelas']) ?></span></td>
                                     <td><span class="badge bg-warning text-dark"><?= htmlspecialchars($row['kamar']) ?></span></td>
                                 </tr>

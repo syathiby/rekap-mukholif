@@ -27,6 +27,15 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET') {
     }
 }
 
+// ── Batalkan Pratinjau via GET ──────────────────────────────────────────────
+if (isset($_GET['action']) && $_GET['action'] === 'cancel') {
+    if (!empty($_SESSION['sync_temp_file']) && file_exists($_SESSION['sync_temp_file'])) @unlink($_SESSION['sync_temp_file']);
+    if (!empty($_SESSION['sync_preview_file']) && file_exists($_SESSION['sync_preview_file'])) @unlink($_SESSION['sync_preview_file']);
+    unset($_SESSION['sync_preview_data'], $_SESSION['sync_temp_file'], $_SESSION['sync_type'], $_SESSION['sync_mode'], $_SESSION['sync_preview_file']);
+    header("Location: index.php");
+    exit;
+}
+
 // ── Flash messages dari session ────────────────────────────────────────────
 $error_msg   = null;
 $error_type  = null;
@@ -122,11 +131,13 @@ require_once __DIR__ . '/../../layouts/header.php';
 .act-update { background:#fef9c3; color:#854d0e; }
 .act-delete { background:#fee2e2; color:#991b1b; }
 .act-fatal  { background:#fed7d7; color:#9b2c2c; border:1px solid #feb2b2; }
+.act-error  { background:#fce7f3; color:#be185d; border:1px solid #f9a8d4; }
 
 .row-insert { background:#f0fdf4 !important; }
 .row-update { background:#fefce8 !important; }
 .row-delete { background:#fef2f2 !important; }
 .row-fatal  { background:#fff5f5 !important; border-left:4px solid #e53e3e !important; }
+.row-error  { background:#fdf2f8 !important; border-left:4px solid #db2777 !important; }
 
 /* ── Filter badges (summary bar) ─────────────────── */
 .filter-badge { cursor:pointer; transition:opacity .15s; user-select:none; opacity:1; }
@@ -181,7 +192,7 @@ require_once __DIR__ . '/../../layouts/header.php';
 
     <!-- Breadcrumb -->
     <div class="d-flex align-items-center gap-3 mb-4">
-        <a href="../index.php" class="btn btn-light rounded-circle shadow-sm"
+        <a href="<?= $preview_data !== null ? '?action=cancel' : '../index.php' ?>" class="btn btn-light rounded-circle shadow-sm"
            style="width:38px;height:38px;display:flex;align-items:center;justify-content:center">
             <i class="fas fa-arrow-left text-secondary"></i>
         </a>
@@ -250,7 +261,7 @@ require_once __DIR__ . '/../../layouts/header.php';
                             <div class="d-flex gap-3">
                                 <div class="flex-shrink-0"><span class="badge bg-success rounded-circle p-2"><i class="bi bi-shield-check"></i></span></div>
                                 <div>
-                                    <div class="fw-bold text-success small">MODE AMAN (Update & Insert)</div>
+                                    <div class="fw-bold text-success small">MODE AMAN (Update &amp; Insert)</div>
                                     <p class="mb-0 text-muted" style="font-size:.78rem;line-height:1.5">Hanya menambah data baru atau memperbarui yang berubah. Data lama yang tidak ada di Excel <strong>tetap aman</strong>.</p>
                                 </div>
                             </div>
@@ -280,7 +291,7 @@ require_once __DIR__ . '/../../layouts/header.php';
             <div class="sf-card-header"><i class="bi bi-file-earmark-arrow-down text-success"></i> Unduh Template Excel</div>
             <div class="sf-card-body">
                 <p class="text-muted small mb-3">Unduh template berikut agar Anda tahu format kolom yang benar sebelum mengisi dan mengunggah file.</p>
-                <div class="d-flex flex-wrap gap-2">
+                <div class="d-flex flex-wrap gap-2 align-items-center">
                     <a href="download_template.php?tipe=santri" class="tpl-btn tpl-santri" id="btn-tpl-santri">
                         <i class="bi bi-people-fill"></i> Template Santri
                     </a>
@@ -290,9 +301,58 @@ require_once __DIR__ . '/../../layouts/header.php';
                     <a href="download_template.php?tipe=jenis_reward" class="tpl-btn tpl-reward" id="btn-tpl-reward">
                         <i class="bi bi-trophy-fill"></i> Template Jenis Reward
                     </a>
+                    <button type="button" id="nis-info-toggle" onclick="toggleNisInfo()"
+                            style="display:inline-flex;align-items:center;gap:5px;background:transparent;border:1px dashed #a78bfa;color:#7c3aed;border-radius:999px;padding:4px 11px;font-size:.73rem;font-weight:600;cursor:pointer;transition:all .2s;outline:none;" title="Info kolom NIS pada Template Santri">
+                        <i class="bi bi-info-circle" style="font-size:.78rem;"></i>
+                        Info NIS
+                        <i class="bi bi-chevron-down" id="nis-chevron" style="font-size:.65rem;transition:transform .25s;"></i>
+                    </button>
+                </div>
+
+                <!-- NIS Info Panel -->
+                <div id="nis-info-panel" style="display:none;margin-top:12px;">
+                    <div style="background:#faf5ff;border:1px solid #ddd6fe;border-radius:9px;padding:12px 14px;">
+                        <p class="mb-2 text-muted" style="font-size:.78rem;line-height:1.5;">
+                            Template <strong>Data Santri</strong> kini mendukung kolom <strong>NIS</strong> (opsional — boleh dikosongkan).
+                        </p>
+                        <div class="row g-2">
+                            <div class="col-sm-4">
+                                <div style="background:#fff;border:1px solid #e9d5ff;border-radius:7px;padding:8px 10px;">
+                                    <div class="fw-bold mb-1" style="font-size:.72rem;color:#5b21b6;"><i class="bi bi-1-circle-fill me-1"></i>Pencarian Cerdas</div>
+                                    <p class="mb-0 text-muted" style="font-size:.7rem;line-height:1.4;">Santri dicocokkan via <strong>ID → NIS → Nama</strong>.</p>
+                                </div>
+                            </div>
+                            <div class="col-sm-4">
+                                <div style="background:#fff;border:1px solid #bbf7d0;border-radius:7px;padding:8px 10px;">
+                                    <div class="fw-bold mb-1" style="font-size:.72rem;color:#166534;"><i class="bi bi-check-circle-fill me-1"></i>Deteksi Perubahan</div>
+                                    <p class="mb-0 text-muted" style="font-size:.7rem;line-height:1.4;">NIS beda dari DB → ditandai <strong>UPDATE</strong>.</p>
+                                </div>
+                            </div>
+                            <div class="col-sm-4">
+                                <div style="background:#fff;border:1px solid #fed7aa;border-radius:7px;padding:8px 10px;">
+                                    <div class="fw-bold mb-1" style="font-size:.72rem;color:#9a3412;"><i class="bi bi-file-earmark-excel-fill me-1"></i>Nama Kolom di Excel</div>
+                                    <p class="mb-0 text-muted" style="font-size:.7rem;line-height:1.5;">Judul kolom <strong>NIS</strong> di file Excel harus salah satu dari: <code>NIS</code>, <code>Nomor Induk</code>, atau <code>No Induk</code>. Isi nilainya bebas (angka/huruf).</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
                 </div>
             </div>
         </div>
+
+        <script>
+        function toggleNisInfo() {
+            var panel = document.getElementById('nis-info-panel');
+            var chev  = document.getElementById('nis-chevron');
+            var btn   = document.getElementById('nis-info-toggle');
+            var open  = panel.style.display !== 'none';
+            panel.style.display = open ? 'none' : 'block';
+            chev.style.transform = open ? 'rotate(0deg)' : 'rotate(180deg)';
+            btn.style.background = open ? 'transparent' : '#ede9fe';
+        }
+        </script>
+
+
 
         <!-- Form Unggah -->
         <div class="sf-card">
@@ -302,7 +362,7 @@ require_once __DIR__ . '/../../layouts/header.php';
                     <input type="hidden" name="csrf_token" value="<?= htmlspecialchars($_SESSION['csrf_token'] ?? '') ?>">
                     <input type="hidden" name="action" value="preview">
 
-                    <div class="row mb-4">
+                    <div class="row mb-3">
                         <div class="col-md-6 mb-3 mb-md-0">
                             <label class="form-label fw-bold small" for="tipe_data">Tipe Data</label>
                             <select name="tipe_data" id="tipe_data" class="form-select" required>
@@ -317,43 +377,45 @@ require_once __DIR__ . '/../../layouts/header.php';
                                 <option value="update_insert">Update &amp; Insert Saja (Aman)</option>
                                 <option value="full_sync">Sinkronisasi Penuh (+ Hapus Data)</option>
                             </select>
-                            <div id="archive-warn" class="mt-3">
-                                <?php if ($has_active_data): ?>
-                                    <div class="alert bg-warning bg-opacity-10 border border-warning border-opacity-50 text-dark p-3 rounded-3 shadow-sm mb-0">
-                                        <div class="d-flex align-items-start gap-2">
-                                            <i class="bi bi-exclamation-circle-fill text-warning fs-4 mt-1"></i>
-                                            <div>
-                                                <h6 class="fw-bold mb-1">Peringatan Tutup Buku</h6>
-                                                <p class="small mb-2 text-secondary" style="line-height:1.4">
-                                                    Ada <strong><?= number_format($cek_data_aktif) ?> riwayat data</strong> (pelanggaran/reward) yang belum diarsipkan. 
-                                                    Sinkronisasi Penuh <u>tidak akan bisa menghapus</u> santri yang masih terikat dengan data tersebut.
-                                                </p>
-                                                <a href="../reset-poin/index.php" class="btn btn-sm btn-warning text-dark fw-bold rounded-pill px-3 shadow-sm mt-1" style="font-size: 0.75rem;">
-                                                    <i class="bi bi-archive-fill me-1"></i> Lakukan Tutup Buku
-                                                </a>
-                                            </div>
-                                        </div>
-                                    </div>
-                                <?php else: ?>
-                                    <div class="alert bg-success bg-opacity-10 border border-success border-opacity-50 text-dark p-3 rounded-3 shadow-sm mb-0">
-                                        <div class="d-flex align-items-center gap-2">
-                                            <i class="bi bi-check-circle-fill text-success fs-4"></i>
-                                            <div>
-                                                <h6 class="fw-bold mb-0 text-success">Status Aman (Sudah Tutup Buku)</h6>
-                                                <p class="small mb-0 text-secondary mt-1">Laci data sudah bersih. Sistem siap untuk melakukan Sinkronisasi Penuh.</p>
-                                            </div>
-                                        </div>
-                                    </div>
-                                <?php endif; ?>
-                            </div>
                         </div>
+                    </div>
+
+                    <div id="archive-warn" class="mb-4">
+                        <?php if ($has_active_data): ?>
+                            <div class="alert bg-warning bg-opacity-10 border border-warning border-opacity-50 text-dark p-3 rounded-3 shadow-sm mb-0">
+                                <div class="d-flex align-items-center gap-3 flex-wrap flex-md-nowrap">
+                                    <i class="bi bi-exclamation-circle-fill text-warning" style="font-size: 2.2rem;"></i>
+                                    <div>
+                                        <h6 class="fw-bold mb-1">Peringatan Tutup Buku</h6>
+                                        <p class="small mb-0 text-secondary" style="line-height:1.4">
+                                            Terdapat <strong><?= number_format($cek_data_aktif) ?> riwayat aktif</strong> (pelanggaran/reward). Mode Sinkronisasi Penuh <u>tidak akan menghapus</u> data (santri/pelanggaran/reward) yang masih terikat.
+                                        </p>
+                                    </div>
+                                    <div class="ms-md-auto mt-2 mt-md-0 text-end">
+                                        <a href="../reset-poin/index.php" class="btn btn-warning text-dark fw-bold rounded-pill px-4 shadow-sm text-nowrap" style="font-size: 0.82rem;">
+                                            <i class="bi bi-archive-fill me-1"></i> Tutup Buku
+                                        </a>
+                                    </div>
+                                </div>
+                            </div>
+                        <?php else: ?>
+                            <div class="alert bg-success bg-opacity-10 border border-success border-opacity-50 text-dark p-3 rounded-3 shadow-sm mb-0">
+                                <div class="d-flex align-items-center gap-3">
+                                    <i class="bi bi-check-circle-fill text-success" style="font-size: 2.2rem;"></i>
+                                    <div>
+                                        <h6 class="fw-bold mb-1 text-success">Status Aman (Sudah Tutup Buku)</h6>
+                                        <p class="small mb-0 text-secondary" style="line-height:1.4">Laci data sudah bersih. Sistem siap untuk melakukan Sinkronisasi Penuh tanpa ada data yang tertahan.</p>
+                                    </div>
+                                </div>
+                            </div>
+                        <?php endif; ?>
                     </div>
 
                     <div class="mb-4">
                         <label class="form-label fw-bold small">Pilih File (.xlsx / .csv)</label>
                         <div class="upload-zone" id="dropzone">
                             <i class="bi bi-file-earmark-excel" style="font-size:2.8rem;color:#10b981" id="upload-icon"></i>
-                            <h5 class="mt-3 mb-1 fw-bold text-dark">Klik atau Seret File ke Sini</h5>
+                            <h5 class="mt-3 mb-1 fw-bold text-dark" id="upload-title">Klik atau Seret File ke Sini</h5>
                             <p class="text-muted mb-0 small" id="file-name-display">Mendukung format Excel (.xlsx) dan CSV (.csv)</p>
                             <input type="file" name="file_impor" id="file_impor" accept=".xlsx,.xls,.csv" required>
                         </div>
@@ -381,14 +443,22 @@ require_once __DIR__ . '/../../layouts/header.php';
         };
         $cnt_insert  = count(array_filter($preview_data, fn($d) => $d['action'] === 'INSERT' && empty($d['is_fatal'])));
         $cnt_fatal   = count(array_filter($preview_data, fn($d) => !empty($d['is_fatal'])));
+        $cnt_error   = count(array_filter($preview_data, fn($d) => $d['action'] === 'ERROR'));
         $cnt_update  = count(array_filter($preview_data, fn($d) => $d['action'] === 'UPDATE'));
         $cnt_delete  = count(array_filter($preview_data, fn($d) => $d['action'] === 'DELETE'));
         ?>
 
         <div class="sf-card" style="border-color:#f59e0b">
-            <div class="sf-card-header bg-warning bg-opacity-10" style="border-color:#f59e0b;color:#78350f">
-                <i class="bi bi-eye-fill"></i>
-                Pratinjau Perbandingan Data — <?= htmlspecialchars($type_label) ?>
+            <div class="sf-card-header bg-warning bg-opacity-10 d-flex justify-content-between align-items-center" style="border-color:#f59e0b;color:#78350f">
+                <div>
+                    <i class="bi bi-eye-fill"></i>
+                    Pratinjau Perbandingan Data — <?= htmlspecialchars($type_label) ?>
+                </div>
+                <?php if (($_SESSION['sync_mode'] ?? '') === 'full_sync'): ?>
+                    <span class="badge bg-danger text-white rounded-pill px-3 py-2 border border-danger border-opacity-50 shadow-sm" style="font-size:0.75rem"><i class="bi bi-exclamation-triangle-fill me-1"></i> Sinkronisasi Penuh</span>
+                <?php else: ?>
+                    <span class="badge bg-success text-white rounded-pill px-3 py-2 border border-success border-opacity-50 shadow-sm" style="font-size:0.75rem"><i class="bi bi-shield-check me-1"></i> Mode Aman</span>
+                <?php endif; ?>
             </div>
 
             <?php if (empty($preview_data)): ?>
@@ -412,13 +482,34 @@ require_once __DIR__ . '/../../layouts/header.php';
                     <?php if ($cnt_fatal): ?>
                         <span class="act-badge act-fatal filter-badge" data-filter="FATAL" title="Klik untuk filter FATAL"><i class="bi bi-exclamation-octagon-fill me-1"></i>FATAL: <?= $cnt_fatal ?></span>
                     <?php endif; ?>
+                    <?php if ($cnt_error): ?>
+                        <span class="act-badge act-error filter-badge" data-filter="ERROR" title="Klik untuk filter ERROR"><i class="bi bi-x-circle-fill me-1"></i>ERROR: <?= $cnt_error ?></span>
+                    <?php endif; ?>
                     <span class="ms-auto text-muted" style="font-size:.72rem"><i class="bi bi-funnel me-1"></i>Klik badge untuk filter</span>
                 </div>
 
-                <!-- Peringatan FATAL -->
-                <?php if ($cnt_fatal): ?>
+                <!-- Peringatan FATAL / ERROR -->
+                <?php if ($cnt_error): ?>
+                <div class="fatal-card mb-0" style="background:#fdf2f8;border-color:#f9a8d4;border-left-color:#db2777">
+                    <div class="d-flex gap-3 align-items-start">
+                        <div class="fatal-icon pulse fs-4 flex-shrink-0" style="background:#fce7f3;color:#db2777"><i class="bi bi-x-circle-fill"></i></div>
+                        <div>
+                            <h6 class="fw-bold mb-2" style="color:#831843">Ditemukan <?= $cnt_error ?> Baris Bermasalah!</h6>
+                            <p class="mb-2" style="font-size:.86rem;color:#9d174d;line-height:1.5">
+                                Sinkronisasi tidak dapat dilanjutkan karena ada baris yang kosong, tidak valid, atau duplikat. 
+                                Tombol Konfirmasi sementara dikunci.
+                            </p>
+                            <p class="mb-0" style="font-size:.82rem;color:#9d174d">
+                                <i class="bi bi-lightbulb-fill text-warning me-1"></i>
+                                <strong>Solusi:</strong> Perbaiki data di Excel berdasarkan pesan di baris bertanda merah muda, lalu unggah ulang.
+                            </p>
+                        </div>
+                    </div>
+                </div>
+                <?php elseif ($cnt_fatal): ?>
                 <div class="fatal-card mb-0">
                     <div class="d-flex gap-3 align-items-start">
+                        <div class="fatal-icon pulse fs-4 flex-shrink-0"><i class="bi bi-shield-x"></i></div>
                         <div>
                             <h6 class="fw-bold mb-2" style="color:#742a2a">Terdeteksi <?= $cnt_fatal ?> Konflik ID &amp; Nama</h6>
                             <p class="mb-2" style="font-size:.86rem;color:#9b2c2c;line-height:1.5">
@@ -447,7 +538,7 @@ require_once __DIR__ . '/../../layouts/header.php';
                                 <th style="min-width:100px" class="text-center">Aksi</th>
                                 <th style="min-width:70px" class="text-center">ID</th>
                                 <?php if ($type === 'santri'): ?>
-                                    <th style="min-width:220px">Nama Santri</th><th style="min-width:100px">Kelas</th><th style="min-width:100px">Kamar</th>
+                                    <th style="min-width:160px">NIS</th><th style="min-width:220px">Nama Santri</th><th style="min-width:100px">Kelas</th><th style="min-width:100px">Kamar</th>
                                 <?php elseif ($type === 'jenis_pelanggaran'): ?>
                                     <th style="min-width:220px">Nama Pelanggaran</th><th style="min-width:140px">Bagian</th>
                                     <th style="min-width:80px" class="text-center">Poin</th>
@@ -459,11 +550,11 @@ require_once __DIR__ . '/../../layouts/header.php';
                         </thead>
                         <tbody id="preview-tbody">
                         <?php
-                        // ── Urutkan: FATAL → INSERT → UPDATE → DELETE → lainnya, lalu by nama
-                        $action_order = ['FATAL'=>0,'INSERT'=>1,'UPDATE'=>2,'DELETE'=>3];
+                        // ── Urutkan: ERROR → FATAL → INSERT → UPDATE → DELETE → lainnya, lalu by nama
+                        $action_order = ['ERROR'=>0,'FATAL'=>1,'INSERT'=>2,'UPDATE'=>3,'DELETE'=>4];
                         usort($preview_data, function($a, $b) use ($action_order) {
-                            $aKey = !empty($a['is_fatal']) ? 'FATAL' : ($a['action'] ?? '');
-                            $bKey = !empty($b['is_fatal']) ? 'FATAL' : ($b['action'] ?? '');
+                            $aKey = ($a['action'] === 'ERROR') ? 'ERROR' : (!empty($a['is_fatal']) ? 'FATAL' : ($a['action'] ?? ''));
+                            $bKey = ($b['action'] === 'ERROR') ? 'ERROR' : (!empty($b['is_fatal']) ? 'FATAL' : ($b['action'] ?? ''));
                             $aOrd = $action_order[$aKey] ?? 9;
                             $bOrd = $action_order[$bKey] ?? 9;
                             if ($aOrd !== $bOrd) return $aOrd - $bOrd;
@@ -476,6 +567,7 @@ require_once __DIR__ . '/../../layouts/header.php';
                             $is_fatal = !empty($row['is_fatal']);
                             $act      = $row['action'];
                             $rowCls   = match(true) {
+                                $act === 'ERROR'    => 'row-error',
                                 $is_fatal           => 'row-fatal',
                                 $act === 'INSERT'   => 'row-insert',
                                 $act === 'UPDATE'   => 'row-update',
@@ -483,23 +575,35 @@ require_once __DIR__ . '/../../layouts/header.php';
                                 default             => '',
                             };
                             $badgeCls = match(true) {
+                                $act === 'ERROR'    => 'act-error',
                                 $is_fatal           => 'act-fatal',
                                 $act === 'INSERT'   => 'act-insert',
                                 $act === 'UPDATE'   => 'act-update',
                                 $act === 'DELETE'   => 'act-delete',
                                 default             => '',
                             };
-                            $actLabel = $is_fatal ? 'FATAL' : $act;
+                            $actLabel = $act === 'ERROR' ? 'ERROR' : ($is_fatal ? 'FATAL' : $act);
                             $d  = $row['data'];
                             $od = $row['old_data'] ?? [];
                         ?>
-                        <tr class="<?= $rowCls ?>" data-action="<?= $is_fatal ? 'FATAL' : $act ?>">
+                        <tr class="<?= $rowCls ?>" data-action="<?= $act === 'ERROR' ? 'ERROR' : ($is_fatal ? 'FATAL' : $act) ?>">
                             <td class="text-center"><span class="act-badge <?= $badgeCls ?>"><?= $actLabel ?></span></td>
                             <td class="text-center fw-bold <?= $is_fatal ? 'text-danger' : 'text-muted' ?>"><?= htmlspecialchars($d['id'] ?? '—') ?></td>
 
                             <?php if ($type === 'santri'): ?>
                                 <td>
-                                    <?php if ($is_fatal): ?>
+                                    <?php if ($act === 'UPDATE' && ($d['nis'] ?? '') !== ($od['nis'] ?? '')): ?>
+                                        <span class="diff-old"><?= htmlspecialchars($od['nis'] ?? '—') ?></span>
+                                        <span class="diff-new"><?= htmlspecialchars($d['nis'] ?? '—') ?></span>
+                                    <?php else: ?>
+                                        <?= htmlspecialchars($d['nis'] ?? '—') ?>
+                                    <?php endif; ?>
+                                </td>
+                                <td>
+                                    <?php if ($act === 'ERROR'): ?>
+                                        <span class="diff-new"><?= htmlspecialchars($d['nama'] ?? '') ?></span>
+                                        <span class="fatal-reason" style="background:#fdf2f8;border-color:#f9a8d4;color:#9d174d"><i class="bi bi-x-circle-fill me-1"></i><?= htmlspecialchars($row['error_msg']) ?></span>
+                                    <?php elseif ($is_fatal): ?>
                                         <span class="diff-new"><?= htmlspecialchars($d['nama']) ?></span>
                                         <span class="fatal-reason"><i class="bi bi-exclamation-octagon-fill me-1"></i><?= htmlspecialchars($row['fatal_reason']) ?></span>
                                     <?php elseif ($act === 'UPDATE' && ($d['nama'] ?? '') !== ($od['nama'] ?? '')): ?>
@@ -528,7 +632,10 @@ require_once __DIR__ . '/../../layouts/header.php';
 
                             <?php elseif ($type === 'jenis_pelanggaran'): ?>
                                 <td>
-                                    <?php if ($is_fatal): ?>
+                                    <?php if ($act === 'ERROR'): ?>
+                                        <span class="diff-new"><?= htmlspecialchars($d['nama_pelanggaran'] ?? '') ?></span>
+                                        <span class="fatal-reason" style="background:#fdf2f8;border-color:#f9a8d4;color:#9d174d"><i class="bi bi-x-circle-fill me-1"></i><?= htmlspecialchars($row['error_msg']) ?></span>
+                                    <?php elseif ($is_fatal): ?>
                                         <span class="diff-new"><?= htmlspecialchars($d['nama_pelanggaran']) ?></span>
                                         <span class="fatal-reason"><i class="bi bi-exclamation-octagon-fill me-1"></i><?= htmlspecialchars($row['fatal_reason']) ?></span>
                                     <?php elseif ($act === 'UPDATE' && ($d['nama_pelanggaran'] ?? '') !== ($od['nama_pelanggaran'] ?? '')): ?>
@@ -565,7 +672,10 @@ require_once __DIR__ . '/../../layouts/header.php';
 
                             <?php elseif ($type === 'jenis_reward'): ?>
                                 <td>
-                                    <?php if ($is_fatal): ?>
+                                    <?php if ($act === 'ERROR'): ?>
+                                        <span class="diff-new"><?= htmlspecialchars($d['nama_reward'] ?? '') ?></span>
+                                        <span class="fatal-reason" style="background:#fdf2f8;border-color:#f9a8d4;color:#9d174d"><i class="bi bi-x-circle-fill me-1"></i><?= htmlspecialchars($row['error_msg']) ?></span>
+                                    <?php elseif ($is_fatal): ?>
                                         <span class="diff-new"><?= htmlspecialchars($d['nama_reward']) ?></span>
                                         <span class="fatal-reason"><i class="bi bi-exclamation-octagon-fill me-1"></i><?= htmlspecialchars($row['fatal_reason']) ?></span>
                                     <?php elseif ($act === 'UPDATE' && ($d['nama_reward'] ?? '') !== ($od['nama_reward'] ?? '')): ?>
@@ -608,8 +718,11 @@ require_once __DIR__ . '/../../layouts/header.php';
                     <form action="proses.php" method="post" class="m-0 d-grid d-md-block" id="syncConfirmForm">
                         <input type="hidden" name="csrf_token" value="<?= htmlspecialchars($_SESSION['csrf_token'] ?? '') ?>">
                         <input type="hidden" name="action" value="confirm">
-                        <button type="button" class="btn btn-primary fw-bold text-white py-2 w-100" id="btnConfirmSync" style="background-color: #4f46e5; border-color: #4f46e5;">
-                            <i class="bi bi-check-circle-fill me-1"></i> Konfirmasi &amp; Terapkan
+                        <button type="button" class="btn btn-primary fw-bold text-white py-2 w-100" id="btnConfirmSync" 
+                                style="background-color: <?= $cnt_error ? '#94a3b8' : '#4f46e5' ?>; border-color: <?= $cnt_error ? '#94a3b8' : '#4f46e5' ?>; <?= $cnt_error ? 'cursor:not-allowed;' : '' ?>" 
+                                <?= $cnt_error ? 'disabled' : '' ?>>
+                            <i class="<?= $cnt_error ? 'bi bi-lock-fill' : 'bi bi-check-circle-fill' ?> me-1"></i> 
+                            <?= $cnt_error ? 'Perbaiki File Excel Dahulu' : 'Konfirmasi &amp; Terapkan' ?>
                         </button>
                     </form>
                 </div>
@@ -699,14 +812,23 @@ window._syncStats = { insert:0, fatal:0, update:0, delete:0 };
 document.getElementById('file_impor')?.addEventListener('change', function(e) {
     const display = document.getElementById('file-name-display');
     const icon    = document.getElementById('upload-icon');
+    const title   = document.getElementById('upload-title');
+    const dz      = document.getElementById('dropzone');
+    
     if (e.target.files.length > 0) {
-        display.textContent = e.target.files[0].name;
-        icon.className = 'bi bi-file-earmark-check-fill';
-        icon.style.color = '#3b82f6';
+        display.innerHTML = '<span class="fw-bold text-success" style="font-size:0.95rem">' + e.target.files[0].name + '</span>';
+        if (title) title.textContent = 'File Berhasil Dipilih';
+        icon.className = 'bi bi-check-circle-fill';
+        icon.style.color = '#10b981';
+        dz.style.borderColor = '#10b981';
+        dz.style.background = 'linear-gradient(145deg,#ecfdf5,#d1fae5)';
     } else {
         display.textContent = 'Mendukung format Excel (.xlsx) dan CSV (.csv)';
+        if (title) title.textContent = 'Klik atau Seret File ke Sini';
         icon.className = 'bi bi-file-earmark-excel';
         icon.style.color = '#10b981';
+        dz.style.borderColor = '';
+        dz.style.background = '';
     }
 });
 
@@ -734,7 +856,7 @@ function updateTpl() {
 }
 function updateArchWarn() {
     if (!archWarn) return;
-    archWarn.style.display = (modeSelect?.value === 'full_sync' && tipeSelect?.value !== 'santri') ? 'block' : 'none';
+    archWarn.style.display = (modeSelect?.value === 'full_sync') ? 'block' : 'none';
 }
 
 tipeSelect?.addEventListener('change', () => { updateTpl(); updateArchWarn(); });

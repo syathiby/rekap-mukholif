@@ -71,6 +71,5 @@ try {
 } catch (Exception $e) {
     set_flash_message('Error: ' . $e->getMessage(), 'danger');
 }
-
-header('Location: ../../rapot/index.php');
+header('Location: ../../rapot/index.php?clearsession=1');
 exit;

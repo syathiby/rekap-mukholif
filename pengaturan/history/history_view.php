@@ -196,20 +196,38 @@ require_once __DIR__ . '/../../layouts/header.php';
 <div class="container py-4">
 
     <!-- ── Header ── -->
-    <div class="d-flex align-items-center mb-4 gap-3">
-        <a href="<?= $back_link ?>" class="btn-back shadow-sm" title="Kembali ke Riwayat">
-            <i class="fas fa-arrow-left"></i>
-        </a>
-        <div>
-            <h3 class="fw-bolder text-dark mb-1">
-                <i class="fas fa-trash-restore text-warning me-2"></i>Log Penghapusan
-            </h3>
-            <p class="text-muted mb-0 small">Jejak audit data pelanggaran yang telah dibatalkan.</p>
+    <div class="d-flex flex-column flex-md-row align-items-start align-items-md-center mb-4 gap-3">
+        <div class="d-flex align-items-center gap-3 w-100">
+            <a href="<?= $back_link ?>" class="btn-back shadow-sm" title="Kembali ke Riwayat">
+                <i class="fas fa-arrow-left"></i>
+            </a>
+            <div class="flex-grow-1">
+                <h4 class="fw-bolder text-dark mb-1">
+                    <i class="fas fa-trash-restore text-warning me-2"></i>Log Penghapusan
+                </h4>
+                <p class="text-muted mb-0" style="font-size: 0.8rem;">Jejak audit data pelanggaran yang dibatalkan.</p>
+            </div>
         </div>
-        <div class="ms-auto">
-            <span class="badge bg-white border text-secondary px-3 py-2 rounded-3 fw-medium">
+        
+        <div class="d-flex flex-wrap gap-2 align-items-center ms-md-auto w-100" style="max-width: 100%;">
+            <span class="badge bg-white border text-secondary px-3 py-2 rounded-3 fw-medium flex-fill text-center" style="font-size: 0.85rem;">
                 Total: <strong class="text-primary"><?= number_format($total_data) ?></strong> record
             </span>
+            <form action="delete_permanen.php" method="POST" onsubmit="confirmSubmit(event, this, 'Hapus Massal', 'Apakah Anda yakin ingin menghapus permanen SEMUA data log yang usianya lebih dari 30 hari? Tindakan ini tidak dapat dibatalkan!');" class="flex-fill">
+                <input type="hidden" name="csrf_token" value="<?= csrf_generate() ?>">
+                <input type="hidden" name="action" value="bulk_delete">
+                <input type="hidden" name="start_date" value="<?= htmlspecialchars($start_date) ?>">
+                <input type="hidden" name="end_date" value="<?= htmlspecialchars($end_date) ?>">
+                <input type="hidden" name="bagian" value="<?= htmlspecialchars($bagian) ?>">
+                <input type="hidden" name="search" value="<?= htmlspecialchars($search) ?>">
+                <input type="hidden" name="kamar" value="<?= htmlspecialchars($kamar) ?>">
+                <input type="hidden" name="kelas" value="<?= htmlspecialchars($kelas) ?>">
+                <input type="hidden" name="jenis_pelanggaran" value="<?= htmlspecialchars($jenis_pelanggaran) ?>">
+                <input type="hidden" name="page" value="<?= intval($page) ?>">
+                <button type="submit" class="btn btn-sm btn-danger px-3 py-2 fw-medium shadow-sm rounded-pill w-100 text-nowrap">
+                    <i class="fas fa-broom me-1"></i> Bersihkan > 30 Hari
+                </button>
+            </form>
         </div>
     </div>
 
@@ -235,6 +253,7 @@ require_once __DIR__ . '/../../layouts/header.php';
                         <th class="text-center">Poin Batal</th>
                         <th>Waktu Dihapus</th>
                         <th>Dihapus Oleh</th>
+                        <th class="text-center">Aksi</th>
                     </tr>
                 </thead>
                 <tbody>
@@ -298,11 +317,30 @@ require_once __DIR__ . '/../../layouts/header.php';
                                         </span>
                                     <?php endif; ?>
                                 </td>
+                                <td class="text-center">
+                                    <form action="delete_permanen.php" method="POST" onsubmit="confirmSubmit(event, this, 'Hapus Permanen', 'Yakin ingin menghapus permanen log ini? Data tidak bisa dikembalikan.');">
+                                        <input type="hidden" name="csrf_token" value="<?= csrf_generate() ?>">
+                                        <input type="hidden" name="action" value="delete_single">
+                                        <input type="hidden" name="id" value="<?= $row['id'] ?>">
+                                        <input type="hidden" name="tipe" value="<?= $row['tipe'] ?>">
+                                        <input type="hidden" name="start_date" value="<?= htmlspecialchars($start_date) ?>">
+                                        <input type="hidden" name="end_date" value="<?= htmlspecialchars($end_date) ?>">
+                                        <input type="hidden" name="bagian" value="<?= htmlspecialchars($bagian) ?>">
+                                        <input type="hidden" name="search" value="<?= htmlspecialchars($search) ?>">
+                                        <input type="hidden" name="kamar" value="<?= htmlspecialchars($kamar) ?>">
+                                        <input type="hidden" name="kelas" value="<?= htmlspecialchars($kelas) ?>">
+                                        <input type="hidden" name="jenis_pelanggaran" value="<?= htmlspecialchars($jenis_pelanggaran) ?>">
+                                        <input type="hidden" name="page" value="<?= intval($page) ?>">
+                                        <button type="submit" class="btn text-danger bg-light border-0 p-2 rounded" title="Hapus Permanen">
+                                            <i class="fas fa-trash-alt"></i>
+                                        </button>
+                                    </form>
+                                </td>
                             </tr>
                         <?php endforeach; ?>
                     <?php else: ?>
                         <tr>
-                            <td colspan="5" class="text-center py-5">
+                            <td colspan="6" class="text-center py-5">
                                 <div class="text-muted d-flex flex-column align-items-center">
                                     <i class="fas fa-trash-restore fa-3x mb-3 text-warning" style="opacity:.25;"></i>
                                     <p class="mb-0 fw-medium">Belum ada data history penghapusan.</p>

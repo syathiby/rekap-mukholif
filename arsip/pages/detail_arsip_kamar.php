@@ -66,7 +66,7 @@ $summary = mysqli_fetch_assoc(mysqli_stmt_get_result($stmt_sum));
 // 2. Ambil Data Santri Individu
 $sql_santri = "
     SELECT 
-        s.santri_id AS id, s.santri_nama AS nama, s.santri_kelas AS kelas,
+        s.santri_id AS id, s.santri_nis, s.santri_nama AS nama, s.santri_kelas AS kelas,
         (COALESCE(pel.total_pelanggaran, 0) - COALESCE(rwd.total_reward, 0)) AS poin_bersih,
         COALESCE(pel.total_pelanggaran, 0) AS total_pelanggaran,
         COALESCE(pel.kasus, 0) AS kasus,
@@ -228,6 +228,7 @@ body { background-color: #f8f9fa; font-family: 'Poppins', sans-serif; color: #33
                                 <td style="text-align: center; font-weight: 700; color: #94a3b8;"><?= $no++ ?></td>
                                 <td>
                                     <div style="font-weight: 700; color: #0f172a;"><?= htmlspecialchars($s['nama']) ?></div>
+                                    <div style="font-size: 0.75rem; color: #64748b; margin-top: 2px;">NIS: <?= htmlspecialchars($s['santri_nis'] ?? '-') ?></div>
                                 </td>
                                 <td><?= htmlspecialchars($s['kelas']) ?></td>
                                 

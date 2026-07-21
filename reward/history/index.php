@@ -41,7 +41,7 @@ if (isset($_GET['sort'])) {
 }
 
 // === QUERY ===
-$query = "SELECT dr.*, s.nama as nama_santri, s.kelas, jr.nama_reward, jr.poin_reward, u.nama_lengkap as pencatat 
+$query = "SELECT dr.*, s.nama as nama_santri, s.nis, s.kelas, jr.nama_reward, jr.poin_reward, u.nama_lengkap as pencatat 
           FROM daftar_reward dr
           JOIN santri s ON dr.santri_id = s.id
           JOIN jenis_reward jr ON dr.jenis_reward_id = jr.id
@@ -319,7 +319,7 @@ $q_pencatat = mysqli_stmt_get_result($stmt_pencatat);
                                     </td>
                                     <td>
                                         <div class="fw-bold text-dark mb-0"><?= $row['nama_santri'] ?></div>
-                                        <div class="small text-muted">Kelas <?= $row['kelas'] ?></div>
+                                        <div class="small text-muted">NIS: <?= htmlspecialchars($row['nis'] ?? '-') ?> <span class="mx-1">&bull;</span> Kelas <?= $row['kelas'] ?></div>
                                     </td>
                                     <td>
                                         <span class="text-dark fw-bold"><?= $row['nama_reward'] ?></span>

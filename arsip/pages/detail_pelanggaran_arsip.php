@@ -32,7 +32,7 @@ $filter_sort_order = $_GET['sort_order'] ?? '';
 $filter_formula = $_GET['formula'] ?? '';
 
 // Query 1: Ambil data profil santri     
-$stmt_santri = $conn->prepare("SELECT santri_nama AS nama, santri_kelas AS kelas, santri_kamar AS kamar, total_poin_saat_arsip AS poin_aktif FROM arsip_data_santri WHERE arsip_id = ? AND santri_id = ?");
+$stmt_santri = $conn->prepare("SELECT santri_nis, santri_nama AS nama, santri_kelas AS kelas, santri_kamar AS kamar, total_poin_saat_arsip AS poin_aktif FROM arsip_data_santri WHERE arsip_id = ? AND santri_id = ?");
 $stmt_santri->bind_param("ii", $arsip_id, $santri_id);
 $stmt_santri->execute();
 $santri = $stmt_santri->get_result()->fetch_assoc();
@@ -308,6 +308,7 @@ function getTelatInfo($nama) {
             <div class="summary-card">
                 <h2 class="santri-name text-dark mb-1" style="letter-spacing: -0.5px; font-size: 1.6rem;"><?= htmlspecialchars($santri['nama']) ?></h2>
                 <div class="text-secondary mb-4" style="font-size: 0.85rem; font-weight: 500;">
+                    <i class="fas fa-id-card me-1 opacity-50"></i> NIS: <?= htmlspecialchars($santri['santri_nis'] ?? '-') ?> &nbsp;<span class="text-muted mx-1">•</span>&nbsp;
                     <i class="fas fa-user-graduate me-1 opacity-50"></i> Kls <?= htmlspecialchars($santri['kelas']) ?> &nbsp;<span class="text-muted mx-1">•</span>&nbsp;
                     <i class="fas fa-bed me-1 opacity-50"></i> Kmr <?= htmlspecialchars($santri['kamar']) ?>
                 </div>

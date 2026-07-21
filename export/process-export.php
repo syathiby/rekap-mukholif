@@ -101,12 +101,12 @@ if (isset($_POST['export'])) {
     $sheetSantri->setTitle('Detail Santri');
 
     $sheetSantri->fromArray(
-        ['No', 'Nama Santri', 'Kelas', 'Kamar', 'Jumlah Pelanggaran', 'Total Poin Pelanggaran', 'Total Poin Reward', 'Poin Bersih Periode'],
+        ['No', 'NIS', 'Nama Santri', 'Kelas', 'Kamar', 'Jumlah Pelanggaran', 'Total Poin Pelanggaran', 'Total Poin Reward', 'Poin Bersih Periode'],
         NULL, 'A1'
     );
 
 
-    $sqlSantri = "SELECT s.id, s.nama, s.kelas, s.kamar, s.poin_aktif,
+    $sqlSantri = "SELECT s.id, s.nis, s.nama, s.kelas, s.kamar, s.poin_aktif,
                          COUNT(p.id)    AS jumlah_pelanggaran,
                          SUM(jp.poin)  AS total_poin_pelanggaran,
                          (SELECT COALESCE(SUM(jr.poin_reward), 0)
@@ -119,7 +119,7 @@ if (isset($_POST['export'])) {
                   WHERE DATE(p.tanggal) BETWEEN ? AND ?
                     AND jp.bagian <> 'Pengabdian'"
                 . $kamarClause
-                . " GROUP BY s.id, s.nama, s.kelas, s.kamar, s.poin_aktif
+                . " GROUP BY s.id, s.nis, s.nama, s.kelas, s.kamar, s.poin_aktif
                   ORDER BY total_poin_pelanggaran DESC";
 
     $stmtSantri = $conn->prepare($sqlSantri);
@@ -143,7 +143,7 @@ if (isset($_POST['export'])) {
         while ($row = $resultSantri->fetch_assoc()) {
             $poin_bersih = $row['total_poin_pelanggaran'] - $row['total_poin_reward'];
             $sheetSantri->fromArray(
-                [$no, $row['nama'], $row['kelas'], $row['kamar'],
+                [$no, $row['nis'] ?? '-', $row['nama'], $row['kelas'], $row['kamar'],
                  $row['jumlah_pelanggaran'], $row['total_poin_pelanggaran'], $row['total_poin_reward'], $poin_bersih],
                 NULL, 'A' . $rowNum
             );
@@ -177,12 +177,12 @@ if (isset($_POST['export'])) {
     $sheetDetail->setTitle('Detail Pelanggaran Umum');
 
     $sheetDetail->fromArray(
-        ['No', 'Nama Santri', 'Kelas', 'Kamar', 'Nama Pelanggaran', 'Poin', 'Bagian', 'Tanggal'],
+        ['No', 'NIS', 'Nama Santri', 'Kelas', 'Kamar', 'Nama Pelanggaran', 'Poin', 'Bagian', 'Tanggal'],
         NULL, 'A1'
     );
 
 
-    $sqlDetail = "SELECT s.nama, s.kelas, s.kamar, jp.nama_pelanggaran, jp.poin, jp.bagian, p.tanggal
+    $sqlDetail = "SELECT s.nis, s.nama, s.kelas, s.kamar, jp.nama_pelanggaran, jp.poin, jp.bagian, p.tanggal
                   FROM pelanggaran p
                   JOIN santri s          ON p.santri_id           = s.id
                   JOIN jenis_pelanggaran jp ON p.jenis_pelanggaran_id = jp.id
@@ -204,7 +204,7 @@ if (isset($_POST['export'])) {
         $rowNum = 2; $no = 1;
         while ($row = $result->fetch_assoc()) {
             $sheetDetail->fromArray(
-                [$no, $row['nama'], $row['kelas'], $row['kamar'],
+                [$no, $row['nis'] ?? '-', $row['nama'], $row['kelas'], $row['kamar'],
                  $row['nama_pelanggaran'], $row['poin'], $row['bagian'],
                  date('d-m-Y', strtotime($row['tanggal']))],
                 NULL, 'A' . $rowNum
@@ -374,11 +374,11 @@ if (isset($_POST['export'])) {
     $sheet->setTitle('Data Santri');
 
     $sheet->fromArray(
-        ['ID Santri', 'Nama Lengkap', 'Kelas', 'Kamar'],
+        ['ID Santri', 'NIS', 'Nama Lengkap', 'Kelas', 'Kamar'],
         NULL, 'A1'
     );
 
-    $sql    = "SELECT id, nama, kelas, kamar
+    $sql    = "SELECT id, nis, nama, kelas, kamar
                FROM santri
                ORDER BY CAST(kamar AS UNSIGNED) ASC, kelas ASC, nama ASC";
     $result = $conn->query($sql);
@@ -389,7 +389,7 @@ if (isset($_POST['export'])) {
         $rowNum = 2;
         while ($row = $result->fetch_assoc()) {
             $sheet->fromArray(
-                [$row['id'], $row['nama'], $row['kelas'], $row['kamar']],
+                [$row['id'], $row['nis'] ?? '-', $row['nama'], $row['kelas'], $row['kamar']],
                 NULL, 'A' . $rowNum
             );
             $totalSantri++;

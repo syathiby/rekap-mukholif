@@ -25,7 +25,7 @@ $filter_kategori = $_GET['kategori'] ?? null;
 $filter_jp = $_GET['jenis_pelanggaran'] ?? null;
 
 // Query 1: Ambil data profil santri     
-$stmt_santri = $conn->prepare("SELECT nama, kelas, kamar, poin_aktif FROM santri WHERE id = ?");
+$stmt_santri = $conn->prepare("SELECT nis, nama, kelas, kamar, poin_aktif FROM santri WHERE id = ?");
 $stmt_santri->bind_param("i", $santri_id);
 $stmt_santri->execute();
 $santri = $stmt_santri->get_result()->fetch_assoc();
@@ -304,8 +304,11 @@ function getTelatInfo($nama) {
             <div class="summary-card">
                 <h2 class="santri-name text-dark mb-1" style="letter-spacing: -0.5px; font-size: 1.6rem;"><?= htmlspecialchars($santri['nama']) ?></h2>
                 <div class="text-secondary mb-4" style="font-size: 0.85rem; font-weight: 500;">
-                    <i class="fas fa-user-graduate me-1 opacity-50"></i> Kls <?= htmlspecialchars($santri['kelas']) ?> &nbsp;<span class="text-muted mx-1">•</span>&nbsp;
-                    <i class="fas fa-bed me-1 opacity-50"></i> Kmr <?= htmlspecialchars($santri['kamar']) ?>
+                    <div class="mb-1"><i class="fas fa-id-card me-1 opacity-50"></i> NIS: <span class="text-dark fw-bold"><?= htmlspecialchars($santri['nis'] ?? '-') ?></span></div>
+                    <div>
+                        <i class="fas fa-user-graduate me-1 opacity-50"></i> Kls <?= htmlspecialchars($santri['kelas']) ?> &nbsp;<span class="text-muted mx-1">•</span>&nbsp;
+                        <i class="fas fa-bed me-1 opacity-50"></i> Kmr <?= htmlspecialchars($santri['kamar']) ?>
+                    </div>
                 </div>
                 
                 <div class="stats-grid">

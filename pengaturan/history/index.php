@@ -91,6 +91,7 @@ $sql_ind = $skip_individu ? null : "
     SELECT 
         p.id,
         CONVERT(s.nama USING utf8mb4) COLLATE utf8mb4_unicode_ci        AS nama_santri,
+        CONVERT(s.nis USING utf8mb4) COLLATE utf8mb4_unicode_ci         AS nis,
         CONVERT(s.kelas USING utf8mb4) COLLATE utf8mb4_unicode_ci       AS kelas,
         CONVERT(s.kamar USING utf8mb4) COLLATE utf8mb4_unicode_ci       AS kamar,
         CONVERT(jp.nama_pelanggaran USING utf8mb4) COLLATE utf8mb4_unicode_ci AS nama_pelanggaran,
@@ -109,6 +110,7 @@ $sql_keb = $skip_kebersihan ? null : "
     SELECT 
         pk.id,
         'Kamar' COLLATE utf8mb4_unicode_ci                                              AS nama_santri,
+        '-' COLLATE utf8mb4_unicode_ci                                                  AS nis,
         '-' COLLATE utf8mb4_unicode_ci                                                  AS kelas,
         CONVERT(pk.kamar USING utf8mb4) COLLATE utf8mb4_unicode_ci                     AS kamar,
         CONVERT(CONCAT('Kebersihan: ', IFNULL(pk.catatan,'')) USING utf8mb4) COLLATE utf8mb4_unicode_ci AS nama_pelanggaran,
@@ -204,9 +206,10 @@ function render_table_rows($all_data, $start_date, $end_date, $bagian, $search, 
                         <div class="fw-bold text-dark"><i class="fas fa-door-closed text-muted me-2"></i>Kamar <?= htmlspecialchars($row['kamar']) ?></div>
                     <?php else: ?>
                         <div class="fw-bold text-dark"><?= htmlspecialchars($row['nama_santri']) ?></div>
-                        <div class="small text-muted mt-1">
+                        <div class="small text-muted mt-1 d-flex flex-wrap gap-1">
+                            <span class="badge badge-soft-secondary rounded-2 fw-normal px-2 py-1">NIS <?= htmlspecialchars($row['nis'] ?? '-') ?></span>
                             <span class="badge badge-soft-secondary rounded-2 fw-normal px-2 py-1">Kls <?= htmlspecialchars($row['kelas']) ?></span>
-                            <span class="ms-1 fw-medium">Kmr <?= htmlspecialchars($row['kamar']) ?></span>
+                            <span class="badge badge-soft-secondary rounded-2 fw-normal px-2 py-1">Kmr <?= htmlspecialchars($row['kamar']) ?></span>
                         </div>
                     <?php endif; ?>
                 </td>
@@ -237,6 +240,7 @@ function render_table_rows($all_data, $start_date, $end_date, $bagian, $search, 
                 </td>
                 <td class="text-center">
                     <form action="process.php" method="POST" onsubmit="return confirmCancel(event, this)">
+                        <input type="hidden" name="csrf_token" value="<?= csrf_generate() ?>">
                         <input type="hidden" name="id"                value="<?= $row['id'] ?>">
                         <input type="hidden" name="tipe"              value="<?= $row['tipe'] ?>">
                         <input type="hidden" name="start_date"        value="<?= htmlspecialchars($start_date) ?>">
@@ -1014,28 +1018,7 @@ require_once __DIR__ . '/../../layouts/header.php';
         return false;
     };
 
-    // ── Flash Messages (pakai SweetAlert dari footer — tunggu sampai dimuat) ──
-    <?php if (isset($_SESSION['pesan_sukses'])): ?>
-    (function waitSwalSuccess() {
-        if (typeof Swal !== 'undefined') {
-            Swal.fire({ icon:'success', title:'Berhasil', text:'<?= addslashes($_SESSION['pesan_sukses']) ?>', timer:2500, showConfirmButton:false, customClass:{popup:'rounded-4'} });
-        } else {
-            setTimeout(waitSwalSuccess, 100);
-        }
-    })();
-    <?php unset($_SESSION['pesan_sukses']); ?>
-    <?php endif; ?>
-
-    <?php if (isset($_SESSION['pesan_error'])): ?>
-    (function waitSwalError() {
-        if (typeof Swal !== 'undefined') {
-            Swal.fire({ icon:'error', title:'Gagal', text:'<?= addslashes($_SESSION['pesan_error']) ?>', timer:3000, showConfirmButton:false, customClass:{popup:'rounded-4'} });
-        } else {
-            setTimeout(waitSwalError, 100);
-        }
-    })();
-    <?php unset($_SESSION['pesan_error']); ?>
-    <?php endif; ?>
+    // (Legacy pesan_sukses/pesan_error telah dipindahkan ke flash_message global)
 
 })();
 </script>

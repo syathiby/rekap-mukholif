@@ -120,9 +120,10 @@ $params = [];
 $types = '';
 
 if (!empty($nama_search)) {
-    $where_clauses[] = "nama LIKE ?";
+    $where_clauses[] = "(nama LIKE ? OR nis LIKE ?)";
     $params[] = "%" . $nama_search . "%";
-    $types .= 's';
+    $params[] = "%" . $nama_search . "%";
+    $types .= 'ss';
 }
 if (!empty($kelas_search)) {
     $where_clauses[] = "kelas LIKE ?";
@@ -277,7 +278,7 @@ mysqli_stmt_close($stmt_count);
     <div class="filter-card p-3 p-md-4 mb-4">
         <form class="row g-3" method="GET" action="index.php" id="filterForm">
             <div class="col-12 col-md-3">
-                <input class="form-control" type="search" name="nama" placeholder="Cari Nama Santri..." value="<?= htmlspecialchars($nama_search) ?>">
+                <input class="form-control" type="search" name="nama" placeholder="Cari Nama / NIS..." value="<?= htmlspecialchars($nama_search) ?>">
             </div>
             <div class="col-12 col-md-3">
                 <input class="form-control" type="search" name="kelas" placeholder="Filter Kelas..." value="<?= htmlspecialchars($kelas_search) ?>">
@@ -385,7 +386,9 @@ mysqli_stmt_close($stmt_count);
                                     </div>
                                     <div>
                                         <strong class="text-dark"><?= htmlspecialchars($row['nama']) ?></strong>
-                                        <div class="text-muted" style="font-size: 0.8rem;">ID: <?= $row['id'] ?></div>
+                                        <div class="text-muted" style="font-size: 0.8rem;">
+                                            ID: <?= $row['id'] ?> <span class="mx-1">&bull;</span> NIS: <?= htmlspecialchars($row['nis'] ?? '-') ?>
+                                        </div>
                                     </div>
                                 </div>
                             </td>

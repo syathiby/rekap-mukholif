@@ -80,12 +80,13 @@ $spreadsheet = new Spreadsheet();
 $sheetRekapSantri = $spreadsheet->getActiveSheet();
 $sheetRekapSantri->setTitle('Rekap Per Santri');
 
-$headersSantri = ['No', 'Nama Santri', 'Kelas', 'Kamar', 'Jumlah Pelanggaran', 'Total Poin'];
+$headersSantri = ['No', 'Nama Santri', 'NIS', 'Kelas', 'Kamar', 'Jumlah Pelanggaran', 'Total Poin'];
 $sheetRekapSantri->fromArray($headersSantri, NULL, 'A1');
 
 $sqlSantri = "
     SELECT
         s.santri_nama,
+        s.santri_nis,
         s.santri_kelas,
         s.santri_kamar,
         COALESCE(COUNT(p.id), 0) AS jumlah_pelanggaran,
@@ -97,7 +98,7 @@ $sqlSantri = "
     WHERE
         s.arsip_id = ?
     GROUP BY
-        s.id, s.santri_nama, s.santri_kelas, s.santri_kamar
+        s.id, s.santri_nama, s.santri_nis, s.santri_kelas, s.santri_kamar
     ORDER BY
         CAST(s.santri_kelas AS UNSIGNED) ASC,
         CAST(s.santri_kamar AS UNSIGNED) ASC,
@@ -111,7 +112,7 @@ $result = $stmt->get_result();
 if ($result->num_rows > 0) {
     $rowNum = 2; $no = 1;
     while ($row = $result->fetch_assoc()) {
-        $rowData = [$no, $row['santri_nama'], $row['santri_kelas'], $row['santri_kamar'], $row['jumlah_pelanggaran'], $row['total_poin']];
+        $rowData = [$no, $row['santri_nama'], $row['santri_nis'] ?? '-', $row['santri_kelas'], $row['santri_kamar'], $row['jumlah_pelanggaran'], $row['total_poin']];
         $sheetRekapSantri->fromArray($rowData, NULL, 'A' . $rowNum);
         $rowNum++; $no++;
     }
@@ -209,10 +210,10 @@ applySheetStyles($sheetKebersihan);
 $sheetPelanggaran = $spreadsheet->createSheet();
 $sheetPelanggaran->setTitle('Detail Pelanggaran Umum');
 
-$headersPelanggaran = ['No', 'Nama Santri', 'Kelas', 'Kamar', 'Jenis Pelanggaran', 'Bagian', 'Poin', 'Tanggal'];
+$headersPelanggaran = ['No', 'Nama Santri', 'NIS', 'Kelas', 'Kamar', 'Jenis Pelanggaran', 'Bagian', 'Poin', 'Tanggal'];
 $sheetPelanggaran->fromArray($headersPelanggaran, NULL, 'A1');
 
-$sqlPelanggaran = "SELECT santri_nama, santri_kelas, santri_kamar, jenis_pelanggaran_nama, bagian, poin, tanggal FROM arsip_data_pelanggaran WHERE arsip_id = ? ORDER BY tanggal ASC";
+$sqlPelanggaran = "SELECT p.santri_nama, s.santri_nis, p.santri_kelas, p.santri_kamar, p.jenis_pelanggaran_nama, p.bagian, p.poin, p.tanggal FROM arsip_data_pelanggaran p LEFT JOIN arsip_data_santri s ON p.santri_id = s.santri_id AND p.arsip_id = s.arsip_id WHERE p.arsip_id = ? ORDER BY p.tanggal ASC";
 $stmt = $conn->prepare($sqlPelanggaran);
 $stmt->bind_param('i', $arsip_id);
 $stmt->execute();
@@ -221,7 +222,7 @@ $result = $stmt->get_result();
 if ($result->num_rows > 0) {
     $rowNum = 2; $no = 1;
     while ($row = $result->fetch_assoc()) {
-        $rowData = [$no, $row['santri_nama'], $row['santri_kelas'], $row['santri_kamar'], $row['jenis_pelanggaran_nama'], $row['bagian'], $row['poin'], $row['tanggal']];
+        $rowData = [$no, $row['santri_nama'], $row['santri_nis'] ?? '-', $row['santri_kelas'], $row['santri_kamar'], $row['jenis_pelanggaran_nama'], $row['bagian'], $row['poin'], $row['tanggal']];
         $sheetPelanggaran->fromArray($rowData, NULL, 'A' . $rowNum);
         $rowNum++; $no++;
     }
