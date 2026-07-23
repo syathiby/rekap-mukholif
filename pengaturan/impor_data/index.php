@@ -53,6 +53,14 @@ if (isset($_SESSION['sync_success_msg'])) {
 
 $type         = $_SESSION['sync_type']         ?? null;
 $preview_data = null;
+
+// Initialize counter variables to prevent IDE lint warnings
+$cnt_insert  = 0;
+$cnt_fatal   = 0;
+$cnt_error   = 0;
+$cnt_update  = 0;
+$cnt_delete  = 0;
+
 // BUG FIX 1: Read preview data from JSON file instead of Session
 if (!empty($_SESSION['sync_preview_file']) && file_exists($_SESSION['sync_preview_file'])) {
     $preview_data = json_decode(file_get_contents($_SESSION['sync_preview_file']), true);
