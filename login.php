@@ -3,12 +3,12 @@ require_once __DIR__ . '/bootstrap/init.php';
 
 // ─── CACHE BUSTING UNTUK ASET GAMBAR ───────────────────────────────
 $_img_base = $_SERVER['DOCUMENT_ROOT'];
-$_favicon_path = file_exists($_img_base . '/rekap-mukholif/assets/img/logo_favicon.png')
-    ? $_img_base . '/rekap-mukholif/assets/img/logo_favicon.png'
-    : $_img_base . '/assets/img/logo_favicon.png';
-$_appicon_path = file_exists($_img_base . '/rekap-mukholif/assets/img/logo_aplikasi.png')
-    ? $_img_base . '/rekap-mukholif/assets/img/logo_aplikasi.png'
-    : $_img_base . '/assets/img/logo_aplikasi.png';
+$_favicon_path = file_exists($_img_base . '/rekap-mukholif/assets/img/favicon/favicon.ico')
+    ? $_img_base . '/rekap-mukholif/assets/img/favicon/favicon.ico'
+    : $_img_base . '/assets/img/favicon/favicon.ico';
+$_appicon_path = file_exists($_img_base . '/rekap-mukholif/assets/img/favicon/apple-touch-icon.png')
+    ? $_img_base . '/rekap-mukholif/assets/img/favicon/apple-touch-icon.png'
+    : $_img_base . '/assets/img/favicon/apple-touch-icon.png';
 
 $favicon_v = file_exists($_favicon_path) ? filemtime($_favicon_path) : '1';
 $appicon_v = file_exists($_appicon_path) ? filemtime($_appicon_path) : '1';
@@ -219,13 +219,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     <link rel="manifest" href="<?= BASE_URL ?>/manifest.json">
 
     <!-- ══════════════════════════════════════
-         PWA — FAVICON (logo_favicon.png)
+         PWA — FAVICON
     ══════════════════════════════════════ -->
-    <link rel="icon" type="image/png" sizes="16x16"  href="<?= BASE_URL ?>/assets/img/logo_favicon.png?v=<?= $favicon_v ?>">
-    <link rel="icon" type="image/png" sizes="32x32"  href="<?= BASE_URL ?>/assets/img/logo_favicon.png?v=<?= $favicon_v ?>">
-    <link rel="icon" type="image/png" sizes="48x48"  href="<?= BASE_URL ?>/assets/img/logo_favicon.png?v=<?= $favicon_v ?>">
-    <link rel="icon" type="image/png" sizes="96x96"  href="<?= BASE_URL ?>/assets/img/logo_favicon.png?v=<?= $favicon_v ?>">
-    <link rel="shortcut icon" type="image/png"       href="<?= BASE_URL ?>/assets/img/logo_favicon.png?v=<?= $favicon_v ?>">
+    <link rel="icon" type="image/png" href="<?= BASE_URL ?>/assets/img/favicon/favicon-96x96.png?v=<?= $favicon_v ?>" sizes="96x96">
+    <link rel="icon" type="image/svg+xml" href="<?= BASE_URL ?>/assets/img/favicon/favicon.svg?v=<?= $favicon_v ?>">
+    <link rel="shortcut icon" href="<?= BASE_URL ?>/assets/img/favicon/favicon.ico?v=<?= $favicon_v ?>">
 
     <!-- ══════════════════════════════════════
          PWA — APPLE / iOS
@@ -233,18 +231,14 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <meta name="apple-mobile-web-app-title" content="AsuhTrack">
-    <link rel="apple-touch-icon"               href="<?= BASE_URL ?>/assets/img/logo_aplikasi.png?v=<?= $appicon_v ?>">
-    <link rel="apple-touch-icon" sizes="120x120" href="<?= BASE_URL ?>/assets/img/logo_aplikasi.png?v=<?= $appicon_v ?>">
-    <link rel="apple-touch-icon" sizes="152x152" href="<?= BASE_URL ?>/assets/img/logo_aplikasi.png?v=<?= $appicon_v ?>">
-    <link rel="apple-touch-icon" sizes="167x167" href="<?= BASE_URL ?>/assets/img/logo_aplikasi.png?v=<?= $appicon_v ?>">
-    <link rel="apple-touch-icon" sizes="180x180" href="<?= BASE_URL ?>/assets/img/logo_aplikasi.png?v=<?= $appicon_v ?>">
+    <link rel="apple-touch-icon" sizes="180x180" href="<?= BASE_URL ?>/assets/img/favicon/apple-touch-icon.png?v=<?= $appicon_v ?>">
 
     <!-- ══════════════════════════════════════
          PWA — THEME & GENERAL META
     ══════════════════════════════════════ -->
     <meta name="theme-color" content="#16a34a">
     <meta name="msapplication-TileColor" content="#16a34a">
-    <meta name="msapplication-TileImage" content="<?= BASE_URL ?>/assets/img/logo_aplikasi.png?v=<?= $appicon_v ?>">
+    <meta name="msapplication-TileImage" content="<?= BASE_URL ?>/assets/img/favicon/web-app-manifest-192x192.png?v=<?= $appicon_v ?>">
     <meta name="msapplication-config" content="none">
     <meta name="mobile-web-app-capable" content="yes">
     <meta name="application-name" content="AsuhTrack">
@@ -289,7 +283,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 <body class="login-body">
     <div class="login-card-wrapper">
         <div class="login-header">
-            <img src="<?= BASE_URL ?>/assets/img/logo_aplikasi.png?v=<?= $appicon_v ?>" alt="Logo AsuhTrack" class="login-logo">
+            <img src="<?= BASE_URL ?>/assets/img/favicon/web-app-manifest-192x192.png?v=<?= $appicon_v ?>" alt="Logo AsuhTrack" class="login-logo">
             <h4 class="mb-1">AsuhTrack</h4>
             <p class="text-muted text-sm mb-4">Sistem Kepengasuhan Santri</p>
         </div>
@@ -375,7 +369,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             transition: all 0.2s ease;
             white-space: nowrap;
         ">
-            <img src="<?= BASE_URL ?>/assets/img/logo_aplikasi.png" alt="" style="width:22px;height:22px;border-radius:6px;object-fit:cover;flex-shrink:0;">
+            <img src="<?= BASE_URL ?>/assets/img/favicon/web-app-manifest-192x192.png" alt="" style="width:22px;height:22px;border-radius:6px;object-fit:cover;flex-shrink:0;">
             <span>Pasang Aplikasi</span>
             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
                 <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
