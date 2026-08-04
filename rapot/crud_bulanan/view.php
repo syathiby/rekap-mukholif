@@ -34,40 +34,49 @@ try {
         die('Error: Data rapot tidak ditemukan.');
     }
     
+    // Hitung rentang tanggal dari bulan & tahun yang tersimpan di rapot
+    // Konsisten dengan query di process.php (tidak pakai FIND_IN_SET)
+    $bulan_list_indo = [
+        'Januari' => 1, 'Februari' => 2, 'Maret'    => 3, 'April'    => 4,
+        'Mei'     => 5, 'Juni'     => 6, 'Juli'     => 7, 'Agustus'  => 8,
+        'September' => 9, 'Oktober' => 10, 'November' => 11, 'Desember' => 12
+    ];
+    $bulan_num_view  = $bulan_list_indo[$rapot['bulan']] ?? 1;
+    $start_date_view = sprintf('%04d-%02d-01', $rapot['tahun'], $bulan_num_view);
+    $end_date_view   = date('Y-m-t', strtotime($start_date_view));
+
     // Ambil rincian pelanggaran
     $pelanggaran_list = [];
     $sql_pelanggaran = "
         SELECT jp.nama_pelanggaran, SUM(jp.poin) as poin, COUNT(*) as jumlah
         FROM pelanggaran p
         JOIN jenis_pelanggaran jp ON p.jenis_pelanggaran_id = jp.id
-        WHERE p.santri_id = ? 
-          AND MONTH(p.tanggal) = FIND_IN_SET(?, 'Januari,Februari,Maret,April,Mei,Juni,Juli,Agustus,September,Oktober,November,Desember')
-          AND YEAR(p.tanggal) = ?
+        WHERE p.santri_id = ?
+          AND p.tanggal >= ? AND p.tanggal <= ?
           AND jp.poin > 0
         GROUP BY jp.nama_pelanggaran
         ORDER BY MAX(p.tanggal) DESC
     ";
     $stmt_pelanggaran = $conn->prepare($sql_pelanggaran);
-    $stmt_pelanggaran->bind_param("isi", $rapot['santri_id'], $rapot['bulan'], $rapot['tahun']);
+    $stmt_pelanggaran->bind_param("iss", $rapot['santri_id'], $start_date_view, $end_date_view);
     $stmt_pelanggaran->execute();
     $pelanggaran_list = $stmt_pelanggaran->get_result()->fetch_all(MYSQLI_ASSOC);
     $stmt_pelanggaran->close();
 
-    // === TAMBAHAN: Ambil rincian REWARD ===
+    // Ambil rincian REWARD
     $reward_list = [];
     $sql_reward = "
         SELECT jr.nama_reward, SUM(jr.poin_reward) AS poin, COUNT(*) as jumlah
         FROM daftar_reward rwd
         JOIN jenis_reward jr ON rwd.jenis_reward_id = jr.id
-        WHERE rwd.santri_id = ? 
-          AND MONTH(rwd.tanggal) = FIND_IN_SET(?, 'Januari,Februari,Maret,April,Mei,Juni,Juli,Agustus,September,Oktober,November,Desember')
-          AND YEAR(rwd.tanggal) = ?
+        WHERE rwd.santri_id = ?
+          AND rwd.tanggal >= ? AND rwd.tanggal <= ?
           AND jr.poin_reward > 0
         GROUP BY jr.nama_reward
         ORDER BY MAX(rwd.tanggal) DESC
     ";
     $stmt_reward = $conn->prepare($sql_reward);
-    $stmt_reward->bind_param("isi", $rapot['santri_id'], $rapot['bulan'], $rapot['tahun']);
+    $stmt_reward->bind_param("iss", $rapot['santri_id'], $start_date_view, $end_date_view);
     $stmt_reward->execute();
     $reward_list = $stmt_reward->get_result()->fetch_all(MYSQLI_ASSOC);
     $stmt_reward->close();

@@ -314,13 +314,28 @@
     </table>
 
     <!-- POIN PELANGGARAN & REWARD (BERSEBELAHAN - KOMPATIBEL MPDF) -->
+    <?php
+    // Hitung total poin REALTIME dari daftar rincian agar selalu sinkron
+    // dengan rincian yang ditampilkan dan dengan catatan otomatis.
+    // Nilai total_poin_pelanggaran_saat_itu di DB bisa basi jika ada
+    // penambahan/perubahan pelanggaran setelah rapot pertama kali disimpan.
+    $total_poin_pelanggaran_tampil = 0;
+    foreach ($pelanggaran_list as $_p) {
+        $total_poin_pelanggaran_tampil += (int)$_p['poin'];
+    }
+
+    $total_poin_reward_tampil = 0;
+    foreach ($reward_list as $_r) {
+        $total_poin_reward_tampil += (int)$_r['poin'];
+    }
+    ?>
     <table width="100%" style="margin-top: 10px; font-size: 9pt; line-height: 1.3; border-collapse: collapse;">
         <tr>
             <!-- Kolom Pelanggaran -->
             <td width="50%" style="padding: 6px 8px; background: #fdecec; border-left: 3px solid #e60000; vertical-align: top;">
                 <div style="color: #c00; font-weight: bold; margin-bottom: 2px;">Poin Pelanggaran</div>
                 <div style="font-weight: bold; color: #000;">
-                    <?php echo ($rapot['total_poin_pelanggaran_saat_itu'] > 0) ? $rapot['total_poin_pelanggaran_saat_itu'] : '–'; ?>
+                    <?php echo ($total_poin_pelanggaran_tampil > 0) ? $total_poin_pelanggaran_tampil : '–'; ?>
                 </div>
                 <?php if (!empty($pelanggaran_list)): ?>
                     <div style="margin-top: 3px; font-size: 8.5pt; color: #555;">
@@ -342,7 +357,7 @@
             <td width="50%" style="padding: 6px 8px; background: #ecf8f0; border-left: 3px solid #009900; vertical-align: top;">
                 <div style="color: #090; font-weight: bold; margin-bottom: 2px;">Poin Reward</div>
                 <div style="font-weight: bold; color: #000;">
-                    <?php echo ($rapot['total_poin_reward_saat_itu'] > 0) ? $rapot['total_poin_reward_saat_itu'] : '–'; ?>
+                    <?php echo ($total_poin_reward_tampil > 0) ? $total_poin_reward_tampil : '–'; ?>
                 </div>
                 <?php if (!empty($reward_list)): ?>
                     <div style="margin-top: 3px; font-size: 8.5pt; color: #555;">

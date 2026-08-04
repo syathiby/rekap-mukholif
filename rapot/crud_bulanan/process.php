@@ -175,6 +175,7 @@ if (isset($_POST['simpan_rapot'])) {
 
 
         // Kalkulasi Total Poin Pelanggaran
+        // Filter jp.poin > 0 agar konsisten dengan query rincian di view/export
         $total_poin_pelanggaran = 0;
         $sql_poin = "
             SELECT SUM(jp.poin) AS total_poin
@@ -182,6 +183,7 @@ if (isset($_POST['simpan_rapot'])) {
             JOIN jenis_pelanggaran jp ON p.jenis_pelanggaran_id = jp.id
             WHERE p.santri_id = ?
               AND p.tanggal >= ? AND p.tanggal <= ?
+              AND jp.poin > 0
         ";
         $stmt_poin = $conn->prepare($sql_poin);
         $stmt_poin->bind_param("iss", $santri_id, $start_date, $end_date);
