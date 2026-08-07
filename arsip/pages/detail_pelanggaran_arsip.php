@@ -284,7 +284,7 @@ function getTelatInfo($nama) {
     <!-- ✅ HEADER BARU: Lebih Rapi & Profesional -->
     <div class="page-header">
         <div>
-            <h1 class="page-title">Detail Pelanggaran</h1>
+            <h1 class="page-title">Detail Pelanggaran Arsip</h1>
             <p class="text-muted mb-0">Rincian lengkap pelanggaran yang tercatat.</p>
         </div>
         <?php

@@ -258,7 +258,7 @@ body { background-color: #f8f9fa; font-family: 'Poppins', sans-serif; color: #33
                                 <!-- Aksi -->
                                 <td style="text-align: center;">
                                     <?php if (has_permission('rekap_view')): ?>
-                                        <a href="detail_arsip_santri.php?id=<?= $arsip_id ?>&santri_id=<?= $s['id'] ?>" class="btn-detail" title="Lihat Detail Santri">
+                                        <a href="detail_arsip_santri.php?arsip_id=<?= $arsip_id ?>&id=<?= $s['id'] ?>&kamar=<?= urlencode($kamar) ?>" class="btn-detail" title="Lihat Detail Santri">
                                             <i class="fas fa-info-circle"></i>
                                         </a>
                                     <?php else: ?>
