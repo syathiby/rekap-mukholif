@@ -362,7 +362,7 @@ function getTelatInfo($nama) {
                                     </td>
                                     <td>
                                         <?php 
-                                            $is_telat = (strpos(strtolower($row['nama_reward']), 'telat') !== false || strpos(strtolower($row['nama_reward']), 'kbm') !== false);
+                                            $is_telat = (strpos(strtolower($row['nama_reward']), 'telat') !== false || strpos(strtolower($row['nama_reward']), 'terlambat') !== false);
                                             
                                             if ($filter_bagian === 'Pengabdian' || $is_telat): 
                                                 $telatInfo = getTelatInfo($row['nama_reward']);

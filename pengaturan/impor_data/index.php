@@ -185,15 +185,13 @@ require_once __DIR__ . '/../../layouts/header.php';
            border-radius:10px; font-size:.82rem; font-weight:600;
            text-decoration:none; border:1.5px solid; transition:all .2s; }
 .tpl-btn:hover { transform:translateY(-1px); box-shadow:0 4px 12px rgba(0,0,0,.1); }
-.tpl-santri     { background:#f8fafc; border-color:#334155; color:#1e293b; }
-.tpl-santri:hover { background:#1e293b; color:#fff; }
-.tpl-pelanggaran{ background:#fff5f5; border-color:#991b1b; color:#7f1d1d; }
-.tpl-pelanggaran:hover { background:#991b1b; color:#fff; }
-.tpl-reward     { background:#f0fdf4; border-color:#064e3b; color:#052e16; }
-.tpl-reward:hover { background:#064e3b; color:#fff; }
+.tpl-santri       { background:#eef2ff; border-color:#4f46e5; color:#4338ca; }
+.tpl-santri:hover { background:#4f46e5; border-color:#4f46e5; color:#fff; }
+.tpl-pelanggaran  { background:#fff1f2; border-color:#e11d48; color:#be123c; }
+.tpl-pelanggaran:hover { background:#e11d48; border-color:#e11d48; color:#fff; }
+.tpl-reward       { background:#ecfdf5; border-color:#10b981; color:#047857; }
+.tpl-reward:hover { background:#10b981; border-color:#10b981; color:#fff; }
 
-/* ── Archive warning ─────────────────────────────── */
-#archive-warn { display:none; }
 </style>
 
 <div class="container-fluid py-4 px-4">
@@ -205,7 +203,12 @@ require_once __DIR__ . '/../../layouts/header.php';
             <i class="fas fa-arrow-left text-secondary"></i>
         </a>
         <div>
-            <h4 class="fw-bold mb-0 text-dark">Sinkronisasi Data</h4>
+            <h4 class="fw-bold mb-0 text-dark d-flex align-items-center gap-2">
+                Sinkronisasi Data
+                <button type="button" class="btn btn-sm btn-light rounded-circle shadow-sm p-0 d-flex align-items-center justify-content-center" data-bs-toggle="modal" data-bs-target="#infoSyncModal" title="Panduan Detail Sinkronisasi" style="width: 28px; height: 28px;">
+                    <i class="bi bi-info text-primary fs-5"></i>
+                </button>
+            </h4>
             <p class="text-muted small mb-0">Impor data dari Excel / CSV sebagai sumber kebenaran (Source of Truth)</p>
         </div>
     </div>
@@ -218,13 +221,16 @@ require_once __DIR__ . '/../../layouts/header.php';
             document.addEventListener('DOMContentLoaded', function() {
                 Swal.fire({
                     title: '<?= $error_type === "csrf" ? "Sesi Berakhir" : "Kendala Sinkronisasi" ?>',
-                    html: <?= json_encode($error_msg) ?>,
+                    html: <?= json_encode('<div class="small text-muted mb-3">Harap perhatikan detail berikut sebelum melanjutkan.</div><div class="p-3 bg-danger bg-opacity-10 rounded-3 border border-danger border-opacity-25 text-start" style="font-size:0.9rem; max-height:60vh; overflow-y:auto;">' . $error_msg . '</div>') ?>,
                     icon: 'error',
+                    width: '420px',
                     confirmButtonColor: '#e53e3e',
-                    confirmButtonText: 'Tutup',
+                    confirmButtonText: '<i class="bi bi-x-circle me-1"></i> Tutup & Perbaiki',
                     customClass: {
-                        popup: 'rounded-4 shadow-lg border-0 p-3 p-md-4',
-                        title: 'fw-bold fs-5 text-danger'
+                        popup: 'rounded-4 shadow-lg border-0 p-3 p-md-4 max-w-sm',
+                        title: 'fw-bold fs-5 text-danger mb-1',
+                        htmlContainer: 'px-0 mt-0',
+                        confirmButton: 'rounded-pill px-4 fw-bold shadow-sm'
                     }
                 }).then(() => {
                     <?php if ($error_type === "csrf"): ?>
@@ -241,14 +247,16 @@ require_once __DIR__ . '/../../layouts/header.php';
             document.addEventListener('DOMContentLoaded', function() {
                 Swal.fire({
                     title: 'Sinkronisasi Selesai!',
-                    html: <?= json_encode($success_msg) ?>,
+                    html: <?= json_encode('<div class="p-3 bg-success bg-opacity-10 rounded-3 border border-success border-opacity-25 text-start" style="font-size:0.92rem; max-height:60vh; overflow-y:auto;">' . $success_msg . '</div>') ?>,
                     icon: 'success',
+                    width: '400px',
                     confirmButtonColor: '#059669',
-                    confirmButtonText: 'Selesai',
+                    confirmButtonText: '<i class="bi bi-check2-circle me-1"></i> Selesai',
                     customClass: {
-                        popup: 'rounded-4 shadow-lg border-0 p-3 p-md-4',
-                        title: 'fw-bold fs-4 text-success',
-                        htmlContainer: 'text-start'
+                        popup: 'rounded-4 shadow-lg border-0 p-3 p-md-4 max-w-sm',
+                        title: 'fw-bold fs-4 text-success mb-2',
+                        htmlContainer: 'px-0 mt-0',
+                        confirmButton: 'rounded-pill px-4 fw-bold shadow-sm'
                     }
                 });
             });
@@ -309,56 +317,9 @@ require_once __DIR__ . '/../../layouts/header.php';
                     <a href="download_template.php?tipe=jenis_reward" class="tpl-btn tpl-reward" id="btn-tpl-reward">
                         <i class="bi bi-trophy-fill"></i> Template Jenis Reward
                     </a>
-                    <button type="button" id="nis-info-toggle" onclick="toggleNisInfo()"
-                            style="display:inline-flex;align-items:center;gap:5px;background:transparent;border:1px dashed #a78bfa;color:#7c3aed;border-radius:999px;padding:4px 11px;font-size:.73rem;font-weight:600;cursor:pointer;transition:all .2s;outline:none;" title="Info kolom NIS pada Template Santri">
-                        <i class="bi bi-info-circle" style="font-size:.78rem;"></i>
-                        Info NIS
-                        <i class="bi bi-chevron-down" id="nis-chevron" style="font-size:.65rem;transition:transform .25s;"></i>
-                    </button>
-                </div>
-
-                <!-- NIS Info Panel -->
-                <div id="nis-info-panel" style="display:none;margin-top:12px;">
-                    <div style="background:#faf5ff;border:1px solid #ddd6fe;border-radius:9px;padding:12px 14px;">
-                        <p class="mb-2 text-muted" style="font-size:.78rem;line-height:1.5;">
-                            Template <strong>Data Santri</strong> kini mendukung kolom <strong>NIS</strong> (opsional — boleh dikosongkan).
-                        </p>
-                        <div class="row g-2">
-                            <div class="col-sm-4">
-                                <div style="background:#fff;border:1px solid #e9d5ff;border-radius:7px;padding:8px 10px;">
-                                    <div class="fw-bold mb-1" style="font-size:.72rem;color:#5b21b6;"><i class="bi bi-1-circle-fill me-1"></i>Pencarian Cerdas</div>
-                                    <p class="mb-0 text-muted" style="font-size:.7rem;line-height:1.4;">Santri dicocokkan via <strong>ID → NIS → Nama</strong>.</p>
-                                </div>
-                            </div>
-                            <div class="col-sm-4">
-                                <div style="background:#fff;border:1px solid #bbf7d0;border-radius:7px;padding:8px 10px;">
-                                    <div class="fw-bold mb-1" style="font-size:.72rem;color:#166534;"><i class="bi bi-check-circle-fill me-1"></i>Deteksi Perubahan</div>
-                                    <p class="mb-0 text-muted" style="font-size:.7rem;line-height:1.4;">NIS beda dari DB → ditandai <strong>UPDATE</strong>.</p>
-                                </div>
-                            </div>
-                            <div class="col-sm-4">
-                                <div style="background:#fff;border:1px solid #fed7aa;border-radius:7px;padding:8px 10px;">
-                                    <div class="fw-bold mb-1" style="font-size:.72rem;color:#9a3412;"><i class="bi bi-file-earmark-excel-fill me-1"></i>Nama Kolom di Excel</div>
-                                    <p class="mb-0 text-muted" style="font-size:.7rem;line-height:1.5;">Judul kolom <strong>NIS</strong> di file Excel harus salah satu dari: <code>NIS</code>, <code>Nomor Induk</code>, atau <code>No Induk</code>. Isi nilainya bebas (angka/huruf).</p>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
                 </div>
             </div>
         </div>
-
-        <script>
-        function toggleNisInfo() {
-            var panel = document.getElementById('nis-info-panel');
-            var chev  = document.getElementById('nis-chevron');
-            var btn   = document.getElementById('nis-info-toggle');
-            var open  = panel.style.display !== 'none';
-            panel.style.display = open ? 'none' : 'block';
-            chev.style.transform = open ? 'rotate(0deg)' : 'rotate(180deg)';
-            btn.style.background = open ? 'transparent' : '#ede9fe';
-        }
-        </script>
 
 
 
@@ -388,36 +349,7 @@ require_once __DIR__ . '/../../layouts/header.php';
                         </div>
                     </div>
 
-                    <div id="archive-warn" class="mb-4">
-                        <?php if ($has_active_data): ?>
-                            <div class="alert bg-warning bg-opacity-10 border border-warning border-opacity-50 text-dark p-3 rounded-3 shadow-sm mb-0">
-                                <div class="d-flex align-items-center gap-3 flex-wrap flex-md-nowrap">
-                                    <i class="bi bi-exclamation-circle-fill text-warning" style="font-size: 2.2rem;"></i>
-                                    <div>
-                                        <h6 class="fw-bold mb-1">Peringatan Tutup Buku</h6>
-                                        <p class="small mb-0 text-secondary" style="line-height:1.4">
-                                            Terdapat <strong><?= number_format($cek_data_aktif) ?> riwayat aktif</strong> (pelanggaran/reward). Mode Sinkronisasi Penuh <u>tidak akan menghapus</u> data (santri/pelanggaran/reward) yang masih terikat.
-                                        </p>
-                                    </div>
-                                    <div class="ms-md-auto mt-2 mt-md-0 text-end">
-                                        <a href="../reset-poin/index.php" class="btn btn-warning text-dark fw-bold rounded-pill px-4 shadow-sm text-nowrap" style="font-size: 0.82rem;">
-                                            <i class="bi bi-archive-fill me-1"></i> Tutup Buku
-                                        </a>
-                                    </div>
-                                </div>
-                            </div>
-                        <?php else: ?>
-                            <div class="alert bg-success bg-opacity-10 border border-success border-opacity-50 text-dark p-3 rounded-3 shadow-sm mb-0">
-                                <div class="d-flex align-items-center gap-3">
-                                    <i class="bi bi-check-circle-fill text-success" style="font-size: 2.2rem;"></i>
-                                    <div>
-                                        <h6 class="fw-bold mb-1 text-success">Status Aman (Sudah Tutup Buku)</h6>
-                                        <p class="small mb-0 text-secondary" style="line-height:1.4">Laci data sudah bersih. Sistem siap untuk melakukan Sinkronisasi Penuh tanpa ada data yang tertahan.</p>
-                                    </div>
-                                </div>
-                            </div>
-                        <?php endif; ?>
-                    </div>
+
 
                     <div class="mb-4">
                         <label class="form-label fw-bold small">Pilih File (.xlsx / .csv)</label>
@@ -850,7 +782,6 @@ if (dz) {
 // ── Template button highlight ────────────────────────────────────────────
 const tipeSelect = document.getElementById('tipe_data');
 const modeSelect = document.getElementById('mode_sinkronisasi');
-const archWarn   = document.getElementById('archive-warn');
 const tplMap     = { santri:'#btn-tpl-santri', jenis_pelanggaran:'#btn-tpl-pelanggaran', jenis_reward:'#btn-tpl-reward' };
 
 // replace syncStats references (was renamed to _syncStats) ──────────────────
@@ -862,14 +793,58 @@ function updateTpl() {
     const t = document.querySelector(tplMap[tipeSelect.value]);
     if (t) t.style.outline = '3px solid rgba(59,130,246,.45)';
 }
-function updateArchWarn() {
-    if (!archWarn) return;
-    archWarn.style.display = (modeSelect?.value === 'full_sync') ? 'block' : 'none';
+let lastMode = modeSelect?.value;
+function handleModeChange() {
+    if (modeSelect?.value === 'full_sync' && lastMode !== 'full_sync') {
+        const hasActiveData = <?= json_encode((bool)$has_active_data) ?>;
+        const activeDataCount = <?= json_encode((int)$cek_data_aktif) ?>;
+        
+        if (hasActiveData) {
+            Swal.fire({
+                title: 'Peringatan Tutup Buku!',
+                html: `<div style="font-size: 0.9rem; line-height: 1.5;">Terdapat <strong>${activeDataCount} riwayat aktif</strong> (pelanggaran/reward).<br><br>Mode Sinkronisasi Penuh <u>tidak akan menghapus</u> data (santri/pelanggaran/reward) yang masih terikat dengan riwayat aktif tersebut.</div>`,
+                icon: 'warning',
+                width: '420px',
+                showCancelButton: true,
+                confirmButtonColor: '#d97706',
+                cancelButtonColor: '#6c757d',
+                confirmButtonText: '<i class="bi bi-archive-fill me-1"></i> Tutup Buku',
+                cancelButtonText: 'Lanjutkan',
+                customClass: { 
+                    popup: 'rounded-4 shadow-lg border-0 p-3 p-md-4 max-w-sm',
+                    title: 'fw-bold fs-5 text-dark mb-1',
+                    htmlContainer: 'px-0 mt-0',
+                    confirmButton: 'rounded-pill px-4 fw-bold shadow-sm mx-1',
+                    cancelButton: 'rounded-pill px-4 fw-bold shadow-sm mx-1',
+                    actions: 'mt-3 flex-wrap'
+                }
+            }).then((result) => {
+                if (result.isConfirmed) {
+                    window.location.href = '../reset-poin/index.php';
+                }
+            });
+        } else {
+            Swal.fire({
+                title: 'Status Aman',
+                html: '<div style="font-size: 0.9rem;">Laci data sudah bersih. Sistem siap melakukan Sinkronisasi Penuh tanpa hambatan data yang tertahan.</div>',
+                icon: 'success',
+                timer: 3500,
+                width: '400px',
+                showConfirmButton: false,
+                customClass: { 
+                    popup: 'rounded-4 shadow-lg border-0 p-3 p-md-4 max-w-sm',
+                    title: 'fw-bold fs-5 text-success mb-1',
+                    htmlContainer: 'px-0 mt-0'
+                }
+            });
+        }
+    }
+    lastMode = modeSelect?.value;
 }
 
-tipeSelect?.addEventListener('change', () => { updateTpl(); updateArchWarn(); });
-modeSelect?.addEventListener('change', updateArchWarn);
-updateTpl(); updateArchWarn();
+tipeSelect?.addEventListener('change', () => { updateTpl(); });
+modeSelect?.addEventListener('change', handleModeChange);
+updateTpl();
 
 // ── SweetAlert konfirmasi ─────────────────────────────────────────────────
 document.getElementById('btnConfirmSync')?.addEventListener('click', function(e) {
@@ -887,12 +862,13 @@ document.getElementById('btnConfirmSync')?.addEventListener('click', function(e)
     Swal.fire({
         title: 'Terapkan Perubahan?',
         html, icon: 'info',
+        width: '420px',
         showCancelButton: true, buttonsStyling: false,
         confirmButtonText: 'Terapkan',
         cancelButtonText: 'Batal',
         reverseButtons: true,
         customClass: {
-            popup: 'rounded-4 shadow-lg border-0 p-3 p-md-4',
+            popup: 'rounded-4 shadow-lg border-0 p-3 p-md-4 max-w-sm',
             title: 'fw-bold text-dark mb-1 fs-5',
             confirmButton: 'btn fw-bold px-4 py-2 rounded-3 text-white flex-grow-1 mx-1',
             cancelButton:  'btn btn-light border px-4 py-2 rounded-3 text-secondary flex-grow-1 mx-1',
@@ -917,5 +893,173 @@ document.getElementById('btnConfirmSync')?.addEventListener('click', function(e)
     });
 });
 </script>
+
+<!-- ── Modal Panduan Sinkronisasi ────────────────────────────────────────── -->
+<div class="modal fade" id="infoSyncModal" tabindex="-1" aria-labelledby="infoSyncModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered modal-dialog-scrollable">
+        <div class="modal-content rounded-4 border-0 shadow-lg">
+            <div class="modal-header bg-light border-bottom-0 pb-2" style="background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);">
+                <h5 class="modal-title fw-bold text-dark d-flex align-items-center gap-2" id="infoSyncModalLabel">
+                    <i class="bi bi-info-circle-fill text-primary"></i> Panduan Teknis Sinkronisasi
+                </h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body px-4 pt-3 pb-4" style="font-size: 0.92rem;">
+                
+                <style>
+                    /* Tab Base Styling */
+                    #syncInfoTab .nav-link {
+                        color: #6c757d;
+                        background-color: #fff;
+                        transition: all 0.3s ease;
+                        box-shadow: 0 2px 4px rgba(0,0,0,0.02);
+                        border: 1px solid #e9ecef !important;
+                    }
+                    #syncInfoTab .nav-link:hover {
+                        transform: translateY(-1px);
+                        box-shadow: 0 4px 6px rgba(0,0,0,0.05);
+                    }
+                    
+                    /* Santri Tab Active */
+                    #santri-tab.active {
+                        background-color: #4f46e5 !important;
+                        color: white !important;
+                        border-color: transparent !important;
+                        box-shadow: 0 4px 10px rgba(79, 70, 229, 0.3) !important;
+                    }
+                    
+                    /* Pelanggaran Tab Active */
+                    #pelanggaran-tab.active {
+                        background-color: #e11d48 !important;
+                        color: white !important;
+                        border-color: transparent !important;
+                        box-shadow: 0 4px 10px rgba(225, 29, 72, 0.3) !important;
+                    }
+                    
+                    /* Reward Tab Active */
+                    #reward-tab.active {
+                        background-color: #10b981 !important;
+                        color: white !important;
+                        border-color: transparent !important;
+                        box-shadow: 0 4px 10px rgba(16, 185, 129, 0.3) !important;
+                    }
+
+                    /* Content Icons */
+                    #santri-info h6 i { color: #4f46e5 !important; }
+                    #pelanggaran-info h6 i { color: #e11d48 !important; }
+                    #reward-info h6 i { color: #10b981 !important; }
+
+                    /* Custom Reward Alert */
+                    .bg-success-soft {
+                        background-color: rgba(16, 185, 129, 0.08) !important;
+                        border: 1px solid rgba(16, 185, 129, 0.2) !important;
+                    }
+                </style>
+                
+                <!-- Nav pills -->
+                <ul class="nav nav-pills nav-fill mb-4 gap-2" id="syncInfoTab" role="tablist">
+                  <li class="nav-item" role="presentation">
+                    <button class="nav-link active rounded-pill fw-bold border" id="santri-tab" data-bs-toggle="pill" data-bs-target="#santri-info" type="button" role="tab" aria-controls="santri-info" aria-selected="true"><i class="bi bi-people-fill me-1"></i> Santri</button>
+                  </li>
+                  <li class="nav-item" role="presentation">
+                    <button class="nav-link rounded-pill fw-bold border" id="pelanggaran-tab" data-bs-toggle="pill" data-bs-target="#pelanggaran-info" type="button" role="tab" aria-controls="pelanggaran-info" aria-selected="false"><i class="bi bi-exclamation-triangle-fill me-1"></i> Pelanggaran</button>
+                  </li>
+                  <li class="nav-item" role="presentation">
+                    <button class="nav-link rounded-pill fw-bold border" id="reward-tab" data-bs-toggle="pill" data-bs-target="#reward-info" type="button" role="tab" aria-controls="reward-info" aria-selected="false"><i class="bi bi-star-fill me-1"></i> Reward</button>
+                  </li>
+                </ul>
+
+                <!-- Tab content -->
+                <div class="tab-content" id="syncInfoTabContent">
+                  
+                  <!-- SANTRI INFO -->
+                  <div class="tab-pane fade show active" id="santri-info" role="tabpanel" aria-labelledby="santri-tab" tabindex="0">
+                      <h6 class="fw-bold text-dark mb-2"><i class="bi bi-search me-1"></i> Hierarki Pencocokan (Santri)</h6>
+                      <ol class="text-muted mb-4" style="line-height: 1.6; padding-left: 1.2rem;">
+                          <li><strong>ID (Prioritas Utama):</strong> Jika kolom ID diisi, sistem akan langsung menimpa data santri dengan ID tersebut secara presisi.</li>
+                          <li><strong>NIS (Nomor Induk):</strong> Jika ID kosong, sistem akan mencari data berdasarkan NIS santri.</li>
+                          <li><strong>Nama (Pilihan Terakhir):</strong> Jika ID & NIS kosong, sistem mencari berdasarkan Nama.<br><small class="text-danger">⚠️ <strong>Awas:</strong> Santri dengan nama persis sama (misal ada dua "Ahmad") <strong>tidak bisa</strong> dicocokkan otomatis via Nama. Anda wajib memberikan mereka NIS/ID yang unik.</small></li>
+                      </ol>
+
+                      <h6 class="fw-bold text-dark mb-2"><i class="bi bi-file-earmark-excel me-1"></i> Penamaan Kolom di Excel</h6>
+                      <p class="text-muted mb-4" style="line-height: 1.5;">
+                          Sistem cukup cerdas untuk mendeteksi berbagai variasi nama kolom. Untuk kolom NIS, judul/header di file Excel Anda harus salah satu dari: <code>NIS</code>, <code>Nomor Induk</code>, atau <code>No Induk</code>. Isi nilainya pun bebas, bisa berupa kombinasi huruf dan angka.
+                      </p>
+
+                      <h6 class="fw-bold text-dark mb-2"><i class="bi bi-clipboard-x me-1"></i> Aturan Sel Kosong (Santri)</h6>
+                      <ul class="text-muted mb-4" style="line-height: 1.5; padding-left: 1.2rem;">
+                          <li><strong>Nama:</strong> Wajib diisi! Baris tanpa nama akan ditandai error.</li>
+                          <li><strong>NIS Kosong:</strong> Jika sel NIS dikosongkan di Excel saat update, sistem <strong>TIDAK AKAN menghapus</strong> NIS lama yang sudah ada di database.</li>
+                          <li><strong>Kelas/Kamar Kosong:</strong> Sama halnya, sistem juga tidak akan menimpa kelas atau kamar lama menjadi kosong.</li>
+                      </ul>
+
+                      <h6 class="fw-bold text-dark mb-2"><i class="bi bi-shield-exclamation me-1"></i> Peringatan Kesalahan (Santri)</h6>
+                      <ul class="text-muted mb-4" style="line-height: 1.5; padding-left: 1.2rem;">
+                          <li class="mb-2"><strong>Konflik NIS (FATAL):</strong> Jika NIS di Excel Anda ternyata bentrok/sudah dipakai santri lain di database, sinkronisasi otomatis diblokir demi mencegah tertukarnya data.</li>
+                          <li class="mb-2"><strong>Duplikasi di Excel (ERROR):</strong> Jika Anda menginput 2 baris dengan NIS yang kembar di dalam satu file, baris kedua akan ditolak.</li>
+                      </ul>
+
+                      <h6 class="fw-bold text-dark mb-2"><i class="bi bi-arrow-left-right me-1"></i> Ingin Menukar/Revisi NIS?</h6>
+                      <div class="bg-primary bg-opacity-10 border border-primary border-opacity-25 rounded-3 p-3 text-dark">
+                          <p class="mb-0" style="font-size: 0.88rem; line-height: 1.5;">
+                              Jika Anda <strong>memang sengaja</strong> ingin menukar atau merevisi NIS santri yang salah, Anda <strong>WAJIB mengisi kolom ID</strong> santri tersebut di Excel (ID didapat dari hasil export).
+                          </p>
+                      </div>
+                  </div>
+
+                  <!-- PELANGGARAN INFO -->
+                  <div class="tab-pane fade" id="pelanggaran-info" role="tabpanel" aria-labelledby="pelanggaran-tab" tabindex="0">
+                      <h6 class="fw-bold text-dark mb-2"><i class="bi bi-search me-1"></i> Hierarki Pencocokan (Pelanggaran)</h6>
+                      <ol class="text-muted mb-4" style="line-height: 1.6; padding-left: 1.2rem;">
+                          <li><strong>ID (Prioritas Utama):</strong> ID adalah pencocokan mutlak. Selalu sertakan ID jika Anda ingin melakukan update data lama.</li>
+                          <li><strong>Nama & Bagian:</strong> Jika ID kosong, sistem mencari kesamaan <strong>Nama Pelanggaran</strong> DAN <strong>Bagian</strong> sekaligus. <br><small class="text-muted">(Contoh: "Terlambat" bagian "KBM" dianggap berbeda dan dipisah dari "Terlambat" bagian "Kesantrian").</small></li>
+                      </ol>
+
+                      <h6 class="fw-bold text-dark mb-2"><i class="bi bi-clipboard-x me-1"></i> Aturan Sel Kosong (Pelanggaran)</h6>
+                      <ul class="text-muted mb-4" style="line-height: 1.5; padding-left: 1.2rem;">
+                          <li class="mb-2"><strong>Bagian, Poin, & Kategori Kosong:</strong> Jika Anda mengosongkan sel-sel vital ini di Excel saat melakukan update, sistem <strong>TIDAK AKAN meresetnya menjadi 0 atau kosong</strong>. Data lama di database Anda dipastikan aman dan dipertahankan.</li>
+                          <li><strong class="text-danger">Ingin Mereset Poin Jadi 0?</strong> Jika Anda sengaja ingin menghapus poin (menjadikannya 0), Anda <strong>WAJIB mengetik angka 0</strong> pada sel tersebut, jangan dibiarkan kosong.</li>
+                      </ul>
+
+                      <h6 class="fw-bold text-dark mb-2"><i class="bi bi-shield-exclamation me-1"></i> Duplikasi Internal (Pelanggaran)</h6>
+                      <div class="bg-danger bg-opacity-10 border border-danger border-opacity-25 rounded-3 p-3 text-dark">
+                          <p class="mb-0" style="font-size: 0.88rem; line-height: 1.5;">
+                              Sistem akan menolak file Excel Anda (menandainya sebagai ERROR) jika Anda mengetik Nama Pelanggaran dengan Bagian yang <strong>sama persis</strong> lebih dari satu kali di dalam file Excel.
+                          </p>
+                      </div>
+                  </div>
+
+                  <!-- REWARD INFO -->
+                  <div class="tab-pane fade" id="reward-info" role="tabpanel" aria-labelledby="reward-tab" tabindex="0">
+                      <h6 class="fw-bold text-dark mb-2"><i class="bi bi-search me-1"></i> Hierarki Pencocokan (Reward)</h6>
+                      <ol class="text-muted mb-4" style="line-height: 1.6; padding-left: 1.2rem;">
+                          <li><strong>ID (Prioritas Utama):</strong> Pencocokan mutlak menggunakan ID.</li>
+                          <li><strong>Nama Reward:</strong> Jika ID kosong, sistem mencari berdasarkan Nama Reward. <br><small class="text-danger">⚠️ <strong>Awas:</strong> Reward dengan nama kembar/sama persis di database tidak bisa di-update via Nama. Anda wajib menyertakan ID-nya.</small></li>
+                      </ol>
+
+                      <h6 class="fw-bold text-dark mb-2"><i class="bi bi-clipboard-x me-1"></i> Aturan Sel Kosong (Reward)</h6>
+                      <ul class="text-muted mb-4" style="line-height: 1.5; padding-left: 1.2rem;">
+                          <li class="mb-2"><strong>Poin Reward Kosong:</strong> Jika sel Poin dikosongkan, sistem <strong>TIDAK AKAN mereset</strong> poin lama menjadi 0. Poin lama tetap utuh.</li>
+                          <li class="mb-2"><strong class="text-success">Ingin Mereset Poin Jadi 0?</strong> Jika Anda sengaja ingin menghapus poin reward (menjadikannya 0), Anda <strong>WAJIB mengetik angka 0</strong> pada sel tersebut.</li>
+                          <li><strong>Deskripsi Kosong:</strong> Pengecualian untuk Deskripsi! Karena sifatnya opsional, jika Anda mengosongkan sel Deskripsi di Excel, maka deskripsi lama di database <strong>AKAN DIHAPUS (dikosongkan)</strong>.</li>
+                      </ul>
+                      
+                      <h6 class="fw-bold text-dark mb-2"><i class="bi bi-shield-exclamation me-1"></i> Duplikasi Internal (Reward)</h6>
+                      <div class="bg-success-soft rounded-3 p-3 text-dark">
+                          <p class="mb-0" style="font-size: 0.88rem; line-height: 1.5;">
+                              Sistem akan menandai baris sebagai ERROR jika Anda menuliskan dua nama reward yang sama persis di dalam file Excel.
+                          </p>
+                      </div>
+                  </div>
+
+                </div>
+
+            </div>
+            <div class="modal-footer bg-light border-top-0 pt-2 pb-3">
+                <button type="button" class="btn btn-primary rounded-pill px-4 fw-bold" data-bs-dismiss="modal">Saya Mengerti</button>
+            </div>
+        </div>
+    </div>
+</div>
 
 <?php require_once __DIR__ . '/../../layouts/footer.php'; ?>

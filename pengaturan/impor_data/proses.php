@@ -89,6 +89,7 @@ if ($action === 'preview') {
         $preview_list    = [];
         $file_ids        = [];
         $seen_excel_ids  = [];
+        $seen_excel_nis  = [];
 
         // ────────────────────────────────────────────────────────────────────
         // SANTRI
@@ -118,14 +119,22 @@ if ($action === 'preview') {
                 }
             }
 
-            // Ambil semua santri dari DB
             $res = mysqli_query($conn, 'SELECT id, nis, nama, kelas, kamar FROM santri');
             $db_map = [];
             $name_map = [];
             $nis_map = [];
+            $duplicate_names = [];
             while ($r = mysqli_fetch_assoc($res)) {
                 $db_map[$r['id']] = $r;
-                $name_map[strtolower(trim($r['nama']))] = $r;
+                
+                $namakey = strtolower(trim($r['nama']));
+                if (isset($name_map[$namakey])) {
+                    $duplicate_names[$namakey] = true;
+                    unset($name_map[$namakey]);
+                } elseif (!isset($duplicate_names[$namakey])) {
+                    $name_map[$namakey] = $r;
+                }
+
                 if (!empty($r['nis'])) $nis_map[(string)$r['nis']] = $r;
             }
 
@@ -140,20 +149,34 @@ if ($action === 'preview') {
                 $nama_excel = (string)(get_smart_value($row_data, ['nama', 'santri', 'name']) ?? '');
 
                 // Cari ID berdasarkan ID, lalu NIS, lalu Nama
+                $matched_by = 'ID';
                 if ($id === null && $has_nis && trim($nis_excel) !== '') {
-                    if (isset($nis_map[$nis_excel])) $id = (int)$nis_map[$nis_excel]['id'];
+                    if (isset($nis_map[$nis_excel])) {
+                        $id = (int)$nis_map[$nis_excel]['id'];
+                        $matched_by = 'NIS';
+                    }
                 }
                 if ($id === null && trim($nama_excel) !== '') {
                     $key = strtolower(trim($nama_excel));
-                    if (isset($name_map[$key])) $id = (int)$name_map[$key]['id'];
+                    if (isset($name_map[$key])) {
+                        $id = (int)$name_map[$key]['id'];
+                        $matched_by = 'Nama';
+                    }
                 }
 
                 $db_row = ($id && isset($db_map[$id])) ? $db_map[$id] : null;
 
-                $nis   = $has_nis   ? (string)(get_smart_value($row_data, ['nis', 'nomor induk', 'induk']) ?? '') : ($db_row['nis'] ?? '');
-                $nama  = $has_nama  ? (string)(get_smart_value($row_data, ['nama', 'santri', 'name']) ?? '') : ($db_row['nama'] ?? '');
-                $kelas = $has_kelas ? (string)(get_smart_value($row_data, ['kelas', 'kls', 'grade', 'tingkat']) ?? '') : ($db_row['kelas'] ?? '');
-                $kamar = $has_kamar ? (string)(get_smart_value($row_data, ['kamar', 'kmr', 'room', 'asrama']) ?? '') : ($db_row['kamar'] ?? '');
+                $nis_cell = $has_nis ? (string)(get_smart_value($row_data, ['nis', 'nomor induk', 'induk']) ?? '') : '';
+                $nis   = ($has_nis && trim($nis_cell) !== '') ? trim($nis_cell) : ($db_row['nis'] ?? '');
+                
+                $nama_cell = $has_nama ? (string)(get_smart_value($row_data, ['nama', 'santri', 'name']) ?? '') : '';
+                $nama  = ($has_nama && trim($nama_cell) !== '') ? trim($nama_cell) : ($db_row['nama'] ?? '');
+                
+                $kelas_cell = $has_kelas ? (string)(get_smart_value($row_data, ['kelas', 'kls', 'grade', 'tingkat']) ?? '') : '';
+                $kelas = ($has_kelas && trim($kelas_cell) !== '') ? trim($kelas_cell) : ($db_row['kelas'] ?? '');
+                
+                $kamar_cell = $has_kamar ? (string)(get_smart_value($row_data, ['kamar', 'kmr', 'room', 'asrama']) ?? '') : '';
+                $kamar = ($has_kamar && trim($kamar_cell) !== '') ? trim($kamar_cell) : ($db_row['kamar'] ?? '');
 
                 // Normalisasi isian strip (dash) dari Excel menjadi empty string agar tidak terbaca sebagai perubahan (UPDATE)
                 if (trim($nis) === '-' || trim($nis) === '—' || trim($nis) === '--') $nis = '';
@@ -168,6 +191,14 @@ if ($action === 'preview') {
                     $preview_list[] = ['action' => 'ERROR', 'error_msg' => "Kolom Nama kosong (baris " . ($idx + 2) . "). Wajib diisi.", 'data' => $data_row];
                     continue;
                 }
+                if ($has_nis && trim($nis_cell) !== '') {
+                    $nis_clean = trim($nis_cell);
+                    if (isset($seen_excel_nis[$nis_clean])) {
+                        $preview_list[] = ['action' => 'ERROR', 'error_msg' => "Duplikasi NIS terdeteksi di dalam file Excel pada baris " . ($idx + 2) . ". NIS {$nis_clean} muncul lebih dari sekali.", 'data' => $data_row];
+                        continue;
+                    }
+                    $seen_excel_nis[$nis_clean] = true;
+                }
                 if ($id !== null) {
                     if (isset($seen_excel_ids[$id])) {
                         $preview_list[] = ['action' => 'ERROR', 'error_msg' => "Duplikasi ID terdeteksi pada baris " . ($idx + 2) . " (mengarah ke record yang sama).", 'data' => $data_row];
@@ -179,12 +210,21 @@ if ($action === 'preview') {
                 if ($id && isset($db_map[$id])) {
                     $file_ids[] = $id;
                     if (!is_similar_name($db_row['nama'], $nama)) {
+                        $fatal_reason = "";
+                        if ($matched_by === 'NIS') {
+                            $fatal_reason = "Konflik: NIS " . htmlspecialchars($nis_cell) . " sudah digunakan oleh santri bernama \"{$db_row['nama']}\" "
+                                . "di database, tetapi di Excel tertulis \"{$nama}\". Jika ini adalah santri yang berbeda, NIS tidak boleh sama.";
+                        } elseif ($matched_by === 'Nama') {
+                            $fatal_reason = "Anomali Pencocokan: Sistem mencoba mencocokkan nama \"{$nama}\", tetapi terjadi perbedaan yang mencolok. Harap isi NIS atau ID dengan spesifik.";
+                        } else {
+                            $fatal_reason = "ID {$id} sudah terdaftar atas nama \"{$db_row['nama']}\" "
+                                . "di database, tetapi di Excel tertulis \"{$nama}\". "
+                                . "Jika ini data baru, kosongkan kolom ID.";
+                        }
                         $preview_list[] = [
                             'action'       => 'INSERT',
                             'is_fatal'     => true,
-                            'fatal_reason' => "ID {$id} sudah terdaftar atas nama \"{$db_row['nama']}\" "
-                                . "di database, tetapi di Excel tertulis \"{$nama}\". "
-                                . "Jika ini data baru, kosongkan kolom ID.",
+                            'fatal_reason' => $fatal_reason,
                             'data'     => $data_row,
                             'old_data' => $db_row,
                         ];
@@ -237,9 +277,17 @@ if ($action === 'preview') {
             $res = mysqli_query($conn, 'SELECT id, nama_pelanggaran, bagian, poin, kategori FROM jenis_pelanggaran');
             $db_map = [];
             $name_map = [];
+            $duplicate_names = [];
+            $seen_excel_names = [];
             while ($r = mysqli_fetch_assoc($res)) {
                 $db_map[$r['id']] = $r;
-                $name_map[strtolower(trim($r['nama_pelanggaran']))] = $r;
+                $namakey = strtolower(trim($r['nama_pelanggaran'])) . '_' . strtolower(trim($r['bagian']));
+                if (isset($name_map[$namakey])) {
+                    $duplicate_names[$namakey] = true;
+                    unset($name_map[$namakey]);
+                } elseif (!isset($duplicate_names[$namakey])) {
+                    $name_map[$namakey] = $r;
+                }
             }
 
             foreach ($rows as $idx => $row) {
@@ -250,8 +298,11 @@ if ($action === 'preview') {
                 if ($id !== null && $id <= 0) $id = null;
 
                 $nama_excel = (string)(get_smart_value($row_data, ['nama_pelanggaran', 'nama', 'pelanggaran']) ?? '');
+                $bagian_excel = (string)(get_smart_value($row_data, ['bagian', 'divisi', 'section', 'dept']) ?? '');
+                $bagian_excel_norm = normalize_bagian($bagian_excel) ?? (trim($bagian_excel) ?: 'Kesantrian');
+                
                 if ($id === null && trim($nama_excel) !== '') {
-                    $key = strtolower(trim($nama_excel));
+                    $key = strtolower(trim($nama_excel)) . '_' . strtolower($bagian_excel_norm);
                     if (isset($name_map[$key])) {
                         $id = (int)$name_map[$key]['id'];
                     }
@@ -263,19 +314,16 @@ if ($action === 'preview') {
                     ? (string)(get_smart_value($row_data, ['nama_pelanggaran', 'nama', 'pelanggaran']) ?? '')
                     : ($db_row['nama_pelanggaran'] ?? '');
 
-                $bagian_raw = $has_bagian
-                    ? get_smart_value($row_data, ['bagian', 'divisi', 'section', 'dept'])
-                    : ($db_row['bagian'] ?? null);
+                $bagian_cell = $has_bagian ? (string)(get_smart_value($row_data, ['bagian', 'divisi', 'section', 'dept']) ?? '') : '';
+                $bagian_raw = ($has_bagian && trim($bagian_cell) !== '') ? trim($bagian_cell) : ($db_row['bagian'] ?? null);
                 $bagian = normalize_bagian((string)($bagian_raw ?? ''));
 
-                $poin_raw = $has_poin
-                    ? get_smart_value($row_data, ['poin', 'point', 'skor', 'score', 'nilai'])
-                    : ($db_row['poin'] ?? 0);
+                $poin_cell = $has_poin ? (string)(get_smart_value($row_data, ['poin', 'point', 'skor', 'score', 'nilai']) ?? '') : '';
+                $poin_raw = ($has_poin && trim($poin_cell) !== '') ? trim($poin_cell) : ($db_row['poin'] ?? 0);
                 $poin = max(0, (int)$poin_raw);
 
-                $kategori_raw = $has_kategori
-                    ? get_smart_value($row_data, ['kategori', 'category', 'tingkat', 'level'])
-                    : ($db_row['kategori'] ?? null);
+                $kategori_cell = $has_kategori ? (string)(get_smart_value($row_data, ['kategori', 'category', 'tingkat', 'level']) ?? '') : '';
+                $kategori_raw = ($has_kategori && trim($kategori_cell) !== '') ? trim($kategori_cell) : ($db_row['kategori'] ?? null);
                 $kategori = normalize_kategori_pelanggaran((string)($kategori_raw ?? ''));
 
                 if (empty($nama_pelanggaran) && empty($id)) continue;
@@ -292,6 +340,14 @@ if ($action === 'preview') {
                     $preview_list[] = ['action' => 'ERROR', 'error_msg' => "Nama Pelanggaran kosong (baris " . ($idx + 2) . ").", 'data' => $data_row];
                     continue;
                 }
+                
+                $namakey = strtolower(trim($nama_pelanggaran)) . '_' . strtolower(trim((string)($bagian ?? '')));
+                if (isset($seen_excel_names[$namakey])) {
+                    $preview_list[] = ['action' => 'ERROR', 'error_msg' => "Duplikasi pelanggaran di dalam file Excel terdeteksi pada baris " . ($idx + 2) . ". Pelanggaran '{$nama_pelanggaran}' (Bagian: " . ($bagian ?? 'Kosong') . ") muncul lebih dari sekali.", 'data' => $data_row];
+                    continue;
+                }
+                $seen_excel_names[$namakey] = true;
+
                 if ($bagian === null) {
                     if (!$has_bagian && !$db_row) {
                         $preview_list[] = ['action' => 'ERROR', 'error_msg' => "Kolom 'Bagian' wajib ada untuk menambah data baru.", 'data' => $data_row];
@@ -369,9 +425,17 @@ if ($action === 'preview') {
             $res = mysqli_query($conn, 'SELECT id, nama_reward, poin_reward, deskripsi FROM jenis_reward');
             $db_map = [];
             $name_map = [];
+            $duplicate_names = [];
+            $seen_excel_names = [];
             while ($r = mysqli_fetch_assoc($res)) {
                 $db_map[$r['id']] = $r;
-                $name_map[strtolower(trim($r['nama_reward']))] = $r;
+                $namakey = strtolower(trim($r['nama_reward']));
+                if (isset($name_map[$namakey])) {
+                    $duplicate_names[$namakey] = true;
+                    unset($name_map[$namakey]);
+                } elseif (!isset($duplicate_names[$namakey])) {
+                    $name_map[$namakey] = $r;
+                }
             }
 
             foreach ($rows as $idx => $row) {
@@ -395,9 +459,8 @@ if ($action === 'preview') {
                     ? (string)(get_smart_value($row_data, ['nama_reward', 'nama', 'reward', 'penghargaan']) ?? '')
                     : ($db_row['nama_reward'] ?? '');
 
-                $poin_raw = $has_poin
-                    ? get_smart_value($row_data, ['poin_reward', 'poin', 'point', 'skor', 'score', 'nilai'])
-                    : ($db_row['poin_reward'] ?? 0);
+                $poin_cell = $has_poin ? (string)(get_smart_value($row_data, ['poin_reward', 'poin', 'point', 'skor', 'score', 'nilai']) ?? '') : '';
+                $poin_raw = ($has_poin && trim($poin_cell) !== '') ? trim($poin_cell) : ($db_row['poin_reward'] ?? 0);
                 $poin_reward = normalize_poin_reward($poin_raw);
 
                 $deskripsi = $has_desk
@@ -419,6 +482,14 @@ if ($action === 'preview') {
                     $preview_list[] = ['action' => 'ERROR', 'error_msg' => "Kolom Nama Reward kosong (baris " . ($idx + 2) . "). Wajib diisi.", 'data' => $data_row];
                     continue;
                 }
+
+                $namakey = strtolower(trim($nama_reward));
+                if (isset($seen_excel_names[$namakey])) {
+                    $preview_list[] = ['action' => 'ERROR', 'error_msg' => "Duplikasi nama di dalam file Excel terdeteksi pada baris " . ($idx + 2) . ". Nama reward '{$nama_reward}' muncul lebih dari sekali.", 'data' => $data_row];
+                    continue;
+                }
+                $seen_excel_names[$namakey] = true;
+
                 if ($id !== null) {
                     if (isset($seen_excel_ids[$id])) {
                         $preview_list[] = ['action' => 'ERROR', 'error_msg' => "Duplikasi ID terdeteksi pada baris " . ($idx + 2) . ".", 'data' => $data_row];

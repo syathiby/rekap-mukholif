@@ -176,8 +176,8 @@ $query_feed = "
     JOIN jenis_pelanggaran jp ON p.jenis_pelanggaran_id = jp.id 
     WHERE $date_condition_umum $jp_where_string
     ORDER BY 
-        FIELD(jp.bagian, 'Kesantrian', 'Diniyyah', 'Bahasa', 'Tahfidz', 'Pengabdian'), 
-        p.tanggal DESC
+        p.tanggal DESC,
+        FIELD(jp.bagian, 'Kesantrian', 'Diniyyah', 'Bahasa', 'Tahfidz', 'Pengabdian')
 ";
 $stmt_feed = mysqli_prepare($conn, $query_feed);
 mysqli_stmt_bind_param($stmt_feed, $types_all, ...$params_all);
