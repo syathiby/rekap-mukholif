@@ -60,7 +60,7 @@ body {
     font-family: 'Poppins', sans-serif;
     color: var(--text-primary);
     line-height: 1.6;
-    overflow-x: hidden;
+    overflow-x: clip; /* clip allows sticky elements to work unlike hidden */
 }
 
 h1,
@@ -1509,7 +1509,7 @@ a {
     bottom: 0;
     left: 0;
     right: 0;
-    height: 52px;
+    height: 70px;
     background: rgba(255, 255, 255, 0.85);
     backdrop-filter: blur(15px);
     -webkit-backdrop-filter: blur(15px); /* Safari / iOS Support */
@@ -1533,7 +1533,7 @@ a {
     align-items: center;
     justify-content: center;
     color: var(--text-secondary);
-    font-size: 0.65rem;
+    font-size: 0.85rem;
     font-weight: 500;
     text-decoration: none;
     transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
@@ -1544,8 +1544,8 @@ a {
 }
 
 .bottom-nav-link i {
-    font-size: 1.1rem;
-    margin-bottom: 1px;
+    font-size: 1.5rem;
+    margin-bottom: 3px;
     transition: transform 0.2s ease;
 }
 
@@ -1566,24 +1566,25 @@ a {
 /* --- 2. Floating Action Button (FAB & Speed Dial) --- */
 .fab-container {
     position: fixed;
-    bottom: 64px;
-    right: 20px;
-    z-index: 1029;
+    bottom: 25px;
+    left: 50%;
+    transform: translateX(-50%);
+    z-index: 1035;
     display: none; /* Hidden by default (desktop) */
     flex-direction: column;
-    align-items: flex-end;
+    align-items: center;
 }
 
 .fab-btn {
-    width: 46px;
-    height: 46px;
+    width: 60px;
+    height: 60px;
     border-radius: 50%;
     background: linear-gradient(135deg, var(--global-primary) 0%, var(--global-primary-hover) 100%);
     color: white !important;
     display: flex;
     align-items: center;
     justify-content: center;
-    font-size: 1.25rem;
+    font-size: 1.8rem;
     box-shadow: 0 4px 10px rgba(79, 70, 229, 0.25);
     border: none;
     text-decoration: none;
@@ -1593,9 +1594,10 @@ a {
 
 .fab-btn.single-fab {
     position: fixed;
-    bottom: 64px;
-    right: 20px;
-    z-index: 1029;
+    bottom: 25px;
+    left: 50%;
+    transform: translateX(-50%);
+    z-index: 1035;
     display: none;
 }
 
@@ -1614,15 +1616,16 @@ a {
 
 .fab-menu {
     position: absolute;
-    bottom: 58px;
-    right: 0;
+    bottom: 95px;
+    left: 50%;
     display: flex;
-    flex-direction: column;
+    flex-direction: row;
     align-items: flex-end;
-    gap: 10px;
+    justify-content: center;
+    gap: 25px;
     opacity: 0;
     visibility: hidden;
-    transform: translateY(15px);
+    transform: translate(-50%, 15px);
     transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
     pointer-events: none;
 }
@@ -1630,12 +1633,13 @@ a {
 .fab-menu.active {
     opacity: 1;
     visibility: visible;
-    transform: translateY(0);
+    transform: translate(-50%, 0);
     pointer-events: auto;
 }
 
 .fab-item {
     display: flex;
+    flex-direction: column-reverse;
     align-items: center;
     gap: 8px;
     text-decoration: none;
@@ -1678,10 +1682,10 @@ a {
     }
     /* Add padding to body/main-content so content doesn't get covered by bottom nav */
     body {
-        padding-bottom: 60px;
+        padding-bottom: 80px;
     }
     .main-content {
-        padding-bottom: 64px !important;
+        padding-bottom: 84px !important;
     }
 }
 
@@ -1944,11 +1948,12 @@ textarea:focus {
     display: flex;
     flex-direction: column;
     position: fixed;
-    top: 0; left: 0;
-    height: 100vh;
+    top: 0; left: 0; bottom: 0;
+    height: 100dvh;
     z-index: 1040;
     border-right: 1px solid var(--sb-border);
     overflow: hidden;
+    overscroll-behavior: contain;
     padding-top: env(safe-area-inset-top, 0px);
     transition: left 0.28s cubic-bezier(0.4,0,0.2,1);
 }
@@ -2069,4 +2074,15 @@ textarea:focus {
         box-shadow: 6px 0 32px rgba(0,0,0,0.5);
     }
     .main-content { margin-left: 0 !important; }
+}
+
+/* =================================================================
+   FIX BOOTSTRAP MODAL SHIFT
+   ================================================================= */
+body.modal-open, 
+body.modal-open .header,
+body.modal-open .bottom-nav,
+body.modal-open .fab-container,
+body.modal-open .fab-btn.single-fab {
+    padding-right: 0 !important;
 }

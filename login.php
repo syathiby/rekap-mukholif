@@ -20,6 +20,9 @@ $info = '';
 if (isset($_GET['timeout'])) {
     $info = "Sesi Anda ter-logout otomatis sebagai bentuk keamanan karena login terlalu lama.";
 }
+if (isset($_GET['suspended'])) {
+    $error = "Akun Anda telah dinonaktifkan (suspend) oleh Admin. Silakan hubungi Pengelola untuk informasi lebih lanjut.";
+}
 
 // =================================================================
 // RATE LIMITING — Anti Brute-Force (Tanpa Database)
@@ -103,7 +106,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     // Dilakukan lebih awal agar admin bisa bypass blokir jika password benar
     $stmt = $conn->prepare("
         SELECT
-            u.id, u.username, u.password, u.nama_lengkap, u.role,
+            u.id, u.username, u.password, u.nama_lengkap, u.role, u.is_active,
             GROUP_CONCAT(p.nama_izin) AS permissions
         FROM users u
         LEFT JOIN user_permissions up ON u.id = up.user_id
@@ -155,7 +158,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     // ─────────────────────────────────────────────────────────────────────────
 
     if ($user && $password_correct) {
-        // Login berhasil: Reset hitungan percobaan gagal
+        if (isset($user['is_active']) && $user['is_active'] == 0) {
+            $error = "Akun Anda telah dinonaktifkan oleh Pengelola. Silakan hubungi admin.";
+            // Tetap catat percobaan gagal agar tidak disalahgunakan
+            recordFailedAttempt($visitor_ip);
+        } else {
+            // Login berhasil: Reset hitungan percobaan gagal
             resetRateLimit($visitor_ip);
 
             // TRANSISI HALUS: Update password di database ke Bcrypt secara diam-diam!
@@ -183,9 +191,13 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             // Catat log login
             write_activity_log('LOGIN', 'auth', "User '" . $user['username'] . "' berhasil login ke sistem");
 
+            // Flag untuk trigger popup broadcast saat pertama buka dashboard
+            $_SESSION['show_broadcast_popup'] = true;
+
             // REVISI: Arahkan ke halaman index pake BASE_URL
             header("Location: " . BASE_URL . "/dashboard.php");
             exit;
+        }
     } else {
         // Password salah atau username tidak ditemukan: Catat percobaan gagal
         if ($user) {

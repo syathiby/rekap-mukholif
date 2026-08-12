@@ -103,14 +103,18 @@ if (function_exists('has_permission')) {
             <span>Beranda</span>
         </a>
     </div>
-    <?php if ($can_input_violation): ?>
+    <?php if (function_exists('has_permission') && has_permission('santri_view')): ?>
     <div class="bottom-nav-item">
-        <a class="bottom-nav-link <?= strpos($req_path, '/pelanggaran') === 0 ? 'active' : '' ?>" href="<?= $violation_url ?>">
-            <i class="fas fa-clipboard-list"></i>
-            <span>Catat</span>
+        <a class="bottom-nav-link <?= strpos($req_path, '/santri') === 0 ? 'active' : '' ?>" href="<?= BASE_URL ?>/santri">
+            <i class="fas fa-users"></i>
+            <span>Santri</span>
         </a>
     </div>
     <?php endif; ?>
+    
+    <!-- Spacer untuk memberikan tempat bagi tombol FAB (Plus) di tengah -->
+    <div class="bottom-nav-item fab-spacer" style="flex: 0.6; visibility: hidden; pointer-events: none;"></div>
+    
     <?php if ($can_view_rekap): ?>
     <div class="bottom-nav-item">
         <a class="bottom-nav-link <?= strpos($req_path, '/rekap') === 0 ? 'active' : '' ?>" href="<?= BASE_URL ?>/rekap">
@@ -120,10 +124,10 @@ if (function_exists('has_permission')) {
     </div>
     <?php endif; ?>
     <div class="bottom-nav-item">
-        <button class="bottom-nav-link" type="button" onclick="openSidebarMobile()">
-            <i class="fas fa-bars"></i>
-            <span>Lainnya</span>
-        </button>
+        <a class="bottom-nav-link <?= strpos($req_path, '/pengaturan/users/profil.php') !== false ? 'active' : '' ?>" href="<?= BASE_URL ?>/pengaturan/users/profil.php">
+            <i class="fas fa-user"></i>
+            <span>Profil</span>
+        </a>
     </div>
 </nav>
 
@@ -131,16 +135,30 @@ if (function_exists('has_permission')) {
 <?php if (count($active_fab_items) > 1): ?>
     <!-- Speed Dial (Multi Item) -->
     <div class="fab-container">
-        <button class="fab-btn" id="fabToggle" title="Tambah Data">
+        <button class="fab-btn" type="button" data-bs-toggle="modal" data-bs-target="#fabModal" title="Tambah Data">
             <i class="fas fa-plus"></i>
         </button>
-        <div class="fab-menu" id="fabMenu">
-            <?php foreach ($active_fab_items as $item): ?>
-                <a href="<?= $item['url'] ?>" class="fab-item" title="<?= $item['title'] ?>">
-                    <span class="fab-label"><?= $item['label'] ?></span>
-                    <div class="fab-icon <?= $item['bg'] ?> text-white"><i class="<?= $item['icon'] ?>"></i></div>
-                </a>
-            <?php endforeach; ?>
+    </div>
+
+    <!-- Minimalist FAB Modal -->
+    <div class="modal fade" id="fabModal" tabindex="-1" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered modal-sm">
+            <div class="modal-content border-0 rounded-4 shadow-lg p-2">
+                <div class="modal-body text-center p-3">
+                    <h6 class="mb-4 text-muted fw-bold" style="font-size: 0.85rem; letter-spacing: 1px;">PILIH TINDAKAN</h6>
+                    <div class="d-flex flex-row justify-content-center flex-wrap gap-2 mb-4">
+                        <?php foreach ($active_fab_items as $item): ?>
+                            <a href="<?= $item['url'] ?>" class="text-decoration-none d-flex flex-column align-items-center" style="gap: 8px; flex: 1; min-width: 70px;">
+                                <div class="fab-icon <?= $item['bg'] ?> text-white" style="width: 52px; height: 52px; font-size: 1.25rem;"><i class="<?= $item['icon'] ?>"></i></div>
+                                <span class="fw-medium text-secondary" style="font-size: 0.85rem;"><?= $item['label'] ?></span>
+                            </a>
+                        <?php endforeach; ?>
+                    </div>
+                    <button type="button" class="btn btn-light rounded-circle shadow-sm border" data-bs-dismiss="modal" style="width: 44px; height: 44px; font-size: 1.1rem; color: #64748b;">
+                        <i class="fas fa-times"></i>
+                    </button>
+                </div>
+            </div>
         </div>
     </div>
 <?php elseif (count($active_fab_items) === 1): ?>
@@ -244,25 +262,7 @@ if (function_exists('has_permission')) {
         updateLiveTime();
     }
 
-    // FAB Speed Dial Toggle Logic
-    const fabToggle = document.getElementById('fabToggle');
-    const fabMenu = document.getElementById('fabMenu');
-    
-    if (fabToggle && fabMenu) {
-        fabToggle.addEventListener('click', function(e) {
-            e.stopPropagation();
-            fabMenu.classList.toggle('active');
-            fabToggle.classList.toggle('active');
-        });
-
-        // Close menu when clicking outside
-        document.addEventListener('click', function(e) {
-            if (fabMenu.classList.contains('active') && !fabMenu.contains(e.target) && e.target !== fabToggle) {
-                fabMenu.classList.remove('active');
-                fabToggle.classList.remove('active');
-            }
-        });
-    }
+    // FAB Toggle logic is now handled by Bootstrap Modal
 
     // Global Fix: Mencegah error accessibility 'aria-hidden' di DevTools Chrome
     // saat menutup modal Bootstrap dan elemen di dalamnya masih memiliki fokus.

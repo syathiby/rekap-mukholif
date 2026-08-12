@@ -94,6 +94,20 @@ if (isset($_SESSION['user_id'], $_SESSION['login_time'])) {
         exit();
     }
 
+    // Cek status is_active dari database — pastikan akun belum di-suspend
+    // Pengecekan ini berjalan di setiap request agar suspend berlaku REAL-TIME
+    $check_active = mysqli_query($conn, "SELECT is_active FROM users WHERE id = '" . (int)$_SESSION['user_id'] . "' LIMIT 1");
+    if ($check_active) {
+        $active_row = mysqli_fetch_assoc($check_active);
+        if (!$active_row || $active_row['is_active'] == 0) {
+            // Akun di-suspend — hancurkan session dan logout paksa
+            $_SESSION = [];
+            if (session_status() === PHP_SESSION_ACTIVE) session_destroy();
+            header('Location: ' . BASE_URL . '/login.php?suspended=1');
+            exit();
+        }
+    }
+
     // Reset timer aktivitas — user masih aktif, perpanjang sesi.
     $_SESSION['login_time'] = time();
 }

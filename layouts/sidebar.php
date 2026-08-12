@@ -88,8 +88,15 @@ if (function_exists('has_permission')) {
     </a>
     <?php endif; ?>
     
-    <?php if (has_permission(['santri_view', 'jenis_pelanggaran_view', 'jenis_pelanggaran_create', 'jenis_pelanggaran_edit', 'jenis_pelanggaran_delete', 'jenis_reward_view', 'jenis_reward_create', 'jenis_reward_edit', 'jenis_reward_delete'])): ?>
+    <?php if (has_permission(['santri_view', 'jenis_pelanggaran_view', 'jenis_pelanggaran_create', 'jenis_pelanggaran_edit', 'jenis_pelanggaran_delete', 'jenis_reward_view', 'jenis_reward_create', 'jenis_reward_edit', 'jenis_reward_delete']) || in_array($_SESSION['role'] ?? '', ['admin', 'pengelola'])): ?>
     <div class="sb-section-label">MANAJEMEN</div>
+    <?php endif; ?>
+    
+    <?php if (in_array($_SESSION['role'] ?? '', ['admin', 'pengelola'])): ?>
+    <a href="<?= BASE_URL ?>/pengaturan/pengelola" class="sb-link <?= (strpos($req_path, '/pengaturan/pengelola') === 0) ? 'active' : '' ?>">
+        <i class="fas fa-shield-alt" style="color:#f43f5e;"></i>
+        <span>Panel Pengelola</span>
+    </a>
     <?php endif; ?>
     
     <?php if (has_permission('santri_view')): ?>
@@ -132,7 +139,7 @@ if (function_exists('has_permission')) {
     <?php endif; ?>
     
     <?php if (has_permission(['user_manage', 'periode_aktif_manage', 'reset_poin_manage', 'izin_manage', 'history_manage', 'backup_restore_manage', 'activity_log_manage', 'impor_data'])): ?>
-    <a href="<?= BASE_URL ?>/pengaturan" class="sb-link <?= strpos($req_path, '/pengaturan') === 0 ? 'active' : '' ?>">
+    <a href="<?= BASE_URL ?>/pengaturan" class="sb-link <?= (strpos($req_path, '/pengaturan') === 0 && strpos($req_path, '/pengaturan/pengelola') !== 0) ? 'active' : '' ?>">
         <i class="fas fa-cog"></i>
         <span>Pengaturan</span>
     </a>

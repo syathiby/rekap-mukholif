@@ -4,3 +4,4 @@
 vendor/
 # Folder Cache (Jangan masukkan ke Git, server akan bikin otomatis)
 cache/
+update_v1_pengelola.sql

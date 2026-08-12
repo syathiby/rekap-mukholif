@@ -142,7 +142,7 @@ if (isset($conn)) {
     </style>
 
     <!-- Overlay backdrop untuk menutup sidebar di mobile -->
-    <div id="sidebarOverlay" onclick="closeSidebarMobile()"></div>
+    <div id="sidebarOverlay" onclick="closeSidebarMobile()" ontouchmove="event.preventDefault()"></div>
 
     <!-- Unified Sidebar -->
     <nav id="sidebar">

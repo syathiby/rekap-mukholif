@@ -244,6 +244,141 @@ if (!$dashboard_data) {
 // =============================================================
 // Ini asumsi ada fungsi has_permission() di init.php ya
 
+// PENGUMUMAN SISTEM DARI PENGELOLA (Hanya untuk Musyrif)
+$active_broadcasts = [];
+$show_broadcast_popup = false;
+if (isset($_SESSION['role']) && $_SESSION['role'] === 'musyrif') {
+    try {
+        $uid = $_SESSION['user_id'];
+        $bc_res = mysqli_query($conn, "SELECT judul, pesan, created_at FROM pengumuman_sistem WHERE status_aktif = 1 AND created_at >= DATE_SUB(NOW(), INTERVAL 24 HOUR) AND (target_user_id IS NULL OR target_user_id = '$uid') ORDER BY id DESC");
+        if ($bc_res) {
+            while ($bc = mysqli_fetch_assoc($bc_res)) {
+                $active_broadcasts[] = $bc;
+            }
+        }
+    } catch (Exception $e) {}
+    
+    // Cek apakah ini pertama kali login (flag dari login.php)
+    // Popup hanya muncul sekali setelah login, card tetap tampil selama 24 jam
+    if (!empty($active_broadcasts) && isset($_SESSION['show_broadcast_popup']) && $_SESSION['show_broadcast_popup'] === true) {
+        $show_broadcast_popup = true;
+        unset($_SESSION['show_broadcast_popup']); // Hapus flag agar tidak muncul lagi
+    }
+}
+
+// NOTIF KINERJA MUSYRIF (untuk Admin dan Pengelola saja)
+$count_nunggak_musyrif = 0;
+$count_janggal_musyrif = 0;
+$kinerja_summary_text = '';
+$show_kinerja_popup = false;
+
+if (isset($_SESSION['role']) && in_array($_SESSION['role'], ['admin', 'pengelola'])) {
+    $cn = (int)date('n');
+    $cy = (int)date('Y');
+    $cd = (int)date('j');
+    $dt = (int)date('t') - 7; // deadline day
+    $nama_bulan_dash = [1=>'Januari',2=>'Februari',3=>'Maret',4=>'April',5=>'Mei',6=>'Juni',
+                        7=>'Juli',8=>'Agustus',9=>'September',10=>'Oktober',11=>'November',12=>'Desember'];
+    
+    // 1. Cek rapot janggal / prematur
+    $j_conds = [];
+    if ($cd <= $dt) {
+        $j_conds[] = "(r.bulan = '{$nama_bulan_dash[$cn]}' AND r.tahun = $cy)";
+    }
+    $jm = $cn + 1; $jy = $cy;
+    for ($i = 0; $i < 12; $i++) {
+        if ($jm > 12) { $jm = 1; $jy++; }
+        $j_conds[] = "(r.bulan = '{$nama_bulan_dash[$jm]}' AND r.tahun = $jy)";
+        $jm++;
+    }
+    if (!empty($j_conds)) {
+        $jcond_str = implode(' OR ', $j_conds);
+        $q_jn = "SELECT COUNT(DISTINCT r.musyrif_id) as total FROM rapot_kepengasuhan r WHERE ($jcond_str)";
+        $res_jn = mysqli_query($conn, $q_jn);
+        if ($res_jn) {
+            $count_janggal_musyrif = (int)(mysqli_fetch_assoc($res_jn)['total'] ?? 0);
+        }
+    }
+
+    // 2. Cek musyrif nunggak / belum rapot
+    $startYear = ($cn >= 7) ? $cy : ($cy - 1);
+    $maxMonth = $cn;
+    $maxYear = $cy;
+    if ($cd <= $dt) {
+        $maxMonth--;
+        if ($maxMonth < 1) {
+            $maxMonth = 12;
+            $maxYear--;
+        }
+    }
+    $expected = [];
+    $y = $startYear; $m = 7;
+    while ($y < $maxYear || ($y == $maxYear && $m <= $maxMonth)) {
+        $expected[] = ['month' => $m, 'year' => $y];
+        $m++; if ($m > 12) { $m = 1; $y++; }
+    }
+
+    if (!empty($expected)) {
+        $res_m_kinerja = mysqli_query($conn, "
+            SELECT u.id, COUNT(s.id) as total_santri 
+            FROM users u 
+            LEFT JOIN santri s ON u.kamar_id = s.kamar 
+            WHERE u.role = 'musyrif' AND u.is_active = 1 
+            GROUP BY u.id
+        ");
+        if ($res_m_kinerja && mysqli_num_rows($res_m_kinerja) > 0) {
+            $m_ids = [];
+            $musyrif_santri = [];
+            while ($r = mysqli_fetch_assoc($res_m_kinerja)) {
+                $m_ids[] = $r['id'];
+                $musyrif_santri[$r['id']] = (int)$r['total_santri'];
+            }
+            if (!empty($m_ids)) {
+                $ids_str = implode(',', $m_ids);
+                $conds = [];
+                foreach($expected as $exp) {
+                    $conds[] = "(bulan = '{$nama_bulan_dash[$exp['month']]}' AND tahun = {$exp['year']})";
+                }
+                $cond_str = implode(" OR ", $conds);
+                $res_r = mysqli_query($conn, "SELECT musyrif_id, bulan, tahun, COUNT(*) as total_rapot FROM rapot_kepengasuhan WHERE musyrif_id IN ($ids_str) AND ($cond_str) GROUP BY musyrif_id, bulan, tahun");
+                $submitted = [];
+                if ($res_r) {
+                    while ($r = mysqli_fetch_assoc($res_r)) {
+                        $submitted[$r['musyrif_id']][$r['bulan'].'-'.$r['tahun']] = (int)$r['total_rapot'];
+                    }
+                }
+                foreach ($musyrif_santri as $mid => $t_santri) {
+                    if ($t_santri <= 0) continue;
+                    foreach ($expected as $exp) {
+                        $key = $nama_bulan_dash[$exp['month']] . '-' . $exp['year'];
+                        $rapot_count = $submitted[$mid][$key] ?? 0;
+                        if ($rapot_count < $t_santri) {
+                            $count_nunggak_musyrif++;
+                            break;
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    // Bangun narasi pesan ringkas
+    $kinerja_messages = [];
+    if ($count_nunggak_musyrif > 0) {
+        $kinerja_messages[] = "<strong>{$count_nunggak_musyrif} musyrif</strong> belum menyetorkan rapot";
+    }
+    if ($count_janggal_musyrif > 0) {
+        $kinerja_messages[] = "<strong>{$count_janggal_musyrif} musyrif</strong> terdeteksi pengisian prematur/janggal";
+    }
+    $kinerja_summary_text = !empty($kinerja_messages) ? implode(' serta ', $kinerja_messages) : '';
+
+    // Cek apakah ini pertama kali login (flag dari login.php)
+    if (!empty($kinerja_summary_text) && isset($_SESSION['show_broadcast_popup']) && $_SESSION['show_broadcast_popup'] === true) {
+        $show_kinerja_popup = true;
+        unset($_SESSION['show_broadcast_popup']); // Hapus flag agar popup hanya 1x setelah login
+    }
+}
+
 // Izin Sesuai Arahan Baru:
 $can_view_pel_terkini = has_permission('rekap_view_statistik'); // Tombol "Lihat semua" Pelanggaran Terkini
 $can_view_santri_teladan = has_permission('rekap_per_santri');   // Tombol "Lihat semua" Santri Teladan
@@ -312,6 +447,41 @@ $teladan_onclick = !$can_view_santri_teladan ? 'onclick="event.preventDefault();
     <!-- Banner utama dihapus, form filter dirapikan -->
     <div class="dashboard-wrapper">
         
+        <?php if (!empty($active_broadcasts)): ?>
+            <?php foreach ($active_broadcasts as $bc): ?>
+                <div class="alert alert-warning d-flex align-items-center mb-4 shadow-sm border-0 border-start border-4 border-warning" role="alert" style="border-radius: 10px;">
+                    <i class="fas fa-bullhorn fs-4 text-warning me-3"></i>
+                    <div>
+                        <h6 class="alert-heading fw-bold mb-1 text-dark"><?= htmlspecialchars($bc['judul'] ?? 'Pengumuman Sistem!') ?></h6>
+                        <p class="mb-0 text-dark small" style="line-height: 1.5;"><?= nl2br($bc['pesan']) ?></p>
+                    </div>
+                </div>
+            <?php endforeach; ?>
+        <?php endif; ?>
+
+        <?php if (!empty($kinerja_summary_text)): ?>
+        <div class="alert bg-white border border-warning-subtle shadow-sm mb-4 p-3 rounded-3 position-relative" role="alert" style="border-left: 4px solid #f59e0b !important;">
+            <div class="d-flex align-items-center justify-content-between flex-wrap gap-2">
+                <div class="d-flex align-items-center gap-3">
+                    <div class="d-flex align-items-center justify-content-center rounded-2 bg-warning-subtle text-warning flex-shrink-0" style="width: 36px; height: 36px;">
+                        <i class="fas fa-exclamation-triangle fs-6"></i>
+                    </div>
+                    <div>
+                        <div class="fw-bold text-dark small">
+                            Peringatan Kinerja Musyrif
+                        </div>
+                        <div class="text-muted" style="font-size: 0.78rem;">
+                            Terdeteksi <?= $kinerja_summary_text ?>.
+                        </div>
+                    </div>
+                </div>
+                <a href="<?= BASE_URL ?>/pengaturan/pengelola/?tab=kinerja" class="btn btn-sm btn-warning text-dark fw-semibold px-3" style="font-size: 0.8rem; border-radius: 6px;">
+                    Periksa Kinerja <i class="fas fa-arrow-right ms-1"></i>
+                </a>
+            </div>
+        </div>
+        <?php endif; ?>
+
         <div class="row g-4 mb-4">
             <!-- Card 1: Total Santri -->
             <?php if ($can_view_santri): ?>
@@ -676,6 +846,96 @@ $teladan_onclick = !$can_view_santri_teladan ? 'onclick="event.preventDefault();
     </div>
 
     <?php include __DIR__ . '/layouts/footer.php'; ?>
+
+    <?php if ($show_broadcast_popup && !empty($active_broadcasts)): ?>
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+    <script>
+    document.addEventListener('DOMContentLoaded', function() {
+        const broadcasts = <?= json_encode(array_map(function($bc) {
+            return [
+                'judul' => htmlspecialchars($bc['judul'] ?? 'Pengumuman Sistem!'),
+                'pesan' => nl2br(htmlspecialchars($bc['pesan'])),
+            ];
+        }, $active_broadcasts)) ?>;
+
+        if (broadcasts.length === 0) return;
+
+        // Gabungkan semua pengumuman menjadi satu konten HTML
+        let htmlContent = '';
+        broadcasts.forEach((bc, i) => {
+            if (broadcasts.length > 1) {
+                htmlContent += `<div class="text-start border-bottom pb-2 mb-2">
+                    <p class="fw-bold text-dark mb-1">${bc.judul}</p>
+                    <p class="text-secondary small mb-0">${bc.pesan}</p>
+                </div>`;
+            } else {
+                htmlContent += `<p class="text-secondary mb-0">${bc.pesan}</p>`;
+            }
+        });
+
+        const title = broadcasts.length === 1
+            ? broadcasts[0].judul
+            : `${broadcasts.length} Pengumuman Baru`;
+
+        Swal.fire({
+            title: `<i class="fas fa-bullhorn text-warning me-2"></i>${title}`,
+            html: `<div class="text-start" style="max-height:280px;overflow-y:auto;">${htmlContent}</div>`,
+            icon: null,
+            confirmButtonText: '<i class="fas fa-check me-1"></i>Mengerti',
+            confirmButtonColor: '#4f46e5',
+            allowOutsideClick: false,
+            allowEscapeKey: false,
+            allowEnterKey: false,
+            backdrop: `rgba(15, 23, 42, 0.65)`,
+            showClass: {
+                popup: 'animate__animated animate__fadeInDown animate__faster'
+            },
+            customClass: {
+                title: 'fs-5',
+                htmlContainer: 'text-start',
+            },
+            width: '420px',
+        });
+    });
+    </script>
+    <?php endif; ?>
+
+    <?php if (!empty($show_kinerja_popup) && !empty($kinerja_summary_text)): ?>
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+    <script>
+    document.addEventListener('DOMContentLoaded', function() {
+        Swal.fire({
+            title: `<i class="fas fa-exclamation-triangle text-warning me-2"></i>Peringatan Kinerja Musyrif`,
+            html: `
+                <div class="text-center py-2">
+                    <p class="text-secondary mb-0" style="font-size: 0.92rem; line-height: 1.6;">
+                        Terdeteksi <?= $kinerja_summary_text ?>.
+                    </p>
+                </div>
+            `,
+            icon: null,
+            showCancelButton: true,
+            confirmButtonText: 'Periksa Kinerja <i class="fas fa-arrow-right ms-1"></i>',
+            cancelButtonText: 'Tutup',
+            reverseButtons: true,
+            confirmButtonColor: '#f59e0b',
+            cancelButtonColor: '#64748b',
+            allowOutsideClick: false,
+            allowEscapeKey: false,
+            allowEnterKey: false,
+            backdrop: `rgba(15, 23, 42, 0.65)`,
+            customClass: {
+                title: 'fs-5 text-center'
+            },
+            width: '420px',
+        }).then((result) => {
+            if (result.isConfirmed) {
+                window.location.href = "<?= BASE_URL ?>/pengaturan/pengelola/?tab=kinerja";
+            }
+        });
+    });
+    </script>
+    <?php endif; ?>
     
     <?php
     function time_elapsed_string($datetime, $full = false) {

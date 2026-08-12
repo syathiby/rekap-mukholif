@@ -117,6 +117,7 @@ $stmt->close();
         padding: 0.35rem 0.75rem;
         border-radius: 9999px;
         display: inline-block;
+        white-space: nowrap;
     }
 
     .badge-role-admin {
