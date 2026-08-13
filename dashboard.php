@@ -882,19 +882,22 @@ $teladan_onclick = !$can_view_santri_teladan ? 'onclick="event.preventDefault();
             html: `<div class="text-start" style="max-height:280px;overflow-y:auto;">${htmlContent}</div>`,
             icon: null,
             confirmButtonText: '<i class="fas fa-check me-1"></i>Mengerti',
-            confirmButtonColor: '#4f46e5',
             allowOutsideClick: false,
             allowEscapeKey: false,
             allowEnterKey: false,
             backdrop: `rgba(15, 23, 42, 0.65)`,
+            width: '24em',
+            padding: '1.2em',
             showClass: {
                 popup: 'animate__animated animate__fadeInDown animate__faster'
             },
             customClass: {
-                title: 'fs-5',
-                htmlContainer: 'text-start',
+                popup: 'rounded-4 shadow',
+                title: 'fs-6 fw-bold text-dark mb-1',
+                htmlContainer: 'text-secondary small m-0 text-start',
+                confirmButton: 'btn btn-primary btn-sm px-4 rounded-3 fw-medium'
             },
-            width: '420px',
+            buttonsStyling: false
         });
     });
     </script>
@@ -918,16 +921,20 @@ $teladan_onclick = !$can_view_santri_teladan ? 'onclick="event.preventDefault();
             confirmButtonText: 'Periksa Kinerja <i class="fas fa-arrow-right ms-1"></i>',
             cancelButtonText: 'Tutup',
             reverseButtons: true,
-            confirmButtonColor: '#f59e0b',
-            cancelButtonColor: '#64748b',
             allowOutsideClick: false,
             allowEscapeKey: false,
             allowEnterKey: false,
             backdrop: `rgba(15, 23, 42, 0.65)`,
+            width: '24em',
+            padding: '1.2em',
             customClass: {
-                title: 'fs-5 text-center'
+                popup: 'rounded-4 shadow',
+                title: 'fs-6 fw-bold text-dark mb-1',
+                htmlContainer: 'text-secondary small m-0',
+                confirmButton: 'btn btn-warning btn-sm px-4 rounded-3 fw-medium text-dark',
+                cancelButton: 'btn btn-light btn-sm border px-4 rounded-3 fw-medium text-dark me-2'
             },
-            width: '420px',
+            buttonsStyling: false
         }).then((result) => {
             if (result.isConfirmed) {
                 window.location.href = "<?= BASE_URL ?>/pengaturan/pengelola/?tab=kinerja";

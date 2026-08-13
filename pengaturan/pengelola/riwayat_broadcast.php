@@ -262,7 +262,7 @@ function tutupBroadcast(id) {
         if (result.isConfirmed) {
             fetchAPI('tutup_broadcast', { id: id }).then(res => {
                 if (res.status === 'success') {
-                    Swal.fire('Ditutup!', 'Pengumuman berhasil ditutup.', 'success');
+                    showToast('Pengumuman berhasil ditutup.', 'success');
                     loadBroadcast();
                 }
             });

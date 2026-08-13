@@ -52,35 +52,7 @@ if (function_exists('has_permission')) {
     }
 }
 
-// Bangun array FAB Item aktif berdasarkan izin akses
-$active_fab_items = [];
-if ($can_input_violation) {
-    $active_fab_items[] = [
-        'url' => $violation_url,
-        'label' => 'Pelanggaran',
-        'title' => 'Catat Pelanggaran',
-        'icon' => 'fas fa-exclamation-triangle',
-        'bg' => 'bg-danger'
-    ];
-}
-if ($can_input_reward) {
-    $active_fab_items[] = [
-        'url' => $reward_url,
-        'label' => 'Reward',
-        'title' => 'Tambah Reward',
-        'icon' => 'fas fa-trophy',
-        'bg' => 'bg-success'
-    ];
-}
-if ($can_create_rapot) {
-    $active_fab_items[] = [
-        'url' => $rapot_url,
-        'label' => 'Rapot',
-        'title' => 'Buat Rapot Baru',
-        'icon' => 'fas fa-file-invoice',
-        'bg' => 'bg-info'
-    ];
-}
+
 
 $can_view_rekap = false;
 if (function_exists('has_permission')) {
@@ -132,42 +104,17 @@ if (function_exists('has_permission')) {
 </nav>
 
 <!-- --- Floating Action Button (Mobile Only) --- -->
-<?php if (count($active_fab_items) > 1): ?>
-    <!-- Speed Dial (Multi Item) -->
-    <div class="fab-container">
-        <button class="fab-btn" type="button" data-bs-toggle="modal" data-bs-target="#fabModal" title="Tambah Data">
+<div class="fab-container">
+    <?php if ($can_input_violation): ?>
+        <a href="<?= $violation_url ?>" class="fab-btn" title="Catat Pelanggaran" style="display: flex; align-items: center; justify-content: center; text-decoration: none;">
+            <i class="fas fa-plus"></i>
+        </a>
+    <?php else: ?>
+        <button class="fab-btn" type="button" onclick="showAlert('Anda tidak memiliki akses untuk menginput pelanggaran.', 'warning')" title="Catat Pelanggaran">
             <i class="fas fa-plus"></i>
         </button>
-    </div>
-
-    <!-- Minimalist FAB Modal -->
-    <div class="modal fade" id="fabModal" tabindex="-1" aria-hidden="true">
-        <div class="modal-dialog modal-dialog-centered modal-sm">
-            <div class="modal-content border-0 rounded-4 shadow-lg p-2">
-                <div class="modal-body text-center p-3">
-                    <h6 class="mb-4 text-muted fw-bold" style="font-size: 0.85rem; letter-spacing: 1px;">PILIH TINDAKAN</h6>
-                    <div class="d-flex flex-row justify-content-center flex-wrap gap-2 mb-4">
-                        <?php foreach ($active_fab_items as $item): ?>
-                            <a href="<?= $item['url'] ?>" class="text-decoration-none d-flex flex-column align-items-center" style="gap: 8px; flex: 1; min-width: 70px;">
-                                <div class="fab-icon <?= $item['bg'] ?> text-white" style="width: 52px; height: 52px; font-size: 1.25rem;"><i class="<?= $item['icon'] ?>"></i></div>
-                                <span class="fw-medium text-secondary" style="font-size: 0.85rem;"><?= $item['label'] ?></span>
-                            </a>
-                        <?php endforeach; ?>
-                    </div>
-                    <button type="button" class="btn btn-light rounded-circle shadow-sm border" data-bs-dismiss="modal" style="width: 44px; height: 44px; font-size: 1.1rem; color: #64748b;">
-                        <i class="fas fa-times"></i>
-                    </button>
-                </div>
-            </div>
-        </div>
-    </div>
-<?php elseif (count($active_fab_items) === 1): ?>
-    <!-- Single FAB -->
-    <?php $single_item = $active_fab_items[0]; ?>
-    <a href="<?= $single_item['url'] ?>" class="fab-btn single-fab" title="<?= $single_item['title'] ?>" style="<?= $single_item['label'] === 'Reward' ? 'background: linear-gradient(135deg, var(--success) 0%, #047857 100%);' : ($single_item['label'] === 'Rapot' ? 'background: linear-gradient(135deg, var(--info) 0%, #0284c7 100%);' : '') ?>">
-        <i class="<?= $single_item['label'] === 'Reward' ? 'fas fa-trophy' : ($single_item['label'] === 'Rapot' ? 'fas fa-file-invoice' : 'fas fa-plus') ?>"></i>
-    </a>
-<?php endif; ?>
+    <?php endif; ?>
+</div>
 
 <script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
@@ -227,7 +174,15 @@ if (function_exists('has_permission')) {
             title: titleText,
             text: textMessage,
             icon: iconType,
-            confirmButtonColor: '#4f46e5'
+            width: '22em',
+            padding: '1.2em',
+            customClass: {
+                popup: 'rounded-4 shadow',
+                title: 'fs-6 fw-bold text-dark mb-1',
+                htmlContainer: 'text-secondary small m-0',
+                confirmButton: 'btn btn-primary btn-sm px-4 rounded-3 fw-medium'
+            },
+            buttonsStyling: false
         });
     }
 

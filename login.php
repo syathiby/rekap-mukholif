@@ -482,6 +482,22 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         installBar.style.display = 'none';
         _deferredPrompt = null;
     });
+
+    // ── Fokus otomatis ke input username jika menekan spasi atau enter ──
+    document.addEventListener('keydown', function(e) {
+        // Abaikan jika user sedang fokus di dalam elemen input/textarea/button
+        if (['INPUT', 'TEXTAREA', 'SELECT', 'BUTTON'].includes(document.activeElement.tagName)) {
+            return;
+        }
+        
+        if (e.key === ' ' || e.key === 'Enter') {
+            e.preventDefault();
+            const usernameInput = document.getElementById('username');
+            if (usernameInput) {
+                usernameInput.focus();
+            }
+        }
+    });
     </script>
 </body>
 </html>

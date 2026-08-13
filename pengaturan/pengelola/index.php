@@ -234,15 +234,15 @@ require_once __DIR__ . '/../../layouts/header.php';
                 <i class="fas fa-shield-alt"></i>
             </div>
             <div>
-                <h4 class="mb-0 fw-bold text-dark" style="font-size: clamp(1rem, 3vw, 1.4rem);">Command Center</h4>
-                <p class="text-secondary mb-0" style="font-size: 0.82rem;">Pusat kendali, analitik, dan manajemen sistem.</p>
+                <h4 class="mb-0 fw-bold text-dark" style="font-size: clamp(1rem, 3vw, 1.4rem);">Command Center Musyrifin</h4>
+                <p class="text-secondary mb-0" style="font-size: 0.82rem;">Pusat pemantauan kinerja, analitik, dan manajemen akun musyrif.</p>
             </div>
         </div>
     </div>
 
     <!-- Stats Row -->
     <div class="row g-3 mb-4">
-        <div class="col-6 col-md-3">
+        <div class="col-6 col-md-4 col-lg">
             <div class="stat-card primary">
                 <div class="stat-icon" style="background:#eef2ff; color:#4f46e5;">
                     <i class="fas fa-users"></i>
@@ -251,7 +251,7 @@ require_once __DIR__ . '/../../layouts/header.php';
                 <div class="stat-value" id="stat-musyrif">--</div>
             </div>
         </div>
-        <div class="col-6 col-md-3">
+        <div class="col-6 col-md-4 col-lg">
             <div class="stat-card danger">
                 <div class="stat-icon" style="background:#fef2f2; color:#ef4444;">
                     <i class="fas fa-exclamation-triangle"></i>
@@ -260,7 +260,16 @@ require_once __DIR__ . '/../../layouts/header.php';
                 <div class="stat-value text-danger" id="stat-belum-rapot">--</div>
             </div>
         </div>
-        <div class="col-6 col-md-3">
+        <div class="col-6 col-md-4 col-lg">
+            <div class="stat-card warning">
+                <div class="stat-icon" style="background:#fffbeb; color:#f59e0b;">
+                    <i class="fas fa-search"></i>
+                </div>
+                <div class="stat-label">Rapot Janggal</div>
+                <div class="stat-value text-warning" id="stat-rapot-janggal">--</div>
+            </div>
+        </div>
+        <div class="col-6 col-md-4 col-lg">
             <div class="stat-card success">
                 <div class="stat-icon" style="background:#f0fdf4; color:#22c55e;">
                     <i class="fas fa-bolt"></i>
@@ -269,7 +278,7 @@ require_once __DIR__ . '/../../layouts/header.php';
                 <div class="stat-value text-success" id="stat-aktivitas">--</div>
             </div>
         </div>
-        <div class="col-6 col-md-3">
+        <div class="col-6 col-md-4 col-lg">
             <div class="stat-card warning">
                 <div class="stat-icon" style="background:#fffbeb; color:#f59e0b;">
                     <i class="fas fa-bullhorn"></i>
@@ -510,6 +519,7 @@ function loadStats() {
             document.getElementById('stat-aktivitas').innerText = res.data.aktivitas;
             document.getElementById('stat-pengumuman').innerText = res.data.pengumuman;
             document.getElementById('stat-belum-rapot').innerText = res.data.belum_rapot;
+            document.getElementById('stat-rapot-janggal').innerText = res.data.rapot_janggal;
         }
     });
 }

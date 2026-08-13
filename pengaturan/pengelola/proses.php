@@ -130,6 +130,29 @@ if ($action === 'get_stats') {
             if ($has_missing) $total_belum_rapot++;
         }
     }
+    
+    // Hitung total Rapot Janggal
+    $total_rapot_janggal = 0;
+    if (!empty($m_ids)) {
+        $nama_bulan_db = [1=>'Januari',2=>'Februari',3=>'Maret',4=>'April',5=>'Mei',6=>'Juni',7=>'Juli',8=>'Agustus',9=>'September',10=>'Oktober',11=>'November',12=>'Desember'];
+        $janggal_conds = [];
+        if ($currentDay <= $deadlineDay) {
+            $janggal_conds[] = "(bulan = '{$nama_bulan_db[$currentMonth]}' AND tahun = $currentYear)";
+        }
+        $ck_m = $currentMonth + 1; $ck_y = $currentYear;
+        for ($i = 0; $i < 12; $i++) {
+            if ($ck_m > 12) { $ck_m = 1; $ck_y++; }
+            $janggal_conds[] = "(bulan = '{$nama_bulan_db[$ck_m]}' AND tahun = $ck_y)";
+            $ck_m++;
+        }
+        
+        $j_cond = implode(' OR ', $janggal_conds);
+        $q_j = "SELECT COUNT(DISTINCT musyrif_id) as total_janggal FROM rapot_kepengasuhan WHERE musyrif_id IN ($ids_str) AND ($j_cond)";
+        $res_j = mysqli_query($conn, $q_j);
+        if ($res_j) {
+            $total_rapot_janggal = mysqli_fetch_assoc($res_j)['total_janggal'] ?? 0;
+        }
+    }
 
     echo json_encode([
         'status' => 'success', 
@@ -137,7 +160,8 @@ if ($action === 'get_stats') {
             'musyrif' => $total_musyrif,
             'aktivitas' => $total_aktivitas,
             'pengumuman' => $total_pengumuman,
-            'belum_rapot' => $total_belum_rapot
+            'belum_rapot' => $total_belum_rapot,
+            'rapot_janggal' => $total_rapot_janggal
         ]
     ]);
     exit;
@@ -244,11 +268,6 @@ if ($action === 'get_kinerja') {
     // ── DETEKSI RAPOT JANGGAL ──────────────────────────────────────────────────
     // Rapot dianggap janggal jika dibuat untuk bulan yang belum memasuki
     // periode pengisian (7 hari terakhir bulan tersebut).
-    $nama_bulan_to_num = [
-        'Januari'=>1,'Februari'=>2,'Maret'=>3,'April'=>4,'Mei'=>5,'Juni'=>6,
-        'Juli'=>7,'Agustus'=>8,'September'=>9,'Oktober'=>10,'November'=>11,'Desember'=>12
-    ];
-    
     // Bangun daftar bulan-tahun yang BELUM boleh diisi (future/premature)
     // Sebuah bulan BOLEH diisi jika hari ini >= (hari_terakhir_bulan_itu - 6)
     // Kita cek semua rapot pada periode tahun ajaran ini dan selanjutnya
@@ -256,7 +275,6 @@ if ($action === 'get_kinerja') {
     
     // Cek bulan yang sama dengan sekarang tapi sebelum deadline
     if ($currentDay <= $deadlineDay) {
-        $bln_now_name = (new DateTime())->format('F');
         $bln_indo_now = $nama_bulan_db[$currentMonth];
         $janggal_conds[] = "(bulan = '$bln_indo_now' AND tahun = $currentYear)";
     }
