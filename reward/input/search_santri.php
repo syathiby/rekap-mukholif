@@ -1,5 +1,5 @@
 <?php
-// PERBAIKAN KRITIS: Gunakan init.php (pola standar) bukan direct include database/auth
+// Gunakan init.php (pola standar) bukan direct include database/auth
 // Ini memastikan session aktif dan akses terproteksi dengan benar
 if (session_status() === PHP_SESSION_NONE) { session_start(); }
 require_once __DIR__ . '/../../bootstrap/init.php';
@@ -14,7 +14,7 @@ if (strlen($term) < 2) {
     exit;
 }
 
-// PERBAIKAN: Gunakan prepared statement, bukan mysqli_real_escape_string
+// Gunakan prepared statement, bukan mysqli_real_escape_string
 $likeTerm = '%' . $term . '%';
 $stmt = $conn->prepare("SELECT id, nama, kelas, kamar, poin_aktif FROM santri WHERE nama LIKE ? ORDER BY nama ASC LIMIT 15");
 $stmt->bind_param("s", $likeTerm);

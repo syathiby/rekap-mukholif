@@ -124,7 +124,7 @@ function write_activity_log($aksi, $fitur, $deskripsi, $detail = null)
     $username = isset($_SESSION['username']) ? $_SESSION['username'] : 'Sistem';
     $namaLengkap = isset($_SESSION['nama_lengkap']) ? $_SESSION['nama_lengkap'] : 'Sistem Otomatis';
 
-    // PERBAIKAN: Hanya gunakan REMOTE_ADDR yang tidak bisa dipalsukan.
+    // Hanya gunakan REMOTE_ADDR yang tidak bisa dipalsukan.
     // HTTP_CLIENT_IP dan HTTP_X_FORWARDED_FOR bisa dimanipulasi oleh penyerang.
     // Jika suatu saat perlu proxy support, aktifkan kembali dengan whitelist IP proxy.
     $ipAddress = !empty($_SERVER['REMOTE_ADDR']) ? trim($_SERVER['REMOTE_ADDR']) : '0.0.0.0';

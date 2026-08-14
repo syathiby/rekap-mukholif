@@ -30,7 +30,7 @@ if (session_status() === PHP_SESSION_NONE) {
     ini_set('session.gc_maxlifetime', 86400);
     ini_set('session.cookie_httponly', 1);
     ini_set('session.cookie_samesite', 'Lax');
-    // PERBAIKAN: Aktifkan cookie_secure agar session cookie hanya dikirim via HTTPS
+    // Aktifkan cookie_secure agar session cookie hanya dikirim via HTTPS
     // Di localhost otomatis tidak aktif, di produksi (HTTPS) akan aktif
     ini_set('session.cookie_secure', (isset($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off') ? 1 : 0);
     session_start();

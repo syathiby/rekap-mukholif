@@ -85,7 +85,7 @@ $santri = $conn->query("SELECT * FROM santri ORDER BY nama ASC");
 
 <style>
     /* ================================
-       REVISI CSS UNTUK TAMPILAN BARU
+       CSS UNTUK TAMPILAN BARU
        ================================
     */
     /* [PENTING] Ini yang bikin tabel bisa scroll atas-bawah */

@@ -240,7 +240,7 @@ if (!$dashboard_data) {
 
 
 // =============================================================
-// PERSIAPAN UNTUK LOGIKA TAMPILAN BERDASARKAN IZIN (REVISI 2)
+// PERSIAPAN UNTUK LOGIKA TAMPILAN BERDASARKAN IZIN
 // =============================================================
 // Ini asumsi ada fungsi has_permission() di init.php ya
 

@@ -105,7 +105,7 @@ if (!$result) die("Query Error: " . $stmt->error);
         .form-group {
             display: flex;
             flex-direction: column;
-            flex-grow: 1; /* <<< Perbaikan kecil */
+            flex-grow: 1;
         }
         
         label {
@@ -124,8 +124,8 @@ if (!$result) die("Query Error: " . $stmt->error);
             border-radius: 8px;
             font-family: 'Poppins', sans-serif;
             transition: all 0.3s ease;
-            width: 100%; /* <<< Perbaikan kecil */
-            box-sizing: border-box; /* <<< Perbaikan kecil */
+            width: 100%;
+            box-sizing: border-box;
         }
         
         input[type="date"]:focus, select:focus {

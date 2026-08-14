@@ -62,7 +62,7 @@ $result = mysqli_stmt_get_result($stmt);
 
 // Hitung colspan dinamis untuk tabel
 $colspan = 5; // Kolom dasar: No, Nama, Bagian, Poin, Kategori
-// === REVISI 1 ===
+// ===================================
 // Checkbox muncul jika bisa edit ATAU bisa delete
 if ($can_edit || $can_delete) $colspan++; // Tambah 1 untuk checkbox
 if ($can_edit || $can_delete) $colspan++; // Tambah 1 untuk Aksi
@@ -461,7 +461,7 @@ document.addEventListener('DOMContentLoaded', function() {
         });
     }
 
-    // ✅ REVISI KECIL: Ganti nama fungsi biar lebih jelas
+    // Ganti nama fungsi biar lebih jelas
     function handleSelectionChange() {
         const selectedIds = getStoredIds();
         // Loop SEMUA checkbox yang KELIATAN di halaman ini

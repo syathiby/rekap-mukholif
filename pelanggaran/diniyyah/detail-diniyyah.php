@@ -82,7 +82,7 @@ $total_poin = array_sum(array_column($detail_list, 'poin'));
     .stat-number { font-size: 2.5rem; font-weight: 700; color: white; }
     .stat-label { font-size: 1rem; color: rgba(255, 255, 255, 0.8); }
 
-    /* == PERBAIKAN TAMPILAN HP == */
+    /* == CSS RESPONSIVE == */
     @media (max-width: 767.98px) {
         .page-title {
             /* Kecilin dikit font judul di HP biar gak terlalu makan tempat */

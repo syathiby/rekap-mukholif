@@ -69,22 +69,29 @@ foreach ($tables as $table) {
     $chunk .= $row[1] . ";\n\n";
     $write_func($handle, $chunk);
     
-    // Get data menggunakan unbuffered query (MYSQLI_USE_RESULT) 
-    // Ini SANGAT KRUSIAL agar PHP tidak crash kehabisan memori saat mengekspor tabel besar (seperti rapot)!
-    $result = $conn->query("SELECT * FROM `$table`", MYSQLI_USE_RESULT);
-    if (!$result) continue; // Skip jika error
-    
-    $num_fields = $result->field_count;
-    
-    // Kita tidak bisa menggunakan num_rows pada unbuffered query, jadi kita cek manual dari loop fetch
+    // Gunakan metode Chunking (LIMIT & OFFSET) daripada MYSQLI_USE_RESULT.
+    // Metode ini mencegah MySQL menutup koneksi (timeout) jika proses kompresi gzwrite lambat.
+    // Selain itu tetap hemat RAM karena kita hanya memuat 1000 baris per query.
+    $offset = 0;
+    $limit = 1000;
     $first_row = true;
     
-    while ($row_data = $result->fetch_row()) {
-        if ($first_row) {
-            $write_func($handle, "--\n-- Dumping data for table `$table`\n--\n\n");
-            $first_row = false;
+    while (true) {
+        // Gunakan ORDER BY 1 agar urutan chunking LIMIT dan OFFSET stabil
+        $result = $conn->query("SELECT * FROM `$table` ORDER BY 1 LIMIT $limit OFFSET $offset");
+        
+        if (!$result || $result->num_rows == 0) {
+            break; // Tidak ada data lagi atau error
         }
-        $chunk = "INSERT INTO `$table` VALUES(";
+        
+        $num_fields = $result->field_count;
+        
+        while ($row_data = $result->fetch_row()) {
+            if ($first_row) {
+                $write_func($handle, "--\n-- Dumping data for table `$table`\n--\n\n");
+                $first_row = false;
+            }
+            $chunk = "INSERT INTO `$table` VALUES(";
             for ($j = 0; $j < $num_fields; $j++) {
                 if (isset($row_data[$j])) {
                     $val = $conn->real_escape_string($row_data[$j]);
@@ -102,9 +109,13 @@ foreach ($tables as $table) {
             $write_func($handle, $chunk);
         }
         
-        if (!$first_row) {
-            $write_func($handle, "\n");
-        }
+        $result->free(); // Bebaskan memori setiap selesai 1 chunk
+        $offset += $limit;
+    }
+        
+    if (!$first_row) {
+        $write_func($handle, "\n");
+    }
 }
 
 $write_func($handle, "SET FOREIGN_KEY_CHECKS=1;\n");

@@ -3,7 +3,7 @@ if (session_status() === PHP_SESSION_NONE) { session_start(); }
 require_once __DIR__ . '/../../bootstrap/init.php';
 guard('pelanggaran_bahasa_input');
 
-// PERBAIKAN: Gunakan prepared statement, lebih aman dari mysqli_real_escape_string
+// Gunakan prepared statement, lebih aman dari mysqli_real_escape_string
 $term_raw = $_GET['term'] ?? '';
 if (strlen($term_raw) < 2) {
     header('Content-Type: application/json');

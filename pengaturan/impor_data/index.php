@@ -999,10 +999,10 @@ document.getElementById('btnConfirmSync')?.addEventListener('click', function(e)
                           <li class="mb-2"><strong>Duplikasi di Excel (ERROR):</strong> Jika Anda menginput 2 baris dengan NIS yang kembar di dalam satu file, baris kedua akan ditolak.</li>
                       </ul>
 
-                      <h6 class="fw-bold text-dark mb-2"><i class="bi bi-arrow-left-right me-1"></i> Ingin Menukar/Revisi NIS?</h6>
+                      <h6 class="fw-bold text-dark mb-2"><i class="bi bi-arrow-left-right me-1"></i> Ingin Menukar NIS?</h6>
                       <div class="bg-primary bg-opacity-10 border border-primary border-opacity-25 rounded-3 p-3 text-dark">
                           <p class="mb-0" style="font-size: 0.88rem; line-height: 1.5;">
-                              Jika Anda <strong>memang sengaja</strong> ingin menukar atau merevisi NIS santri yang salah, Anda <strong>WAJIB mengisi kolom ID</strong> santri tersebut di Excel (ID didapat dari hasil export).
+                              Jika Anda <strong>memang sengaja</strong> ingin menukar atau mengubah NIS santri yang salah, Anda <strong>WAJIB mengisi kolom ID</strong> santri tersebut di Excel (ID didapat dari hasil export).
                           </p>
                       </div>
                   </div>

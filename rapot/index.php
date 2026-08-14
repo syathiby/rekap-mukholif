@@ -79,16 +79,24 @@ try {
     ";
     $params_count = []; $types_count = "";
     
-    // Terapkan filter wajib jika Musyrif
-    if ($kamar_filter_musyrif !== null) {
+    // 1. Terapkan filter Kamar (hanya satu kondisi, sudah mencakup hak akses Musyrif)
+    if (!empty($filter_kamar)) { 
         $sql_count .= " AND s.kamar = ?"; 
-        $params_count[] = $kamar_filter_musyrif; 
-        $types_count .= "i";
+        $params_count[] = $filter_kamar; 
+        $types_count .= "s"; 
     }
-
-    if (!empty($filter_kamar)) { $sql_count .= " AND s.kamar = ?"; $params_count[] = $filter_kamar; $types_count .= "s"; }
-    if (!empty($filter_bulan)) { $sql_count .= " AND r.bulan = ?"; $params_count[] = $filter_bulan; $types_count .= "s"; }
-    if (!empty($filter_tahun)) { $sql_count .= " AND r.tahun = ?"; $params_count[] = $filter_tahun; $types_count .= "i"; }
+    // 2. Filter Bulan
+    if (!empty($filter_bulan)) { 
+        $sql_count .= " AND r.bulan = ?"; 
+        $params_count[] = $filter_bulan; 
+        $types_count .= "s"; 
+    }
+    // 3. Filter Tahun
+    if (!empty($filter_tahun)) { 
+        $sql_count .= " AND r.tahun = ?"; 
+        $params_count[] = $filter_tahun; 
+        $types_count .= "i"; 
+    }
     
     $stmt_count = $conn->prepare($sql_count);
     if (!empty($params_count)) { $stmt_count->bind_param($types_count, ...$params_count); }
@@ -110,16 +118,24 @@ try {
     $params = [];
     $types  = "";
 
-    // Filter wajib musyrif
-    if ($kamar_filter_musyrif !== null) {
-        $sql     .= " AND s.kamar = ?";
-        $params[] = $kamar_filter_musyrif;
-        $types   .= "i";
+    // 1. Terapkan filter Kamar
+    if (!empty($filter_kamar)) { 
+        $sql .= " AND s.kamar = ?"; 
+        $params[] = $filter_kamar; 
+        $types .= "s"; 
     }
-    // Filter opsional dari form
-    if (!empty($filter_kamar)) { $sql .= " AND s.kamar = ?"; $params[] = $filter_kamar; $types .= "s"; }
-    if (!empty($filter_bulan)) { $sql .= " AND r.bulan = ?"; $params[] = $filter_bulan; $types .= "s"; }
-    if (!empty($filter_tahun)) { $sql .= " AND r.tahun = ?"; $params[] = $filter_tahun; $types .= "i"; }
+    // 2. Filter Bulan
+    if (!empty($filter_bulan)) { 
+        $sql .= " AND r.bulan = ?"; 
+        $params[] = $filter_bulan; 
+        $types .= "s"; 
+    }
+    // 3. Filter Tahun
+    if (!empty($filter_tahun)) { 
+        $sql .= " AND r.tahun = ?"; 
+        $params[] = $filter_tahun; 
+        $types .= "i"; 
+    }
 
     $sql    .= " ORDER BY r.tahun DESC, FIELD(r.bulan, 'Januari', 'Februari', 'Maret', 'April', 'Mei', 'Juni', 'Juli', 'Agustus', 'September', 'Oktober', 'November', 'Desember') ASC, s.kamar ASC, s.nama ASC LIMIT ? OFFSET ?";
     $types  .= "ii";
@@ -721,7 +737,7 @@ document.addEventListener('DOMContentLoaded', function() {
         return new bootstrap.Tooltip(tooltipTriggerEl)
     });
 
-    // === REVISI 9.0: Inisialisasi & Fix Fokus untuk SEMUA Modal ===
+    // Inisialisasi & Fix Fokus untuk SEMUA Modal
 
     // 1. Definisikan SEMUA elemen modal & tombol terkait
     const guideModalElement = document.getElementById('guideModal');
@@ -785,7 +801,7 @@ document.addEventListener('DOMContentLoaded', function() {
         if (btn) btn.addEventListener('click', setModalTrigger);
     });
     
-    // 5. REVISI 9.0: Pasang listener 'click' ke SEMUA TOMBOL PENUTUP MODAL
+    // Pasang listener 'click' ke SEMUA TOMBOL PENUTUP MODAL
     // Ini adalah solusi "paksa" untuk mindahin fokus SEBELUM 'aria-hidden' di-set.
     const allModalCloseButtons = document.querySelectorAll(
         '#guideModal [data-bs-dismiss="modal"],' +
@@ -796,12 +812,12 @@ document.addEventListener('DOMContentLoaded', function() {
         btn.addEventListener('click', returnFocusToTrigger);
     });
 
-    // 6. REVISI 9.0: Kita tetap pake 'hide.bs.modal' sebagai failsafe (jaga-jaga)
+    // Kita tetap pake 'hide.bs.modal' sebagai failsafe (jaga-jaga)
     if (guideModalElement) guideModalElement.addEventListener('hide.bs.modal', returnFocusToTrigger);
-    if (pngWarningModalElement) pngWarningModalElement.addEventListener('hide.bs.modal', returnFocusToTrigger);
+    if (typeof pngWarningModalElement !== 'undefined' && pngWarningModalElement) {
+        pngWarningModalElement.addEventListener('hide.bs.modal', returnFocusToTrigger);
+    }
     if (deleteConfirmModalElement) deleteConfirmModalElement.addEventListener('hide.bs.modal', returnFocusToTrigger);
-
-    // === AKHIR REVISI 9.0 ===
 
 
     // === AJAX Filter ===

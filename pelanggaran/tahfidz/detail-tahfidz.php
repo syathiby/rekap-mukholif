@@ -78,7 +78,7 @@ $total_poin = array_sum(array_column($detail_list, 'poin'));
     .stat-label { font-size: 1rem; color: rgba(255, 255, 255, 0.8); }
 
     /* =============================================================
-    === PERBAIKAN 1: TAMBAHAN CSS RESPONSIVE ===
+    === CSS RESPONSIVE ===
     =============================================================
     */
     @media (max-width: 767.98px) {

@@ -327,7 +327,7 @@ if ($result_kamar) {
 
                 <div class="mb-4">
                     <label for="password" class="form-label">Password</label>
-                    <!-- ===== PERBAIKAN DI SINI: Tambahkan class "input-group" ===== -->
+                    <!-- Tambahkan class "input-group" -->
                     <div class="password-wrapper input-group">
                         <span class="input-group-text"><i class="fas fa-key fa-fw"></i></span>
                         <input type="password" class="form-control" id="password" name="password" 

@@ -156,7 +156,7 @@ $stmt_trend->close();
             display: flex;
             align-items: center;
             gap: 15px;
-            margin-bottom: 20px; /* <<< INI DIA PERBAIKANNYA */
+            margin-bottom: 20px;
         }
 
         .info-card .icon {
@@ -322,7 +322,7 @@ $stmt_trend->close();
                             <td><span class="badge"><i class="far fa-calendar-alt"></i> <?= date('d M Y, H:i', strtotime($row['tanggal'])); ?> WIB</span></td>
                             <?php 
                                 $catatan_text = !empty($row['catatan']) ? $row['catatan'] : '-';
-                                // Perbaikan artifact encoding (Â² menjadi ²)
+                                // Handle artifact encoding (Â² menjadi ²)
                                 $catatan_text = str_replace('Â²', '²', $catatan_text);
                             ?>
                             <td style="white-space: normal;"><?= $catatan_text !== '-' ? htmlspecialchars($catatan_text) : '-'; ?></td>

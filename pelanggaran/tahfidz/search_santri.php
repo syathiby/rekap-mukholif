@@ -6,7 +6,7 @@ guard('pelanggaran_tahfidz_input');
 
 <?php
 
-// PERBAIKAN: Gunakan prepared statement, lebih aman dari mysqli_real_escape_string
+// Gunakan prepared statement, lebih aman dari mysqli_real_escape_string
 $term_raw = isset($_GET['term']) ? $_GET['term'] : '';
 if (strlen($term_raw) < 2) {
     header('Content-Type: application/json');

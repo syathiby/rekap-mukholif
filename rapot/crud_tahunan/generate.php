@@ -58,7 +58,7 @@ $tahun_akhir_int = $tahun_awal_int + 1;
 $santri_dengan_data = 0;
 $santri_info        = [];
 
-// Perbaikan N+1 Query: Lakukan 1x Query Massal dengan GROUP BY
+// Lakukan 1x Query Massal dengan GROUP BY
 $santri_ids = array_column($santri_list, 'id');
 if (!empty($santri_ids)) {
     $placeholders = implode(',', array_fill(0, count($santri_ids), '?'));

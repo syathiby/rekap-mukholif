@@ -70,17 +70,34 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_FILES['sql_file'])) {
     
     gzclose($handle);
     
-    // Aktifkan kembali Foreign Key Check
-    $conn->query("SET FOREIGN_KEY_CHECKS=1");
-    
     if ($success) {
-        // Catat log restore
-        write_activity_log('RESTORE', 'backup-restore', "Melakukan restore/pemulihan database dari file cadangan: '" . htmlspecialchars($_FILES['sql_file']['name']) . "'", [
-            'filename' => $_FILES['sql_file']['name'],
-            'filesize' => $_FILES['sql_file']['size']
-        ]);
-        set_flash_message('Restore database berhasil dilakukan! Seluruh data telah diperbarui.', 'success');
+        // SEBELUM menyalakan kembali FOREIGN KEY, catat log aktifitas (agar tidak error FK jika user admin terhapus di backup)
+        try {
+            write_activity_log('RESTORE', 'backup-restore', "Melakukan restore/pemulihan database dari file cadangan: '" . htmlspecialchars($_FILES['sql_file']['name']) . "'", [
+                'filename' => $_FILES['sql_file']['name'],
+                'filesize' => $_FILES['sql_file']['size']
+            ]);
+        } catch (Exception $e) {
+            // Abaikan jika log gagal dicatat paska-restore
+        }
+        
+        // Aktifkan kembali Foreign Key Check
+        $conn->query("SET FOREIGN_KEY_CHECKS=1");
+        
+        // Hancurkan session untuk memaksa user login ulang (karena data users, roles, password mungkin telah berubah)
+        session_unset();
+        session_destroy();
+        
+        // Mulai ulang sesi baru HANYA untuk flash message
+        session_start();
+        session_regenerate_id(true);
+        
+        set_flash_message('Restore database berhasil dilakukan! Silakan login kembali dengan akun yang ada pada database tersebut.', 'success');
+        header('Location: ../../login.php');
+        exit;
     } else {
+        // Aktifkan kembali Foreign Key Check
+        $conn->query("SET FOREIGN_KEY_CHECKS=1");
         set_flash_message('Terjadi error saat restore: ' . $error_msg, 'danger');
     }
 

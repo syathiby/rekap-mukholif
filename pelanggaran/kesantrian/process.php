@@ -25,7 +25,7 @@ if (isset($_POST['simpan_pelanggaran_kesantrian'])) {
     $jenis_pelanggaran_id = (int)$_POST['jenis_pelanggaran_id'];
     $tanggal = $_POST['tanggal'];
     
-    // ✅ PERBAIKAN DISINI: Ubah 'santri_id' jadi 'santri_ids' sesuai name di HTML/JS
+    // Ubah 'santri_id' jadi 'santri_ids' sesuai name di HTML/JS
     $santri_ids = isset($_POST['santri_ids']) ? $_POST['santri_ids'] : []; 
     
     $dicatat_oleh = $_SESSION['user_id'];

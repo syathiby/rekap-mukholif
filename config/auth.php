@@ -59,7 +59,7 @@ if (!function_exists('guard')) {
 
         // Peraturan #1: Belum login? Tendang ke halaman login.
         if (!isset($_SESSION['user_id'])) {
-            // REVISI: Tambahkan ?illegal=1 agar login.php mencatatnya sebagai pelanggaran
+            // Tambahkan ?illegal=1 agar login.php mencatatnya sebagai pelanggaran
             header("Location: " . BASE_URL . "/login.php?illegal=1");
             exit; // Wajib: Hentikan eksekusi skrip setelah redirect.
         }
@@ -113,7 +113,7 @@ if (!function_exists('logout')) {
         session_destroy();
 
         // Arahkan pengguna kembali ke halaman login
-        // REVISI: Gunakan BASE_URL untuk path dinamis
+        // Gunakan BASE_URL untuk path dinamis
         header("Location: " . BASE_URL . "/login.php");
         exit();
     }

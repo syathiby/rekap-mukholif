@@ -17,7 +17,7 @@ $tanggal_akhir = date('Y-m-d');
 $mulai_filter = date('Y-m-d', strtotime("-$days days"));
 $tanggal_mulai = max($periode_awal, $mulai_filter); // Ambil tanggal yang lebih baru
 
-// === REVISI UTAMA: Gabungkan 2 tabel pelanggaran dengan UNION ALL ===
+// Gabungkan 2 tabel pelanggaran dengan UNION ALL
 // Ini mengambil total pelanggaran harian (umum + kebersihan)
 $query_str = "
     SELECT tanggal_harian, COUNT(*) AS total
@@ -41,7 +41,7 @@ while ($row = $result->fetch_assoc()) {
 }
 
 
-// === REVISI LOGIC: Siapkan data lengkap (anti loncat-loncat) ===
+// Siapkan data lengkap
 $labels = [];
 $data = [];
 $current_date = new DateTime($tanggal_mulai);

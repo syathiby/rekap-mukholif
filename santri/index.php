@@ -9,7 +9,7 @@ guard('santri_view');
 $csrf_token = csrf_generate();
 
 // =================================================================
-// REVISI LOGIKA FILTER: DIPINDAH KE ATAS SEBELUM HEADER
+// LOGIKA FILTER: DIPINDAH KE ATAS SEBELUM HEADER
 // =================================================================
 if (isset($_GET['reset'])) {
     unset($_SESSION['filter_santri']);

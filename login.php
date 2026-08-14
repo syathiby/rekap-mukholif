@@ -194,7 +194,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             // Flag untuk trigger popup broadcast saat pertama buka dashboard
             $_SESSION['show_broadcast_popup'] = true;
 
-            // REVISI: Arahkan ke halaman index pake BASE_URL
+            // Arahkan ke halaman index pake BASE_URL
             header("Location: " . BASE_URL . "/dashboard.php");
             exit;
         }

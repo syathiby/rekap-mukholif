@@ -75,7 +75,7 @@ if (!$arsip) {
 $spreadsheet = new Spreadsheet();
 
 // =================================================================================
-// --- 1. MEMBUAT SHEET: REKAP SEMUA SANTRI (REVISI) ---
+// --- 1. MEMBUAT SHEET: REKAP SEMUA SANTRI ---
 // =================================================================================
 $sheetRekapSantri = $spreadsheet->getActiveSheet();
 $sheetRekapSantri->setTitle('Rekap Per Santri');
@@ -166,7 +166,7 @@ $stmt->close();
 applySheetStyles($sheetRekapKamar);
 
 // =================================================================================
-// --- 3. MEMBUAT SHEET: REKAP KEBERSIHAN PER KAMAR (REVISI) ---
+// --- 3. MEMBUAT SHEET: REKAP KEBERSIHAN PER KAMAR ---
 // =================================================================================
 $sheetKebersihan = $spreadsheet->createSheet();
 $sheetKebersihan->setTitle('Rekap Kebersihan Per Kamar');
