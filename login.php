@@ -17,6 +17,22 @@ $style_v   = time();
 
 $error = '';
 $info = '';
+$success = '';
+
+// Ambil flash message jika ada (misalnya notifikasi sukses dari fitur Restore Database)
+if (isset($_SESSION['flash_message'])) {
+    $flash = $_SESSION['flash_message'];
+    unset($_SESSION['flash_message']);
+    
+    if ($flash['type'] === 'success') {
+        $success = $flash['message'];
+    } elseif ($flash['type'] === 'danger' || $flash['type'] === 'error') {
+        $error = $flash['message'];
+    } else {
+        $info = $flash['message'];
+    }
+}
+
 if (isset($_GET['timeout'])) {
     $info = "Sesi Anda ter-logout otomatis sebagai bentuk keamanan karena login terlalu lama.";
 }
@@ -299,6 +315,13 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             <h4 class="mb-1">AsuhTrack</h4>
             <p class="text-muted text-sm mb-4">Sistem Kepengasuhan Santri</p>
         </div>
+
+        <?php if ($success): ?>
+            <div class="alert alert-success d-flex align-items-start py-2 px-3 text-sm mb-4" style="border-radius: 0.75rem; border: none; background: #dcfce7; color: #166534; font-weight: 500;">
+                <i class="fas fa-check-circle mt-1 me-2 flex-shrink-0"></i>
+                <div><?= htmlspecialchars($success) ?></div>
+            </div>
+        <?php endif; ?>
 
         <?php if ($error): ?>
             <div class="alert alert-danger d-flex align-items-start py-2 px-3 text-sm mb-4" style="border-radius: 0.75rem; border: none; background: #fee2e2; color: #991b1b; font-weight: 500;">
