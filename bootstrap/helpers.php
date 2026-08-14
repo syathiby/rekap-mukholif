@@ -176,17 +176,29 @@ function csrf_generate(): string {
  * Gunakan ini di awal blok POST di file process.php atau handler lainnya.
  */
 function csrf_validate(): void {
-    $token_post    = $_POST['csrf_token'] ?? '';
+    // 1. Jika token tidak dikirim sama sekali atau berupa array (indikasi bypass/hacking) -> access_denied.php
+    if (empty($_POST['csrf_token']) || !is_string($_POST['csrf_token']) || trim($_POST['csrf_token']) === '') {
+        http_response_code(403);
+        $denied_page = __DIR__ . '/access_denied.php';
+        if (file_exists($denied_page)) {
+            require $denied_page;
+        } else {
+            header('HTTP/1.1 403 Forbidden');
+            echo '<p>Akses Ditolak. Permintaan tidak valid.</p>';
+        }
+        exit;
+    }
+
+    $token_post    = (string) $_POST['csrf_token'];
     $token_session = $_SESSION['csrf_token'] ?? '';
 
-    if (empty($token_post) || empty($token_session) || !hash_equals($token_session, $token_post)) {
+    // 2. Jika token dikirim tapi tidak cocok atau session kosong (kedaluwarsa) -> csrf_expired.php
+    if (empty($token_session) || !is_string($token_session) || !hash_equals($token_session, $token_post)) {
         http_response_code(403);
-        // Cari path yang benar (bisa dipanggil dari berbagai kedalaman folder)
         $csrf_page = __DIR__ . '/csrf_expired.php';
         if (file_exists($csrf_page)) {
             require $csrf_page;
         } else {
-            // Fallback jika path tidak ditemukan
             header('HTTP/1.1 403 Forbidden');
             echo '<p>Token keamanan tidak valid. Silakan kembali dan coba lagi.</p>';
         }

@@ -69,15 +69,22 @@ foreach ($tables as $table) {
     $chunk .= $row[1] . ";\n\n";
     $write_func($handle, $chunk);
     
-    // Get data
-    $result = $conn->query("SELECT * FROM `$table`");
-    $num_fields = $result->field_count;
-    $num_rows = $result->num_rows;
+    // Get data menggunakan unbuffered query (MYSQLI_USE_RESULT) 
+    // Ini SANGAT KRUSIAL agar PHP tidak crash kehabisan memori saat mengekspor tabel besar (seperti rapot)!
+    $result = $conn->query("SELECT * FROM `$table`", MYSQLI_USE_RESULT);
+    if (!$result) continue; // Skip jika error
     
-    if ($num_rows > 0) {
-        $write_func($handle, "--\n-- Dumping data for table `$table`\n--\n\n");
-        while ($row_data = $result->fetch_row()) {
-            $chunk = "INSERT INTO `$table` VALUES(";
+    $num_fields = $result->field_count;
+    
+    // Kita tidak bisa menggunakan num_rows pada unbuffered query, jadi kita cek manual dari loop fetch
+    $first_row = true;
+    
+    while ($row_data = $result->fetch_row()) {
+        if ($first_row) {
+            $write_func($handle, "--\n-- Dumping data for table `$table`\n--\n\n");
+            $first_row = false;
+        }
+        $chunk = "INSERT INTO `$table` VALUES(";
             for ($j = 0; $j < $num_fields; $j++) {
                 if (isset($row_data[$j])) {
                     $val = $conn->real_escape_string($row_data[$j]);
@@ -94,8 +101,10 @@ foreach ($tables as $table) {
             $chunk .= ");\n";
             $write_func($handle, $chunk);
         }
-        $write_func($handle, "\n");
-    }
+        
+        if (!$first_row) {
+            $write_func($handle, "\n");
+        }
 }
 
 $write_func($handle, "SET FOREIGN_KEY_CHECKS=1;\n");

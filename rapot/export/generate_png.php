@@ -138,6 +138,8 @@ if ($mode === 'html') {
             box-sizing: border-box;
         }
         body { background-color: #f4f7f6; display: flex; flex-direction: column; justify-content: center; align-items: center; padding: 20px; }
+        html.in-iframe body { background-color: transparent !important; padding: 0 !important; }
+        html.in-iframe .loader-card { box-shadow: none !important; margin: auto !important; height: 100vh; display: flex; flex-direction: column; justify-content: center; }
         .loader-card {
             background-color: #ffffff; border-radius: 12px; box-shadow: 0 8px 20px rgba(0, 0, 0, 0.08);
             padding: 32px 40px; text-align: center; width: 100%; max-width: 400px; box-sizing: border-box;
@@ -157,25 +159,44 @@ if ($mode === 'html') {
             .loader-card .sub-text { font-size: 0.85rem; }
         }
     </style>
+    <script>
+        if (window.self !== window.top) {
+            document.documentElement.classList.add('in-iframe');
+        }
+    </script>
 </head>
 <body>
     <div class="loader-card" id="loader-card">
         <div class="icon-wrapper" id="loader-icon"><i class="fas fa-spinner fa-spin"></i></div>
-        <div class="loading-text" id="loading-message">Sedang menyiapkan PNG...</div>
-        <div class="sub-text" id="sub-message">Mohon tunggu sebentar, jangan tutup tab ini.</div>
+        <div class="loading-text" id="loading-text">Sedang menyiapkan PNG...</div>
+        <div class="sub-text" id="sub-text">Mohon tunggu sebentar, file Anda sedang diproses.</div>
     </div>
+
+    <!-- Konten Render Tersembunyi -->
     <div class="hidden-content-wrapper">
-        <div class="page-wrapper" id="target-rapot"><?php echo $html; ?></div>
+        <div class="page-wrapper" id="capture-area">
+            <?php echo $html; ?>
+        </div>
     </div>
+
     <script>
-        document.addEventListener('DOMContentLoaded', function() {
-            var targetElement = document.getElementById('target-rapot');
+        document.addEventListener("DOMContentLoaded", function() {
             var loaderCard = document.getElementById('loader-card');
-            var loadingMessage = document.getElementById('loading-message');
-            var subMessage = document.getElementById('sub-message');
             var loaderIcon = document.getElementById('loader-icon');
-            
-            var options = { useCORS: true, scale: 1.5 };
+            var loadingMessage = document.getElementById('loading-text');
+            var subMessage = document.getElementById('sub-text');
+            var targetElement = document.getElementById('capture-area');
+
+            // Optimasi opsi untuk merender HTML menjadi Canvas seukuran Kertas A4
+            var options = {
+                scale: 2, 
+                useCORS: true, 
+                logging: false,
+                width: 793, 
+                height: 1122, 
+                windowWidth: 793,
+                windowHeight: 1122
+            };
 
             html2canvas(targetElement, options).then(function(canvas) {
                 var dataURL = canvas.toDataURL('image/png', 0.9);
@@ -189,8 +210,13 @@ if ($mode === 'html') {
                 loaderCard.classList.add('success');
                 loaderIcon.innerHTML = '<i class="fas fa-check-circle"></i>';
                 loadingMessage.innerText = "Download Berhasil!";
-                subMessage.innerText = "Tab ini akan tertutup otomatis...";
-                setTimeout(function() { window.close(); }, 2000);
+                subMessage.innerText = "Jendela ini akan tertutup otomatis...";
+                
+                if (window.self !== window.top) {
+                    setTimeout(function() { window.parent.postMessage('downloadComplete', '*'); }, 2000);
+                } else {
+                    setTimeout(function() { window.close(); }, 2000);
+                }
             }).catch(function(error) {
                 loaderCard.classList.add('error');
                 loaderIcon.innerHTML = '<i class="fas fa-times-circle"></i>';

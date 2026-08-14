@@ -15,7 +15,7 @@ if($res_m) {
     while($r = mysqli_fetch_assoc($res_m)) $musyrif_list[] = $r;
 }
 
-$page_title = 'Panel Pengelola';
+$page_title = 'Pengelola Musyrifin';
 require_once __DIR__ . '/../../layouts/header.php';
 ?>
 

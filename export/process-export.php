@@ -78,6 +78,10 @@ if (isset($_POST['export'])) {
                   . ' s.d. '
                   . date('d M Y', strtotime($tanggal_selesai));
 
+    // Siapkan batas datetime penuh untuk pencarian agar index database terpakai (hindari DATE(kolom))
+    $tgl_mulai_dt   = $tanggal_mulai . ' 00:00:00';
+    $tgl_selesai_dt = $tanggal_selesai . ' 23:59:59';
+
     // Opsi dasar lembaga yang dipakai bersama (di-merge per sheet dengan opsi spesifik)
     $baseOptions = [
         'institution' => LEMBAGA_NAMA,
@@ -86,7 +90,7 @@ if (isset($_POST['export'])) {
         'printed_by'  => $printed_by,
     ];
 
-    $params = [$tanggal_mulai, $tanggal_selesai];
+    $params = [$tgl_mulai_dt, $tgl_selesai_dt];
     $types  = "ss";
     $kamarClause = "";
     if ($kamar !== 'semua') {
@@ -112,11 +116,11 @@ if (isset($_POST['export'])) {
                          (SELECT COALESCE(SUM(jr.poin_reward), 0)
                           FROM daftar_reward dr
                           JOIN jenis_reward jr ON dr.jenis_reward_id = jr.id
-                          WHERE dr.santri_id = s.id AND DATE(dr.tanggal) BETWEEN ? AND ?) AS total_poin_reward
+                          WHERE dr.santri_id = s.id AND dr.tanggal >= ? AND dr.tanggal <= ?) AS total_poin_reward
                   FROM pelanggaran p
                   JOIN santri s          ON p.santri_id           = s.id
                   JOIN jenis_pelanggaran jp ON p.jenis_pelanggaran_id = jp.id
-                  WHERE DATE(p.tanggal) BETWEEN ? AND ?
+                  WHERE p.tanggal >= ? AND p.tanggal <= ?
                     AND jp.bagian <> 'Pengabdian'"
                 . $kamarClause
                 . " GROUP BY s.id, s.nis, s.nama, s.kelas, s.kamar, s.poin_aktif
@@ -124,7 +128,7 @@ if (isset($_POST['export'])) {
 
     $stmtSantri = $conn->prepare($sqlSantri);
     
-    $paramsSantri = [$tanggal_mulai, $tanggal_selesai, $tanggal_mulai, $tanggal_selesai];
+    $paramsSantri = [$tgl_mulai_dt, $tgl_selesai_dt, $tgl_mulai_dt, $tgl_selesai_dt];
     $typesSantri  = "ssss";
     if ($kamar !== 'semua') {
         $paramsSantri[] = $kamar;
@@ -186,7 +190,7 @@ if (isset($_POST['export'])) {
                   FROM pelanggaran p
                   JOIN santri s          ON p.santri_id           = s.id
                   JOIN jenis_pelanggaran jp ON p.jenis_pelanggaran_id = jp.id
-                  WHERE DATE(p.tanggal) BETWEEN ? AND ?
+                  WHERE p.tanggal >= ? AND p.tanggal <= ?
                     AND jp.bagian <> 'Pengabdian'"
                 . $kamarClause
                 . " ORDER BY p.tanggal ASC";
@@ -248,7 +252,7 @@ if (isset($_POST['export'])) {
                  FROM pelanggaran p
                  JOIN santri s          ON p.santri_id           = s.id
                  JOIN jenis_pelanggaran jp ON p.jenis_pelanggaran_id = jp.id
-                 WHERE DATE(p.tanggal) BETWEEN ? AND ?
+                 WHERE p.tanggal >= ? AND p.tanggal <= ?
                    AND jp.bagian <> 'Pengabdian'"
                . $kamarClause
                . " GROUP BY s.kamar
@@ -306,9 +310,9 @@ if (isset($_POST['export'])) {
 
     $sqlKebersihan = "SELECT kamar, COUNT(id) AS jumlah_pelanggaran
                       FROM pelanggaran_kebersihan
-                      WHERE DATE(tanggal) BETWEEN ? AND ?";
+                      WHERE tanggal >= ? AND tanggal <= ?";
     
-    $paramsKebersihan = [$tanggal_mulai, $tanggal_selesai];
+    $paramsKebersihan = [$tgl_mulai_dt, $tgl_selesai_dt];
     $typesKebersihan  = "ss";
     
     if ($kamar !== 'semua') {

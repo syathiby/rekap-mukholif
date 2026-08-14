@@ -49,8 +49,8 @@ class ExcelTemplate {
     //  [15+] — Baris data
     // ═══════════════════════════════════════════════════════════════
 
-    const TOTAL_HEADER_ROWS = 13;  // 7 kop + 4 metadata + 2 summary (tanpa spacer)
-    const MIN_HEADER_COLS   = 8;   // Lebar minimum header agar teks tidak terpotong
+    const TOTAL_HEADER_ROWS = 3;  // 2 baris header minimalis + 1 spacer
+    const MIN_HEADER_COLS   = 4;   // Lebar minimum header disesuaikan dengan data minimal (4 kolom)
 
     // ─────────────────────────────────────────────────────────────────
     // PALET WARNA
@@ -169,17 +169,15 @@ class ExcelTemplate {
         // Kolom header diperluas ke minimum MIN_HEADER_COLS
         $headerLastCol = self::getHeaderLastCol($dataLastCol);
 
-        // Insert baris header (13 baris)
+        // Insert baris header (3 baris)
         $sheet->insertNewRowBefore(1, self::TOTAL_HEADER_ROWS);
 
-        // Render blok header
-        self::renderLetterhead($sheet, $palette, $headerLastCol, $titleName, $options);
-        self::renderDocumentMetadata($sheet, $palette, $headerLastCol, $options);
-        self::renderSummaryPanel($sheet, $palette, $headerLastCol, $options);
+        // Render blok header minimalis
+        self::renderMinimalLetterhead($sheet, $palette, $headerLastCol, $titleName, $options);
 
-        // Posisi tabel data (langsung setelah baris 13, tidak ada spacer tambahan)
-        $tableHeaderRow = self::TOTAL_HEADER_ROWS + 1; // = 14
-        $dataStartRow   = $tableHeaderRow + 1;          // = 15
+        // Posisi tabel data (langsung setelah baris 3, tidak ada spacer tambahan)
+        $tableHeaderRow = self::TOTAL_HEADER_ROWS + 1; // = 4
+        $dataStartRow   = $tableHeaderRow + 1;          // = 5
         $dataEndRow     = $tableHeaderRow + $originalHighestRow - 1;
 
         // Render tabel data — pakai dataLastCol (bukan headerLastCol)
@@ -187,9 +185,16 @@ class ExcelTemplate {
         self::styleDataRows($sheet, $palette, $dataLastCol, $dataStartRow, $dataEndRow);
         self::applyTableNavigation($sheet, $dataLastCol, $tableHeaderRow, $dataStartRow);
 
+        // Render informasi lainnya di bawah tabel
+        $bottomRow = $dataEndRow + 2;
+        $bottomRow = self::renderSummaryPanel($sheet, $palette, $headerLastCol, $bottomRow, $options);
+        
+        $bottomRow += 1; // Spacer sebelum metadata
+        $bottomRow = self::renderDocumentMetadata($sheet, $palette, $headerLastCol, $bottomRow, $options);
+
         // Print settings, footer, lalu auto-fit
         self::applyPrintSettings($sheet, $titleName, $headerLastCol);
-        self::renderFooterNote($sheet, $palette, $headerLastCol, $dataEndRow);
+        self::renderFooterNote($sheet, $palette, $headerLastCol, $bottomRow + 1);
         self::autoFitColumns($sheet, $tableHeaderRow, $dataEndRow, $dataLastCol, $headerLastCol, false);
     }
 
@@ -230,96 +235,50 @@ class ExcelTemplate {
     // BLOK 1 — KOP SURAT FORMAL (Baris 1–7)
     // ═══════════════════════════════════════════════════════════════
 
-    private static function renderLetterhead(
+    private static function renderMinimalLetterhead(
         Worksheet &$sheet,
         array $palette,
-        string $lastCol,   // headerLastCol (min. MIN_HEADER_COLS)
+        string $lastCol,
         string $titleName,
         array $options
     ): void {
         $institution = $options['institution'] ?? 'PONDOK PESANTREN';
-        $address     = $options['address']     ?? 'Jl. Pesantren No. 1, Indonesia';
 
-        // Merge seluruh lebar header untuk baris 1–6
-        foreach ([1, 2, 3, 4, 5, 6] as $row) {
+        foreach ([1, 2, 3] as $row) {
             $sheet->mergeCells('A' . $row . ':' . $lastCol . $row);
         }
 
-        // Baris 1: Banner sistem (warna accent, teks putih kecil)
-        self::setSafeCellValue($sheet, 'A1', 'ASUHTRACK DIGITAL MANAGEMENT SYSTEM');
+        // Baris 1: Nama Lembaga
+        self::setSafeCellValue($sheet, 'A1', strtoupper($institution));
         $sheet->getStyle('A1')->applyFromArray([
-            'font'      => ['bold' => true, 'size' => 8, 'color' => ['rgb' => 'FFFFFF']],
-            'alignment' => ['horizontal' => Alignment::HORIZONTAL_CENTER,
-                            'vertical'   => Alignment::VERTICAL_CENTER],
-            'fill'      => ['fillType' => Fill::FILL_SOLID,
-                            'startColor' => ['rgb' => $palette['accent']]],
-        ]);
-        $sheet->getRowDimension(1)->setRowHeight(14);
-
-        // Baris 2: Nama Lembaga (besar, wrapText aktif agar tidak terpotong)
-        self::setSafeCellValue($sheet, 'A2', strtoupper($institution));
-        $sheet->getStyle('A2')->applyFromArray([
-            'font'      => ['bold' => true, 'size' => 16,
-                            'color' => ['rgb' => $palette['primary']]],
-            'alignment' => ['horizontal' => Alignment::HORIZONTAL_CENTER,
-                            'vertical'   => Alignment::VERTICAL_CENTER,
-                            'wrapText'   => true],                          // ← FIX
-            'fill'      => ['fillType' => Fill::FILL_SOLID,
-                            'startColor' => ['rgb' => 'FFFFFF']],
-        ]);
-        $sheet->getRowDimension(2)->setRowHeight(34);
-
-        // Baris 3: Alamat lembaga (italic, wrapText aktif)
-        self::setSafeCellValue($sheet, 'A3', $address);
-        $sheet->getStyle('A3')->applyFromArray([
-            'font'      => ['size' => 9, 'italic' => true,
-                            'color' => ['rgb' => '64748B']],
-            'alignment' => ['horizontal' => Alignment::HORIZONTAL_CENTER,
-                            'vertical'   => Alignment::VERTICAL_CENTER,
-                            'wrapText'   => true],                          // ← FIX
-            'fill'      => ['fillType' => Fill::FILL_SOLID,
-                            'startColor' => ['rgb' => 'FFFFFF']],
-        ]);
-        $sheet->getRowDimension(3)->setRowHeight(14);
-
-        // Baris 4: Garis dekoratif tebal (warna primary)
-        $sheet->getStyle('A4:' . $lastCol . '4')->applyFromArray([
-            'fill'    => ['fillType' => Fill::FILL_SOLID,
-                          'startColor' => ['rgb' => $palette['primary']]],
-            'borders' => ['bottom' => ['borderStyle' => Border::BORDER_THICK,
-                                       'color'       => ['rgb' => $palette['accent']]]],
-        ]);
-        $sheet->getRowDimension(4)->setRowHeight(3);
-
-        // Baris 5: Judul laporan (besar, wrapText aktif)
-        self::setSafeCellValue($sheet, 'A5', strtoupper($titleName));
-        $sheet->getStyle('A5')->applyFromArray([
             'font'      => ['bold' => true, 'size' => 14,
                             'color' => ['rgb' => $palette['primary']]],
             'alignment' => ['horizontal' => Alignment::HORIZONTAL_CENTER,
                             'vertical'   => Alignment::VERTICAL_CENTER,
-                            'wrapText'   => true],                          // ← FIX
+                            'wrapText'   => true],
             'fill'      => ['fillType' => Fill::FILL_SOLID,
                             'startColor' => ['rgb' => 'FFFFFF']],
         ]);
-        $sheet->getRowDimension(5)->setRowHeight(30);
+        $sheet->getRowDimension(1)->setRowHeight(30);
 
-        // Baris 6: Garis pemisah bawah kop (warna secondary)
-        $sheet->getStyle('A6:' . $lastCol . '6')->applyFromArray([
-            'fill'    => ['fillType' => Fill::FILL_SOLID,
-                          'startColor' => ['rgb' => $palette['secondary']]],
-            'borders' => ['bottom' => ['borderStyle' => Border::BORDER_MEDIUM,
-                                       'color'       => ['rgb' => $palette['accent']]]],
+        // Baris 2: Judul Laporan
+        self::setSafeCellValue($sheet, 'A2', strtoupper($titleName));
+        $sheet->getStyle('A2')->applyFromArray([
+            'font'      => ['bold' => true, 'size' => 12,
+                            'color' => ['rgb' => $palette['secondary']]],
+            'alignment' => ['horizontal' => Alignment::HORIZONTAL_CENTER,
+                            'vertical'   => Alignment::VERTICAL_CENTER,
+                            'wrapText'   => true],
+            'fill'      => ['fillType' => Fill::FILL_SOLID,
+                            'startColor' => ['rgb' => 'FFFFFF']],
         ]);
-        $sheet->getRowDimension(6)->setRowHeight(3);
+        $sheet->getRowDimension(2)->setRowHeight(25);
 
-        // Baris 7: Spacer putih tipis
-        $sheet->mergeCells('A7:' . $lastCol . '7');
-        $sheet->getStyle('A7')->applyFromArray([
-            'fill' => ['fillType' => Fill::FILL_SOLID,
-                       'startColor' => ['rgb' => 'FFFFFF']],
+        // Baris 3: Spacer
+        $sheet->getStyle('A3')->applyFromArray([
+            'fill' => ['fillType' => Fill::FILL_SOLID, 'startColor' => ['rgb' => 'FFFFFF']],
         ]);
-        $sheet->getRowDimension(7)->setRowHeight(5);
+        $sheet->getRowDimension(3)->setRowHeight(10);
     }
 
     // ═══════════════════════════════════════════════════════════════
@@ -335,17 +294,17 @@ class ExcelTemplate {
         Worksheet &$sheet,
         array $palette,
         string $lastCol,
+        int $startRow,
         array $options
-    ): void {
-        $startRow  = 8;
+    ): int {
         $period    = $options['period']     ?? '-';
         $docNumber = $options['doc_number']
                    ?? 'AUTO/' . date('Ymd') . '/' . strtoupper(substr(uniqid(), -4));
         $printedBy = $options['printed_by'] ?? 'Sistem';
         $printTime = date('d F Y, H:i') . ' WIB';
 
-        // Latar belakang & outline seluruh blok metadata (R8–R11)
-        $sheet->getStyle('A' . $startRow . ':' . $lastCol . ($startRow + 3))->applyFromArray([
+        // Latar belakang & outline seluruh blok metadata (3 baris)
+        $sheet->getStyle('A' . $startRow . ':' . $lastCol . ($startRow + 2))->applyFromArray([
             'fill'    => ['fillType' => Fill::FILL_SOLID,
                           'startColor' => ['rgb' => $palette['meta_fill']]],
             'borders' => [
@@ -366,7 +325,7 @@ class ExcelTemplate {
                                      'color'       => ['rgb' => $palette['border_color']]]],
         ]);
 
-        // R8: Nomor Dokumen (kiri) | Dicetak oleh (kanan)
+        // R1: Nomor Dokumen (kiri) | Dicetak oleh (kanan)
         $sheet->mergeCells('A' . $startRow . ':' . $midCol . $startRow);
         self::setRichText($sheet, 'A' . $startRow,
             'Nomor Dokumen', $docNumber, $palette['secondary'], '334155');
@@ -384,7 +343,7 @@ class ExcelTemplate {
         ]);
         $sheet->getRowDimension($startRow)->setRowHeight(17);
 
-        // R9: Periode Laporan (kiri) | Waktu Cetak (kanan)
+        // R2: Periode Laporan (kiri) | Waktu Cetak (kanan)
         $r9 = $startRow + 1;
         $sheet->mergeCells('A' . $r9 . ':' . $midCol . $r9);
         self::setRichText($sheet, 'A' . $r9,
@@ -403,7 +362,7 @@ class ExcelTemplate {
         ]);
         $sheet->getRowDimension($r9)->setRowHeight(17);
 
-        // R10: Keterangan full-width (wrapText aktif untuk teks panjang)
+        // R3: Keterangan full-width (wrapText aktif untuk teks panjang)
         $r10 = $startRow + 2;
         $sheet->mergeCells('A' . $r10 . ':' . $lastCol . $r10);
         self::setRichText($sheet, 'A' . $r10,
@@ -412,20 +371,11 @@ class ExcelTemplate {
             $palette['secondary'], '64748B');
         $sheet->getStyle('A' . $r10)->applyFromArray([
             'alignment' => ['vertical' => Alignment::VERTICAL_CENTER,
-                            'wrapText' => true],                            // ← FIX
+                            'wrapText' => true],
         ]);
         $sheet->getRowDimension($r10)->setRowHeight(15);
-
-        // R11: Spacer bawah metadata (border bottom memisahkan dari summary)
-        $r11 = $startRow + 3;
-        $sheet->mergeCells('A' . $r11 . ':' . $lastCol . $r11);
-        $sheet->getStyle('A' . $r11 . ':' . $lastCol . $r11)->applyFromArray([
-            'fill'    => ['fillType' => Fill::FILL_SOLID,
-                          'startColor' => ['rgb' => $palette['meta_fill']]],
-            'borders' => ['bottom' => ['borderStyle' => Border::BORDER_THIN,
-                                       'color'       => ['rgb' => $palette['border_color']]]],
-        ]);
-        $sheet->getRowDimension($r11)->setRowHeight(4);
+        
+        return $r10 + 1;
     }
 
     // ═══════════════════════════════════════════════════════════════
@@ -439,10 +389,11 @@ class ExcelTemplate {
         Worksheet &$sheet,
         array $palette,
         string $lastCol,
+        int $startRow,
         array $options
-    ): void {
-        $r12 = 12;
-        $r13 = 13;
+    ): int {
+        $r12 = $startRow;
+        $r13 = $startRow + 1;
         $summaryData = $options['summary_data'] ?? [];
 
         if (empty($summaryData)) {
@@ -497,9 +448,11 @@ class ExcelTemplate {
                             'color' => ['rgb' => $palette['primary']]],
             'alignment' => ['horizontal' => Alignment::HORIZONTAL_CENTER,
                             'vertical'   => Alignment::VERTICAL_CENTER,
-                            'wrapText'   => true],                          // ← FIX
+                            'wrapText'   => true],
         ]);
         $sheet->getRowDimension($r13)->setRowHeight(24);
+        
+        return $r13 + 1;
     }
 
     // ═══════════════════════════════════════════════════════════════
@@ -562,6 +515,7 @@ class ExcelTemplate {
             ],
         ]);
         $sheet->getStyle($fullRange)->getAlignment()->setVertical(Alignment::VERTICAL_CENTER);
+        $sheet->getStyle($fullRange)->getAlignment()->setWrapText(true); // Pastikan teks panjang di tabel tidak terpotong
 
         // Zebra striping + tinggi baris
         for ($row = $startRow; $row <= $endRow; $row++) {
@@ -576,10 +530,14 @@ class ExcelTemplate {
 
         // Rata tengah massal untuk kolom numerik pendek (O(M) — jauh lebih cepat)
         $colCount = \PhpOffice\PhpSpreadsheet\Cell\Coordinate::columnIndexFromString($lastCol);
+        $headerRow = $startRow - 1; // Cek teks di header row, bukan di data row
+        $centerCols = ['no', 'kelas', 'kamar', 'poin', 'jumlah pelanggaran', 'total poin pelanggaran', 'total poin reward', 'poin bersih periode', 'id', 'id santri'];
+        
         for ($c = 1; $c <= $colCount; $c++) {
             $cl  = \PhpOffice\PhpSpreadsheet\Cell\Coordinate::stringFromColumnIndex($c);
-            $val = $sheet->getCell($cl . $startRow)->getValue();
-            if (is_numeric($val) && strlen((string)$val) < 6) {
+            $headerText = strtolower(trim((string)$sheet->getCell($cl . $headerRow)->getValue()));
+            
+            if (in_array($headerText, $centerCols)) {
                 $sheet->getStyle($cl . $startRow . ':' . $cl . $endRow)
                       ->getAlignment()->setHorizontal(Alignment::HORIZONTAL_CENTER);
             }
@@ -687,6 +645,13 @@ class ExcelTemplate {
                 continue;
             }
 
+            // Lebarkan kolom Catatan agar tabel tidak terlalu sempit
+            $headerValue = (string)$sheet->getCell($cl . $startRow)->getValue();
+            if (strtolower(trim($headerValue)) === 'catatan') {
+                $sheet->getColumnDimension($cl)->setWidth(30);
+                continue;
+            }
+
             // Kolom di luar kolom data (hanya ada di header) → lebar tetap 18
             if ($c > $dataIdx) {
                 $sheet->getColumnDimension($cl)->setWidth(18);
@@ -703,8 +668,12 @@ class ExcelTemplate {
                     $max = $len;
                 }
             }
-            // Padding +4, minimal 10
-            $sheet->getColumnDimension($cl)->setWidth(max($max + 4, 10));
+            // Padding +4, minimal 10, maksimal 50
+            $calculatedWidth = max($max + 4, 10);
+            if ($calculatedWidth > 50) {
+                $calculatedWidth = 50;
+            }
+            $sheet->getColumnDimension($cl)->setWidth($calculatedWidth);
         }
     }
 }

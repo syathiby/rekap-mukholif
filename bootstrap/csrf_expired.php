@@ -7,11 +7,8 @@ if (!headers_sent()) {
     header("Pragma: no-cache");
 }
 
-// Ambil BASE_URL jika belum ada
-if (!defined('BASE_URL')) {
-    $project_path = '/rekap-mukholif'; // Sesuaikan jika ada perubahan folder
-    define('BASE_URL', (isset($_SERVER['HTTPS']) && $_SERVER['HTTPS'] === 'on' ? "https" : "http") . "://$_SERVER[HTTP_HOST]" . $project_path);
-}
+// Pastikan BASE_URL didefinisikan secara dinamis dan akurat
+require_once __DIR__ . '/../config/app.php';
 ?>
 <!DOCTYPE html>
 <html lang="id">

@@ -24,42 +24,51 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_FILES['sql_file'])) {
     
     $tmp_name = $_FILES['sql_file']['tmp_name'];
     
-    // Gunakan compress.zlib:// agar PHP otomatis mengekstrak file GZIP secara transparan.
-    // Hebatnya, jika file-nya ternyata .sql biasa (tidak dikompres), ini tetap bekerja normal!
-    $sql_content = file_get_contents('compress.zlib://' . $tmp_name);
+    // Set resource limits untuk file berukuran besar
+    set_time_limit(0);
+    ini_set('memory_limit', '1024M'); // Naikkan limit untuk berjaga-jaga
     
-    if (empty(trim($sql_content))) {
-        set_flash_message('File kosong atau tidak valid.', 'danger');
+    // Buka file menggunakan gzopen (mendukung file gzip maupun uncompressed secara otomatis)
+    $handle = gzopen($tmp_name, 'r');
+    if (!$handle) {
+        set_flash_message('Gagal membaca file upload.', 'danger');
         header('Location: index.php');
         exit;
     }
 
-    // Set resource limits untuk file berukuran besar
-    set_time_limit(0);
-    ini_set('memory_limit', '512M');
-    
     // Nonaktifkan Foreign Key Check sementara
     $conn->query("SET FOREIGN_KEY_CHECKS=0");
+    // Hindari masalah encoding
+    $conn->query("SET NAMES 'utf8mb4'");
     
     $success = true;
     $error_msg = '';
+    $query = '';
 
-    // Gunakan multi_query agar parsing SQL ditangani langsung oleh MySQL C API
-    if ($conn->multi_query($sql_content)) {
-        do {
-            if ($result = $conn->store_result()) {
-                $result->free();
-            }
-            if ($conn->errno) {
+    // Eksekusi per query dengan membaca baris demi baris secara streaming (hemat RAM & anti max_allowed_packet)
+    while (!gzeof($handle)) {
+        $line = gzgets($handle);
+        $trimmed = trim($line);
+        
+        // Lewati baris kosong atau komentar (hanya jika query sedang kosong)
+        if (empty($query) && (empty($trimmed) || strpos($trimmed, '--') === 0 || strpos($trimmed, '/*') === 0)) {
+            continue;
+        }
+        
+        $query .= $line;
+        
+        // Jika baris diakhiri dengan titik koma, artinya satu statement lengkap, maka eksekusi
+        if (substr(rtrim($query), -1) === ';') {
+            if (!$conn->query($query)) {
                 $success = false;
                 $error_msg = $conn->error;
                 break; // Hentikan eksekusi jika ada error fatal
             }
-        } while ($conn->more_results() && $conn->next_result());
-    } else {
-        $success = false;
-        $error_msg = $conn->error;
+            $query = ''; // Reset untuk query berikutnya
+        }
     }
+    
+    gzclose($handle);
     
     // Aktifkan kembali Foreign Key Check
     $conn->query("SET FOREIGN_KEY_CHECKS=1");

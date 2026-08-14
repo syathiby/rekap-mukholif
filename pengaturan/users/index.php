@@ -348,7 +348,7 @@ $stmt->close();
                                         <?php endif; ?>
                                         
                                         <?php if ($can_delete) : ?>
-                                            <a href="delete-user.php?id=<?= $user['id'] ?>" class="btn-action btn-action-delete" title="Hapus User" onclick="confirmSubmit(event, this, 'Hapus User', 'Yakin mau hapus user <?= htmlspecialchars($user['username']) ?>? Tindakan ini tidak bisa dibatalkan!');">
+                                            <a href="delete-user.php?id=<?= $user['id'] ?>&csrf_token=<?= $_SESSION['csrf_token'] ?>" class="btn-action btn-action-delete" title="Hapus User" onclick="confirmSubmit(event, this, 'Hapus User', 'Yakin mau hapus user <?= htmlspecialchars($user['username']) ?>? Tindakan ini tidak bisa dibatalkan!');">
                                                 <i class="fas fa-trash-alt"></i>
                                             </a>
                                         <?php endif; ?>

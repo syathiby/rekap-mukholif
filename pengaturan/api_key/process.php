@@ -80,6 +80,11 @@ if ($action === 'test') {
 // ACTION: SAVE API KEY
 // ============================================================
 if ($action === 'save' && $_SERVER['REQUEST_METHOD'] === 'POST') {
+    if (!isset($_POST['csrf_token']) || !isset($_SESSION['csrf_token']) || !hash_equals($_SESSION['csrf_token'], $_POST['csrf_token'])) {
+        set_flash_message('Token keamanan tidak valid.', 'danger');
+        header('Location: index.php');
+        exit;
+    }
     $api_key = trim($_POST['api_key'] ?? '');
 
     if (empty($api_key)) {

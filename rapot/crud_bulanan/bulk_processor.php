@@ -27,9 +27,18 @@ $head_content = $head_matches[1] ?? '';
     <script src="https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js"></script>
     <style>
         body { background-color: #f8f9fc; }
+        html.in-iframe body { background-color: transparent !important; }
+        html.in-iframe .container { padding-top: 0 !important; max-width: 100% !important; margin: 0 !important; padding: 0 !important;}
+        html.in-iframe .col-12 { padding: 0 !important; }
+        html.in-iframe .card { box-shadow: none !important; border: none !important; margin-bottom: 0 !important; background-color: transparent !important; }
         #render-wrapper { position: absolute; left: -9999px; top: 0; opacity: 0; height: 0; overflow: hidden; }
         .page-wrapper { width: 210mm; min-height: 297mm; background-color: white; padding: 7mm 10mm 4mm 10mm; box-sizing: border-box; }
     </style>
+    <script>
+        if (window.self !== window.top) {
+            document.documentElement.classList.add('in-iframe');
+        }
+    </script>
 </head>
 <body class="bg-light">
     <div class="container" style="padding-top: 5vh;">
@@ -173,7 +182,11 @@ $head_content = $head_matches[1] ?? '';
                 link.click();
                 document.body.removeChild(link);
                 downloadBtn.onclick = () => link.click();
-                setTimeout(() => window.close(), 3000);
+                if (window.self !== window.top) {
+                    setTimeout(() => window.parent.postMessage('bulkProcessComplete', '*'), 3000);
+                } else {
+                    setTimeout(() => window.close(), 3000);
+                }
             });
         }
 

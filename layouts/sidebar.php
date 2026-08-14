@@ -95,7 +95,7 @@ if (function_exists('has_permission')) {
     <?php if (in_array($_SESSION['role'] ?? '', ['admin', 'pengelola'])): ?>
     <a href="<?= BASE_URL ?>/pengaturan/pengelola" class="sb-link <?= (strpos($req_path, '/pengaturan/pengelola') === 0) ? 'active' : '' ?>">
         <i class="fas fa-shield-alt" style="color:#f43f5e;"></i>
-        <span>Panel Pengelola</span>
+        <span>Pengelola Musyrifin</span>
     </a>
     <?php endif; ?>
     

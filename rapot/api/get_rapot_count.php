@@ -22,22 +22,16 @@ $bulan_list_indo = [
     'September' => 9, 'Oktober' => 10, 'November' => 11, 'Desember' => 12
 ];
 
-$bulan_num = $bulan_list_indo[$bulan] ?? date('n');
+$normalized_bulan = ucfirst(strtolower(trim($bulan)));
+$bulan_num = $bulan_list_indo[$normalized_bulan] ?? date('n');
 $tahun_ajaran_start = ($bulan_num < 7) ? $tahun - 1 : $tahun;
 $tahun_ajaran_end = $tahun_ajaran_start + 1;
 $tahun_ajaran_label = "$tahun_ajaran_start/$tahun_ajaran_end";
 
 // Count how many reports exist for this student in this academic year.
-// Exclude the rapot currently being edited so the progress bar stays accurate.
 $sql = "SELECT id, bulan, tahun FROM rapot_kepengasuhan WHERE santri_id = ?";
 $params_count = [$santri_id];
 $types_count  = "i";
-
-if ($edit_id > 0) {
-    $sql          .= " AND id != ?";
-    $params_count[] = $edit_id;
-    $types_count  .= "i";
-}
 
 $stmt = $conn->prepare($sql);
 $stmt->bind_param($types_count, ...$params_count);
@@ -48,7 +42,8 @@ $count = 0;
 $is_editing_current_ta = ($edit_id > 0); // true jika dalam mode edit
 
 while ($row = $result->fetch_assoc()) {
-    $b_num = $bulan_list_indo[$row['bulan']] ?? 1;
+    $row_bulan_normalized = ucfirst(strtolower(trim($row['bulan'])));
+    $b_num = $bulan_list_indo[$row_bulan_normalized] ?? 1;
     $b_tahun = (int)$row['tahun'];
     $b_ta_start = ($b_num < 7) ? $b_tahun - 1 : $b_tahun;
     

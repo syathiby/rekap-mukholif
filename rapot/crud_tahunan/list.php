@@ -543,7 +543,7 @@ require_once __DIR__ . '/../../layouts/header.php';
                     <?php endif; ?>
 
                     <?php if ($can_delete && !in_array($status, ['APPROVED', 'EXPORTED'])): ?>
-                    <a href="delete.php?id=<?= $r['rapor_id'] ?>"
+                    <a href="delete.php?id=<?= $r['rapor_id'] ?>&csrf_token=<?= $_SESSION['csrf_token'] ?>"
                        class="act-btn ab-del" title="Hapus"
                        onclick="confirmSubmit(event, this, 'Hapus Rapor?', 'Hapus draft rapor <?= htmlspecialchars(addslashes($r['nama_santri'] ?? '')) ?>?');">
                         <i class="fas fa-trash"></i>
@@ -633,11 +633,42 @@ document.addEventListener('DOMContentLoaded', function() {
             }
             sessionStorage.setItem('bulkProcessList', JSON.stringify(bulkList));
             const zipName = encodeURIComponent('Rapor Tahunan Kamar <?= rawurlencode($kamar) ?> Periode <?= rawurlencode(str_replace("/", "-", $periode)) ?>');
-            window.open('../crud_bulanan/bulk_processor.php?type=pdf&jenis=tahunan&zipName=' + zipName, '_blank');
+            openBackgroundDownload('../crud_bulanan/bulk_processor.php?type=pdf&jenis=tahunan&zipName=' + zipName);
         });
     }
 });
+
+// Logic Modal Unduhan Latar Belakang
+function openBackgroundDownload(url) {
+    let modalEl = document.getElementById('background-download-modal');
+    let modal = new bootstrap.Modal(modalEl);
+    document.getElementById('background-download-iframe').src = url;
+    modal.show();
+}
+
+window.addEventListener('message', function(event) {
+    if (event.data === 'bulkProcessComplete' || event.data === 'downloadComplete') {
+        setTimeout(() => {
+            const modalEl = document.getElementById('background-download-modal');
+            const modal = bootstrap.Modal.getInstance(modalEl);
+            if (modal) modal.hide();
+            document.getElementById('background-download-iframe').src = '';
+        }, 1000);
+    }
+});
 </script>
+
+<!-- Modal Unduh Background -->
+<div class="modal fade" id="background-download-modal" data-bs-backdrop="static" data-bs-keyboard="false" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered modal-sm" role="document">
+        <div class="modal-content border-0 shadow-lg" style="border-radius: 1rem; overflow: hidden; background-color: transparent;">
+            <div class="modal-body p-0" style="position: relative;">
+                <iframe id="background-download-iframe" src="" style="width: 100%; height: 350px; border: none; background-color: transparent; border-radius: 1rem;"></iframe>
+                <button type="button" class="btn-close position-absolute" data-bs-dismiss="modal" style="top: 15px; right: 15px; z-index: 1050; opacity: 0.5;" title="Tutup paksa jika macet"></button>
+            </div>
+        </div>
+    </div>
+</div>
 
 <!-- Modal Panduan -->
 <div class="modal fade" id="guideModal" tabindex="-1" aria-labelledby="guideModalLabel" aria-hidden="true">

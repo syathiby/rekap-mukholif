@@ -6,6 +6,13 @@ guard('periode_aktif_manage');
 
 <?php
 
+// Validasi keamanan (CSRF)
+if ($_SERVER['REQUEST_METHOD'] !== 'POST' || !isset($_POST['csrf_token']) || !isset($_SESSION['csrf_token']) || !hash_equals($_SESSION['csrf_token'], $_POST['csrf_token'])) {
+    http_response_code(403);
+    require __DIR__ . '/../../bootstrap/csrf_expired.php';
+    exit;
+}
+
 $periode_aktif = $_POST['periode_aktif'] ?? '';
 
 if ($periode_aktif === '') {

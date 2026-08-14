@@ -5,6 +5,18 @@
 require_once __DIR__ . '/../../bootstrap/init.php';
 guard('rapot_delete');
 
+// Validasi CSRF Token
+if (empty($_GET['csrf_token']) || !is_string($_GET['csrf_token']) || trim($_GET['csrf_token']) === '') {
+    http_response_code(403);
+    require __DIR__ . '/../../bootstrap/access_denied.php';
+    exit;
+}
+if (empty($_SESSION['csrf_token']) || !is_string($_SESSION['csrf_token']) || !hash_equals($_SESSION['csrf_token'], $_GET['csrf_token'])) {
+    http_response_code(403);
+    require __DIR__ . '/../../bootstrap/csrf_expired.php';
+    exit;
+}
+
 if (empty($_GET['id'])) {
     set_flash_message('Error: ID Rapot tidak ditemukan.', 'danger');
     header('Location: ../../rapot/index.php');

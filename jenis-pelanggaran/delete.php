@@ -14,7 +14,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         exit;
     }
 } elseif ($_SERVER['REQUEST_METHOD'] === 'GET' && isset($_GET['id'])) {
-    if (!isset($_GET['csrf_token']) || !isset($_SESSION['csrf_token']) || !hash_equals($_SESSION['csrf_token'], $_GET['csrf_token'])) {
+    if (empty($_GET['csrf_token']) || !is_string($_GET['csrf_token']) || trim($_GET['csrf_token']) === '') {
+        http_response_code(403);
+        require __DIR__ . '/../bootstrap/access_denied.php';
+        exit;
+    }
+    if (empty($_SESSION['csrf_token']) || !is_string($_SESSION['csrf_token']) || !hash_equals($_SESSION['csrf_token'], $_GET['csrf_token'])) {
         http_response_code(403);
         require __DIR__ . '/../bootstrap/csrf_expired.php';
         exit;

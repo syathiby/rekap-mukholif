@@ -640,42 +640,31 @@ require_once __DIR__ . '/../layouts/header.php';
   </div>
 </div>
 
-<div class="modal fade" id="png-warning-modal" tabindex="-1" role="dialog" aria-labelledby="pngModalLabel" aria-hidden="true">
-    <div class="modal-dialog modal-dialog-centered" role="document">
-        <div class="modal-content">
-            <div class="modal-header">
-                <h5 class="modal-title" id="pngModalLabel">Peringatan Proses PNG</h5>
-                <button class="close" type="button" data-bs-dismiss="modal" aria-label="Close">
-                    <span aria-hidden="true">&times;</span>
-                </button>
-            </div>
-            <div class="modal-body">
-                <p>Proses generate PNG (ZIP) akan dimulai di tab baru.</p>
-                <p>Proses ini butuh waktu beberapa saat. <strong>Mohon JANGAN TUTUP tab baru tersebut</strong> sampai proses download ZIP selesai.</p>
-                <p class="mb-0">Klik "Lanjutkan" untuk memulai.</p>
-            </div>
-            <div class="modal-footer">
-                <button class="btn btn-secondary" type="button" data-bs-dismiss="modal">Batal</button>
-                <button class="btn btn-primary" type="button" id="png-continue-btn">Lanjutkan</button>
+<div class="modal fade" id="background-download-modal" data-bs-backdrop="static" data-bs-keyboard="false" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered modal-sm" role="document">
+        <div class="modal-content border-0 shadow-lg" style="border-radius: 1rem; overflow: hidden; background-color: transparent;">
+            <div class="modal-body p-0" style="position: relative;">
+                <iframe id="background-download-iframe" src="" style="width: 100%; height: 350px; border: none; background-color: transparent; border-radius: 1rem;"></iframe>
+                <!-- Tombol paksa tutup darurat jika hang -->
+                <button type="button" class="btn-close position-absolute" data-bs-dismiss="modal" style="top: 15px; right: 15px; z-index: 1050; opacity: 0.5;" title="Tutup paksa jika macet"></button>
             </div>
         </div>
     </div>
 </div>
 
-<div class="modal fade" id="delete-confirm-modal" tabindex="-1" role="dialog" aria-labelledby="deleteModalLabel" aria-hidden="true">
-    <div class="modal-dialog modal-dialog-centered" role="document">
-        <div class="modal-content">
-            <div class="modal-header bg-danger text-white">
-                <h5 class="modal-title" id="deleteModalLabel"><i class="fas fa-exclamation-triangle me-2"></i>Konfirmasi Hapus</h5>
-                <button class="btn-close btn-close-white" type="button" data-bs-dismiss="modal" aria-label="Close"></button>
-            </div>
-            <div class="modal-body">
-                <p>Yakin mau hapus <strong id="delete-count-placeholder">0</strong> rapot?</p>
-                <p class="text-danger mb-0">Data yang sudah dihapus tidak bisa kembali.</p>
-            </div>
-            <div class="modal-footer">
-                <button class="btn btn-secondary" type="button" data-bs-dismiss="modal">Batal</button>
-                <button class="btn btn-danger" type="button" id="delete-confirm-btn">Ya, Hapus</button>
+<div class="modal fade" id="delete-confirm-modal" tabindex="-1" role="dialog" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered modal-sm" role="document">
+        <div class="modal-content border-0 shadow-lg" style="border-radius: 1rem;">
+            <div class="modal-body text-center p-4 pt-5">
+                <div class="mb-3">
+                    <i class="fas fa-trash-alt text-danger" style="font-size: 3rem; opacity: 0.8;"></i>
+                </div>
+                <h5 class="fw-bold mb-2 text-dark">Hapus Data?</h5>
+                <p class="text-muted small mb-4">Anda akan menghapus <strong id="delete-count-placeholder" class="text-dark">0</strong> rapot. Tindakan ini tidak dapat dibatalkan.</p>
+                <div class="d-flex justify-content-center gap-2">
+                    <button class="btn btn-light w-50 fw-medium text-secondary border-0" type="button" data-bs-dismiss="modal" style="border-radius: 0.6rem; background-color: #f1f3f5;">Batal</button>
+                    <button class="btn btn-danger w-50 fw-medium border-0 shadow-sm" type="button" id="delete-confirm-btn" style="border-radius: 0.6rem;">Ya, Hapus</button>
+                </div>
             </div>
         </div>
     </div>
@@ -738,9 +727,34 @@ document.addEventListener('DOMContentLoaded', function() {
     const guideModalElement = document.getElementById('guideModal');
     const guideModalTriggers = document.querySelectorAll('button[data-bs-target="#guideModal"]');
 
-    const pngWarningModalElement = document.getElementById('png-warning-modal');
-    const pngWarningModal = new bootstrap.Modal(pngWarningModalElement);
-    const pngContinueBtn = document.getElementById('png-continue-btn'); // (Fix V6.0)
+    // Background Download Logic
+    const backgroundDownloadModalEl = document.getElementById('background-download-modal');
+    const backgroundDownloadModal = new bootstrap.Modal(backgroundDownloadModalEl);
+    const backgroundDownloadIframe = document.getElementById('background-download-iframe');
+
+    function openBackgroundDownload(url) {
+        backgroundDownloadIframe.src = url;
+        backgroundDownloadModal.show();
+    }
+
+    // Dengarkan pesan dari iframe untuk menutup modal otomatis
+    window.addEventListener('message', function(event) {
+        if (event.data === 'downloadComplete' || event.data === 'bulkProcessComplete') {
+            setTimeout(() => {
+                backgroundDownloadModal.hide();
+                backgroundDownloadIframe.src = '';
+            }, 1000); // Beri waktu 1 detik agar animasi sukses terlihat sebelum tutup
+        }
+    });
+
+    // Tangkap klik untuk single PNG download agar tidak buka tab baru
+    document.addEventListener('click', function(e) {
+        let link = e.target.closest('a[href^="export/generate_png.php"]');
+        if (link) {
+            e.preventDefault();
+            openBackgroundDownload(link.href);
+        }
+    }); // (Fix V6.0)
 
     const deleteConfirmModalElement = document.getElementById('delete-confirm-modal');
     const deleteConfirmModal = new bootstrap.Modal(deleteConfirmModalElement);
@@ -989,7 +1003,7 @@ document.addEventListener('DOMContentLoaded', function() {
             }));
             sessionStorage.setItem('bulkProcessList', JSON.stringify(bulkList));
             const zipName = encodeURIComponent('Rapot Bulanan Bulk PDF');
-            window.open('crud_bulanan/bulk_processor.php?type=pdf&zipName=' + zipName, '_blank');
+            openBackgroundDownload('crud_bulanan/bulk_processor.php?type=pdf&zipName=' + zipName);
         });
     }
     
@@ -1005,22 +1019,9 @@ document.addEventListener('DOMContentLoaded', function() {
                 id: id, 
                 filename: data.filename 
             }));
-            pngWarningModalElement.dataset.bulkListData = JSON.stringify(bulkList);
-            // (modalTriggerElement udah di-set di listener global)
-            pngWarningModal.show();
-        });
-    }
-    if (pngContinueBtn) {
-        pngContinueBtn.addEventListener('click', function() {
-            const bulkListString = pngWarningModalElement.dataset.bulkListData;
-            if (!bulkListString) {
-                tampilkanNotif('Error: Data tidak ditemukan. Coba ulangi.', 'danger');
-                return;
-            }
-            sessionStorage.setItem('bulkProcessList', bulkListString);
+            sessionStorage.setItem('bulkProcessList', JSON.stringify(bulkList));
             const zipName = encodeURIComponent('Rapot Bulanan Bulk PNG');
-            window.open('crud_bulanan/bulk_processor.php?type=png&zipName=' + zipName, '_blank');
-            pngWarningModal.hide();
+            openBackgroundDownload('crud_bulanan/bulk_processor.php?type=png&zipName=' + zipName);
         });
     }
     
