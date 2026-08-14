@@ -35,6 +35,47 @@ if (isset($_POST['simpan_rapot'])) {
         exit;
     }
 
+    // Validasi H-7 Akhir Bulan & Tahun Ajaran
+    $is_bypassed = false;
+    if ($edit_id > 0) {
+        $stmt_orig = $conn->prepare("SELECT bulan, tahun FROM rapot_kepengasuhan WHERE id = ?");
+        $stmt_orig->bind_param("i", $edit_id);
+        $stmt_orig->execute();
+        $res_orig = $stmt_orig->get_result()->fetch_assoc();
+        $stmt_orig->close();
+        if ($res_orig && $res_orig['bulan'] == $bulan && $res_orig['tahun'] == $tahun) {
+            $is_bypassed = true;
+        }
+    }
+
+    if (!$is_bypassed) {
+        $current_y = (int)date('Y');
+        $current_m = (int)date('n');
+        $current_d = (int)date('j');
+        $current_days_in_month = (int)date('t');
+        
+        $current_ta = ($current_m < 7) ? $current_y - 1 : $current_y;
+        $selected_month_num = $bulan_list_indo[$bulan];
+        $selected_ta = ($selected_month_num < 7) ? $tahun - 1 : $tahun;
+        
+        $error_msg = '';
+        if ($selected_ta < $current_ta) {
+            $error_msg = 'Tidak dapat membuat rapot untuk Tahun Ajaran yang sudah lewat.';
+        } elseif ($tahun > $current_y || ($tahun == $current_y && $selected_month_num > $current_m)) {
+            $error_msg = 'Tidak dapat membuat rapot untuk bulan yang belum tiba.';
+        } elseif ($tahun == $current_y && $selected_month_num == $current_m) {
+            if ($current_d < ($current_days_in_month - 7)) {
+                $error_msg = 'Rapot bulan ini baru bisa dibuat pada H-7 sebelum bulan berakhir.';
+            }
+        }
+        
+        if ($error_msg !== '') {
+            set_flash_message('Gagal menyimpan: ' . $error_msg, 'danger');
+            header('Location: create.php');
+            exit;
+        }
+    }
+
     // Validasi santri_id
     if ($santri_id <= 0) {
         set_flash_message('Gagal menyimpan: Santri tidak valid.', 'danger');

@@ -268,7 +268,12 @@ require_once __DIR__ . '/../../layouts/header.php';
                         <div class="row g-3">
                             <div class="col-md-5">
                                 <div class="form-group mb-0">
-                                    <label for="santri_id" class="fw-bold mb-2">Pilih Santri</label>
+                                    <label for="santri_id" class="fw-bold mb-2 d-flex align-items-center gap-2">
+                                        Pilih Santri
+                                        <span id="info-existing-santri" style="display:none;" data-bs-toggle="tooltip" data-bs-placement="top" title="Santri yang sudah memiliki rapot untuk bulan &amp; tahun yang dipilih akan ditampilkan dengan tanda ✗ dan tidak dapat dipilih. Ganti bulan/tahun untuk melihat pilihan lain." style="cursor: help;">
+                                            <i class="fas fa-info-circle text-info"></i>
+                                        </span>
+                                    </label>
                                     <select name="santri_id" id="santri_id" class="form-control" required>
                                         <?php if (empty($santri_list) && !empty($filter_kamar_create) && !$data_sumber): ?>
                                             <option value="">-- Tidak ada santri di kamar <?php echo htmlspecialchars($filter_kamar_create); ?> --</option>
@@ -302,13 +307,7 @@ require_once __DIR__ . '/../../layouts/header.php';
                                         }
                                         ?>
                                     </select>
-                                    <!-- Info: akan diisi JS setelah cek existing rapot -->
-                                    <div id="info-existing-santri" class="mt-2" style="display:none;">
-                                        <div class="alert alert-info alert-sm py-2 px-3 mb-0 small d-flex align-items-start gap-2" style="border-radius: 0.6rem; font-size: 0.8rem;">
-                                            <i class="fas fa-info-circle mt-1 flex-shrink-0 text-info"></i>
-                                            <span>Santri yang <strong>sudah memiliki rapot</strong> untuk bulan &amp; tahun yang dipilih akan ditampilkan dengan tanda <strong class="text-danger">✗</strong> dan tidak dapat dipilih. Ganti bulan/tahun untuk melihat pilihan lain.</span>
-                                        </div>
-                                    </div>
+                                    <!-- Info icon tooltip (dipindah ke label Pilih Santri) -->
                                     <!-- Warning: muncul jika santri yang dipilih ternyata sudah punya rapot -->
                                     <div id="warning-duplicate-santri" class="mt-2" style="display:none;">
                                         <div class="alert alert-danger py-2 px-3 mb-0 small d-flex align-items-start gap-2" style="border-radius: 0.6rem; font-size: 0.8rem;">
@@ -320,7 +319,12 @@ require_once __DIR__ . '/../../layouts/header.php';
                             </div>
                             <div class="col-md-4">
                                 <div class="form-group mb-0">
-                                    <label for="bulan" class="fw-bold mb-2">Bulan</label>
+                                    <label for="bulan" class="fw-bold mb-2 d-flex align-items-center gap-2">
+                                        Bulan
+                                        <span data-bs-toggle="tooltip" data-bs-placement="top" title="Rapot bulanan baru dapat dibuat setelah memasuki H-7 sebelum bulan tersebut berakhir." style="cursor: help;">
+                                            <i class="fas fa-info-circle text-info"></i>
+                                        </span>
+                                    </label>
                                     <select name="bulan" id="bulan" class="form-control" required>
                                         <?php foreach ($bulan_list as $bulan): ?>
                                             <option value="<?php echo $bulan; ?>" <?php echo ($bulan_default == $bulan) ? 'selected' : ''; ?>>
@@ -485,6 +489,78 @@ require_once __DIR__ . '/../../layouts/header.php';
 
 <script>
 $(document).ready(function() {
+    const isEditMode = <?php echo $is_edit ? 'true' : 'false'; ?>;
+    const originalBulan = '<?php echo ($is_edit && $data_sumber) ? $data_sumber['bulan'] : ""; ?>';
+    const originalTahun = <?php echo ($is_edit && $data_sumber) ? (int)$data_sumber['tahun'] : 0; ?>;
+
+    function validateBulanH7() {
+
+        var bulanListIndo = {
+            'Januari': 1, 'Februari': 2, 'Maret': 3, 'April': 4,
+            'Mei': 5, 'Juni': 6, 'Juli': 7, 'Agustus': 8,
+            'September': 9, 'Oktober': 10, 'November': 11, 'Desember': 12
+        };
+
+        // BUG FIX: Menggunakan waktu server (PHP) alih-alih waktu lokal (Browser) 
+        // untuk mencegah inkonsistensi zona waktu.
+        var currentY = <?php echo (int)date('Y'); ?>;
+        var currentM = <?php echo (int)date('n'); ?>;
+        var currentD = <?php echo (int)date('j'); ?>;
+        var currentDaysInMonth = <?php echo (int)date('t'); ?>;
+        
+        var currentTA = (currentM < 7) ? currentY - 1 : currentY;
+        var selectedTahun = parseInt($('#tahun').val(), 10);
+        
+        if (!selectedTahun || isNaN(selectedTahun)) return;
+
+        $('#bulan option').each(function() {
+            var optBulanName = $(this).val();
+            var optM = bulanListIndo[optBulanName];
+            if (!optM) return;
+
+            var optTA = (optM < 7) ? selectedTahun - 1 : selectedTahun;
+            
+            var disabled = false;
+            var reason = '';
+
+            if (isEditMode && optBulanName === originalBulan && selectedTahun === originalTahun) {
+                // Diizinkan (Bypass): Ini adalah data asli rapot yang sedang diedit
+                disabled = false;
+            } else if (optTA < currentTA) {
+                disabled = true;
+                reason = 'Tidak dapat dipilih karena beda Tahun Ajaran.';
+            } else if (selectedTahun > currentY || (selectedTahun === currentY && optM > currentM)) {
+                disabled = true;
+                reason = 'Tidak dapat membuat rapot untuk bulan yang belum tiba.';
+            } else if (selectedTahun === currentY && optM === currentM) {
+                if (currentD < (currentDaysInMonth - 7)) {
+                    disabled = true;
+                    reason = 'Rapot bulan ini baru bisa dibuat pada H-7 sebelum bulan berakhir.';
+                }
+            }
+
+            if (disabled) {
+                $(this).prop('disabled', true);
+                $(this).attr('title', reason);
+                $(this).css('color', '#aaa');
+            } else {
+                $(this).prop('disabled', false);
+                $(this).removeAttr('title');
+                $(this).css('color', '');
+            }
+        });
+
+        // Jika bulan yang dipilih saat ini di-disable, pindahkan ke opsi pertama yang terbuka
+        if ($('#bulan option:selected').prop('disabled')) {
+            var firstEnabled = $('#bulan option:not(:disabled)').first();
+            if (firstEnabled.length > 0) {
+                $('#bulan').val(firstEnabled.val()).trigger('change');
+            } else {
+                $('#bulan').val('').trigger('change');
+            }
+        }
+    }
+
     function customSelect2Matcher(params, data) {
         if ($.trim(params.term) === '') {
             return data;
@@ -779,6 +855,7 @@ $(document).ready(function() {
         autoFetchPoinReward();
     });
     $('#tahun').on('change input', function() {
+        validateBulanH7();
         filterExistingRapot();
         autoFetchPoinReward();
     });
@@ -836,6 +913,7 @@ $(document).ready(function() {
     });
 
     // Jalankan filter + fetch sekali saat halaman pertama kali load
+    validateBulanH7();
     filterExistingRapot();
     if ($('#santri_id').val() && $('#bulan').val() && $('#tahun').val()) {
         autoFetchPoinReward();
