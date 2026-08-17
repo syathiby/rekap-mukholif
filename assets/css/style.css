@@ -2088,4 +2088,53 @@ body.modal-open .bottom-nav,
 body.modal-open .fab-container,
 body.modal-open .fab-btn.single-fab {
     padding-right: 0 !important;
+}
+
+/* =================================================================
+   GLOBAL DRAG-TO-SCROLL (HORIZONTAL SCROLL ON MOUSE DRAG)
+   ================================================================= */
+/* Kursor Grab (Tangan Terbuka Putih dengan Garis Hitam Tegas) */
+.drag-scroll-active {
+    cursor: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='28' height='28' viewBox='0 0 24 24' fill='%23ffffff' stroke='%23000000' stroke-width='1.8' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M18 11V6a2 2 0 0 0-2-2v0a2 2 0 0 0-2 2v0'/%3E%3Cpath d='M14 10V4a2 2 0 0 0-2-2v0a2 2 0 0 0-2 2v2'/%3E%3Cpath d='M10 10.5V6a2 2 0 0 0-2-2v0a2 2 0 0 0-2 2v8'/%3E%3Cpath d='M18 8a2 2 0 1 1 4 0v6a8 8 0 0 1-8 8h-2c-2.8 0-4.5-.86-5.99-2.34l-3.6-3.6a2 2 0 0 1 2.83-2.82L7 15'/%3E%3C/svg%3E") 12 12, grab;
+    -webkit-overflow-scrolling: touch;
+}
+
+/* Kursor Grabbing (Tangan Mengepal Putih dengan Garis Hitam Tegas) saat aktif di-drag */
+body.is-drag-scrolling,
+body.is-drag-scrolling * {
+    user-select: none !important;
+    -webkit-user-select: none !important;
+    cursor: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='28' height='28' viewBox='0 0 24 24' fill='%23ffffff' stroke='%23000000' stroke-width='1.8' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M18 11V8a2 2 0 0 0-2-2 2 2 0 0 0-2 2'/%3E%3Cpath d='M14 10V7a2 2 0 0 0-2-2 2 2 0 0 0-2 2'/%3E%3Cpath d='M10 10.5V8a2 2 0 0 0-2-2 2 2 0 0 0-2 2v4'/%3E%3Cpath d='M18 9a2 2 0 0 1 2 2v4a7 7 0 0 1-7 7h-2c-2.5 0-4-.8-5.5-2l-2.5-2.5a2 2 0 0 1 2.5-2.5l2 1.5'/%3E%3C/svg%3E") 12 12, grabbing !important;
+}
+
+.drag-scroll-active.is-dragging {
+    cursor: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='28' height='28' viewBox='0 0 24 24' fill='%23ffffff' stroke='%23000000' stroke-width='1.8' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M18 11V8a2 2 0 0 0-2-2 2 2 0 0 0-2 2'/%3E%3Cpath d='M14 10V7a2 2 0 0 0-2-2 2 2 0 0 0-2 2'/%3E%3Cpath d='M10 10.5V8a2 2 0 0 0-2-2 2 2 0 0 0-2 2v4'/%3E%3Cpath d='M18 9a2 2 0 0 1 2 2v4a7 7 0 0 1-7 7h-2c-2.5 0-4-.8-5.5-2l-2.5-2.5a2 2 0 0 1 2.5-2.5l2 1.5'/%3E%3C/svg%3E") 12 12, grabbing !important;
+    scroll-behavior: auto !important; /* Responsif instan 1:1 saat digeser mouse */
+}
+
+/* Pertahankan kursor yang benar untuk elemen interaktif di dalam tabel */
+.drag-scroll-active a,
+.drag-scroll-active button,
+.drag-scroll-active .btn,
+.drag-scroll-active [role="button"],
+.drag-scroll-active .dropdown-toggle,
+.drag-scroll-active .badge[onclick],
+.drag-scroll-active input[type="submit"],
+.drag-scroll-active input[type="button"],
+.drag-scroll-active input[type="checkbox"],
+.drag-scroll-active input[type="radio"],
+.drag-scroll-active select,
+.drag-scroll-active .select2-container {
+    cursor: pointer;
+}
+
+.drag-scroll-active input[type="text"],
+.drag-scroll-active input[type="search"],
+.drag-scroll-active input[type="number"],
+.drag-scroll-active input[type="date"],
+.drag-scroll-active input[type="email"],
+.drag-scroll-active textarea {
+    cursor: text;
+    user-select: text !important;
+    -webkit-user-select: text !important;
 }

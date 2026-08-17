@@ -121,6 +121,7 @@ if (function_exists('has_permission')) {
 <script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+<script src="<?= BASE_URL ?>/assets/js/drag-scroll.js?v=<?= file_exists(__DIR__ . '/../assets/js/drag-scroll.js') ? filemtime(__DIR__ . '/../assets/js/drag-scroll.js') : '1' ?>"></script>
 
 <script>
     // Fungsi Global untuk Konfirmasi Aksi (Hapus, dll) menggunakan SweetAlert2
