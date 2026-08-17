@@ -232,116 +232,79 @@ if (function_exists('has_permission')) {
         }
     });
 
-    // ==========================================
-    // INSTANT FREEZE SIDEBAR & ZERO-BLINK NAV
-    // ==========================================
-    document.addEventListener('click', function(e) {
-        var link = e.target.closest('a');
-        if (!link) return;
+    // =========================================================================
+    // INSTANT HOVER PREFETCH ENGINE (Sub-millisecond Instant Navigation)
+    // =========================================================================
+    (function() {
+        if (!('fetch' in window)) return;
 
-        var href = link.getAttribute('href');
-        if (!href || href.startsWith('#') || href.startsWith('javascript:') || href.startsWith('mailto:') || href.startsWith('tel:')) return;
-        if (link.target === '_blank' || link.hasAttribute('download') || link.hasAttribute('data-no-pjax') || link.hasAttribute('data-bs-toggle') || link.onclick) return;
+        var prefetchedUrls = new Set();
+        var hoverTimer = null;
 
-        var url;
-        try {
-            url = new URL(href, window.location.href);
-        } catch(err) {
-            return;
+        function prefetchUrl(urlStr) {
+            if (!urlStr || prefetchedUrls.has(urlStr)) return;
+            prefetchedUrls.add(urlStr);
+
+            // Gunakan rel="prefetch" browser native atau background fetch
+            var linkEl = document.createElement('link');
+            linkEl.rel = 'prefetch';
+            linkEl.href = urlStr;
+            linkEl.as = 'document';
+            document.head.appendChild(linkEl);
         }
 
-        if (url.origin !== window.location.origin) return;
-        if (/\.(pdf|xlsx|xls|csv|zip|png|jpg|jpeg|gif|svg)$/i.test(url.pathname)) return;
-        if (url.href === window.location.href) {
-            e.preventDefault();
-            return;
+        function getValidUrl(target) {
+            var a = target.closest('a');
+            if (!a) return null;
+
+            var href = a.getAttribute('href');
+            if (!href || href.startsWith('#') || href.startsWith('javascript:') || href.startsWith('mailto:') || href.startsWith('tel:')) return null;
+            if (a.target === '_blank' || a.hasAttribute('download') || a.hasAttribute('data-no-prefetch') || a.hasAttribute('data-bs-toggle') || a.onclick) return null;
+
+            try {
+                var url = new URL(href, window.location.href);
+                if (url.origin !== window.location.origin) return null;
+                if (url.href === window.location.href) return null;
+                if (/\.(pdf|xlsx|xls|csv|zip|png|jpg|jpeg|gif|svg|mp3|mp4)$/i.test(url.pathname)) return null;
+                return url.href;
+            } catch(e) {
+                return null;
+            }
         }
 
-        e.preventDefault();
-        freezeNavigate(url.href, true);
-    });
+        // On hover (mouseover) atau touchstart, prefetch link dalam 65ms
+        document.addEventListener('mouseover', function(e) {
+            var url = getValidUrl(e.target);
+            if (!url) return;
 
-    async function freezeNavigate(url, pushState) {
-        try {
-            var currentMain = document.querySelector('.main-content');
-            if (!currentMain) {
-                window.location.href = url;
-                return;
+            clearTimeout(hoverTimer);
+            hoverTimer = setTimeout(function() {
+                prefetchUrl(url);
+            }, 65);
+        }, { passive: true });
+
+        document.addEventListener('mouseout', function(e) {
+            clearTimeout(hoverTimer);
+        }, { passive: true });
+
+        document.addEventListener('touchstart', function(e) {
+            var url = getValidUrl(e.target);
+            if (url) {
+                prefetchUrl(url);
             }
+        }, { passive: true });
 
-            var response = await fetch(url);
-            if (!response.ok) {
-                window.location.href = url;
-                return;
-            }
-
-            var html = await response.text();
-            var parser = new DOMParser();
-            var newDoc = parser.parseFromString(html, 'text/html');
-            var newMain = newDoc.querySelector('.main-content');
-
-            if (!newMain) {
-                window.location.href = url;
-                return;
-            }
-
-            if (newDoc.title) document.title = newDoc.title;
-            if (pushState) history.pushState({ url: url }, '', url);
-
-            // Sinkronkan status active menu sidebar persis dengan hasil render server
-            var newLinks = newDoc.querySelectorAll('.sb-nav .sb-link');
-            var currentLinks = document.querySelectorAll('.sb-nav .sb-link');
-            if (newLinks.length > 0 && newLinks.length === currentLinks.length) {
-                currentLinks.forEach(function(l, idx) {
-                    if (newLinks[idx].classList.contains('active')) {
-                        l.classList.add('active');
-                    } else {
-                        l.classList.remove('active');
-                    }
-                });
-            } else {
-                currentLinks.forEach(function(l) {
-                    l.classList.remove('active');
-                });
-                var activeInNew = newDoc.querySelector('.sb-nav .sb-link.active');
-                if (activeInNew) {
-                    var actHref = activeInNew.getAttribute('href');
-                    var targetLink = document.querySelector('.sb-nav .sb-link[href="' + actHref + '"]');
-                    if (targetLink) targetLink.classList.add('active');
+        // Simpan posisi scroll sidebar secara instan saat tombol ditekan (mousedown)
+        document.addEventListener('mousedown', function(e) {
+            var link = e.target.closest('.sb-link');
+            if (link) {
+                var sbNav = document.querySelector('.sb-nav');
+                if (sbNav) {
+                    sessionStorage.setItem('sidebar_scroll_pos', sbNav.scrollTop);
                 }
             }
-
-            // Instant swap without opacity blink
-            currentMain.innerHTML = newMain.innerHTML;
-            window.scrollTo({ top: 0, behavior: 'instant' });
-
-            if (typeof closeSidebarMobile === 'function') {
-                closeSidebarMobile();
-            }
-
-            // Re-run script tags
-            var scripts = currentMain.querySelectorAll('script');
-            scripts.forEach(function(oldScript) {
-                var newScript = document.createElement('script');
-                Array.from(oldScript.attributes).forEach(attr => newScript.setAttribute(attr.name, attr.value));
-                newScript.appendChild(document.createTextNode(oldScript.innerHTML));
-                oldScript.parentNode.replaceChild(newScript, oldScript);
-            });
-
-            if (typeof scanAllScrollables === 'function') {
-                scanAllScrollables();
-            }
-            if (document.getElementById('live-time')) {
-                updateLiveTime();
-            }
-        } catch(err) {
-            window.location.href = url;
-        }
-    }
-
-    window.addEventListener('popstate', function() {
-        freezeNavigate(window.location.href, false);
-    });
+        }, { passive: true });
+    })();
 
     // ==========================================
     // GLOBAL FLASH MESSAGE HANDLER (SweetAlert2)
