@@ -257,14 +257,16 @@ function closeSidebarMobile() {
 }
 
 function confirmLogout(event) {
-    event.preventDefault();
-    const logoutUrl = event.currentTarget.href;
+    if (event) {
+        event.preventDefault();
+        event.stopPropagation();
+    }
     
     // Fungsi untuk mensubmit form POST
     const executeLogout = () => {
         const form = document.createElement('form');
         form.method = 'POST';
-        form.action = logoutUrl;
+        form.action = '<?= BASE_URL ?>/logout.php';
         const csrf = document.createElement('input');
         csrf.type = 'hidden';
         csrf.name = 'csrf_token';
@@ -275,21 +277,49 @@ function confirmLogout(event) {
     };
 
     if (typeof Swal !== 'undefined') {
+        let logoutKeyHandler = null;
+
         Swal.fire({
-            title: 'Keluar dari Sistem?',
-            text: 'Sesi Anda akan diakhiri dan seluruh jejak browser akan dibersihkan demi keamanan.',
-            icon: 'warning',
+            html: `
+                <div class="swal-custom-modal">
+                    <div class="swal-icon-badge-logout">
+                        <i class="fas fa-arrow-right-from-bracket"></i>
+                    </div>
+                    <h3 class="swal-custom-title">Keluar dari Sistem?</h3>
+                    <p class="swal-custom-desc">Sesi Anda akan diakhiri dan seluruh jejak browser akan dibersihkan demi keamanan.</p>
+                </div>
+            `,
             showCancelButton: true,
-            confirmButtonColor: '#22c55e',
-            cancelButtonColor: '#64748b',
             confirmButtonText: 'Ya, Keluar',
             cancelButtonText: 'Batal',
             reverseButtons: true,
-            background: '#1e293b',
-            color: '#f8fafc',
-            iconColor: '#f59e0b'
+            focusConfirm: true,
+            allowEscapeKey: true,
+            allowOutsideClick: true,
+            customClass: {
+                popup: 'swal-modern-logout-popup',
+                actions: 'swal-modern-logout-actions',
+                confirmButton: 'swal-btn-logout-confirm',
+                cancelButton: 'swal-btn-logout-cancel'
+            },
+            buttonsStyling: false,
+            didOpen: () => {
+                // Keyboard handler for Backspace
+                logoutKeyHandler = function (e) {
+                    if (e.key === 'Backspace') {
+                        e.preventDefault();
+                        Swal.close();
+                    }
+                };
+                window.addEventListener('keydown', logoutKeyHandler);
+            },
+            willClose: () => {
+                if (logoutKeyHandler) {
+                    window.removeEventListener('keydown', logoutKeyHandler);
+                }
+            }
         }).then((result) => {
-            if (result.isConfirmed) {
+            if (result && result.isConfirmed) {
                 executeLogout();
             }
         });

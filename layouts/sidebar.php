@@ -146,3 +146,51 @@ if (function_exists('has_permission')) {
     <?php endif; ?>
     
 </div>
+
+<script>
+// ── SMART BULLETPROOF SIDEBAR SCROLL PERSISTENCE ──
+(function() {
+    try {
+        var sbNav = document.querySelector('.sb-nav');
+        if (!sbNav) return;
+
+        // 1. Pulihkan posisi scroll secara instan sebelum render layar
+        var savedPos = sessionStorage.getItem('sidebar_scroll_pos');
+        if (savedPos !== null && !isNaN(savedPos)) {
+            sbNav.scrollTop = parseInt(savedPos, 10);
+        }
+
+        // 2. Simpan posisi scroll saat sidebar di-scroll
+        var scrollTimer = null;
+        sbNav.addEventListener('scroll', function() {
+            clearTimeout(scrollTimer);
+            scrollTimer = setTimeout(function() {
+                sessionStorage.setItem('sidebar_scroll_pos', sbNav.scrollTop);
+            }, 50);
+        }, { passive: true });
+
+        // 3. Simpan posisi scroll seketika saat mengklik tautan di dalam sidebar
+        sbNav.addEventListener('click', function(e) {
+            var link = e.target.closest('.sb-link');
+            if (link) {
+                sessionStorage.setItem('sidebar_scroll_pos', sbNav.scrollTop);
+            }
+        });
+
+        // 4. Setelah layout selesai dihitung (DOM Ready), pastikan menu aktif terlihat
+        document.addEventListener('DOMContentLoaded', function() {
+            var activeLink = sbNav.querySelector('.sb-link.active');
+            if (activeLink) {
+                var navRect = sbNav.getBoundingClientRect();
+                var actRect = activeLink.getBoundingClientRect();
+                
+                // Hanya scroll jika active link benar-benar terpotong di luar viewport
+                if (actRect.top < navRect.top || actRect.bottom > navRect.bottom) {
+                    activeLink.scrollIntoView({ block: 'nearest' });
+                    sessionStorage.setItem('sidebar_scroll_pos', sbNav.scrollTop);
+                }
+            }
+        });
+    } catch (e) {}
+})();
+</script>

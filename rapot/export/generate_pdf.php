@@ -6,6 +6,7 @@ require_once __DIR__ . '/../../vendor/autoload.php';
 require_once __DIR__ . '/../config/helper.php';
 
 guard('rapot_cetak');
+session_write_close();
 
 $output_mode = $_GET['output'] ?? 'download';
 

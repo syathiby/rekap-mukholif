@@ -244,6 +244,7 @@ $res = $stmt->get_result();
                                 <a href="view.php?id=<?= $row['id']; ?>" class="btn btn-lihat"><i class="fas fa-eye"></i> Lihat</a>
                                 <?php if (has_permission('arsip_delete')): ?>
                                     <form class="d-inline" action="crud/delete.php" method="post" onsubmit="confirmSubmit(event, this, 'Peringatan Hapus', 'Yakin hapus arsip ini? Data di dalamnya akan hilang permanen!');">
+                                        <input type="hidden" name="csrf_token" value="<?= htmlspecialchars(csrf_generate()) ?>">
                                         <input type="hidden" name="action" value="delete"><input type="hidden" name="id" value="<?= $row['id']; ?>">
                                         <button type="submit" class="btn btn-hapus"><i class="fas fa-trash-alt"></i> Hapus</button>
                                     </form>
@@ -279,6 +280,7 @@ $res = $stmt->get_result();
                             <a href="view.php?id=<?= $row['id']; ?>" class="btn btn-lihat"><i class="fas fa-eye"></i> Lihat</a>
                             <?php if (has_permission('arsip_delete')): ?>
                                 <form class="w-100" action="crud/delete.php" method="post" onsubmit="confirmSubmit(event, this, 'Peringatan Hapus', 'Yakin hapus arsip ini? Data di dalamnya akan hilang permanen!');">
+                                    <input type="hidden" name="csrf_token" value="<?= htmlspecialchars(csrf_generate()) ?>">
                                     <input type="hidden" name="action" value="delete"><input type="hidden" name="id" value="<?= $row['id']; ?>">
                                     <button type="submit" class="btn btn-hapus"><i class="fas fa-trash-alt"></i> Hapus</button>
                                 </form>

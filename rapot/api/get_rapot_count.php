@@ -5,6 +5,7 @@ if (!has_permission('rapot_create') && !has_permission('rapot_view')) {
     echo '<div class="alert alert-danger mb-0 small">Akses ditolak</div>';
     exit;
 }
+session_write_close();
 
 $santri_id = isset($_POST['santri_id']) ? (int)$_POST['santri_id'] : 0;
 $bulan = isset($_POST['bulan']) ? $_POST['bulan'] : '';

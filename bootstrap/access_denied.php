@@ -1,6 +1,13 @@
 <?php
-// Pastikan BASE_URL udah didefinisikan di config/app.php
+// Pastikan BASE_URL dan helper udah didefinisikan
 require_once __DIR__ . '/../config/app.php';
+if (file_exists(__DIR__ . '/helpers.php')) {
+    require_once __DIR__ . '/helpers.php';
+}
+if (session_status() === PHP_SESSION_NONE) {
+    session_start();
+}
+$csrf_token_val = function_exists('csrf_generate') ? csrf_generate() : ($_SESSION['csrf_token'] ?? '');
 ?>
 <!DOCTYPE html>
 <html lang="id">
@@ -94,6 +101,15 @@ require_once __DIR__ . '/../config/app.php';
             width: 100%;
             position: relative;
             overflow: hidden;
+            cursor: pointer;
+            transition: transform 0.3s ease, box-shadow 0.3s ease;
+        }
+
+        .glass-card-pre:hover {
+            transform: translateY(-2px);
+            box-shadow: 
+                0 15px 35px -10px rgba(148, 163, 184, 0.18),
+                0 35px 70px -15px rgba(148, 163, 184, 0.22);
         }
 
         /* Pantulan cahaya soft di kartu */
@@ -105,6 +121,7 @@ require_once __DIR__ . '/../config/app.php';
             background: linear-gradient(to right, transparent, rgba(255, 255, 255, 0.4), transparent);
             transform: skewX(-25deg);
             animation: shine-slow 6s infinite ease-in-out;
+            pointer-events: none;
         }
 
         .gift-title {
@@ -422,33 +439,56 @@ require_once __DIR__ . '/../config/app.php';
                 </div>
             </div>
         </div>
-
     </div>
+
+    <!-- Floating Bottom Footer Watermark -->
+    <footer style="position: fixed; bottom: max(1.25rem, env(safe-area-inset-bottom, 1.25rem)); left: 50%; transform: translateX(-50%); font-size: 0.875rem; color: #64748b; text-align: center; width: 100%; pointer-events: auto; z-index: 50;">
+        &copy; 2025 Built by <a href="https://ajsk.vercel.app/" target="_blank" rel="noopener noreferrer" style="color: #2563eb; font-weight: 700; text-decoration: none !important;">AJSK.</a>
+    </footer>
 
     <script>
         const BASE_URL = '<?= defined('BASE_URL') ? BASE_URL : '' ?>';
+        const giftWrapper = document.getElementById('giftWrapper');
         const giftBox = document.getElementById('giftBox');
+        const errorCard = document.getElementById('errorCard');
         const countdownElement = document.getElementById('countdown');
         let hasBeenClicked = false;
 
-        giftBox.addEventListener('click', () => {
+        function openGift() {
             if (hasBeenClicked) return;
             hasBeenClicked = true;
 
-            // 1. Bunyikan nada "Ding-Dong!" gembira baru disusul sad trombone cempreng
+            // 1. Transisi visual: sembunyikan kado dan munculkan error card dengan animasi smooth
+            if (giftWrapper) {
+                giftWrapper.style.opacity = '0';
+                giftWrapper.style.transform = 'scale(0.88) translateY(-20px)';
+            }
+            
+            setTimeout(() => {
+                if (giftWrapper) giftWrapper.style.display = 'none';
+                if (errorCard) {
+                    errorCard.style.display = 'block';
+                    requestAnimationFrame(() => {
+                        errorCard.style.opacity = '1';
+                        errorCard.style.transform = 'scale(1) translateY(0)';
+                    });
+                }
+            }, 350);
+
+            // 2. Bunyikan nada "Ding-Dong!" gembira baru disusul sad trombone cempreng
             playPoliteTrollSound();
 
-            // 2. Aktifkan visual alarm pastel lembut
+            // 3. Aktifkan visual alarm pastel lembut
             document.body.classList.add('opened');
             
-            // 3. Picu hujan emoji yang BANYAK dan LAMBAT jatuh ke bawah
+            // 4. Picu hujan emoji yang BANYAK dan LAMBAT jatuh ke bawah
             triggerSlowEmojiRain();
             
-            // 4. Logika countdown
+            // 5. Logika countdown
             let countdown = 10;
             const countdownInterval = setInterval(() => {
                 countdown--;
-                countdownElement.textContent = countdown;
+                if (countdownElement) countdownElement.textContent = countdown;
                 
                 const timerContainer = document.querySelector('.timer-container');
                 if (countdown <= 3 && timerContainer) {
@@ -463,13 +503,16 @@ require_once __DIR__ . '/../config/app.php';
                     const csrf = document.createElement('input');
                     csrf.type = 'hidden';
                     csrf.name = 'csrf_token';
-                    csrf.value = '<?= csrf_generate() ?>';
+                    csrf.value = '<?= htmlspecialchars($csrf_token_val) ?>';
                     form.appendChild(csrf);
                     document.body.appendChild(form);
                     form.submit();
                 }
             }, 1000);
-        });
+        }
+
+        if (giftWrapper) giftWrapper.addEventListener('click', openGift);
+        if (giftBox) giftBox.addEventListener('click', openGift);
 
         // =======================================================
         // 🎼 EFEK SUARA MANUSIAWI (DING-DONG GEMBIRA + SAD TROMBONE)

@@ -8,6 +8,7 @@ require_once __DIR__ . '/../config/helper.php';
 require_once __DIR__ . '/../api/generate_catatan.php';
 
 guard('rapot_cetak');
+session_write_close();
 
 $id = (int)($_GET['id'] ?? 0);
 $kamar = $_GET['kamar'] ?? '';

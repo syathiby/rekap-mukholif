@@ -41,7 +41,7 @@ $jenis_pelanggaran_result = $stmt->get_result();
         --card-border: rgba(0,0,0,0.05);
     }
 
-    body { background-color: var(--bg-body); font-family: 'Inter', sans-serif; }
+    body { background-color: var(--bg-body); font-family: 'Poppins', sans-serif; }
 
     /* === CARD STYLES === */
     .pro-card {

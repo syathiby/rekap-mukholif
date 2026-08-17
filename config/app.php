@@ -1,28 +1,25 @@
 <?php
-// File: config.php
+// File: config/app.php
 
-// Jurus Sakti v2: Bikin Base URL Dinamis & Stabil
-// ===================================================
+if (!defined('BASE_URL')) {
+    // Cek protokol (http atau https)
+    $is_https = (!empty($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off') || (isset($_SERVER['SERVER_PORT']) && (int)$_SERVER['SERVER_PORT'] === 443);
+    $protocol = $is_https ? "https://" : "http://";
 
-// Cek protokol (http atau https)
-$protocol = (!empty($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off' || $_SERVER['SERVER_PORT'] == 443) ? "https://" : "http://";
+    // Ambil nama domain (cth: localhost atau rekap-mukholif.test)
+    $host = $_SERVER['HTTP_HOST'] ?? 'localhost';
 
-// Ambil nama domain (cth: localhost atau domainkamu.com)
-$host = $_SERVER['HTTP_HOST'];
+    // Logika penentuan subfolder
+    $doc_root = isset($_SERVER['DOCUMENT_ROOT']) ? $_SERVER['DOCUMENT_ROOT'] : '';
+    $project_dir = dirname(__DIR__);
 
-// --- BAGIAN TERPENTING YANG DIPERBAIKI ---
-// Logika ini akan selalu menemukan subfolder aplikasi, tidak peduli seberapa dalam file diakses.
-$doc_root = $_SERVER['DOCUMENT_ROOT'];
-// dirname(__DIR__) naik satu level dari config/ ke root project rekap-mukholif/
-$project_dir = dirname(__DIR__); // Mengambil path absolut di server (cth: C:/laragon/www/rekap-mukholif)
+    if (!empty($doc_root)) {
+        $subfolder = str_replace(str_replace('\\', '/', $doc_root), '', str_replace('\\', '/', $project_dir));
+    } else {
+        $subfolder = '';
+    }
 
-// Menghapus path document root dari path project untuk mendapatkan subfolder
-$subfolder = str_replace(str_replace('\\', '/', $doc_root), '', str_replace('\\', '/', $project_dir));
-
-// Gabungin semua jadi satu alamat lengkap yang STABIL!
-$base_url = $protocol . $host . $subfolder;
-
-// Definisikan sebagai konstanta biar bisa dipanggil dari mana aja
-define('BASE_URL', $base_url);
-
+    $base_url = rtrim($protocol . $host . $subfolder, '/');
+    define('BASE_URL', $base_url);
+}
 ?>

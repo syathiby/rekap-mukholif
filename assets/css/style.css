@@ -593,10 +593,14 @@ a {
     background-size: 400% 400%;
     animation: gradientBg 15s ease infinite;
     min-height: 100vh;
-    display: block;
-    padding: 6vh 1.5rem 8rem 1.5rem; /* Extra bottom padding so PWA button doesn't block form */
+    min-height: 100dvh;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: 3rem 1.5rem;
     position: relative;
-    overflow: visible !important; /* Ensure scrolling works everywhere */
+    overflow-y: auto !important;
 }
 
 .login-card-wrapper {
@@ -1820,15 +1824,6 @@ a {
 }
 
 /* --- 5. Clean Glassmorphic Login Layout --- */
-.login-body {
-    background-color: #f8fafc;
-    position: relative;
-    overflow: hidden;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    min-height: 100vh;
-}
 
 /* Subtle background blobs are removed in favor of animated gradient */
 
@@ -1958,7 +1953,7 @@ textarea:focus {
     overflow: hidden;
     overscroll-behavior: contain;
     padding-top: env(safe-area-inset-top, 0px);
-    transition: left 0.28s cubic-bezier(0.4,0,0.2,1);
+    transition: none;
 }
 
 .sb-brand {
@@ -1978,6 +1973,18 @@ textarea:focus {
     flex-shrink: 0;
 }
 .sb-brand-icon i { color: #fff; font-size: 1rem; }
+#sidebar,
+.sb-brand,
+.sb-brand-name,
+.sb-nav,
+.sb-section-label,
+.sb-link,
+.sb-footer,
+.sb-user-name,
+.sb-user-role {
+    font-family: 'Poppins', sans-serif !important;
+}
+
 .sb-brand-name {
     font-size: 1.25rem;
     font-weight: 800;
@@ -1993,6 +2000,7 @@ textarea:focus {
     overflow-y: auto;
     scrollbar-width: none;
     -webkit-overflow-scrolling: touch;
+    overscroll-behavior: contain;
 }
 .sb-nav::-webkit-scrollbar { display: none; }
 
@@ -2071,6 +2079,7 @@ textarea:focus {
 @media (max-width: 991.98px) {
     #sidebar {
         left: calc(-1 * var(--sb-width));
+        transition: left 0.28s cubic-bezier(0.4, 0, 0.2, 1);
     }
     #sidebar.toggled {
         left: 0;
@@ -2137,4 +2146,444 @@ body.is-drag-scrolling * {
     cursor: text;
     user-select: text !important;
     -webkit-user-select: text !important;
+}
+
+/* =================================================================
+   GLOBAL APP FOOTER WATERMARK
+   ================================================================= */
+.app-footer {
+    font-size: 0.875rem;
+    color: #64748b;
+    padding: 1.5rem 0;
+    margin-top: auto;
+    text-align: center;
+    letter-spacing: 0.01em;
+}
+
+.app-footer a {
+    color: #2563eb !important;
+    font-weight: 700;
+    text-decoration: none !important;
+    transition: opacity 0.2s ease;
+}
+
+.app-footer a:hover,
+.app-footer a:focus,
+.app-footer a:active {
+    opacity: 0.8;
+    text-decoration: none !important;
+}
+
+@media (max-width: 991.98px) {
+    .app-footer {
+        padding-bottom: calc(5.5rem + env(safe-area-inset-bottom, 0px));
+    }
+}
+
+/* =================================================================
+   MODERN MINIMALIST SWEETALERT SYSTEM (TOAST & MODAL)
+   ================================================================= */
+/* Backdrop ONLY for modals, NEVER for toasts */
+.swal2-container.swal2-backdrop-show:not(.swal2-top-end):not(.swal2-top-start):not(.swal2-bottom-end):not(.swal2-bottom-start):not(.swal2-toast-shown):not(:has(.swal2-toast)) {
+    backdrop-filter: blur(8px) !important;
+    -webkit-backdrop-filter: blur(8px) !important;
+    background: rgba(15, 23, 42, 0.45) !important;
+}
+
+/* Toast Container: zero backdrop, transparent, non-blocking */
+.swal2-container.swal2-toast-shown,
+.swal2-container.swal2-top-end,
+.swal2-container:has(.swal2-toast) {
+    background: transparent !important;
+    backdrop-filter: none !important;
+    -webkit-backdrop-filter: none !important;
+    pointer-events: none !important;
+}
+
+div:where(.swal2-container) div:where(.swal2-popup).swal-modern-popup,
+div:where(.swal2-container) div:where(.swal2-popup).swal-modern-logout-popup {
+    background: #ffffff !important;
+    border-radius: 28px !important;
+    padding: 2.25rem 2rem 2rem 2rem !important;
+    max-width: 420px !important;
+    width: 92% !important;
+    box-shadow: 0 25px 50px -12px rgba(15, 23, 42, 0.2), 0 0 0 1px rgba(226, 232, 240, 0.8) !important;
+    border: none !important;
+}
+
+/* Modern Minimalist Toast */
+div:where(.swal2-container) div:where(.swal2-popup).swal-modern-toast,
+div:where(.swal2-container) div:where(.swal2-popup).swal2-toast {
+    background: rgba(255, 255, 255, 0.96) !important;
+    backdrop-filter: blur(12px) !important;
+    -webkit-backdrop-filter: blur(12px) !important;
+    border-radius: 16px !important;
+    padding: 0.75rem 1.15rem !important;
+    box-shadow: 0 10px 25px -4px rgba(15, 23, 42, 0.12), 0 0 0 1px rgba(226, 232, 240, 0.8) !important;
+    border: none !important;
+    font-family: 'Poppins', sans-serif !important;
+    display: flex !important;
+    align-items: center !important;
+    pointer-events: auto !important;
+    margin: 1rem !important;
+}
+
+div:where(.swal2-container) div:where(.swal2-popup).swal2-toast .swal2-title {
+    font-family: 'Poppins', sans-serif !important;
+    font-size: 0.88rem !important;
+    font-weight: 600 !important;
+    color: #1e293b !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    line-height: 1.4 !important;
+}
+
+/* Modern Minimalist Toast Icons */
+div:where(.swal2-container) div:where(.swal2-popup).swal2-toast .swal2-icon {
+    width: 28px !important;
+    height: 28px !important;
+    min-width: 28px !important;
+    margin: 0 10px 0 0 !important;
+    border-radius: 50% !important;
+    display: flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    border: none !important;
+    position: relative !important;
+}
+
+/* Success Checkmark Icon (Tajam & Modern) */
+div:where(.swal2-container) div:where(.swal2-popup).swal2-toast .swal2-icon.swal2-success {
+    background: #dcfce7 !important;
+    border: 1px solid rgba(22, 163, 74, 0.25) !important;
+}
+
+div:where(.swal2-container) div:where(.swal2-popup).swal2-toast .swal2-icon.swal2-success * {
+    display: none !important;
+}
+
+div:where(.swal2-container) div:where(.swal2-popup).swal2-toast .swal2-icon.swal2-success::after {
+    content: '' !important;
+    display: block !important;
+    width: 15px !important;
+    height: 15px !important;
+    background-color: #16a34a !important;
+    -webkit-mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='currentColor' stroke-width='3.5' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='20 6 9 17 4 12'%3E%3C/polyline%3E%3C/svg%3E") no-repeat center / contain !important;
+    mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='currentColor' stroke-width='3.5' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='20 6 9 17 4 12'%3E%3C/polyline%3E%3C/svg%3E") no-repeat center / contain !important;
+}
+
+/* Error Icon */
+div:where(.swal2-container) div:where(.swal2-popup).swal2-toast .swal2-icon.swal2-error {
+    background: #fee2e2 !important;
+    border: 1px solid rgba(239, 68, 68, 0.25) !important;
+}
+
+div:where(.swal2-container) div:where(.swal2-popup).swal2-toast .swal2-icon.swal2-error * {
+    display: none !important;
+}
+
+div:where(.swal2-container) div:where(.swal2-popup).swal2-toast .swal2-icon.swal2-error::after {
+    content: '' !important;
+    display: block !important;
+    width: 14px !important;
+    height: 14px !important;
+    background-color: #ef4444 !important;
+    -webkit-mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='currentColor' stroke-width='3.5' stroke-linecap='round' stroke-linejoin='round'%3E%3Cline x1='18' y1='6' x2='6' y2='18'%3E%3C/line%3E%3Cline x1='6' y1='6' x2='18' y2='18'%3E%3C/line%3E%3C/svg%3E") no-repeat center / contain !important;
+    mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='currentColor' stroke-width='3.5' stroke-linecap='round' stroke-linejoin='round'%3E%3Cline x1='18' y1='6' x2='6' y2='18'%3E%3C/line%3E%3Cline x1='6' y1='6' x2='18' y2='18'%3E%3C/line%3E%3C/svg%3E") no-repeat center / contain !important;
+}
+
+/* Warning Icon */
+div:where(.swal2-container) div:where(.swal2-popup).swal2-toast .swal2-icon.swal2-warning {
+    background: #fef3c7 !important;
+    border: 1px solid rgba(245, 158, 11, 0.25) !important;
+}
+
+div:where(.swal2-container) div:where(.swal2-popup).swal2-toast .swal2-icon.swal2-warning * {
+    display: none !important;
+}
+
+div:where(.swal2-container) div:where(.swal2-popup).swal2-toast .swal2-icon.swal2-warning::after {
+    content: '' !important;
+    display: block !important;
+    width: 14px !important;
+    height: 14px !important;
+    background-color: #d97706 !important;
+    -webkit-mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='currentColor' stroke-width='3' stroke-linecap='round' stroke-linejoin='round'%3E%3Ccircle cx='12' cy='12' r='10'%3E%3C/circle%3E%3Cline x1='12' y1='8' x2='12' y2='12'%3E%3C/line%3E%3Cline x1='12' y1='16' x2='12.01' y2='16'%3E%3C/line%3E%3C/svg%3E") no-repeat center / contain !important;
+    mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='currentColor' stroke-width='3' stroke-linecap='round' stroke-linejoin='round'%3E%3Ccircle cx='12' cy='12' r='10'%3E%3C/circle%3E%3Cline x1='12' y1='8' x2='12' y2='12'%3E%3C/line%3E%3Cline x1='12' y1='16' x2='12.01' y2='16'%3E%3C/line%3E%3C/svg%3E") no-repeat center / contain !important;
+}
+
+/* Info Icon */
+div:where(.swal2-container) div:where(.swal2-popup).swal2-toast .swal2-icon.swal2-info {
+    background: #e0f2fe !important;
+    border: 1px solid rgba(2, 132, 199, 0.25) !important;
+}
+
+div:where(.swal2-container) div:where(.swal2-popup).swal2-toast .swal2-icon.swal2-info * {
+    display: none !important;
+}
+
+div:where(.swal2-container) div:where(.swal2-popup).swal2-toast .swal2-icon.swal2-info::after {
+    content: '' !important;
+    display: block !important;
+    width: 14px !important;
+    height: 14px !important;
+    background-color: #0284c7 !important;
+    -webkit-mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='currentColor' stroke-width='3' stroke-linecap='round' stroke-linejoin='round'%3E%3Ccircle cx='12' cy='12' r='10'%3E%3C/circle%3E%3Cline x1='12' y1='16' x2='12' y2='12'%3E%3C/line%3E%3Cline x1='12' y1='8' x2='12.01' y2='8'%3E%3C/line%3E%3C/svg%3E") no-repeat center / contain !important;
+    mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='currentColor' stroke-width='3' stroke-linecap='round' stroke-linejoin='round'%3E%3Ccircle cx='12' cy='12' r='10'%3E%3C/circle%3E%3Cline x1='12' y1='16' x2='12' y2='12'%3E%3C/line%3E%3Cline x1='12' y1='8' x2='12.01' y2='8'%3E%3C/line%3E%3C/svg%3E") no-repeat center / contain !important;
+}
+
+div:where(.swal2-container) div:where(.swal2-popup).swal2-toast .swal2-timer-progress-bar {
+    background: linear-gradient(90deg, #10b981 0%, #059669 100%) !important;
+    height: 3px !important;
+    border-radius: 0 0 16px 16px !important;
+}
+
+.swal-custom-modal {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    text-align: center;
+}
+
+.swal-icon-badge-logout,
+.swal-icon-badge-danger {
+    width: 68px;
+    height: 68px;
+    border-radius: 50%;
+    background: linear-gradient(135deg, #fee2e2 0%, #ffe4e6 100%);
+    color: #ef4444;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.75rem;
+    margin-bottom: 1.25rem;
+    box-shadow: 0 8px 16px -4px rgba(239, 68, 68, 0.18);
+}
+
+.swal-icon-badge-warning {
+    width: 68px;
+    height: 68px;
+    border-radius: 50%;
+    background: linear-gradient(135deg, #fef3c7 0%, #ffedd5 100%);
+    color: #d97706;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.75rem;
+    margin-bottom: 1.25rem;
+    box-shadow: 0 8px 16px -4px rgba(217, 119, 6, 0.18);
+}
+
+.swal-icon-badge-primary {
+    width: 68px;
+    height: 68px;
+    border-radius: 50%;
+    background: linear-gradient(135deg, #ede9fe 0%, #e0e7ff 100%);
+    color: #6366f1;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.75rem;
+    margin-bottom: 1.25rem;
+    box-shadow: 0 8px 16px -4px rgba(99, 102, 241, 0.18);
+}
+
+.swal-icon-badge-success {
+    width: 68px;
+    height: 68px;
+    border-radius: 50%;
+    background: linear-gradient(135deg, #dcfce7 0%, #d1fae5 100%);
+    color: #10b981;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.75rem;
+    margin-bottom: 1.25rem;
+    box-shadow: 0 8px 16px -4px rgba(16, 185, 129, 0.18);
+}
+
+.swal-custom-title {
+    font-family: 'Poppins', sans-serif;
+    font-size: 1.35rem;
+    font-weight: 700;
+    color: #0f172a;
+    letter-spacing: -0.3px;
+    margin-bottom: 0.5rem;
+}
+
+.swal-custom-desc {
+    font-family: 'Poppins', sans-serif;
+    font-size: 0.88rem;
+    color: #64748b;
+    line-height: 1.55;
+    margin-bottom: 0;
+    max-width: 320px;
+}
+
+.swal-modern-actions,
+.swal-modern-logout-actions {
+    display: flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    gap: 12px !important;
+    width: 100% !important;
+    margin-top: 1.75rem !important;
+    position: relative !important;
+    z-index: 20 !important;
+}
+
+.swal-btn-cancel,
+.swal-btn-logout-cancel {
+    flex: 1;
+    background: #f1f5f9 !important;
+    color: #475569 !important;
+    font-family: 'Poppins', sans-serif !important;
+    font-size: 0.92rem !important;
+    font-weight: 600 !important;
+    padding: 0.75rem 1.25rem !important;
+    border-radius: 16px !important;
+    border: 1px solid #e2e8f0 !important;
+    cursor: pointer !important;
+    transition: all 0.2s ease !important;
+    text-align: center;
+    pointer-events: auto !important;
+    position: relative !important;
+    z-index: 20 !important;
+    user-select: none !important;
+    outline: none !important;
+}
+
+.swal-btn-cancel:hover,
+.swal-btn-cancel:focus,
+.swal-btn-logout-cancel:hover,
+.swal-btn-logout-cancel:focus {
+    background: #e2e8f0 !important;
+    color: #1e293b !important;
+    transform: translateY(-1px);
+    box-shadow: 0 0 0 3px rgba(100, 116, 139, 0.15) !important;
+}
+
+.swal-btn-confirm-primary {
+    flex: 1;
+    background: linear-gradient(135deg, #6366f1 0%, #4f46e5 100%) !important;
+    color: #ffffff !important;
+    font-family: 'Poppins', sans-serif !important;
+    font-size: 0.92rem !important;
+    font-weight: 600 !important;
+    padding: 0.75rem 1.25rem !important;
+    border-radius: 16px !important;
+    border: none !important;
+    box-shadow: 0 4px 14px rgba(99, 102, 241, 0.25) !important;
+    cursor: pointer !important;
+    transition: all 0.2s ease !important;
+    text-align: center;
+    pointer-events: auto !important;
+    position: relative !important;
+    z-index: 20 !important;
+    user-select: none !important;
+    outline: none !important;
+}
+
+.swal-btn-confirm-primary:hover,
+.swal-btn-confirm-primary:focus {
+    background: linear-gradient(135deg, #4f46e5 0%, #4338ca 100%) !important;
+    box-shadow: 0 6px 18px rgba(99, 102, 241, 0.35), 0 0 0 3px rgba(99, 102, 241, 0.2) !important;
+    transform: translateY(-1px);
+}
+
+.swal-btn-confirm-warning {
+    flex: 1;
+    background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%) !important;
+    color: #ffffff !important;
+    font-family: 'Poppins', sans-serif !important;
+    font-size: 0.92rem !important;
+    font-weight: 600 !important;
+    padding: 0.75rem 1.25rem !important;
+    border-radius: 16px !important;
+    border: none !important;
+    box-shadow: 0 4px 14px rgba(245, 158, 11, 0.25) !important;
+    cursor: pointer !important;
+    transition: all 0.2s ease !important;
+    text-align: center;
+    pointer-events: auto !important;
+    position: relative !important;
+    z-index: 20 !important;
+    user-select: none !important;
+    outline: none !important;
+}
+
+.swal-btn-confirm-warning:hover,
+.swal-btn-confirm-warning:focus {
+    background: linear-gradient(135deg, #d97706 0%, #b45309 100%) !important;
+    box-shadow: 0 6px 18px rgba(245, 158, 11, 0.35), 0 0 0 3px rgba(245, 158, 11, 0.2) !important;
+    transform: translateY(-1px);
+}
+
+.swal-btn-confirm-success {
+    flex: 1;
+    background: linear-gradient(135deg, #10b981 0%, #059669 100%) !important;
+    color: #ffffff !important;
+    font-family: 'Poppins', sans-serif !important;
+    font-size: 0.92rem !important;
+    font-weight: 600 !important;
+    padding: 0.75rem 1.25rem !important;
+    border-radius: 16px !important;
+    border: none !important;
+    box-shadow: 0 4px 14px rgba(16, 185, 129, 0.25) !important;
+    cursor: pointer !important;
+    transition: all 0.2s ease !important;
+    text-align: center;
+    pointer-events: auto !important;
+    position: relative !important;
+    z-index: 20 !important;
+    user-select: none !important;
+    outline: none !important;
+}
+
+.swal-btn-confirm-success:hover,
+.swal-btn-confirm-success:focus {
+    background: linear-gradient(135deg, #059669 0%, #047857 100%) !important;
+    box-shadow: 0 6px 18px rgba(16, 185, 129, 0.35), 0 0 0 3px rgba(16, 185, 129, 0.2) !important;
+    transform: translateY(-1px);
+}
+
+.swal-btn-logout-confirm,
+.swal-btn-confirm-danger {
+    flex: 1;
+    background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%) !important;
+    color: #ffffff !important;
+    font-family: 'Poppins', sans-serif !important;
+    font-size: 0.92rem !important;
+    font-weight: 600 !important;
+    padding: 0.75rem 1.25rem !important;
+    border-radius: 16px !important;
+    border: none !important;
+    box-shadow: 0 4px 14px rgba(239, 68, 68, 0.25) !important;
+    cursor: pointer !important;
+    transition: all 0.2s ease !important;
+    text-align: center;
+    pointer-events: auto !important;
+    position: relative !important;
+    z-index: 20 !important;
+    user-select: none !important;
+    outline: none !important;
+}
+
+.swal-btn-logout-confirm:hover,
+.swal-btn-logout-confirm:focus,
+.swal-btn-confirm-danger:hover,
+.swal-btn-confirm-danger:focus {
+    background: linear-gradient(135deg, #dc2626 0%, #b91c1c 100%) !important;
+    box-shadow: 0 6px 18px rgba(239, 68, 68, 0.35), 0 0 0 3px rgba(239, 68, 68, 0.2) !important;
+    transform: translateY(-1px);
+}
+
+.swal-btn-cancel:active,
+.swal-btn-confirm-primary:active,
+.swal-btn-confirm-warning:active,
+.swal-btn-confirm-success:active,
+.swal-btn-confirm-danger:active,
+.swal-btn-logout-cancel:active,
+.swal-btn-logout-confirm:active {
+    transform: translateY(0) scale(0.98);
 }

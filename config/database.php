@@ -34,17 +34,12 @@ if (!isset($conn) || !($conn instanceof mysqli)) {
     $__db_pass = $_ENV['DB_PASSWORD'] ?? '';
     $__db_name = $_ENV['DB_NAME']     ?? '';
 
-    // Gunakan OOP mysqli — lebih bersih, siap untuk prepared statements
-    $conn = new mysqli($__db_host, $__db_user, $__db_pass, $__db_name);
-
-    /**
-     * OPTIMASI #3: Error Handling Elegan & Aman
-     * — Tidak ada stack trace / credential bocor ke browser user.
-     * — Error dicatat ke error_log server (bisa dilihat di cPanel Hostinger).
-     */
-    if ($conn->connect_errno) {
+    // Gunakan OOP mysqli dengan opsi timeout ketat untuk skalabilitas konkurensi tinggi
+    $conn = mysqli_init();
+    $conn->options(MYSQLI_OPT_CONNECT_TIMEOUT, 4);
+    if (!@$conn->real_connect($__db_host, $__db_user, $__db_pass, $__db_name)) {
         // Log detail error ke server (tidak terlihat user)
-        error_log('[AsuhTrack] Koneksi database gagal: ' . $conn->connect_error);
+        error_log('[AsuhTrack] Koneksi database gagal: ' . mysqli_connect_error());
 
         // Kirim HTTP 503 ke browser (Service Unavailable)
         http_response_code(503);

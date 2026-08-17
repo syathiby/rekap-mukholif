@@ -151,6 +151,11 @@
         <div class="app-name">AsuhTrack</div>
     </div>
 
+    <!-- Floating Bottom Footer Watermark -->
+    <footer style="position: fixed; bottom: max(1.25rem, env(safe-area-inset-bottom, 1.25rem)); left: 50%; transform: translateX(-50%); font-size: 0.875rem; color: #64748b; text-align: center; width: 100%; pointer-events: auto; z-index: 50;">
+        &copy; 2025 Built by <a href="https://ajsk.vercel.app/" target="_blank" rel="noopener noreferrer" style="color: #2563eb; font-weight: 700; text-decoration: none !important;">AJSK.</a>
+    </footer>
+
     <script>
         // Auto-retry setiap 5 detik
         let retryCount = 0;

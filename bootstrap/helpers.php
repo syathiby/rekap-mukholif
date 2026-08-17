@@ -301,4 +301,43 @@ function checkMusyrifKamarAccess() {
     
     return (int)$res['kamar_id'];
 }
+
+/**
+ * Mengubah format tanggal waktu menjadi format relatif manusiawi (e.g. 5 menit yang lalu, 2 hari yang lalu)
+ * 
+ * @param string $datetime
+ * @param bool $full
+ * @return string
+ */
+if (!function_exists('time_elapsed_string')) {
+    function time_elapsed_string($datetime, $full = false) {
+        $now = new DateTime;
+        $ago = new DateTime($datetime);
+        $diff = $now->diff($ago);
+        
+        $w = floor($diff->d / 7);
+        $d = $diff->d - ($w * 7);
+        
+        $parts = [
+            'y' => $diff->y,
+            'm' => $diff->m,
+            'w' => $w,
+            'd' => $d,
+            'h' => $diff->h,
+            'i' => $diff->i,
+            's' => $diff->s,
+        ];
+        
+        $string = [ 'y' => 'tahun', 'm' => 'bulan', 'w' => 'minggu', 'd' => 'hari', 'h' => 'jam', 'i' => 'menit', 's' => 'detik' ];
+        foreach ($string as $k => &$v) {
+            if ($parts[$k]) {
+                $v = $parts[$k] . ' ' . $v;
+            } else {
+                unset($string[$k]);
+            }
+        }
+        if (!$full) $string = array_slice($string, 0, 1);
+        return $string ? implode(', ', $string) . ' yang lalu' : 'baru saja';
+    }
+}
 ?>

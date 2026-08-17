@@ -6,6 +6,7 @@ require_once __DIR__ . '/../../bootstrap/init.php';
 
 // 2. Jalankan 'SATPAM' (Sesuaikan guard-nya kalau beda)
 guard('rapot_create');
+session_write_close();
 
 // 3. Ambil data dari AJAX
 $santri_id = (int)($_POST['santri_id'] ?? 0);

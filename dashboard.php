@@ -845,10 +845,7 @@ $teladan_onclick = !$can_view_santri_teladan ? 'onclick="event.preventDefault();
         </div>
     </div>
 
-    <?php include __DIR__ . '/layouts/footer.php'; ?>
-
     <?php if ($show_broadcast_popup && !empty($active_broadcasts)): ?>
-    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
     <script>
     document.addEventListener('DOMContentLoaded', function() {
         const broadcasts = <?= json_encode(array_map(function($bc) {
@@ -877,101 +874,74 @@ $teladan_onclick = !$can_view_santri_teladan ? 'onclick="event.preventDefault();
             ? broadcasts[0].judul
             : `${broadcasts.length} Pengumuman Baru`;
 
-        Swal.fire({
-            title: `<i class="fas fa-bullhorn text-warning me-2"></i>${title}`,
-            html: `<div class="text-start" style="max-height:280px;overflow-y:auto;">${htmlContent}</div>`,
-            icon: null,
-            confirmButtonText: '<i class="fas fa-check me-1"></i>Mengerti',
-            allowOutsideClick: false,
-            allowEscapeKey: false,
-            allowEnterKey: false,
-            backdrop: `rgba(15, 23, 42, 0.65)`,
-            width: '24em',
-            padding: '1.2em',
-            showClass: {
-                popup: 'animate__animated animate__fadeInDown animate__faster'
-            },
-            customClass: {
-                popup: 'rounded-4 shadow',
-                title: 'fs-6 fw-bold text-dark mb-1',
-                htmlContainer: 'text-secondary small m-0 text-start',
-                confirmButton: 'btn btn-primary btn-sm px-4 rounded-3 fw-medium'
-            },
-            buttonsStyling: false
-        });
+        if (typeof Swal !== 'undefined') {
+            Swal.fire({
+                title: `<i class="fas fa-bullhorn text-warning me-2"></i>${title}`,
+                html: `<div class="text-start" style="max-height:280px;overflow-y:auto;">${htmlContent}</div>`,
+                icon: null,
+                confirmButtonText: '<i class="fas fa-check me-1"></i>Mengerti',
+                allowOutsideClick: false,
+                allowEscapeKey: false,
+                allowEnterKey: false,
+                backdrop: `rgba(15, 23, 42, 0.65)`,
+                width: '24em',
+                padding: '1.2em',
+                showClass: {
+                    popup: 'animate__animated animate__fadeInDown animate__faster'
+                },
+                customClass: {
+                    popup: 'rounded-4 shadow',
+                    title: 'fs-6 fw-bold text-dark mb-1',
+                    htmlContainer: 'text-secondary small m-0 text-start',
+                    confirmButton: 'btn btn-primary btn-sm px-4 rounded-3 fw-medium'
+                },
+                buttonsStyling: false
+            });
+        }
     });
     </script>
     <?php endif; ?>
 
     <?php if (!empty($show_kinerja_popup) && !empty($kinerja_summary_text)): ?>
-    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
     <script>
     document.addEventListener('DOMContentLoaded', function() {
-        Swal.fire({
-            title: `<i class="fas fa-exclamation-triangle text-warning me-2"></i>Peringatan Kinerja Musyrif`,
-            html: `
-                <div class="text-center py-2">
-                    <p class="text-secondary mb-0" style="font-size: 0.92rem; line-height: 1.6;">
-                        Terdeteksi <?= $kinerja_summary_text ?>.
-                    </p>
-                </div>
-            `,
-            icon: null,
-            showCancelButton: true,
-            confirmButtonText: 'Periksa Kinerja <i class="fas fa-arrow-right ms-1"></i>',
-            cancelButtonText: 'Tutup',
-            reverseButtons: true,
-            allowOutsideClick: false,
-            allowEscapeKey: false,
-            allowEnterKey: false,
-            backdrop: `rgba(15, 23, 42, 0.65)`,
-            width: '24em',
-            padding: '1.2em',
-            customClass: {
-                popup: 'rounded-4 shadow',
-                title: 'fs-6 fw-bold text-dark mb-1',
-                htmlContainer: 'text-secondary small m-0',
-                confirmButton: 'btn btn-warning btn-sm px-4 rounded-3 fw-medium text-dark',
-                cancelButton: 'btn btn-light btn-sm border px-4 rounded-3 fw-medium text-dark me-2'
-            },
-            buttonsStyling: false
-        }).then((result) => {
-            if (result.isConfirmed) {
-                window.location.href = "<?= BASE_URL ?>/pengaturan/pengelola/?tab=kinerja";
-            }
-        });
+        if (typeof Swal !== 'undefined') {
+            Swal.fire({
+                title: `<i class="fas fa-exclamation-triangle text-warning me-2"></i>Peringatan Kinerja Musyrif`,
+                html: `
+                    <div class="text-center py-2">
+                        <p class="text-secondary mb-0" style="font-size: 0.92rem; line-height: 1.6;">
+                            Terdeteksi <?= $kinerja_summary_text ?>.
+                        </p>
+                    </div>
+                `,
+                icon: null,
+                showCancelButton: true,
+                confirmButtonText: 'Periksa Kinerja <i class="fas fa-arrow-right ms-1"></i>',
+                cancelButtonText: 'Tutup',
+                reverseButtons: true,
+                allowOutsideClick: false,
+                allowEscapeKey: false,
+                allowEnterKey: false,
+                backdrop: `rgba(15, 23, 42, 0.65)`,
+                width: '24em',
+                padding: '1.2em',
+                customClass: {
+                    popup: 'rounded-4 shadow',
+                    title: 'fs-6 fw-bold text-dark mb-1',
+                    htmlContainer: 'text-secondary small m-0',
+                    confirmButton: 'btn btn-warning btn-sm px-4 rounded-3 fw-medium text-dark',
+                    cancelButton: 'btn btn-light btn-sm border px-4 rounded-3 fw-medium text-dark me-2'
+                },
+                buttonsStyling: false
+            }).then((result) => {
+                if (result.isConfirmed) {
+                    window.location.href = "<?= BASE_URL ?>/pengaturan/pengelola/?tab=kinerja";
+                }
+            });
+        }
     });
     </script>
     <?php endif; ?>
-    
-    <?php
-    function time_elapsed_string($datetime, $full = false) {
-        $now = new DateTime;
-        $ago = new DateTime($datetime);
-        $diff = $now->diff($ago);
-        
-        $w = floor($diff->d / 7);
-        $d = $diff->d - ($w * 7);
-        
-        $parts = [
-            'y' => $diff->y,
-            'm' => $diff->m,
-            'w' => $w,
-            'd' => $d,
-            'h' => $diff->h,
-            'i' => $diff->i,
-            's' => $diff->s,
-        ];
-        
-        $string = [ 'y' => 'tahun', 'm' => 'bulan', 'w' => 'minggu', 'd' => 'hari', 'h' => 'jam', 'i' => 'menit', 's' => 'detik' ];
-        foreach ($string as $k => &$v) {
-            if ($parts[$k]) {
-                $v = $parts[$k] . ' ' . $v;
-            } else {
-                unset($string[$k]);
-            }
-        }
-        if (!$full) $string = array_slice($string, 0, 1);
-        return $string ? implode(', ', $string) . ' yang lalu' : 'baru saja';
-    }
-    ?>
+
+    <?php include __DIR__ . '/layouts/footer.php'; ?>

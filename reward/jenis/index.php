@@ -55,7 +55,7 @@ if ($can_edit || $can_delete) $colspan++;
     body { 
         background-color: var(--bg-body) !important; 
         color: var(--text-main);
-        font-family: 'Inter', sans-serif; /* Pastikan font enak dibaca */
+        font-family: 'Poppins', sans-serif;
     }
 
     .content-wrapper { padding: 24px; }

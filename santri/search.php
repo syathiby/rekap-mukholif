@@ -5,6 +5,9 @@ require_once __DIR__ . '/../bootstrap/init.php';
 // 2. Jalankan 'SATPAM' buat ngejaga halaman
 guard('santri_view');  
 
+// Bebaskan session lock agar autocomplete keystroke berjalan non-blocking secara konkuren
+session_write_close();
+
 header('Content-Type: application/json');
 
 $term = isset($_GET['term']) ? $_GET['term'] : '';

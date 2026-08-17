@@ -9,6 +9,7 @@ guard('arsip_export');
 
 // Validasi CSRF Token
 csrf_validate();
+session_write_close();
 
 use PhpOffice\PhpSpreadsheet\Spreadsheet;
 use PhpOffice\PhpSpreadsheet\Writer\Xlsx;

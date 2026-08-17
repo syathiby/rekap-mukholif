@@ -3,6 +3,7 @@
 if (session_status() === PHP_SESSION_NONE) { session_start(); }
 require_once __DIR__ . '/../../bootstrap/init.php';
 guard('pelanggaran_pengabdian_input'); 
+session_write_close(); 
 
 // --- Mulai Logika Pencarian ---
 

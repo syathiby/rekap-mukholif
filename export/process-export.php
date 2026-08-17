@@ -29,8 +29,10 @@ const LEMBAGA_ALAMAT  = "Jl. Pahlawan, RT.01/RW.05, Cileungsi, Kabupaten Bogor, 
 const LEMBAGA_PERIODE = "Tahun Ajaran 2024/2025"; // <-- Ubah sesuai periode aktif
 
 // Nama pencetak — diambil dari session yang di-set saat login.
-// Key 'nama_lengkap' sesuai dengan: $_SESSION['nama_lengkap'] = $user['nama_lengkap'] di login.php
 $printed_by = $_SESSION['nama_lengkap'] ?? $_SESSION['username'] ?? 'Sistem';
+
+// Bebaskan session lock agar request lain dari user/musyrif dapat berjalan paralel (high concurrency)
+session_write_close();
 
 // =================================================================================
 // LOGIKA UTAMA

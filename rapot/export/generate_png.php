@@ -5,6 +5,7 @@ require_once __DIR__ . '/../../bootstrap/init.php';
 require_once __DIR__ . '/../config/helper.php';
 
 guard('rapot_cetak');
+session_write_close();
 
 $mode = $_GET['mode'] ?? 'page';
 

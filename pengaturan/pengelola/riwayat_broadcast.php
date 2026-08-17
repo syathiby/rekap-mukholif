@@ -251,19 +251,35 @@ function loadBroadcast() {
 
 function tutupBroadcast(id) {
     Swal.fire({
-        title: 'Tutup Pengumuman?',
-        text: 'Pengumuman ini tidak akan muncul lagi di dashboard musyrif.',
-        icon: 'warning',
+        html: `
+            <div class="swal-custom-modal">
+                <div class="swal-icon-badge-warning">
+                    <i class="fas fa-eye-slash"></i>
+                </div>
+                <h3 class="swal-custom-title">Tutup Pengumuman?</h3>
+                <p class="swal-custom-desc">Pengumuman ini tidak akan muncul lagi di dashboard musyrif.</p>
+            </div>
+        `,
         showCancelButton: true,
         confirmButtonText: 'Ya, Tutup',
         cancelButtonText: 'Batal',
-        reverseButtons: true
+        reverseButtons: true,
+        focusConfirm: true,
+        customClass: {
+            popup: 'swal-modern-popup',
+            actions: 'swal-modern-actions',
+            confirmButton: 'swal-btn-confirm-warning',
+            cancelButton: 'swal-btn-cancel'
+        },
+        buttonsStyling: false
     }).then(result => {
         if (result.isConfirmed) {
             fetchAPI('tutup_broadcast', { id: id }).then(res => {
                 if (res.status === 'success') {
                     showToast('Pengumuman berhasil ditutup.', 'success');
                     loadBroadcast();
+                } else {
+                    showToast(res.message || 'Gagal menutup pengumuman.', 'error');
                 }
             });
         }

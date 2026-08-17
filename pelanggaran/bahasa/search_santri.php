@@ -2,6 +2,7 @@
 if (session_status() === PHP_SESSION_NONE) { session_start(); }
 require_once __DIR__ . '/../../bootstrap/init.php';
 guard('pelanggaran_bahasa_input');
+session_write_close();
 
 // Gunakan prepared statement, lebih aman dari mysqli_real_escape_string
 $term_raw = $_GET['term'] ?? '';

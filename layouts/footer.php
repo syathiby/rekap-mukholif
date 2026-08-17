@@ -1,5 +1,5 @@
-<footer class="mt-auto mb-5 text-center text-muted small pb-4">
-    &copy; 2025 Built by <a href="https://ajsk.vercel.app/" target="_blank" rel="noopener noreferrer" class="text-decoration-none text-primary">AJSK.</a>
+<footer class="app-footer">
+    &copy; 2025 Built by <a href="https://ajsk.vercel.app/" target="_blank" rel="noopener noreferrer">AJSK.</a>
 </footer>
 </main>
 
@@ -187,14 +187,18 @@ if (function_exists('has_permission')) {
         });
     }
 
-    // Fungsi Global untuk Toast
+    // Fungsi Global untuk Toast Modern Minimalist (Auto-close, no OK button)
     function showToast(textMessage, iconType = 'success') {
         const Toast = Swal.mixin({
             toast: true,
             position: 'top-end',
             showConfirmButton: false,
-            timer: 4000,
+            timer: 2200,
             timerProgressBar: true,
+            backdrop: false,
+            customClass: {
+                popup: 'swal-modern-toast'
+            },
             didOpen: (toast) => {
                 toast.onmouseenter = Swal.stopTimer;
                 toast.onmouseleave = Swal.resumeTimer;
@@ -226,6 +230,117 @@ if (function_exists('has_permission')) {
         if (document.activeElement && document.activeElement !== document.body) {
             document.activeElement.blur();
         }
+    });
+
+    // ==========================================
+    // INSTANT FREEZE SIDEBAR & ZERO-BLINK NAV
+    // ==========================================
+    document.addEventListener('click', function(e) {
+        var link = e.target.closest('a');
+        if (!link) return;
+
+        var href = link.getAttribute('href');
+        if (!href || href.startsWith('#') || href.startsWith('javascript:') || href.startsWith('mailto:') || href.startsWith('tel:')) return;
+        if (link.target === '_blank' || link.hasAttribute('download') || link.hasAttribute('data-no-pjax') || link.hasAttribute('data-bs-toggle') || link.onclick) return;
+
+        var url;
+        try {
+            url = new URL(href, window.location.href);
+        } catch(err) {
+            return;
+        }
+
+        if (url.origin !== window.location.origin) return;
+        if (/\.(pdf|xlsx|xls|csv|zip|png|jpg|jpeg|gif|svg)$/i.test(url.pathname)) return;
+        if (url.href === window.location.href) {
+            e.preventDefault();
+            return;
+        }
+
+        e.preventDefault();
+        freezeNavigate(url.href, true);
+    });
+
+    async function freezeNavigate(url, pushState) {
+        try {
+            var currentMain = document.querySelector('.main-content');
+            if (!currentMain) {
+                window.location.href = url;
+                return;
+            }
+
+            var response = await fetch(url);
+            if (!response.ok) {
+                window.location.href = url;
+                return;
+            }
+
+            var html = await response.text();
+            var parser = new DOMParser();
+            var newDoc = parser.parseFromString(html, 'text/html');
+            var newMain = newDoc.querySelector('.main-content');
+
+            if (!newMain) {
+                window.location.href = url;
+                return;
+            }
+
+            if (newDoc.title) document.title = newDoc.title;
+            if (pushState) history.pushState({ url: url }, '', url);
+
+            // Sinkronkan status active menu sidebar persis dengan hasil render server
+            var newLinks = newDoc.querySelectorAll('.sb-nav .sb-link');
+            var currentLinks = document.querySelectorAll('.sb-nav .sb-link');
+            if (newLinks.length > 0 && newLinks.length === currentLinks.length) {
+                currentLinks.forEach(function(l, idx) {
+                    if (newLinks[idx].classList.contains('active')) {
+                        l.classList.add('active');
+                    } else {
+                        l.classList.remove('active');
+                    }
+                });
+            } else {
+                currentLinks.forEach(function(l) {
+                    l.classList.remove('active');
+                });
+                var activeInNew = newDoc.querySelector('.sb-nav .sb-link.active');
+                if (activeInNew) {
+                    var actHref = activeInNew.getAttribute('href');
+                    var targetLink = document.querySelector('.sb-nav .sb-link[href="' + actHref + '"]');
+                    if (targetLink) targetLink.classList.add('active');
+                }
+            }
+
+            // Instant swap without opacity blink
+            currentMain.innerHTML = newMain.innerHTML;
+            window.scrollTo({ top: 0, behavior: 'instant' });
+
+            if (typeof closeSidebarMobile === 'function') {
+                closeSidebarMobile();
+            }
+
+            // Re-run script tags
+            var scripts = currentMain.querySelectorAll('script');
+            scripts.forEach(function(oldScript) {
+                var newScript = document.createElement('script');
+                Array.from(oldScript.attributes).forEach(attr => newScript.setAttribute(attr.name, attr.value));
+                newScript.appendChild(document.createTextNode(oldScript.innerHTML));
+                oldScript.parentNode.replaceChild(newScript, oldScript);
+            });
+
+            if (typeof scanAllScrollables === 'function') {
+                scanAllScrollables();
+            }
+            if (document.getElementById('live-time')) {
+                updateLiveTime();
+            }
+        } catch(err) {
+            window.location.href = url;
+        }
+    }
+
+    window.addEventListener('popstate', function() {
+        freezeNavigate(window.location.href, false);
     });
 
     // ==========================================

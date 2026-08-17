@@ -43,7 +43,7 @@ $kamarQuery = mysqli_query($conn, "
         --card-border: rgba(0,0,0,0.05);
     }
 
-    body { background-color: var(--bg-body); font-family: 'Inter', sans-serif; }
+    body { background-color: var(--bg-body); font-family: 'Poppins', sans-serif; }
 
     /* === TABS === */
     .nav-tabs {

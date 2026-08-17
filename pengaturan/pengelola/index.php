@@ -604,21 +604,35 @@ function loadKinerja() {
 
 function kirimPeringatan(id, pesan) {
     Swal.fire({
-        title: 'Kirim Peringatan?',
-        text: "Peringatan ini akan muncul khusus di dashboard musyrif tersebut.",
-        icon: 'warning',
+        html: `
+            <div class="swal-custom-modal">
+                <div class="swal-icon-badge-warning">
+                    <i class="fas fa-bell"></i>
+                </div>
+                <h3 class="swal-custom-title">Kirim Peringatan?</h3>
+                <p class="swal-custom-desc">Peringatan ini akan muncul khusus di dashboard musyrif tersebut.</p>
+            </div>
+        `,
         showCancelButton: true,
         confirmButtonText: 'Ya, Kirim!',
         cancelButtonText: 'Batal',
-        reverseButtons: true
+        reverseButtons: true,
+        focusConfirm: true,
+        customClass: {
+            popup: 'swal-modern-popup',
+            actions: 'swal-modern-actions',
+            confirmButton: 'swal-btn-confirm-warning',
+            cancelButton: 'swal-btn-cancel'
+        },
+        buttonsStyling: false
     }).then((result) => {
         if (result.isConfirmed) {
             fetchAPI('buat_peringatan', { target_id: id, pesan: pesan, tipe: 'rapot' }).then(res => {
                 if (res.status === 'success') {
-                    Swal.fire('Terkirim!', 'Peringatan berhasil di-broadcast ke musyrif tersebut.', 'success');
+                    showToast('Peringatan berhasil di-broadcast ke musyrif.', 'success');
                     loadKinerja();
                 } else {
-                    Swal.fire('Gagal!', res.message, 'error');
+                    showToast(res.message || 'Gagal mengirim peringatan.', 'error');
                 }
             });
         }
@@ -627,22 +641,35 @@ function kirimPeringatan(id, pesan) {
 
 function kirimPeringatanJanggal(id, pesan) {
     Swal.fire({
-        title: 'Kirim Peringatan Integritas?',
-        html: 'Musyrif akan menerima notifikasi bahwa rapotnya <strong>terdeteksi diisi sebelum waktunya</strong> dan diminta untuk klarifikasi.',
-        icon: 'warning',
+        html: `
+            <div class="swal-custom-modal">
+                <div class="swal-icon-badge-warning">
+                    <i class="fas fa-shield-alt"></i>
+                </div>
+                <h3 class="swal-custom-title">Kirim Peringatan Integritas?</h3>
+                <p class="swal-custom-desc">Musyrif akan menerima notifikasi bahwa rapotnya <strong>terdeteksi diisi sebelum waktunya</strong>.</p>
+            </div>
+        `,
         showCancelButton: true,
         confirmButtonText: 'Ya, Kirim!',
         cancelButtonText: 'Batal',
-        confirmButtonColor: '#f59e0b',
-        reverseButtons: true
+        reverseButtons: true,
+        focusConfirm: true,
+        customClass: {
+            popup: 'swal-modern-popup',
+            actions: 'swal-modern-actions',
+            confirmButton: 'swal-btn-confirm-warning',
+            cancelButton: 'swal-btn-cancel'
+        },
+        buttonsStyling: false
     }).then((result) => {
         if (result.isConfirmed) {
             fetchAPI('buat_peringatan', { target_id: id, pesan: pesan, tipe: 'janggal' }).then(res => {
                 if (res.status === 'success') {
-                    Swal.fire('Terkirim!', 'Peringatan integritas berhasil dikirim ke musyrif tersebut.', 'success');
+                    showToast('Peringatan integritas berhasil dikirim.', 'success');
                     loadKinerja();
                 } else {
-                    Swal.fire('Gagal!', res.message, 'error');
+                    showToast(res.message || 'Gagal mengirim peringatan.', 'error');
                 }
             });
         }
@@ -706,24 +733,37 @@ function loadMusyrif() {
 }
 
 function toggleStatus(id, newStatus) {
+    const isActivating = newStatus === 1;
     Swal.fire({
-        title: newStatus === 1 ? 'Aktifkan Akun?' : 'Suspend Akun?',
-        html: newStatus === 1
-            ? 'Musyrif akan bisa login kembali ke sistem.'
-            : 'Musyrif <strong>tidak akan bisa login</strong> dan akan <strong>otomatis dikeluarkan</strong> dari sesi aktifnya.',
-        icon: 'warning',
+        html: `
+            <div class="swal-custom-modal">
+                <div class="${isActivating ? 'swal-icon-badge-success' : 'swal-icon-badge-danger'}">
+                    <i class="fas ${isActivating ? 'fa-user-check' : 'fa-user-slash'}"></i>
+                </div>
+                <h3 class="swal-custom-title">${isActivating ? 'Aktifkan Akun?' : 'Suspend Akun?'}</h3>
+                <p class="swal-custom-desc">${isActivating ? 'Musyrif akan bisa login kembali ke sistem.' : 'Musyrif <strong>tidak akan bisa login</strong> dan akan <strong>otomatis dikeluarkan</strong> dari sesi aktifnya.'}</p>
+            </div>
+        `,
         showCancelButton: true,
-        confirmButtonText: 'Ya, Lanjutkan',
+        confirmButtonText: isActivating ? 'Ya, Aktifkan' : 'Ya, Lanjutkan',
         cancelButtonText: 'Batal',
-        reverseButtons: true
+        reverseButtons: true,
+        focusConfirm: true,
+        customClass: {
+            popup: 'swal-modern-popup',
+            actions: 'swal-modern-actions',
+            confirmButton: isActivating ? 'swal-btn-confirm-success' : 'swal-btn-confirm-danger',
+            cancelButton: 'swal-btn-cancel'
+        },
+        buttonsStyling: false
     }).then((result) => {
         if (result.isConfirmed) {
             fetchAPI('toggle_status', { id: id, status: newStatus }).then(res => {
                 if (res.status === 'success') {
-                    Swal.fire('Berhasil!', res.message, 'success');
+                    showToast(res.message || 'Status akun berhasil diperbarui.', 'success');
                     loadMusyrif();
                 } else {
-                    Swal.fire('Gagal!', res.message, 'error');
+                    showToast(res.message || 'Gagal memperbarui status.', 'error');
                 }
             });
         }
@@ -732,20 +772,38 @@ function toggleStatus(id, newStatus) {
 
 function resetPassword(id) {
     Swal.fire({
-        title: 'Reset Password?',
-        html: 'Password akan diubah menjadi: <br><code class="fs-5 fw-bold text-danger">123456</code><br><small class="text-muted">Ingatkan musyrif untuk segera menggantinya.</small>',
-        icon: 'warning',
+        html: `
+            <div class="swal-custom-modal">
+                <div class="swal-icon-badge-primary">
+                    <i class="fas fa-key"></i>
+                </div>
+                <h3 class="swal-custom-title">Reset Password?</h3>
+                <p class="swal-custom-desc mb-2">Password akan diubah menjadi:</p>
+                <div class="my-2">
+                    <span class="badge bg-danger-subtle text-danger fs-5 px-3 py-1 rounded-pill font-monospace fw-bold border border-danger-subtle">123456</span>
+                </div>
+                <p class="swal-custom-desc text-muted small mt-2">Ingatkan musyrif untuk segera menggantinya setelah login.</p>
+            </div>
+        `,
         showCancelButton: true,
         confirmButtonText: 'Ya, Reset',
         cancelButtonText: 'Batal',
-        reverseButtons: true
+        reverseButtons: true,
+        focusConfirm: true,
+        customClass: {
+            popup: 'swal-modern-popup',
+            actions: 'swal-modern-actions',
+            confirmButton: 'swal-btn-confirm-primary',
+            cancelButton: 'swal-btn-cancel'
+        },
+        buttonsStyling: false
     }).then((result) => {
         if (result.isConfirmed) {
             fetchAPI('reset_password', { id: id }).then(res => {
                 if (res.status === 'success') {
-                    Swal.fire('Berhasil!', 'Password berhasil direset. Password baru: <b>123456</b>', 'success');
+                    showToast('Password berhasil direset menjadi 123456', 'success');
                 } else {
-                    Swal.fire('Gagal!', res.message, 'error');
+                    showToast(res.message || 'Gagal mereset password.', 'error');
                 }
             });
         }
@@ -767,11 +825,12 @@ function submitBroadcast(e) {
         target_users: targetStr
     }).then(res => {
         if (res.status === 'success') {
-            Swal.fire('Berhasil!', 'Pengumuman telah dikirim.', 'success');
+            showToast('Pengumuman berhasil dikirim.', 'success');
             e.target.reset();
             document.querySelectorAll('.target-musyrif-checkbox').forEach(cb => cb.checked = false);
+            loadBroadcast();
         } else {
-            Swal.fire('Gagal!', res.message, 'error');
+            showToast(res.message || 'Gagal mengirim pengumuman.', 'error');
         }
         btn.disabled = false;
         btn.innerHTML = '<i class="fas fa-paper-plane me-2"></i>Kirim Pengumuman';
@@ -781,7 +840,10 @@ function submitBroadcast(e) {
 function tutupBroadcast(id) {
     fetchAPI('tutup_broadcast', { id: id }).then(res => {
         if (res.status === 'success') {
+            showToast('Pengumuman berhasil ditutup.', 'success');
             loadBroadcast();
+        } else {
+            showToast(res.message || 'Gagal menutup pengumuman.', 'error');
         }
     });
 }

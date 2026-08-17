@@ -10,6 +10,7 @@ if (!has_permission('rapot_create') && !has_permission('rapot_view')) {
     echo json_encode(['error' => 'Akses ditolak']);
     exit;
 }
+session_write_close();
 
 header('Content-Type: application/json; charset=utf-8');
 

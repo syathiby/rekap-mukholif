@@ -39,7 +39,7 @@ $jenis_pelanggaran_list_result = mysqli_query($conn, trim($sql_query));
         --card-border: rgba(0,0,0,0.05);
     }
 
-    body { background-color: var(--bg-body); font-family: 'Inter', sans-serif; }
+    body { background-color: var(--bg-body); font-family: 'Poppins', sans-serif; }
 
     /* === CARD STYLES === */
     .pro-card {
