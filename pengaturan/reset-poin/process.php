@@ -37,8 +37,8 @@ if (isset($_POST['tutup_buku_massal'])) {
         $tgl_selesai = date('Y-m-d'); // Hari ini
 
         // 1. BUAT ARSIP
-        $stmt_arsip = $conn->prepare("INSERT INTO arsip (judul, tanggal_mulai, tanggal_selesai) VALUES (?, ?, ?)");
-        $stmt_arsip->bind_param('sss', $judul_arsip, $tgl_mulai, $tgl_selesai);
+        $stmt_arsip = $conn->prepare("INSERT INTO arsip (judul, keterangan, tanggal_mulai, tanggal_selesai) VALUES (?, ?, ?, ?)");
+        $stmt_arsip->bind_param('ssss', $judul_arsip, $keterangan, $tgl_mulai, $tgl_selesai);
         $stmt_arsip->execute();
         $arsip_id = $conn->insert_id;
         $stmt_arsip->close();

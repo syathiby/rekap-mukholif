@@ -24,7 +24,7 @@ if ($action === 'delete') {
 
     if (!isset($_POST['id']) || !filter_var($_POST['id'], FILTER_VALIDATE_INT)) {
         $_SESSION['error_message'] = 'ID Arsip tidak valid.';
-        header('Location: index.php');
+        header('Location: ../index.php');
         exit;
     }
     $arsip_id = (int)$_POST['id'];

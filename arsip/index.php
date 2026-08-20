@@ -232,7 +232,12 @@ $res = $stmt->get_result();
                     <?php if($res && $res->num_rows > 0): mysqli_data_seek($res, 0); ?>
                         <?php while($row = $res->fetch_assoc()): ?>
                         <tr>
-                            <td><a href="view.php?id=<?= $row['id']; ?>" class="fw-bold text-decoration-none text-dark"><?= htmlspecialchars($row['judul']); ?></a></td>
+                            <td>
+                                <a href="view.php?id=<?= $row['id']; ?>" class="fw-bold text-decoration-none text-dark"><?= htmlspecialchars($row['judul']); ?></a>
+                                <?php if (!empty($row['keterangan'])): ?>
+                                    <div class="text-muted small mt-1" style="font-size: 0.8rem;"><i class="fas fa-tag fa-xs me-1 text-primary"></i><?= htmlspecialchars($row['keterangan']); ?></div>
+                                <?php endif; ?>
+                            </td>
                             <td>
                                 <?= date('d M Y', strtotime($row['tanggal_mulai'])); ?>
                                 <i class="fas fa-arrow-right mx-2 text-muted fa-sm"></i>
@@ -264,6 +269,9 @@ $res = $stmt->get_result();
                 <?php while($row = $res->fetch_assoc()): ?>
                     <div class="arsip-card-mobile">
                         <h5><a href="view.php?id=<?= $row['id']; ?>" class="text-decoration-none"><?= htmlspecialchars($row['judul']); ?></a></h5>
+                        <?php if (!empty($row['keterangan'])): ?>
+                            <div class="text-muted small fw-normal mb-2" style="font-size: 0.8rem;"><i class="fas fa-tag fa-xs me-1 text-primary"></i><?= htmlspecialchars($row['keterangan']); ?></div>
+                        <?php endif; ?>
                         <div class="info-row">
                             <span class="label">Periode</span>
                             <span class="value"><?= date('d M y', strtotime($row['tanggal_mulai'])); ?> - <?= date('d M y', strtotime($row['tanggal_selesai'])); ?></span>

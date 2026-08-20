@@ -21,7 +21,7 @@ $stmt_arsip->execute();
 $arsip = $stmt_arsip->get_result()->fetch_assoc();
 if (!$arsip) {
     $_SESSION['flash_error'] = "Arsip tidak ditemukan.";
-    header("Location: ../view.php");
+    header("Location: ../index.php");
     exit;
 }
 

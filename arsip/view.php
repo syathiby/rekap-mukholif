@@ -76,6 +76,26 @@ $total_rapot_tahunan = $stmt_s6->get_result()->fetch_assoc()['c'];
     .arsip-header-title i { color: var(--primary); }
     .arsip-header-meta { color: var(--text-muted); font-size: .9rem; margin: .25rem 0 0 0; }
     .arsip-header-meta strong { color: var(--text-dark); }
+    .arsip-header-note {
+        display: inline-flex;
+        align-items: center;
+        gap: .5rem;
+        margin-top: .65rem;
+        padding: .35rem .85rem;
+        background: #f8fafc;
+        border: 1px solid var(--border);
+        border-radius: .625rem;
+        font-size: .875rem;
+        font-weight: 600;
+        color: var(--text-dark);
+        max-width: 100%;
+        word-break: break-word;
+    }
+    .arsip-header-note i {
+        color: var(--primary);
+        font-size: .85rem;
+        flex-shrink: 0;
+    }
 
     /* ── Stat chips ── */
     .stat-chips { display: flex; flex-wrap: wrap; gap: .5rem; margin-bottom: 1.75rem; }
@@ -178,24 +198,6 @@ $total_rapot_tahunan = $stmt_s6->get_result()->fetch_assoc()['c'];
     }
     .menu-card:hover .card-arrow { opacity: 1; transform: translateX(0); }
 
-    /* ── Back btn ── */
-    .btn-back-arsip {
-        display: inline-flex;
-        align-items: center;
-        gap: .5rem;
-        padding: .55rem 1.2rem;
-        background: #f1f5f9;
-        border: 1px solid var(--border);
-        border-radius: .75rem;
-        font-weight: 600;
-        font-size: .875rem;
-        color: var(--text-dark);
-        text-decoration: none;
-        transition: background .15s;
-        flex-shrink: 0;
-    }
-    .btn-back-arsip:hover { background: #e2e8f0; color: var(--text-dark); text-decoration: none; }
-
     @media (max-width: 576px) {
         .arsip-view-page { padding: 1rem; }
         .arsip-header { padding: 1.25rem; }
@@ -219,10 +221,13 @@ $total_rapot_tahunan = $stmt_s6->get_result()->fetch_assoc()['c'];
                 &nbsp;&nbsp;•&nbsp;&nbsp;
                 Diarsipkan pada <?= date('d M Y', strtotime($meta['dibuat_pada'])) ?>
             </p>
+            <?php if (!empty($meta['keterangan'])): ?>
+                <div class="arsip-header-note">
+                    <i class="fas fa-tag"></i>
+                    <span><?= htmlspecialchars($meta['keterangan']) ?></span>
+                </div>
+            <?php endif; ?>
         </div>
-        <a href="index.php" class="btn-back-arsip">
-            <i class="fas fa-arrow-left"></i> Kembali
-        </a>
     </div>
 
     <!-- Stat Chips -->
