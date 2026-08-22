@@ -39,6 +39,10 @@ $total_rapot = $stmt_s5->get_result()->fetch_assoc()['c'];
 $stmt_s6 = $conn->prepare("SELECT COUNT(*) as c FROM arsip_data_rapot_tahunan WHERE arsip_id = ?");
 $stmt_s6->bind_param('i', $arsip_id); $stmt_s6->execute();
 $total_rapot_tahunan = $stmt_s6->get_result()->fetch_assoc()['c'];
+
+$stmt_s7 = $conn->prepare("SELECT COUNT(*) as c FROM arsip_data_log_bahasa WHERE arsip_id = ?");
+$stmt_s7->bind_param('i', $arsip_id); $stmt_s7->execute();
+$total_log_bahasa = $stmt_s7->get_result()->fetch_assoc()['c'];
 ?>
 
 <style>
@@ -97,23 +101,69 @@ $total_rapot_tahunan = $stmt_s6->get_result()->fetch_assoc()['c'];
         flex-shrink: 0;
     }
 
-    /* ── Stat chips ── */
-    .stat-chips { display: flex; flex-wrap: wrap; gap: .5rem; margin-bottom: 1.75rem; }
+    /* ── Stat chips (Full Text Pill Badges) ── */
+    .stat-chips {
+        display: flex;
+        flex-wrap: wrap;
+        align-items: center;
+        gap: 0.55rem;
+        margin-bottom: 1.75rem;
+    }
     .stat-chip {
         background: var(--card-bg);
         border: 1px solid var(--border);
-        border-radius: 999px;
-        padding: .45rem 1rem;
-        font-size: .82rem;
-        font-weight: 600;
+        border-radius: 9999px;
+        padding: 0.45rem 0.95rem;
+        font-size: 0.82rem;
+        font-weight: 500;
         color: var(--text-muted);
-        display: flex;
+        display: inline-flex;
         align-items: center;
-        gap: .4rem;
-        box-shadow: 0 1px 2px rgba(0,0,0,.04);
+        gap: 0.45rem;
+        box-shadow: 0 1px 2px rgba(0,0,0,.03);
+        transition: all 0.18s cubic-bezier(0.4, 0, 0.2, 1);
+        white-space: nowrap;
+        flex-shrink: 0;
     }
-    .stat-chip .chip-dot { width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; }
-    .stat-chip .chip-num { color: var(--text-dark); font-size: .9rem; }
+    .stat-chip:hover {
+        transform: translateY(-1px);
+        box-shadow: 0 4px 10px rgba(0,0,0,0.06);
+        border-color: #cbd5e1;
+    }
+    .stat-chip .chip-dot {
+        width: 8px;
+        height: 8px;
+        min-width: 8px;
+        border-radius: 50%;
+        flex-shrink: 0;
+    }
+    .stat-chip .chip-num {
+        color: var(--text-dark);
+        font-weight: 700;
+        font-size: 0.88rem;
+    }
+    .stat-chip .chip-text {
+        color: var(--text-muted);
+        font-size: 0.82rem;
+        white-space: nowrap;
+    }
+
+    @media (max-width: 576px) {
+        .stat-chips {
+            gap: 0.45rem;
+            margin-bottom: 1.25rem;
+        }
+        .stat-chip {
+            padding: 0.38rem 0.75rem;
+            font-size: 0.76rem;
+        }
+        .stat-chip .chip-num {
+            font-size: 0.82rem;
+        }
+        .stat-chip .chip-text {
+            font-size: 0.76rem;
+        }
+    }
 
     /* ── Section title ── */
     .section-label {
@@ -208,7 +258,7 @@ $total_rapot_tahunan = $stmt_s6->get_result()->fetch_assoc()['c'];
 <div class="arsip-view-page">
 
     <!-- Header -->
-    <div class="arsip-header">
+    <div class="arsip-header d-flex flex-column flex-md-row justify-content-between align-items-start align-items-md-center gap-3">
         <div>
             <h1 class="arsip-header-title">
                 <i class="fas fa-box-archive"></i>
@@ -228,33 +278,51 @@ $total_rapot_tahunan = $stmt_s6->get_result()->fetch_assoc()['c'];
                 </div>
             <?php endif; ?>
         </div>
+        <div class="d-flex align-items-center gap-2 flex-shrink-0">
+            <?php if (has_permission('arsip_export')): ?>
+                <a href="export/export_arsip.php?id=<?= $arsip_id ?>" class="btn btn-sm btn-success rounded-pill px-3 py-2 fw-semibold d-inline-flex align-items-center gap-1.5 shadow-sm">
+                    <i class="fas fa-file-excel me-1"></i> Export Excel
+                </a>
+            <?php endif; ?>
+        </div>
     </div>
 
     <!-- Stat Chips -->
     <div class="stat-chips">
         <div class="stat-chip">
             <span class="chip-dot" style="background:#6366f1;"></span>
-            <span class="chip-num"><?= number_format($total_santri) ?></span> Santri
+            <span class="chip-num"><?= number_format($total_santri) ?></span>
+            <span class="chip-text">Santri</span>
         </div>
         <div class="stat-chip">
             <span class="chip-dot" style="background:#ef4444;"></span>
-            <span class="chip-num"><?= number_format($total_pelanggaran) ?></span> Pelanggaran Umum
+            <span class="chip-num"><?= number_format($total_pelanggaran) ?></span>
+            <span class="chip-text">Pelanggaran Umum</span>
         </div>
         <div class="stat-chip">
             <span class="chip-dot" style="background:#f59e0b;"></span>
-            <span class="chip-num"><?= number_format($total_kebersihan) ?></span> Pelanggaran Kebersihan
+            <span class="chip-num"><?= number_format($total_kebersihan) ?></span>
+            <span class="chip-text">Pelanggaran Kebersihan</span>
         </div>
         <div class="stat-chip">
             <span class="chip-dot" style="background:#10b981;"></span>
-            <span class="chip-num"><?= number_format($total_reward) ?></span> Data Reward
+            <span class="chip-num"><?= number_format($total_reward) ?></span>
+            <span class="chip-text">Data Reward</span>
         </div>
         <div class="stat-chip">
             <span class="chip-dot" style="background:#3b82f6;"></span>
-            <span class="chip-num"><?= number_format($total_rapot) ?></span> Rapot
+            <span class="chip-num"><?= number_format($total_rapot) ?></span>
+            <span class="chip-text">Rapot</span>
         </div>
         <div class="stat-chip">
             <span class="chip-dot" style="background:#8b5cf6;"></span>
-            <span class="chip-num"><?= number_format($total_rapot_tahunan) ?></span> Rapot Tahunan
+            <span class="chip-num"><?= number_format($total_rapot_tahunan) ?></span>
+            <span class="chip-text">Rapot Tahunan</span>
+        </div>
+        <div class="stat-chip">
+            <span class="chip-dot" style="background:#06b6d4;"></span>
+            <span class="chip-num"><?= number_format($total_log_bahasa) ?></span>
+            <span class="chip-text">Riwayat Bahasa</span>
         </div>
     </div>
 
@@ -279,7 +347,21 @@ $total_rapot_tahunan = $stmt_s6->get_result()->fetch_assoc()['c'];
             <i class="fas fa-chevron-right card-arrow"></i>
         </a>
 
-
+        <!-- Perkembangan Bahasa -->
+        <a href="pages/arsip_bahasa.php?id=<?= $arsip_id ?>" class="menu-card" style="border-left: 4px solid #06b6d4;">
+            <div class="card-icon-wrap" style="background:#ecfeff;">
+                <i class="fas fa-language" style="color:#0891b2;"></i>
+            </div>
+            <div class="card-body-text">
+                <h6>Perkembangan Bahasa</h6>
+                <p>Rekap, grafik, dan riwayat perkembangan level bahasa santri periode ini</p>
+                <span class="card-badge" style="background:#ecfeff;color:#0e7490;">
+                    <i class="fas fa-language fa-xs"></i>
+                    <?= number_format($total_log_bahasa) ?> riwayat
+                </span>
+            </div>
+            <i class="fas fa-chevron-right card-arrow"></i>
+        </a>
 
         <!-- Peringkat Kamar -->
         <a href="pages/arsip_kamar.php?id=<?= $arsip_id ?>" class="menu-card" style="border-left: 4px solid #ec4899;">

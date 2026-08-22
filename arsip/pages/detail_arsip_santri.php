@@ -218,6 +218,23 @@ $stmt_radar->execute();
 $radar_data  = $stmt_radar->get_result()->fetch_assoc();
 $total_rapot = (int)($radar_data['total_rapot'] ?? 0);
 
+// ─── 10.5 Bahasa: Riwayat Level Bahasa Arsip ──────────────────────────────────
+$stmt_bahasa = $conn->prepare(
+    "SELECT nama_pelanggaran, poin_lama, tanggal_melanggar, diganti_pada, diganti_oleh_nama
+     FROM arsip_data_log_bahasa
+     WHERE arsip_id = ? AND santri_id = ?
+     ORDER BY tanggal_melanggar ASC"
+);
+$stmt_bahasa->bind_param("ii", $arsip_id, $santri_id);
+$stmt_bahasa->execute();
+$res_bahasa = $stmt_bahasa->get_result();
+$bahasa_logs = [];
+while ($r = $res_bahasa->fetch_assoc()) {
+    $bahasa_logs[] = $r;
+}
+$total_bahasa_santri = count($bahasa_logs);
+$stmt_bahasa->close();
+
 // Radar labels & values
 $radar_labels = [
     'Puasa Sunnah','Sholat Duha','Sholat Malam','Sedekah','Sunnah Tidur','Ibadah Lainnya',
@@ -686,6 +703,14 @@ require_once __DIR__ . '/../../layouts/header.php';
                 <?php endif; ?>
             </button>
         </li>
+        <li class="nav-item" role="presentation">
+            <button class="nav-link" id="tab-bahasa" data-bs-toggle="tab" data-bs-target="#pane-bahasa" type="button" role="tab">
+                <i class="fas fa-language"></i> Perkembangan Bahasa
+                <?php if ($total_bahasa_santri > 0): ?>
+                    <span class="badge ms-1" style="background:#0891b2;font-size:.7rem"><?= $total_bahasa_santri ?></span>
+                <?php endif; ?>
+            </button>
+        </li>
     </ul>
 
     <!-- Tab panes -->
@@ -896,6 +921,53 @@ require_once __DIR__ . '/../../layouts/header.php';
 
             <?php endif; ?>
         </div><!-- /pane-karakter -->
+
+        <!-- ═══ TAB 3: PERKEMBANGAN BAHASA ═════════════════════════════════════ -->
+        <div class="tab-pane fade" id="pane-bahasa" role="tabpanel">
+            <div class="pro-chart-card">
+                <div class="chart-title">
+                    <span class="chart-icon-wrap" style="background:#ecfeff"><i class="fas fa-language" style="color:#0891b2"></i></span>
+                    Riwayat Perkembangan Bahasa Santri (Arsip)
+                </div>
+                <div class="chart-subtitle">Catatan kronologis perubahan level dan poin pelanggaran bahasa selama periode arsip ini</div>
+
+                <?php if ($total_bahasa_santri > 0): ?>
+                    <div class="table-responsive mt-3">
+                        <table class="table table-hover align-middle mb-0">
+                            <thead class="table-light">
+                                <tr>
+                                    <th style="width: 50px;">No</th>
+                                    <th>Tanggal Insiden</th>
+                                    <th>Tingkatan Level</th>
+                                    <th class="text-center">Poin</th>
+                                    <th>Dicatat / Diubah Oleh</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <?php foreach ($bahasa_logs as $b_idx => $b_log): ?>
+                                    <tr>
+                                        <td><?= $b_idx + 1 ?></td>
+                                        <td><span class="fw-semibold"><?= !empty($b_log['tanggal_melanggar']) ? date('d M Y, H:i', strtotime($b_log['tanggal_melanggar'])) : '-' ?></span></td>
+                                        <td>
+                                            <span class="badge bg-danger-subtle text-danger border border-danger-subtle rounded-pill px-3 py-1.5 font-monospace">
+                                                <?= htmlspecialchars(trim(str_ireplace(['(Bahasa)', '(bahasa)'], '', $b_log['nama_pelanggaran'] ?? 'Level 0'))) ?>
+                                            </span>
+                                        </td>
+                                        <td class="text-center fw-bold text-danger fs-6"><?= $b_log['poin_lama'] ?></td>
+                                        <td><small class="text-muted"><?= htmlspecialchars($b_log['diganti_oleh_nama'] ?? 'Sistem') ?></small></td>
+                                    </tr>
+                                <?php endforeach; ?>
+                            </tbody>
+                        </table>
+                    </div>
+                <?php else: ?>
+                    <div class="empty-chart p-5 text-center">
+                        <i class="fas fa-check-circle fa-3x text-success mb-3"></i>
+                        <p class="text-muted fw-medium">Alhamdulillah, santri tidak memiliki riwayat pelanggaran bahasa pada periode arsip ini.</p>
+                    </div>
+                <?php endif; ?>
+            </div>
+        </div>
 
     </div><!-- /tab-content -->
 </div>

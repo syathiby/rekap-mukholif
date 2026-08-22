@@ -81,6 +81,7 @@ if ($action === 'delete') {
     }
 
     // 2. Eksekusi penghapusan data arsip
+    mysqli_begin_transaction($conn);
     try {
         // Ambil info arsip buat log
         $stmt_info = $conn->prepare("SELECT judul FROM arsip WHERE id = ?");
@@ -89,21 +90,27 @@ if ($action === 'delete') {
         $info = $stmt_info->get_result()->fetch_assoc();
         $stmt_info->close();
 
-        // Hapus data induknya aja, anak-anaknya bakal ikut kehapus otomatis
-        // berkat ON DELETE CASCADE di database.
+        // Pastikan tabel anak log bahasa & rapot tahunan ikut terhapus bersih
+        $conn->query("DELETE FROM arsip_data_log_bahasa WHERE arsip_id = $arsip_id");
+        $conn->query("DELETE FROM arsip_data_rapot_tahunan WHERE arsip_id = $arsip_id");
+
+        // Hapus data induk arsip (cascading ke seluruh tabel anak)
         $stmt = $conn->prepare("DELETE FROM arsip WHERE id = ?");
         $stmt->bind_param('i', $arsip_id);
         $stmt->execute();
+        $affected = $stmt->affected_rows;
+        $stmt->close();
+
+        mysqli_commit($conn);
         
-        if ($stmt->affected_rows > 0 && $info) {
+        if ($affected > 0 && $info) {
             write_activity_log('DELETE', 'backup-restore', "Menghapus data arsip permanen: '" . htmlspecialchars($info['judul']) . "' (Diverifikasi dengan Password Admin)", ['arsip_id' => $arsip_id]);
         }
-        $stmt->close();
 
         set_flash_message('Data arsip berhasil dihapus secara permanen.', 'success');
 
-    } catch (mysqli_sql_exception $exception) {
-        // Nggak perlu transaksi karena cuma 1 query
+    } catch (Exception $exception) {
+        mysqli_rollback($conn);
         set_flash_message('Gagal menghapus arsip: ' . $exception->getMessage(), 'error');
     }
     

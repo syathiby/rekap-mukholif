@@ -146,7 +146,25 @@ if (isset($_POST['tutup_buku_massal'])) {
         $stmt_rapot_tahunan_snapshot->execute();
         $stmt_rapot_tahunan_snapshot->close();
 
-        // 2. RESET PELANGGARAN KEBERSIHAN & RAPOT
+        // Snapshot riwayat bahasa ke arsip_data_log_bahasa
+        $sql_log_bahasa_snapshot = "
+            INSERT INTO arsip_data_log_bahasa 
+                (arsip_id, santri_id, santri_nama, santri_kelas, santri_kamar,
+                 jenis_pelanggaran_id, nama_pelanggaran, poin_lama, tanggal_melanggar, diganti_pada, diganti_oleh_nama)
+            SELECT 
+                ?, lb.santri_id, s.nama, s.kelas, s.kamar,
+                jp.id, jp.nama_pelanggaran, lb.poin_lama, lb.tanggal_melanggar, lb.diganti_pada, u.nama_lengkap
+            FROM log_bahasa lb
+            JOIN santri s ON lb.santri_id = s.id
+            JOIN jenis_pelanggaran jp ON lb.jenis_pelanggaran_id = jp.id
+            LEFT JOIN users u ON lb.diganti_oleh = u.id
+        ";
+        $stmt_log_bhs_snapshot = $conn->prepare($sql_log_bahasa_snapshot);
+        $stmt_log_bhs_snapshot->bind_param('i', $arsip_id);
+        $stmt_log_bhs_snapshot->execute();
+        $stmt_log_bhs_snapshot->close();
+
+        // 2. RESET PELANGGARAN KEBERSIHAN, RAPOT, DAN LOG BAHASA
         $stmt_del_kebersihan = $conn->prepare("DELETE FROM pelanggaran_kebersihan WHERE DATE(tanggal) >= ?");
         $stmt_del_kebersihan->bind_param('s', $tgl_mulai);
         $stmt_del_kebersihan->execute();
@@ -155,6 +173,14 @@ if (isset($_POST['tutup_buku_massal'])) {
         // Karena sistem saat ini mengarsip seluruh tabel rapot, kita hapus semuanya juga.
         $conn->query("DELETE FROM rapot_kepengasuhan");
         $conn->query("DELETE FROM rapot_tahunan");
+
+        // Bersihkan seluruh riwayat log_bahasa & pelanggaran bahasa aktif (kembali ke Level 0)
+        $conn->query("DELETE FROM log_bahasa");
+        $conn->query("
+            DELETE p FROM pelanggaran p
+            JOIN jenis_pelanggaran jp ON p.jenis_pelanggaran_id = jp.id
+            WHERE jp.bagian = 'Bahasa'
+        ");
 
         // 3. LOG MASAL & UPDATE POIN AKTIF
         

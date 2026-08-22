@@ -29,6 +29,113 @@ require_once __DIR__ . '/../../layouts/header.php';
             font-size: 1rem;
         }
     }
+
+    /* Custom Modern SweetAlert Modal Styling */
+    .swal2-popup.swal-modern-popup {
+        border-radius: 24px !important;
+        padding: 2rem !important;
+        box-shadow: 0 25px 50px -12px rgba(15, 23, 42, 0.25) !important;
+        border: 1px solid #e2e8f0 !important;
+        font-family: 'Poppins', sans-serif !important;
+    }
+    .swal-custom-modal {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        text-align: center;
+    }
+    .swal-icon-badge-danger {
+        width: 76px;
+        height: 76px;
+        border-radius: 50%;
+        background: #fee2e2;
+        color: #ef4444;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 2.2rem;
+        margin-bottom: 1.25rem;
+        box-shadow: 0 0 0 8px #fef2f2;
+        animation: pulseWarning 2s infinite;
+    }
+    @keyframes pulseWarning {
+        0% { box-shadow: 0 0 0 0 rgba(239, 68, 68, 0.4); }
+        70% { box-shadow: 0 0 0 14px rgba(239, 68, 68, 0); }
+        100% { box-shadow: 0 0 0 0 rgba(239, 68, 68, 0); }
+    }
+    .swal-custom-title {
+        font-size: 1.4rem;
+        font-weight: 700;
+        color: #0f172a;
+        margin-bottom: 0.5rem;
+    }
+    .swal-custom-desc {
+        font-size: 0.88rem;
+        color: #64748b;
+        line-height: 1.5;
+        margin-bottom: 1rem;
+    }
+    .swal-summary-box {
+        background: #f8fafc;
+        border: 1px solid #e2e8f0;
+        border-radius: 16px;
+        padding: 1rem 1.15rem;
+        width: 100%;
+        text-align: left;
+        margin-bottom: 0.5rem;
+    }
+    .swal-summary-item {
+        display: flex;
+        align-items: flex-start;
+        gap: 0.65rem;
+        font-size: 0.82rem;
+        color: #334155;
+        margin-bottom: 0.5rem;
+        line-height: 1.4;
+    }
+    .swal-summary-item:last-child {
+        margin-bottom: 0;
+    }
+    .swal-summary-item i {
+        font-size: 0.88rem;
+        margin-top: 2px;
+        flex-shrink: 0;
+    }
+    .swal-modern-actions {
+        width: 100% !important;
+        gap: 0.75rem !important;
+        margin-top: 1.25rem !important;
+    }
+    .swal-btn-confirm-danger {
+        background: linear-gradient(135deg, #ef4444, #dc2626) !important;
+        color: #ffffff !important;
+        font-weight: 600 !important;
+        font-size: 0.9rem !important;
+        padding: 0.75rem 1.5rem !important;
+        border-radius: 50px !important;
+        border: none !important;
+        box-shadow: 0 4px 12px rgba(239, 68, 68, 0.35) !important;
+        transition: all 0.2s ease !important;
+        flex: 1;
+    }
+    .swal-btn-confirm-danger:hover {
+        transform: translateY(-1px) !important;
+        box-shadow: 0 6px 18px rgba(239, 68, 68, 0.45) !important;
+    }
+    .swal-btn-cancel {
+        background: #f1f5f9 !important;
+        color: #475569 !important;
+        font-weight: 600 !important;
+        font-size: 0.9rem !important;
+        padding: 0.75rem 1.5rem !important;
+        border-radius: 50px !important;
+        border: 1px solid #e2e8f0 !important;
+        transition: all 0.2s ease !important;
+    }
+    .swal-btn-cancel:hover {
+        background: #e2e8f0 !important;
+        color: #0f172a !important;
+    }
 </style>
 
 <div class="container py-4 py-lg-5">
@@ -122,6 +229,19 @@ include __DIR__ . '/../../layouts/footer.php';
 ?>
 
 <script>
+function escapeHtml(str) {
+    if (!str) return '';
+    return String(str).replace(/[&<>'"]/g, function(tag) {
+        return ({
+            '&': '&amp;',
+            '<': '&lt;',
+            '>': '&gt;',
+            "'": '&#39;',
+            '"': '&quot;'
+        }[tag] || tag);
+    });
+}
+
 $(document).ready(function() {
     const form = document.getElementById('resetForm');
     
@@ -129,8 +249,8 @@ $(document).ready(function() {
         form.addEventListener('submit', function(event) {
             event.preventDefault(); // Mencegah submit langsung
             const submitter = event.submitter;
-            const submitName = submitter.name;
-            const submitValue = submitter.value || "1";
+            const submitName = submitter ? submitter.name : 'tutup_buku_massal';
+            const submitValue = submitter ? (submitter.value || "1") : "1";
             
             if (submitName === 'tutup_buku_massal') {
                 const keteranganSemua = document.getElementById('keterangan_semua');
@@ -147,22 +267,67 @@ $(document).ready(function() {
                     keteranganSemua.focus();
                     return;
                 }
+
+                const judulVal = judulArsip.value.trim();
+                const ketVal = keteranganSemua.value.trim();
                 
                 Swal.fire({
-                    title: 'PERINGATAN KERAS!',
-                    text: 'Anda akan mengeksekusi TUTUP BUKU. Data akan diarsipkan dan pelanggaran akan direset. Tindakan ini final dan tidak dapat diurungkan. Apakah Anda 100% yakin?',
-                    icon: 'error',
+                    html: `
+                        <div class="swal-custom-modal">
+                            <div class="swal-icon-badge-danger">
+                                <i class="fas fa-box-archive"></i>
+                            </div>
+                            <h4 class="swal-custom-title">Konfirmasi Tutup Buku</h4>
+                            <p class="swal-custom-desc">
+                                Anda akan mengeksekusi <strong>Tutup Buku Akhir Tahun (Sapu Jagat)</strong>. Seluruh data aktif akan diarsipkan dan laci utama dibersihkan.
+                            </p>
+
+                            <div class="swal-summary-box">
+                                <div class="d-flex align-items-center justify-content-between pb-2 mb-2 border-bottom">
+                                    <span class="text-muted small fw-semibold">Judul Arsip:</span>
+                                    <span class="badge bg-primary-subtle text-primary border border-primary-subtle rounded-pill px-2.5 py-1 text-truncate" style="max-width: 220px;">${escapeHtml(judulVal)}</span>
+                                </div>
+                                <div class="swal-summary-item">
+                                    <i class="fas fa-check-circle text-success"></i>
+                                    <span><strong>Snapshot Otomatis:</strong> Pelanggaran umum, kebersihan, rapot, reward, dan riwayat bahasa tersimpan utuh di gudang arsip.</span>
+                                </div>
+                                <div class="swal-summary-item">
+                                    <i class="fas fa-broom text-warning"></i>
+                                    <span><strong>Lembaran Baru:</strong> Poin santri direset bersih untuk tahun ajaran baru (surplus reward tetap aman).</span>
+                                </div>
+                                <div class="swal-summary-item">
+                                    <i class="fas fa-shield-alt text-danger"></i>
+                                    <span><strong>Tindakan Final:</strong> Proses ini permanen dan tercatat dalam audit log sistem.</span>
+                                </div>
+                            </div>
+                        </div>
+                    `,
                     showCancelButton: true,
-                    confirmButtonColor: '#d33',
-                    cancelButtonColor: '#6c757d',
-                    confirmButtonText: 'YA, JALANKAN TUTUP BUKU!'
+                    confirmButtonText: '<i class="fas fa-power-off me-2"></i> Ya, Jalankan Tutup Buku!',
+                    cancelButtonText: 'Batal',
+                    reverseButtons: true,
+                    buttonsStyling: false,
+                    customClass: {
+                        popup: 'swal-modern-popup',
+                        actions: 'swal-modern-actions',
+                        confirmButton: 'swal-btn-confirm-danger',
+                        cancelButton: 'swal-btn-cancel'
+                    }
                 }).then((result) => {
                     if(result.isConfirmed) {
                         Swal.fire({
-                            title: 'Sedang Memproses...',
-                            html: 'Harap tunggu, jangan tutup atau refresh halaman ini.',
+                            title: 'Sedang Mengeksekusi Tutup Buku...',
+                            html: `
+                                <div class="py-2 text-center">
+                                    <p class="text-muted small mb-0">Menyalin seluruh data ke gudang arsip & menyiapkan lembaran baru.<br><strong class="text-danger">Harap tunggu, jangan menutup atau me-refresh halaman ini!</strong></p>
+                                </div>
+                            `,
                             allowOutsideClick: false,
                             allowEscapeKey: false,
+                            showConfirmButton: false,
+                            customClass: {
+                                popup: 'swal-modern-popup'
+                            },
                             didOpen: () => {
                                 Swal.showLoading();
                                 let input = document.createElement('input');
