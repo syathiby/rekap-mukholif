@@ -258,7 +258,7 @@ $total_log_bahasa = $stmt_s7->get_result()->fetch_assoc()['c'];
 <div class="arsip-view-page">
 
     <!-- Header -->
-    <div class="arsip-header d-flex flex-column flex-md-row justify-content-between align-items-start align-items-md-center gap-3">
+    <div class="arsip-header">
         <div>
             <h1 class="arsip-header-title">
                 <i class="fas fa-box-archive"></i>
@@ -276,13 +276,6 @@ $total_log_bahasa = $stmt_s7->get_result()->fetch_assoc()['c'];
                     <i class="fas fa-tag"></i>
                     <span><?= htmlspecialchars($meta['keterangan']) ?></span>
                 </div>
-            <?php endif; ?>
-        </div>
-        <div class="d-flex align-items-center gap-2 flex-shrink-0">
-            <?php if (has_permission('arsip_export')): ?>
-                <a href="export/export_arsip.php?id=<?= $arsip_id ?>" class="btn btn-sm btn-success rounded-pill px-3 py-2 fw-semibold d-inline-flex align-items-center gap-1.5 shadow-sm">
-                    <i class="fas fa-file-excel me-1"></i> Export Excel
-                </a>
             <?php endif; ?>
         </div>
     </div>
