@@ -1,17 +1,12 @@
 <?php
 // ─── CACHE BUSTING UNTUK ASET GAMBAR ───────────────────────────────
-$_img_base = $_SERVER['DOCUMENT_ROOT'];
-// Coba path dengan subfolder dulu, fallback ke root
-$_favicon_path = file_exists($_img_base . '/rekap-mukholif/assets/img/favicon/favicon.ico')
-    ? $_img_base . '/rekap-mukholif/assets/img/favicon/favicon.ico'
-    : $_img_base . '/assets/img/favicon/favicon.ico';
-$_appicon_path = file_exists($_img_base . '/rekap-mukholif/assets/img/favicon/apple-touch-icon.png')
-    ? $_img_base . '/rekap-mukholif/assets/img/favicon/apple-touch-icon.png'
-    : $_img_base . '/assets/img/favicon/apple-touch-icon.png';
+$_img_base = dirname(__DIR__);
+$_favicon_path = $_img_base . '/assets/img/favicon/favicon.ico';
+$_appicon_path = $_img_base . '/assets/img/favicon/apple-touch-icon.png';
 
 $favicon_v  = file_exists($_favicon_path) ? filemtime($_favicon_path) : '1';
 $appicon_v  = file_exists($_appicon_path) ? filemtime($_appicon_path) : '1';
-$style_v    = time(); // selalu fresh
+$style_v    = file_exists($_img_base . '/assets/css/style.css') ? filemtime($_img_base . '/assets/css/style.css') : time();
 
 // --- AMBIL NAMA ROLE DINAMIS ---
 $current_role_id = $_SESSION['role'] ?? 'admin';

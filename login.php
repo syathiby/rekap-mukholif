@@ -2,17 +2,13 @@
 require_once __DIR__ . '/bootstrap/init.php';
 
 // ─── CACHE BUSTING UNTUK ASET GAMBAR ───────────────────────────────
-$_img_base = $_SERVER['DOCUMENT_ROOT'];
-$_favicon_path = file_exists($_img_base . '/rekap-mukholif/assets/img/favicon/favicon.ico')
-    ? $_img_base . '/rekap-mukholif/assets/img/favicon/favicon.ico'
-    : $_img_base . '/assets/img/favicon/favicon.ico';
-$_appicon_path = file_exists($_img_base . '/rekap-mukholif/assets/img/favicon/apple-touch-icon.png')
-    ? $_img_base . '/rekap-mukholif/assets/img/favicon/apple-touch-icon.png'
-    : $_img_base . '/assets/img/favicon/apple-touch-icon.png';
+$_img_base = __DIR__;
+$_favicon_path = $_img_base . '/assets/img/favicon/favicon.ico';
+$_appicon_path = $_img_base . '/assets/img/favicon/apple-touch-icon.png';
 
 $favicon_v = file_exists($_favicon_path) ? filemtime($_favicon_path) : '1';
 $appicon_v = file_exists($_appicon_path) ? filemtime($_appicon_path) : '1';
-$style_v   = time();
+$style_v   = file_exists($_img_base . '/assets/css/style.css') ? filemtime($_img_base . '/assets/css/style.css') : time();
 // ───────────────────────────────────────────────────
 
 $error = '';
@@ -94,13 +90,12 @@ function resetRateLimit($ip) {
     if (file_exists($file)) unlink($file);
 }
 
-// Cek apakah IP ini sedang diblokir
-$visitor_ip   = $_SERVER['REMOTE_ADDR'];
+// Cek apakah IP ini sedang diblokir (mendukung IP asli di balik tunnel/proxy)
+$visitor_ip = function_exists('get_client_ip') ? get_client_ip() : ($_SERVER['REMOTE_ADDR'] ?? '127.0.0.1');
 
-// Tangani jika dilempar dari guard() karena akses ilegal
+// Tangani jika dilempar dari guard() karena belum login
 if (isset($_GET['illegal'])) {
     $info = "Silakan login terlebih dahulu untuk melanjutkan.";
-    recordFailedAttempt($visitor_ip);
 }
 
 $rate_check        = checkRateLimit($visitor_ip);

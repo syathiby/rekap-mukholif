@@ -92,30 +92,72 @@ body { background: var(--bg); }
     margin: 0;
 }
 
-.btn-back {
+.nav-segmented-control {
+    display: inline-flex;
+    background: #f1f5f9;
+    padding: 4px;
+    border-radius: 14px;
+    border: 1px solid #e2e8f0;
+    gap: 3px;
+    max-width: 100%;
+    flex-wrap: nowrap;
+    overflow-x: auto;
+    scrollbar-width: none;
+}
+.nav-segmented-control::-webkit-scrollbar {
+    display: none;
+}
+.nav-segment-link {
     display: inline-flex;
     align-items: center;
-    gap: .5rem;
-    padding: .5rem .875rem;
-    font-size: .875rem;
-    font-family: var(--font);
+    gap: 6px;
+    padding: 0.45rem 0.95rem;
+    border-radius: 10px;
+    font-size: 0.82rem;
     font-weight: 600;
-    color: var(--text-2);
-    background: var(--surface);
-    border: 1px solid var(--border);
-    border-radius: 8px;
+    color: #64748b;
     text-decoration: none;
     white-space: nowrap;
-    transition: all .15s cubic-bezier(0.4, 0, 0.2, 1);
-    box-shadow: 0 1px 2px rgba(0,0,0,0.05);
+    transition: all 0.18s cubic-bezier(0.4, 0, 0.2, 1);
 }
-.btn-back:hover { 
-    border-color: var(--border-2); 
-    color: var(--text-1); 
-    background: #fafafb; 
-    transform: translateY(-1px);
+.nav-segment-link:hover {
+    color: #0f172a;
+    background: rgba(255, 255, 255, 0.7);
 }
-.btn-back svg { opacity: .7; width: 12px; height: 12px; }
+.nav-segment-link.active {
+    background: #ffffff;
+    color: #4f46e5;
+    box-shadow: 0 2px 6px rgba(15, 23, 42, 0.08), 0 0 0 1px rgba(226, 232, 240, 0.8);
+}
+
+@media (max-width: 991px) {
+    .bm-top {
+        flex-direction: column;
+        align-items: flex-start;
+    }
+    .nav-segmented-control {
+        width: 100%;
+        display: grid;
+        grid-template-columns: repeat(4, 1fr);
+        text-align: center;
+    }
+    .nav-segment-link {
+        justify-content: center;
+        padding: 0.45rem 0.4rem;
+        font-size: 0.76rem;
+    }
+}
+
+@media (max-width: 576px) {
+    .nav-segmented-control {
+        grid-template-columns: repeat(2, 1fr);
+        gap: 4px;
+    }
+    .nav-segment-link {
+        padding: 0.45rem 0.5rem;
+        font-size: 0.74rem;
+    }
+}
 
 /* ── Alert ─────────────────────────────────────────────────────── */
 .bm-alert {
@@ -633,10 +675,24 @@ body { background: var(--bg); }
             <h1>Edit Izin Massal</h1>
             <p>Terapkan atau cabut akses ke beberapa pengguna sekaligus.</p>
         </div>
-        <a href="index.php" class="btn-back">
-            <svg width="11" height="11" viewBox="0 0 12 12" fill="none"><path d="M7.5 2L3.5 6l4 4" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg>
-            Kembali
-        </a>
+        <nav class="nav-segmented-control" aria-label="Navigasi Pengaturan Izin">
+            <a href="index.php" class="nav-segment-link">
+                <i class="fas fa-user-shield"></i>
+                <span>Izin User</span>
+            </a>
+            <a href="role.php" class="nav-segment-link">
+                <i class="fas fa-layer-group"></i>
+                <span>Default Role</span>
+            </a>
+            <a href="bulk.php" class="nav-segment-link active">
+                <i class="fas fa-users-cog"></i>
+                <span>Edit Massal</span>
+            </a>
+            <a href="daftar_izin.php" class="nav-segment-link">
+                <i class="fas fa-list-check"></i>
+                <span>Daftar Izin</span>
+            </a>
+        </nav>
     </div>
 
     <!-- ── Alerts ───────────────────────────────────────────────── -->

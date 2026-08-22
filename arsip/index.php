@@ -190,32 +190,6 @@ $res = $stmt->get_result();
         </div>
     </div>
     
-    <?php
-        // Cek dan tampilkan pesan sukses dari session
-        if (isset($_SESSION['success_message'])) {
-            // Tampilkan pesannya dengan style bootstrap alert
-            echo '<div class="alert alert-success alert-dismissible fade show" role="alert">' .
-                htmlspecialchars($_SESSION['success_message']) .
-                '<button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>' .
-                '</div>';
-            
-            // Hapus pesan dari session biar nggak muncul lagi
-            unset($_SESSION['success_message']);
-        }
-
-        // Cek dan tampilkan pesan error dari session
-        if (isset($_SESSION['error_message'])) {
-            // Tampilkan pesannya dengan style bootstrap alert
-            echo '<div class="alert alert-danger alert-dismissible fade show" role="alert">' .
-                htmlspecialchars($_SESSION['error_message']) .
-                '<button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>' .
-                '</div>';
-
-            // Hapus pesan dari session biar nggak muncul lagi
-            unset($_SESSION['error_message']);
-        }
-    ?>
-
     <div class="card-table-wrapper">
         <div class="table-responsive desktop-table">
             <table>
@@ -248,9 +222,10 @@ $res = $stmt->get_result();
                             <td class="text-end">
                                 <a href="view.php?id=<?= $row['id']; ?>" class="btn btn-lihat"><i class="fas fa-eye"></i> Lihat</a>
                                 <?php if (has_permission('arsip_delete')): ?>
-                                    <form class="d-inline" action="crud/delete.php" method="post" onsubmit="confirmSubmit(event, this, 'Peringatan Hapus', 'Yakin hapus arsip ini? Data di dalamnya akan hilang permanen!');">
+                                    <form class="d-inline" action="crud/delete.php" method="post" data-judul="<?= htmlspecialchars($row['judul'], ENT_QUOTES) ?>" onsubmit="confirmDeleteArsip(event, this);">
                                         <input type="hidden" name="csrf_token" value="<?= htmlspecialchars(csrf_generate()) ?>">
-                                        <input type="hidden" name="action" value="delete"><input type="hidden" name="id" value="<?= $row['id']; ?>">
+                                        <input type="hidden" name="action" value="delete">
+                                        <input type="hidden" name="id" value="<?= $row['id']; ?>">
                                         <button type="submit" class="btn btn-hapus"><i class="fas fa-trash-alt"></i> Hapus</button>
                                     </form>
                                 <?php endif; ?>
@@ -287,9 +262,10 @@ $res = $stmt->get_result();
                         <div class="actions">
                             <a href="view.php?id=<?= $row['id']; ?>" class="btn btn-lihat"><i class="fas fa-eye"></i> Lihat</a>
                             <?php if (has_permission('arsip_delete')): ?>
-                                <form class="w-100" action="crud/delete.php" method="post" onsubmit="confirmSubmit(event, this, 'Peringatan Hapus', 'Yakin hapus arsip ini? Data di dalamnya akan hilang permanen!');">
+                                <form class="w-100" action="crud/delete.php" method="post" data-judul="<?= htmlspecialchars($row['judul'], ENT_QUOTES) ?>" onsubmit="confirmDeleteArsip(event, this);">
                                     <input type="hidden" name="csrf_token" value="<?= htmlspecialchars(csrf_generate()) ?>">
-                                    <input type="hidden" name="action" value="delete"><input type="hidden" name="id" value="<?= $row['id']; ?>">
+                                    <input type="hidden" name="action" value="delete">
+                                    <input type="hidden" name="id" value="<?= $row['id']; ?>">
                                     <button type="submit" class="btn btn-hapus"><i class="fas fa-trash-alt"></i> Hapus</button>
                                 </form>
                             <?php endif; ?>
@@ -302,4 +278,111 @@ $res = $stmt->get_result();
         </div>
     </div>
 </div>
+
+<script>
+function confirmDeleteArsip(event, formElement) {
+    event.preventDefault();
+    const judul = formElement.getAttribute('data-judul') || 'arsip ini';
+    
+    Swal.fire({
+        html: `
+            <div class="swal-custom-modal">
+                <div class="swal-icon-badge-danger">
+                    <i class="fas fa-trash-alt"></i>
+                </div>
+                <h4 class="swal-custom-title">Hapus Arsip?</h4>
+                <p class="swal-custom-desc">
+                    Arsip <strong class="text-dark">"${judul}"</strong> akan dihapus permanen. Data tidak dapat dipulihkan.
+                </p>
+
+                <div class="w-100 text-start mt-3" style="background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 16px; padding: 0.85rem 1rem;">
+                    <div class="d-flex align-items-center justify-content-between mb-2">
+                        <label for="swal-admin-password" class="fw-semibold text-dark m-0" style="font-size: 0.8rem; font-family: 'Poppins', sans-serif;">
+                            <i class="fas fa-lock text-danger me-1"></i> Password Admin
+                        </label>
+                        <span class="badge" style="background: #fee2e2; color: #dc2626; font-size: 0.68rem; font-weight: 600; padding: 2px 7px; border-radius: 6px;">Wajib</span>
+                    </div>
+                    <div class="position-relative d-flex align-items-center">
+                        <input type="password" id="swal-admin-password" class="form-control" placeholder="Masukkan password Admin..." autocomplete="current-password" style="background: #ffffff; border: 1px solid #cbd5e1; border-radius: 10px; padding: 0.55rem 2.35rem 0.55rem 0.8rem; font-size: 0.85rem; width: 100%; box-shadow: 0 1px 2px rgba(0,0,0,0.03); font-family: 'Poppins', sans-serif;">
+                        <button type="button" id="btn-toggle-pwd" style="position: absolute; right: 6px; background: none; border: none; color: #94a3b8; padding: 5px 7px; cursor: pointer; display: flex; align-items: center; justify-content: center; font-size: 0.85rem;" title="Lihat password">
+                            <i class="fas fa-eye" id="icon-toggle-pwd"></i>
+                        </button>
+                    </div>
+                    <div class="text-muted mt-1.5" style="font-size: 0.72rem;">
+                        <i class="fas fa-shield-alt text-muted me-1"></i> Otorisasi keamanan role Admin
+                    </div>
+                </div>
+            </div>
+        `,
+        showCancelButton: true,
+        confirmButtonText: '<i class="fas fa-trash-alt me-1"></i> Hapus Arsip',
+        cancelButtonText: 'Batal',
+        reverseButtons: true,
+        showLoaderOnConfirm: false,
+        buttonsStyling: false,
+        customClass: {
+            popup: 'swal-modern-popup',
+            actions: 'swal-modern-actions',
+            confirmButton: 'swal-btn-confirm-danger',
+            cancelButton: 'swal-btn-cancel'
+        },
+        didOpen: () => {
+            const input = document.getElementById('swal-admin-password');
+            const btnToggle = document.getElementById('btn-toggle-pwd');
+            const iconToggle = document.getElementById('icon-toggle-pwd');
+
+            if (btnToggle && input && iconToggle) {
+                btnToggle.addEventListener('click', (e) => {
+                    e.preventDefault();
+                    if (input.type === 'password') {
+                        input.type = 'text';
+                        iconToggle.className = 'fas fa-eye-slash text-primary';
+                    } else {
+                        input.type = 'password';
+                        iconToggle.className = 'fas fa-eye text-muted';
+                    }
+                });
+            }
+
+            if (input) {
+                input.focus();
+                input.addEventListener('keydown', (e) => {
+                    if (e.key === 'Enter') {
+                        e.preventDefault();
+                        Swal.clickConfirm();
+                    }
+                });
+            }
+        },
+        preConfirm: () => {
+            const password = document.getElementById('swal-admin-password').value;
+            if (!password || password.trim() === '') {
+                Swal.showValidationMessage('Password Admin wajib diisi!');
+                const validationMsg = Swal.getValidationMessage();
+                if (validationMsg) {
+                    validationMsg.style.borderRadius = '10px';
+                    validationMsg.style.fontSize = '0.78rem';
+                    validationMsg.style.margin = '8px 0 0 0';
+                    validationMsg.style.padding = '0.5rem 0.75rem';
+                }
+                return false;
+            }
+            return password;
+        }
+    }).then((result) => {
+        if (result.isConfirmed && result.value) {
+            let passInput = formElement.querySelector('input[name="admin_password"]');
+            if (!passInput) {
+                passInput = document.createElement('input');
+                passInput.type = 'hidden';
+                passInput.name = 'admin_password';
+                formElement.appendChild(passInput);
+            }
+            passInput.value = result.value;
+            formElement.submit();
+        }
+    });
+}
+</script>
+
 <?php include __DIR__ . '/../layouts/footer.php'; ?>

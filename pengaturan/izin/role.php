@@ -65,31 +65,107 @@ if ($selectedRole && array_key_exists($selectedRole, $availableRoles)) {
 ?>
 
 <style>
+    /* Scoped Style untuk Halaman Izin Role */
+    .nav-segmented-control {
+        display: inline-flex;
+        background: #f1f5f9;
+        padding: 4px;
+        border-radius: 14px;
+        border: 1px solid #e2e8f0;
+        gap: 3px;
+        max-width: 100%;
+        flex-wrap: nowrap;
+        overflow-x: auto;
+        scrollbar-width: none;
+    }
+    .nav-segmented-control::-webkit-scrollbar {
+        display: none;
+    }
+    .nav-segment-link {
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+        padding: 0.45rem 0.95rem;
+        border-radius: 10px;
+        font-size: 0.82rem;
+        font-weight: 600;
+        color: #64748b;
+        text-decoration: none;
+        white-space: nowrap;
+        transition: all 0.18s cubic-bezier(0.4, 0, 0.2, 1);
+    }
+    .nav-segment-link:hover {
+        color: #0f172a;
+        background: rgba(255, 255, 255, 0.7);
+    }
+    .nav-segment-link.active {
+        background: #ffffff;
+        color: #8b5cf6;
+        box-shadow: 0 2px 6px rgba(15, 23, 42, 0.08), 0 0 0 1px rgba(226, 232, 240, 0.8);
+    }
     .form-check-input:checked {
         background-color: #8b5cf6; /* Warna ungu beda dari user biasa */
         border-color: #8b5cf6;
     }
+
+    @media (max-width: 991px) {
+        .nav-segmented-control {
+            width: 100%;
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            text-align: center;
+        }
+        .nav-segment-link {
+            justify-content: center;
+            padding: 0.45rem 0.4rem;
+            font-size: 0.76rem;
+        }
+    }
+
+    @media (max-width: 576px) {
+        .nav-segmented-control {
+            grid-template-columns: repeat(2, 1fr);
+            gap: 4px;
+        }
+        .nav-segment-link {
+            padding: 0.45rem 0.5rem;
+            font-size: 0.74rem;
+        }
+    }
 </style>
     <div class="dashboard-wrapper container-fluid px-0 px-md-2 mt-2 mb-5">
         
-        <div class="d-flex flex-column flex-md-row justify-content-between align-items-md-center mb-4 px-1 gap-3">
+        <!-- Header Page -->
+        <div class="d-flex flex-column flex-xl-row justify-content-between align-items-start align-items-xl-center mb-4 px-1 gap-3">
             <div class="d-flex align-items-center">
-                <div class="d-flex align-items-center justify-content-center rounded-circle me-3 shadow-sm flex-shrink-0" style="width: 56px; height: 56px; background: linear-gradient(135deg, #8b5cf6, #a855f7); color: white;">
-                    <i class="fas fa-layer-group fa-xl"></i>
+                <div class="d-flex align-items-center justify-content-center rounded-3 me-3 shadow-sm flex-shrink-0" style="width: 48px; height: 48px; background: linear-gradient(135deg, #8b5cf6, #a855f7); color: white;">
+                    <i class="fas fa-layer-group fa-lg"></i>
                 </div>
                 <div>
-                    <h3 class="fw-bold mb-1 text-dark" style="letter-spacing: -0.5px; font-size: 1.5rem;">Pengaturan Izin Default Role</h3>
-                    <p class="text-muted mb-0" style="font-size: 0.95rem;">Atur izin otomatis yang akan diberikan saat membuat akun baru berdasarkan rolenya.</p>
+                    <h3 class="fw-bold mb-0 text-dark" style="letter-spacing: -0.3px; font-size: 1.35rem;">Pengaturan Izin Default Role</h3>
+                    <p class="text-muted mb-0" style="font-size: 0.85rem;">Atur izin otomatis akun baru berdasarkan rolenya.</p>
                 </div>
             </div>
-            <div class="d-flex gap-2">
-                <a href="index.php" class="btn btn-outline-secondary shadow-sm rounded-pill px-4" style="font-weight: 600;">
-                    <i class="fas fa-arrow-left me-2"></i>Kembali ke Izin per User
+            
+            <!-- Segmented Navigation Control -->
+            <nav class="nav-segmented-control" aria-label="Navigasi Pengaturan Izin">
+                <a href="index.php" class="nav-segment-link">
+                    <i class="fas fa-user-shield"></i>
+                    <span>Izin User</span>
                 </a>
-                <a href="manage_roles.php" class="btn btn-primary shadow-sm rounded-pill px-4" style="background: linear-gradient(135deg, #8b5cf6, #7c3aed); border: none; font-weight: 600;">
-                    <i class="fas fa-tags me-2"></i>Kelola Role
+                <a href="role.php" class="nav-segment-link active">
+                    <i class="fas fa-layer-group"></i>
+                    <span>Default Role</span>
                 </a>
-            </div>
+                <a href="manage_roles.php" class="nav-segment-link">
+                    <i class="fas fa-tags"></i>
+                    <span>Kelola Role</span>
+                </a>
+                <a href="daftar_izin.php" class="nav-segment-link">
+                    <i class="fas fa-list-check"></i>
+                    <span>Daftar Izin</span>
+                </a>
+            </nav>
         </div>
 
         <?php if (isset($_SESSION['success_message'])): ?>

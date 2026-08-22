@@ -2586,4 +2586,51 @@ div:where(.swal2-container) div:where(.swal2-popup).swal2-toast .swal2-timer-pro
 .swal-btn-logout-cancel:active,
 .swal-btn-logout-confirm:active {
     transform: translateY(0) scale(0.98);
+}
+
+/* Responsive adjustments for SweetAlert2 Modals on Mobile */
+@media (max-width: 480px) {
+    div:where(.swal2-container) div:where(.swal2-popup).swal-modern-popup,
+    div:where(.swal2-container) div:where(.swal2-popup).swal-modern-logout-popup {
+        padding: 1.5rem 1.15rem 1.25rem 1.15rem !important;
+        border-radius: 22px !important;
+        width: 94% !important;
+        max-width: 94% !important;
+    }
+    .swal-icon-badge-logout,
+    .swal-icon-badge-danger,
+    .swal-icon-badge-warning,
+    .swal-icon-badge-primary,
+    .swal-icon-badge-success {
+        width: 52px !important;
+        height: 52px !important;
+        font-size: 1.35rem !important;
+        margin-bottom: 0.85rem !important;
+    }
+    .swal-custom-title {
+        font-size: 1.15rem !important;
+        margin-bottom: 0.35rem !important;
+    }
+    .swal-custom-desc {
+        font-size: 0.82rem !important;
+        max-width: 100% !important;
+        line-height: 1.45 !important;
+    }
+    .swal-modern-actions,
+    .swal-modern-logout-actions {
+        margin-top: 1.15rem !important;
+        gap: 8px !important;
+    }
+    .swal-btn-cancel,
+    .swal-btn-logout-cancel,
+    .swal-btn-confirm-danger,
+    .swal-btn-confirm-primary,
+    .swal-btn-confirm-warning,
+    .swal-btn-confirm-success,
+    .swal-btn-logout-confirm {
+        padding: 0.65rem 0.75rem !important;
+        font-size: 0.84rem !important;
+        border-radius: 12px !important;
+        white-space: nowrap !important;
+    }
 }

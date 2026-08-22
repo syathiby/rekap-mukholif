@@ -17,6 +17,10 @@ if (!ini_get('display_errors')) {
     error_reporting(E_ALL);
 }
 
+// ─── LOAD KONFIGURASI APLIKASI (BASE_URL & PROTOKOL) ──────────────────
+// Protokol 1: Konstanta aplikasi (BASE_URL, IS_HTTPS, dll) — paling pertama.
+require_once __DIR__ . '/../config/app.php';
+
 /**
  * OPTIMASI #2: Session Config — Atur sebelum session_start().
  * - gc_maxlifetime: waktu hidup session file di server (24 jam = 86400 detik)
@@ -31,8 +35,8 @@ if (session_status() === PHP_SESSION_NONE) {
     ini_set('session.cookie_httponly', 1);
     ini_set('session.cookie_samesite', 'Lax');
     // Aktifkan cookie_secure agar session cookie hanya dikirim via HTTPS
-    // Di localhost otomatis tidak aktif, di produksi (HTTPS) akan aktif
-    ini_set('session.cookie_secure', (isset($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off') ? 1 : 0);
+    // Di localhost otomatis tidak aktif, di produksi / ngrok HTTPS akan aktif
+    ini_set('session.cookie_secure', (defined('IS_HTTPS') && IS_HTTPS) ? 1 : 0);
     session_start();
 }
 
@@ -56,9 +60,6 @@ date_default_timezone_set('Asia/Jakarta');
 
 // ─── LOAD KOMPONEN SISTEM ─────────────────────────────────────────────
 // Urutan pemanggilan PENTING — jangan diubah.
-
-// Protokol 1: Konstanta aplikasi (BASE_URL, dll) — paling pertama.
-require_once __DIR__ . '/../config/app.php';
 
 // Protokol 2: Koneksi database (Singleton — hanya buat koneksi 1x).
 require_once __DIR__ . '/../config/database.php';

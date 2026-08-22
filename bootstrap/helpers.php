@@ -103,6 +103,34 @@ function display_flash_message()
  */
 
 /**
+ * Mendapatkan IP client yang akurat (mendukung direct, proxy, Cloudflare, Ngrok).
+ *
+ * @return string
+ */
+function get_client_ip(): string {
+    $headers = [
+        'HTTP_CF_CONNECTING_IP',
+        'HTTP_X_REAL_IP',
+        'HTTP_X_FORWARDED_FOR',
+        'REMOTE_ADDR'
+    ];
+
+    foreach ($headers as $header) {
+        if (!empty($_SERVER[$header])) {
+            $ipList = explode(',', $_SERVER[$header]);
+            foreach ($ipList as $ip) {
+                $ip = trim($ip);
+                if (filter_var($ip, FILTER_VALIDATE_IP)) {
+                    return $ip;
+                }
+            }
+        }
+    }
+
+    return $_SERVER['REMOTE_ADDR'] ?? '0.0.0.0';
+}
+
+/**
  * Mencatat aktivitas pengguna ke dalam database.
  *
  * @param string $aksi      Jenis aksi (e.g., 'CREATE', 'UPDATE', 'DELETE', 'LOGIN', 'LOGOUT', 'RESET_POIN', 'RESTORE', 'BACKUP', 'UPDATE_PERMISSION', 'CHANGE_PERIODE')
@@ -124,10 +152,8 @@ function write_activity_log($aksi, $fitur, $deskripsi, $detail = null)
     $username = isset($_SESSION['username']) ? $_SESSION['username'] : 'Sistem';
     $namaLengkap = isset($_SESSION['nama_lengkap']) ? $_SESSION['nama_lengkap'] : 'Sistem Otomatis';
 
-    // Hanya gunakan REMOTE_ADDR yang tidak bisa dipalsukan.
-    // HTTP_CLIENT_IP dan HTTP_X_FORWARDED_FOR bisa dimanipulasi oleh penyerang.
-    // Jika suatu saat perlu proxy support, aktifkan kembali dengan whitelist IP proxy.
-    $ipAddress = !empty($_SERVER['REMOTE_ADDR']) ? trim($_SERVER['REMOTE_ADDR']) : '0.0.0.0';
+    // Deteksi IP Address yang akurat (support tunnel/proxy)
+    $ipAddress = get_client_ip();
 
     // Deteksi User Agent
     $userAgent = isset($_SERVER['HTTP_USER_AGENT']) ? $_SERVER['HTTP_USER_AGENT'] : 'Unknown';
