@@ -24,16 +24,24 @@ if ($_SERVER["REQUEST_METHOD"] == "POST" && isset($_POST['ids']) && is_array($_P
         try {
             // 2. Siapkan statement HANYA SEKALI di luar loop untuk efisiensi
             $stmt_pelanggaran = mysqli_prepare($conn, "DELETE FROM pelanggaran WHERE santri_id = ?");
+            $stmt_log_bahasa = mysqli_prepare($conn, "DELETE FROM log_bahasa WHERE santri_id = ?");
+            $stmt_reward = mysqli_prepare($conn, "DELETE FROM daftar_reward WHERE santri_id = ?");
             $stmt_santri = mysqli_prepare($conn, "DELETE FROM santri WHERE id = ?");
 
             $deleted_count = 0;
             // 3. Loop untuk setiap ID yang akan dihapus
             foreach ($ids as $id) {
-                // Hapus dulu data "anak" (pelanggaran)
+                // Hapus data terkait
                 mysqli_stmt_bind_param($stmt_pelanggaran, "i", $id);
                 mysqli_stmt_execute($stmt_pelanggaran);
 
-                // Baru hapus data "induk" (santri)
+                mysqli_stmt_bind_param($stmt_log_bahasa, "i", $id);
+                mysqli_stmt_execute($stmt_log_bahasa);
+
+                mysqli_stmt_bind_param($stmt_reward, "i", $id);
+                mysqli_stmt_execute($stmt_reward);
+
+                // Baru hapus data santri
                 mysqli_stmt_bind_param($stmt_santri, "i", $id);
                 mysqli_stmt_execute($stmt_santri);
 
@@ -45,6 +53,8 @@ if ($_SERVER["REQUEST_METHOD"] == "POST" && isset($_POST['ids']) && is_array($_P
 
             // Tutup statement setelah loop selesai
             mysqli_stmt_close($stmt_pelanggaran);
+            mysqli_stmt_close($stmt_log_bahasa);
+            mysqli_stmt_close($stmt_reward);
             mysqli_stmt_close($stmt_santri);
 
             // 4. Jika semua proses berhasil, commit transaksi

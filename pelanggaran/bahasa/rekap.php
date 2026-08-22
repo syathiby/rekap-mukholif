@@ -29,134 +29,179 @@ $kelas_list = mysqli_query($conn, "SELECT DISTINCT CAST(kelas AS UNSIGNED) AS ke
 $levels_result = mysqli_query($conn, "SELECT id, nama_pelanggaran FROM jenis_pelanggaran WHERE bagian = 'Bahasa' ORDER BY poin ASC");
 
 // Ambil filter dari URL
-$filter_kamar = $_GET['kamar'] ?? '';
-$filter_kelas = $_GET['kelas'] ?? '';
-$filter_level = $_GET['level'] ?? '';
-$start_date = $_GET['start_date'] ?? $periode_aktif;
-$end_date = $_GET['end_date'] ?? date('Y-m-d');
+$filter_kamar = isset($_GET['kamar']) ? trim((string)$_GET['kamar']) : '';
+$filter_kelas = isset($_GET['kelas']) ? trim((string)$_GET['kelas']) : '';
+$filter_level = isset($_GET['level']) ? trim((string)$_GET['level']) : '';
+$start_date = isset($_GET['start_date']) ? trim((string)$_GET['start_date']) : $periode_aktif;
+$end_date = isset($_GET['end_date']) ? trim((string)$_GET['end_date']) : date('Y-m-d');
+
+// Sanitasi & Validasi Format Tanggal
+if (!preg_match('/^\d{4}-\d{2}-\d{2}$/', $start_date)) {
+    $start_date = $periode_aktif;
+}
+if (!preg_match('/^\d{4}-\d{2}-\d{2}$/', $end_date)) {
+    $end_date = date('Y-m-d');
+}
+if ($start_date > $end_date) {
+    $temp = $start_date;
+    $start_date = $end_date;
+    $end_date = $temp;
+}
 
 
 // =======================================================
-// BAGIAN 2: QUERY UTAMA & PROSES DATA (SNAPSHOT LOGIC - OPTIMIZED)
+// BAGIAN 2: QUERY UTAMA & PROSES DATA (TIME-TRAVEL SNAPSHOT ENGINE)
 // =======================================================
 
-$params = [$start_date, $end_date, $start_date, $end_date];
-$types = "ssss";
-$filter_sql = "";
-
-if (!empty($filter_kamar)) {
-    $filter_sql .= " AND s.kamar = ?";
-    $params[] = $filter_kamar;
-    $types .= "s";
-}
-if (!empty($filter_kelas)) {
-    $filter_sql .= " AND s.kelas = ?";
-    $params[] = $filter_kelas;
-    $types .= "s";
-}
-
-// Query teroptimasi untuk menarik data santri yang memiliki riwayat/aktifitas bahasa
-$sql_main = "
+// 1. Ambil seluruh event Bahasa dalam rentang tanggal filter (dari tabel pelanggaran & log_bahasa)
+// Diurutkan secara kronologis (ASC) sehingga event terakhir merepresentasikan status akhir santri di periode ini.
+$sql_events = "
     SELECT 
-        s.id AS santri_id,
-        s.nama,
-        s.kelas,
-        s.kamar,
-        p.tanggal AS active_tanggal,
-        jp_active.nama_pelanggaran AS active_level,
-        jp_active.poin AS active_poin,
-        jp_active.id AS active_level_id,
-        log.tanggal_melanggar AS log_tanggal,
-        jp_log.nama_pelanggaran AS log_level,
-        jp_log.poin AS log_poin
-    FROM santri s
-    LEFT JOIN pelanggaran p ON s.id = p.santri_id 
-        AND p.jenis_pelanggaran_id IN (SELECT id FROM jenis_pelanggaran WHERE bagian = 'Bahasa')
-    LEFT JOIN jenis_pelanggaran jp_active ON p.jenis_pelanggaran_id = jp_active.id
-    LEFT JOIN (
-        SELECT l1.santri_id, l1.jenis_pelanggaran_id, l1.tanggal_melanggar
-        FROM log_bahasa l1
-        INNER JOIN (
-            SELECT santri_id, MAX(tanggal_melanggar) as max_tgl
-            FROM log_bahasa
-            GROUP BY santri_id
-        ) l2 ON l1.santri_id = l2.santri_id AND l1.tanggal_melanggar = l2.max_tgl
-    ) log ON s.id = log.santri_id
-    LEFT JOIN jenis_pelanggaran jp_log ON log.jenis_pelanggaran_id = jp_log.id
-    WHERE (
-        s.id IN (
-            SELECT santri_id FROM pelanggaran 
-            WHERE jenis_pelanggaran_id IN (SELECT id FROM jenis_pelanggaran WHERE bagian = 'Bahasa')
-              AND DATE(tanggal) BETWEEN ? AND ?
-        )
-        OR s.id IN (
-            SELECT santri_id FROM log_bahasa 
-            WHERE DATE(tanggal_melanggar) BETWEEN ? AND ?
-        )
-    )
-    {$filter_sql}
-    ORDER BY s.id ASC
+        p.santri_id,
+        p.jenis_pelanggaran_id,
+        jp.poin,
+        jp.nama_pelanggaran,
+        p.tanggal AS tanggal_event
+    FROM pelanggaran p
+    JOIN jenis_pelanggaran jp ON p.jenis_pelanggaran_id = jp.id
+    WHERE jp.bagian = 'Bahasa' AND DATE(p.tanggal) BETWEEN ? AND ?
+
+    UNION ALL
+
+    SELECT 
+        l.santri_id,
+        l.jenis_pelanggaran_id,
+        l.poin_lama AS poin,
+        jp.nama_pelanggaran,
+        l.tanggal_melanggar AS tanggal_event
+    FROM log_bahasa l
+    JOIN jenis_pelanggaran jp ON l.jenis_pelanggaran_id = jp.id
+    WHERE jp.bagian = 'Bahasa' AND DATE(l.tanggal_melanggar) BETWEEN ? AND ?
+    ORDER BY tanggal_event ASC
 ";
 
-$stmt_main = mysqli_prepare($conn, $sql_main);
-mysqli_stmt_bind_param($stmt_main, $types, ...$params);
-mysqli_stmt_execute($stmt_main);
-$result_main = mysqli_stmt_get_result($stmt_main);
+$stmt_events = mysqli_prepare($conn, $sql_events);
+mysqli_stmt_bind_param($stmt_events, "ssss", $start_date, $end_date, $start_date, $end_date);
+mysqli_stmt_execute($stmt_events);
+$res_events = mysqli_stmt_get_result($stmt_events);
 
+$santri_period_events = [];
+while ($row = mysqli_fetch_assoc($res_events)) {
+    $sid = (int)$row['santri_id'];
+    $santri_period_events[$sid] = $row; // Menyimpan status event terakhir pada rentang filter
+}
+mysqli_stmt_close($stmt_events);
+
+// 2. Ambil baseline poin sebelum $start_date untuk menghitung tanda panah tren secara akurat
+$baseline_points = [];
+if (!empty($santri_period_events)) {
+    $sql_baseline = "
+        SELECT 
+            p.santri_id,
+            jp.poin,
+            p.tanggal AS tanggal_event
+        FROM pelanggaran p
+        JOIN jenis_pelanggaran jp ON p.jenis_pelanggaran_id = jp.id
+        WHERE jp.bagian = 'Bahasa' AND DATE(p.tanggal) < ?
+
+        UNION ALL
+
+        SELECT 
+            l.santri_id,
+            l.poin_lama AS poin,
+            l.tanggal_melanggar AS tanggal_event
+        FROM log_bahasa l
+        JOIN jenis_pelanggaran jp ON l.jenis_pelanggaran_id = jp.id
+        WHERE jp.bagian = 'Bahasa' AND DATE(l.tanggal_melanggar) < ?
+        ORDER BY tanggal_event ASC
+    ";
+    $stmt_base = mysqli_prepare($conn, $sql_baseline);
+    mysqli_stmt_bind_param($stmt_base, "ss", $start_date, $start_date);
+    mysqli_stmt_execute($stmt_base);
+    $res_base = mysqli_stmt_get_result($stmt_base);
+    while ($row_b = mysqli_fetch_assoc($res_base)) {
+        $sid_b = (int)$row_b['santri_id'];
+        $baseline_points[$sid_b] = (int)$row_b['poin'];
+    }
+    mysqli_stmt_close($stmt_base);
+}
+
+// 3. Ambil data profil santri dan gabungkan dengan filter kamar & kelas
 $peringkat_list = [];
-while ($row = mysqli_fetch_assoc($result_main)) {
-    $sid = $row['santri_id'];
-    
-    // Evaluasi Level & Poin Saat Ini
-    if ($row['active_level_id'] !== null) {
-        $level_sekarang = $row['active_level'];
-        $poin_sekarang = (int)$row['active_poin'];
-        $level_id = $row['active_level_id'];
-        $tanggal_terakhir = $row['active_tanggal'];
-        
-        $poin_sebelumnya = ($row['log_poin'] !== null) ? (int)$row['log_poin'] : null;
-    } else {
-        $level_sekarang = 'Level 0 (Bersih)';
-        $poin_sekarang = 0;
-        $level_id = 0; // Penanda Level 0
-        $tanggal_terakhir = $row['log_tanggal'] ?? '-';
-        
-        $poin_sebelumnya = ($row['log_poin'] !== null) ? (int)$row['log_poin'] : null;
+if (!empty($santri_period_events)) {
+    $sids_list = array_keys($santri_period_events);
+    $sids_str = implode(',', array_map('intval', $sids_list));
+
+    $filter_params = [];
+    $filter_types = "";
+    $santri_filter_sql = "";
+
+    if (!empty($filter_kamar)) {
+        $santri_filter_sql .= " AND kamar = ?";
+        $filter_params[] = $filter_kamar;
+        $filter_types .= "s";
+    }
+    if (!empty($filter_kelas)) {
+        $santri_filter_sql .= " AND kelas = ?";
+        $filter_params[] = $filter_kelas;
+        $filter_types .= "s";
     }
 
-    // Filter Level dari URL
-    if ($filter_level !== '') {
-        if ($filter_level == '0') {
-            if ($row['active_level_id'] !== null) continue;
-        } else {
-            if ($row['active_level_id'] != $filter_level) continue;
+    $sql_santri = "SELECT id, nama, kelas, kamar FROM santri WHERE id IN ($sids_str) {$santri_filter_sql}";
+    $stmt_santri = mysqli_prepare($conn, $sql_santri);
+    if (!empty($filter_params)) {
+        mysqli_stmt_bind_param($stmt_santri, $filter_types, ...$filter_params);
+    }
+    mysqli_stmt_execute($stmt_santri);
+    $res_santri = mysqli_stmt_get_result($stmt_santri);
+    $santri_profiles = [];
+    while ($s = mysqli_fetch_assoc($res_santri)) {
+        $santri_profiles[(int)$s['id']] = $s;
+    }
+    mysqli_stmt_close($stmt_santri);
+
+    foreach ($santri_period_events as $sid => $ev) {
+        if (!isset($santri_profiles[$sid])) continue;
+        $profile = $santri_profiles[$sid];
+
+        $level_id = (int)$ev['jenis_pelanggaran_id'];
+        $level_sekarang = $ev['nama_pelanggaran'];
+        $poin_sekarang = (int)$ev['poin'];
+        $tanggal_terakhir = $ev['tanggal_event'];
+
+        // Filter Level dari Dropdown URL jika ada
+        if ($filter_level !== '') {
+            if ($filter_level == '0') {
+                if ($poin_sekarang > 0) continue;
+            } else {
+                if ($level_id != $filter_level) continue;
+            }
         }
-    }
 
-    // Hitung Perubahan Tren Poin
-    $trend_html = '';
-    if ($poin_sebelumnya !== null) {
+        // Hitung Perubahan Tren Poin terhadap Baseline sebelum $start_date
+        $poin_sebelumnya = $baseline_points[$sid] ?? 0;
         $diff = $poin_sekarang - $poin_sebelumnya;
+
+        $trend_html = '';
         if ($diff > 0) {
             $trend_html = '<small class="text-danger ms-2" title="Naik ' . $diff . ' poin"><i class="fas fa-arrow-up"></i></small>';
         } elseif ($diff < 0) {
             $trend_html = '<small class="text-success ms-2" title="Turun ' . abs($diff) . ' poin"><i class="fas fa-arrow-down"></i></small>';
         }
-    }
 
-    $peringkat_list[] = [
-        'id' => $sid,
-        'nama' => $row['nama'],
-        'kelas' => $row['kelas'],
-        'kamar' => $row['kamar'],
-        'total_poin' => $poin_sekarang,
-        'level_sekarang' => $level_sekarang,
-        'level_id' => $level_id,
-        'tanggal_terakhir' => $tanggal_terakhir,
-        'trend_html' => $trend_html
-    ];
+        $peringkat_list[] = [
+            'id' => $sid,
+            'nama' => $profile['nama'],
+            'kelas' => $profile['kelas'],
+            'kamar' => $profile['kamar'],
+            'total_poin' => $poin_sekarang,
+            'level_sekarang' => $level_sekarang,
+            'level_id' => $level_id,
+            'tanggal_terakhir' => $tanggal_terakhir,
+            'trend_html' => $trend_html
+        ];
+    }
 }
-mysqli_stmt_close($stmt_main);
 
 // Urutkan Array berdasarkan poin tertinggi
 usort($peringkat_list, function($a, $b) {
@@ -380,7 +425,7 @@ if ($is_ajax) {
                         <th class="text-center">Peringkat</th>
                         <th>Santri</th>
                         <th class="text-center">Total Poin</th>
-                        <th class="text-center">Level Saat Ini</th>
+                        <th class="text-center">Level Bahasa</th>
                         <th class="text-center">Aksi</th>
                     </tr>
                 </thead>

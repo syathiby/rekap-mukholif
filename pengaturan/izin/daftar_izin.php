@@ -295,6 +295,38 @@ $totalUsers = count($usersMap);
         color: #ffffff;
     }
 
+    /* ─── GROUP BADGE (HARMONIZED WITH FILTER PILLS) ─── */
+    .badge-group-pill {
+        display: inline-flex;
+        align-items: center;
+        gap: 4px;
+        padding: 0.22rem 0.65rem;
+        border-radius: 20px;
+        font-size: 0.7rem;
+        font-weight: 600;
+        text-decoration: none;
+        background: #f1f5f9;
+        color: #475569;
+        border: 1px solid #e2e8f0;
+        cursor: pointer;
+        transition: all 0.18s cubic-bezier(0.4, 0, 0.2, 1);
+        user-select: none;
+        white-space: nowrap;
+        line-height: 1.25;
+    }
+    .badge-group-pill:hover {
+        background: #e0f2fe;
+        color: #0284c7;
+        border-color: #bae6fd;
+        transform: translateY(-1px);
+    }
+    .badge-group-pill.active {
+        background: var(--di-primary);
+        color: #ffffff;
+        border-color: var(--di-primary);
+        box-shadow: 0 2px 6px rgba(2, 132, 199, 0.25);
+    }
+
     /* ─── VIEW SWITCHER BUTTONS ─── */
     .btn-view-toggle {
         padding: 0.45rem 0.75rem;
@@ -653,13 +685,13 @@ $totalUsers = count($usersMap);
         <!-- Filter Category Horizontal Scroll Track -->
         <div class="cat-scroll-track" id="categoryPillContainer">
             <button type="button" class="cat-chip active" data-cat="all" onclick="filterCategory('all', this)">
-                <i class="fas fa-border-all fa-xs"></i> Semua Grup <span class="count-badge"><?= $totalPermissions ?></span>
+                <i class="fas fa-border-all fa-xs"></i> Semua Grup <span class="count-badge" id="count_all"><?= $totalPermissions ?></span>
             </button>
             <?php foreach ($grupList as $g): 
                 $countInGroup = count($permissions[$g] ?? []);
             ?>
                 <button type="button" class="cat-chip" data-cat="<?= htmlspecialchars($g) ?>" onclick="filterCategory('<?= htmlspecialchars(addslashes($g)) ?>', this)">
-                    <?= htmlspecialchars($g) ?> <span class="count-badge"><?= $countInGroup ?></span>
+                    <?= htmlspecialchars($g) ?> <span class="count-badge" data-group-count="<?= htmlspecialchars($g) ?>"><?= $countInGroup ?></span>
                 </button>
             <?php endforeach; ?>
         </div>
@@ -686,14 +718,9 @@ $totalUsers = count($usersMap);
                     <div class="perm-card-pro">
                         <!-- Header Kartu -->
                         <div class="perm-card-pro-header">
-                            <div class="d-flex align-items-start justify-content-between gap-2 mb-1.5">
-                                <h5 class="fw-bold text-dark mb-0" style="font-size: 0.92rem; line-height: 1.35;">
-                                    <?= htmlspecialchars($perm['deskripsi']) ?>
-                                </h5>
-                                <span class="badge flex-shrink-0" style="background: #e0f2fe; color: #0369a1; font-size: 0.68rem; font-weight: 600; border-radius: 6px; padding: 3px 7px;">
-                                    <?= htmlspecialchars($perm['grup']) ?>
-                                </span>
-                            </div>
+                            <h5 class="fw-bold text-dark mb-2" style="font-size: 0.94rem; line-height: 1.35;">
+                                <?= htmlspecialchars($perm['deskripsi']) ?>
+                            </h5>
                             <div class="d-flex align-items-center gap-1">
                                 <span class="perm-code-tag">
                                     <i class="fas fa-terminal text-muted fa-xs"></i>
@@ -814,7 +841,7 @@ $totalUsers = count($usersMap);
                                     <span class="perm-code-tag"><?= htmlspecialchars($perm['nama_izin']) ?></span>
                                 </td>
                                 <td>
-                                    <span class="badge" style="background: #e0f2fe; color: #0369a1; font-size: 0.72rem; font-weight: 600;">
+                                    <span class="badge" style="background: #f1f5f9; color: #475569; border: 1px solid #e2e8f0; font-size: 0.72rem; font-weight: 600;">
                                         <?= htmlspecialchars($perm['grup']) ?>
                                     </span>
                                 </td>
@@ -897,30 +924,47 @@ function switchViewMode(mode) {
     }
 }
 
+function selectCategoryByName(catName) {
+    const targetPill = document.querySelector(`.cat-chip[data-cat="${catName}"]`);
+    if (targetPill) {
+        filterCategory(catName, targetPill);
+    }
+}
+
 function filterCategory(category, element) {
     currentCategory = category;
     
     document.querySelectorAll('.cat-chip').forEach(el => el.classList.remove('active'));
-    element.classList.add('active');
-
-    // Scroll active chip into view smoothly on mobile
-    element.scrollIntoView({ behavior: 'smooth', block: 'nearest', inline: 'center' });
+    if (element) {
+        element.classList.add('active');
+        // Scroll active chip into view smoothly on mobile/desktop
+        element.scrollIntoView({ behavior: 'smooth', block: 'nearest', inline: 'center' });
+    }
 
     applyFilters();
 }
 
 function applyFilters() {
-    const items = document.querySelectorAll('.perm-item');
+    const cardItems = document.querySelectorAll('#permCardsGrid .perm-item');
+    const tableItems = document.querySelectorAll('#permTableBody .perm-item');
     let visibleCount = 0;
     const query = currentSearchQuery.toLowerCase();
 
-    items.forEach(item => {
+    // Hitung kecocokan per grup untuk filter pill badges
+    const groupMatches = {};
+    let totalSearchMatches = 0;
+
+    cardItems.forEach(item => {
         const itemGroup = item.getAttribute('data-group');
         const itemSearch = item.getAttribute('data-search') || '';
 
-        const matchCat = (currentCategory === 'all' || itemGroup === currentCategory);
         const matchSearch = (query === '' || itemSearch.includes(query));
+        if (matchSearch) {
+            groupMatches[itemGroup] = (groupMatches[itemGroup] || 0) + 1;
+            totalSearchMatches++;
+        }
 
+        const matchCat = (currentCategory === 'all' || itemGroup === currentCategory);
         if (matchCat && matchSearch) {
             item.style.display = '';
             visibleCount++;
@@ -929,7 +973,42 @@ function applyFilters() {
         }
     });
 
-    // Update Counter
+    tableItems.forEach(item => {
+        const itemGroup = item.getAttribute('data-group');
+        const itemSearch = item.getAttribute('data-search') || '';
+
+        const matchCat = (currentCategory === 'all' || itemGroup === currentCategory);
+        const matchSearch = (query === '' || itemSearch.includes(query));
+
+        if (matchCat && matchSearch) {
+            item.style.display = '';
+        } else {
+            item.style.display = 'none';
+        }
+    });
+
+    // Sinkronkan badge angka pada pill kategori di atas sesuai pencarian
+    const allCountBadge = document.getElementById('count_all');
+    if (allCountBadge) {
+        allCountBadge.textContent = totalSearchMatches;
+    }
+    document.querySelectorAll('.cat-chip[data-cat]').forEach(chip => {
+        const catName = chip.getAttribute('data-cat');
+        if (catName !== 'all') {
+            const countBadge = chip.querySelector('.count-badge');
+            if (countBadge) {
+                const count = groupMatches[catName] || 0;
+                countBadge.textContent = count;
+                if (count === 0 && query !== '') {
+                    chip.style.opacity = '0.45';
+                } else {
+                    chip.style.opacity = '1';
+                }
+            }
+        }
+    });
+
+    // Update Counter Hasil
     const visibleCounter = document.getElementById('visibleCountNum');
     if (visibleCounter) {
         visibleCounter.textContent = visibleCount;
@@ -1011,11 +1090,11 @@ document.addEventListener('DOMContentLoaded', function() {
         });
     }
 
-    // Keyboard shortcut: Press "/" to focus search
+    // Keyboard shortcut: Press "/" to focus search (if not already focused on an input)
     document.addEventListener('keydown', function(e) {
-        if (e.key === '/' && document.activeElement !== searchInput) {
+        if (e.key === '/' && !['INPUT', 'TEXTAREA', 'SELECT'].includes(document.activeElement.tagName)) {
             e.preventDefault();
-            searchInput.focus();
+            if (searchInput) searchInput.focus();
         }
     });
 });

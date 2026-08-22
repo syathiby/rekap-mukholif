@@ -32,11 +32,21 @@ if ($id > 0) {
     mysqli_begin_transaction($conn);
 
     try {
-        // 2. Hapus dulu data "anak" di tabel pelanggaran (Pake Prepared Statement!)
-        $stmt1 = mysqli_prepare($conn, "DELETE FROM pelanggaran WHERE santri_id = ?");
-        mysqli_stmt_bind_param($stmt1, "i", $id);
-        mysqli_stmt_execute($stmt1);
-        mysqli_stmt_close($stmt1);
+        // 2. Hapus data terkait di tabel pelanggaran, log_bahasa, dan daftar_reward
+        $stmt_pel = mysqli_prepare($conn, "DELETE FROM pelanggaran WHERE santri_id = ?");
+        mysqli_stmt_bind_param($stmt_pel, "i", $id);
+        mysqli_stmt_execute($stmt_pel);
+        mysqli_stmt_close($stmt_pel);
+
+        $stmt_log_bhs = mysqli_prepare($conn, "DELETE FROM log_bahasa WHERE santri_id = ?");
+        mysqli_stmt_bind_param($stmt_log_bhs, "i", $id);
+        mysqli_stmt_execute($stmt_log_bhs);
+        mysqli_stmt_close($stmt_log_bhs);
+
+        $stmt_rew = mysqli_prepare($conn, "DELETE FROM daftar_reward WHERE santri_id = ?");
+        mysqli_stmt_bind_param($stmt_rew, "i", $id);
+        mysqli_stmt_execute($stmt_rew);
+        mysqli_stmt_close($stmt_rew);
 
         // 3. Baru hapus data "induk" di tabel santri (Pake Prepared Statement!)
         $stmt2 = mysqli_prepare($conn, "DELETE FROM santri WHERE id = ?");

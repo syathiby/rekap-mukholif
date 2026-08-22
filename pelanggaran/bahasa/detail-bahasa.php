@@ -21,8 +21,25 @@ if (!isset($_GET['santri_id'])) {
 
 $santri_id = (int)$_GET['santri_id'];
 // Default tanggal kalau gak ada di URL (Sebulan terakhir biar grafik enak diliat)
-$start_date = isset($_GET['start_date']) ? $_GET['start_date'] : date('Y-m-01');
-$end_date   = isset($_GET['end_date']) ? $_GET['end_date'] : date('Y-m-d');
+$start_date = isset($_GET['start_date']) ? trim((string)$_GET['start_date']) : PERIODE_AKTIF;
+$end_date   = isset($_GET['end_date']) ? trim((string)$_GET['end_date']) : date('Y-m-d');
+
+// Sanitasi format tanggal
+if (!preg_match('/^\d{4}-\d{2}-\d{2}$/', $start_date)) {
+    $start_date = PERIODE_AKTIF;
+}
+if (!preg_match('/^\d{4}-\d{2}-\d{2}$/', $end_date)) {
+    $end_date = date('Y-m-d');
+}
+if ($start_date > $end_date) {
+    $temp = $start_date;
+    $start_date = $end_date;
+    $end_date = $temp;
+}
+
+$back_url = "rekap.php?start_date=" . urlencode($start_date) . "&end_date=" . urlencode($end_date);
+if (!empty($_GET['kamar'])) $back_url .= "&kamar=" . urlencode($_GET['kamar']);
+if (!empty($_GET['kelas'])) $back_url .= "&kelas=" . urlencode($_GET['kelas']);
 
 // =======================================================
 // BAGIAN 2: AMBIL DATA SANTRI
@@ -191,7 +208,7 @@ usort($table_data, function($a, $b) {
     
     <!-- HEADER -->
     <div class="d-flex flex-column flex-md-row justify-content-md-between align-items-start align-items-md-center mb-4">
-        <a href="javascript:history.back()" class="btn btn-outline-secondary mb-3 mb-md-0"><i class="fas fa-arrow-left me-2"></i>Kembali</a>
+        <a href="<?= htmlspecialchars($back_url) ?>" class="btn btn-outline-secondary mb-3 mb-md-0"><i class="fas fa-arrow-left me-2"></i>Kembali</a>
         <h1 class="page-title mb-0 w-100 w-md-auto text-center text-md-end">Detail Perkembangan Bahasa</h1>
     </div>
 
