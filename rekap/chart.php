@@ -11,9 +11,12 @@ require_once __DIR__ . '/../layouts/header.php';
 // Ambil periode aktif dari pengaturan
 $default_periode_aktif = PERIODE_AKTIF;
 
-// Ambil tanggal mulai dan selesai dari URL atau set default
-$tgl_mulai = $_GET['tgl_mulai'] ?? $default_periode_aktif;
-$tgl_selesai = $_GET['tgl_selesai'] ?? date('Y-m-d');
+// Ambil tanggal mulai dan selesai dari URL atau set default & validasi format
+$raw_mulai   = $_GET['tgl_mulai']   ?? $default_periode_aktif;
+$raw_selesai = $_GET['tgl_selesai'] ?? date('Y-m-d');
+$tgl_mulai   = (preg_match('/^\d{4}-\d{2}-\d{2}$/', $raw_mulai) && strtotime($raw_mulai)) ? $raw_mulai : $default_periode_aktif;
+$tgl_selesai = (preg_match('/^\d{4}-\d{2}-\d{2}$/', $raw_selesai) && strtotime($raw_selesai)) ? $raw_selesai : date('Y-m-d');
+if ($tgl_mulai > $tgl_selesai) { $tgl_mulai = $tgl_selesai; }
 
 // Siapin variabel baru untuk di dalam query SQL, biar aman
 $tgl_mulai_sql = $tgl_mulai . ' 00:00:00';

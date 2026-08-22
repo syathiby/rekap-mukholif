@@ -10,9 +10,15 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 if (isset($_POST['add_jenis'])) {
     guard('jenis_reward_create');
     
-    $nama = $_POST['nama_reward'];
-    $poin = (int) $_POST['poin_reward'];
-    $desc = $_POST['deskripsi'];
+    $nama = trim($_POST['nama_reward'] ?? '');
+    $poin = (int) ($_POST['poin_reward'] ?? 0);
+    $desc = trim($_POST['deskripsi'] ?? '');
+
+    if (empty($nama) || $poin <= 0) {
+        $_SESSION['message'] = ['type' => 'danger', 'text' => 'Nama reward dan poin wajib diisi dan poin harus lebih dari 0.'];
+        header("Location: index.php");
+        exit;
+    }
 
     $query = "INSERT INTO jenis_reward (nama_reward, poin_reward, deskripsi) VALUES (?, ?, ?)";
     $stmt = mysqli_prepare($conn, $query);
@@ -36,23 +42,70 @@ if (isset($_POST['edit_jenis'])) {
     guard('jenis_reward_edit');
 
     $id   = (int) $_POST['id'];
-    $nama = $_POST['nama_reward'];
+    $nama = trim($_POST['nama_reward']);
     $poin = (int) $_POST['poin_reward'];
-    $desc = $_POST['deskripsi'];
+    $desc = trim($_POST['deskripsi'] ?? '');
 
-    $query = "UPDATE jenis_reward SET nama_reward=?, poin_reward=?, deskripsi=? WHERE id=?";
-    $stmt = mysqli_prepare($conn, $query);
-    mysqli_stmt_bind_param($stmt, "sisi", $nama, $poin, $desc, $id);
+    mysqli_begin_transaction($conn);
 
-    if (mysqli_stmt_execute($stmt)) {
-        write_activity_log('UPDATE', 'jenis_reward', "Mengubah jenis reward: '$nama' (Poin: $poin)", [
-            'sesudah' => ['id' => $id, 'nama_reward' => $nama, 'poin_reward' => $poin, 'deskripsi' => $desc]
+    try {
+        // 1. Ambil poin reward lama
+        $stmt_old = mysqli_prepare($conn, "SELECT poin_reward, nama_reward, deskripsi FROM jenis_reward WHERE id = ?");
+        mysqli_stmt_bind_param($stmt_old, "i", $id);
+        mysqli_stmt_execute($stmt_old);
+        $old_data = mysqli_fetch_assoc(mysqli_stmt_get_result($stmt_old));
+        mysqli_stmt_close($stmt_old);
+
+        if (!$old_data) {
+            throw new Exception("Jenis reward tidak ditemukan.");
+        }
+        $poin_lama = (int)$old_data['poin_reward'];
+
+        // 2. Update master data jenis_reward
+        $query = "UPDATE jenis_reward SET nama_reward=?, poin_reward=?, deskripsi=? WHERE id=?";
+        $stmt = mysqli_prepare($conn, $query);
+        mysqli_stmt_bind_param($stmt, "sisi", $nama, $poin, $desc, $id);
+        if (!mysqli_stmt_execute($stmt)) {
+            throw new Exception(mysqli_stmt_error($stmt));
+        }
+        mysqli_stmt_close($stmt);
+
+        // 3. Sinkronisasi poin santri jika nilai reward berubah
+        if ($poin !== $poin_lama) {
+            $selisih = $poin - $poin_lama;
+            // Reward bersifat mengurangi poin pelanggaran santri:
+            // Jika reward bertambah (+selisih), maka poin_aktif santri berkurang (-selisih).
+            $stmt_sync = mysqli_prepare($conn, "
+                UPDATE santri s
+                JOIN (
+                    SELECT santri_id, COUNT(*) AS jumlah_reward
+                    FROM daftar_reward
+                    WHERE jenis_reward_id = ?
+                    GROUP BY santri_id
+                ) r ON s.id = r.santri_id
+                SET s.poin_aktif = s.poin_aktif - (? * r.jumlah_reward)
+            ");
+            mysqli_stmt_bind_param($stmt_sync, "ii", $id, $selisih);
+            if (!mysqli_stmt_execute($stmt_sync)) {
+                throw new Exception(mysqli_stmt_error($stmt_sync));
+            }
+            mysqli_stmt_close($stmt_sync);
+        }
+
+        mysqli_commit($conn);
+
+        write_activity_log('UPDATE', 'jenis_reward', "Mengubah jenis reward: '$nama' (Poin: $poin, Sebelum: $poin_lama)", [
+            'id' => $id,
+            'sebelum' => $old_data,
+            'sesudah' => ['nama_reward' => $nama, 'poin_reward' => $poin, 'deskripsi' => $desc]
         ]);
-        $_SESSION['message'] = ['type' => 'success', 'text' => 'Data reward berhasil diperbarui.'];
-    } else {
-        $_SESSION['message'] = ['type' => 'danger', 'text' => 'Gagal update: ' . mysqli_error($conn)];
+        $_SESSION['message'] = ['type' => 'success', 'text' => 'Data reward berhasil diperbarui dan saldo poin santri telah disinkronkan.'];
+
+    } catch (Exception $e) {
+        mysqli_rollback($conn);
+        $_SESSION['message'] = ['type' => 'danger', 'text' => 'Gagal memperbarui reward: ' . $e->getMessage()];
     }
-    mysqli_stmt_close($stmt);
+
     header("Location: index.php");
     exit;
 }
@@ -61,33 +114,83 @@ if (isset($_POST['edit_jenis'])) {
 if (isset($_POST['bulk_update'])) {
     guard('jenis_reward_edit');
 
-    $ids = $_POST['ids']; // Array ID
-    $namas = $_POST['nama_reward']; // Array Nama
-    $poins = $_POST['poin_reward']; // Array Poin
-    $descs = $_POST['deskripsi']; // Array Deskripsi
+    $ids   = $_POST['ids'] ?? [];
+    $namas = $_POST['nama_reward'] ?? [];
+    $poins = $_POST['poin_reward'] ?? [];
+    $descs = $_POST['deskripsi'] ?? [];
     
-    $success_count = 0;
+    if (empty($ids)) {
+        $_SESSION['message'] = ['type' => 'danger', 'text' => 'Tidak ada data untuk diproses.'];
+        header("Location: index.php");
+        exit;
+    }
 
-    $query = "UPDATE jenis_reward SET nama_reward=?, poin_reward=?, deskripsi=? WHERE id=?";
-    $stmt = mysqli_prepare($conn, $query);
+    mysqli_begin_transaction($conn);
 
-    foreach ($ids as $id) {
-        $id = (int) $id;
-        $nama = $namas[$id];
-        $poin = (int) $poins[$id];
-        $desc = $descs[$id];
+    try {
+        $success_count = 0;
+        $stmt_get_old = mysqli_prepare($conn, "SELECT poin_reward FROM jenis_reward WHERE id = ?");
+        $stmt_update  = mysqli_prepare($conn, "UPDATE jenis_reward SET nama_reward=?, poin_reward=?, deskripsi=? WHERE id=?");
+        $stmt_sync    = mysqli_prepare($conn, "
+            UPDATE santri s
+            JOIN (
+                SELECT santri_id, COUNT(*) AS jumlah_reward
+                FROM daftar_reward
+                WHERE jenis_reward_id = ?
+                GROUP BY santri_id
+            ) r ON s.id = r.santri_id
+            SET s.poin_aktif = s.poin_aktif - (? * r.jumlah_reward)
+        ");
 
-        mysqli_stmt_bind_param($stmt, "sisi", $nama, $poin, $desc, $id);
-        if (mysqli_stmt_execute($stmt)) {
+        foreach ($ids as $id) {
+            $id_int = (int) $id;
+            $nama   = trim($namas[$id_int] ?? '');
+            $poin   = (int) ($poins[$id_int] ?? 0);
+            $desc   = trim($descs[$id_int] ?? '');
+
+            if (empty($nama)) continue;
+
+            // Ambil poin lama
+            mysqli_stmt_bind_param($stmt_get_old, "i", $id_int);
+            mysqli_stmt_execute($stmt_get_old);
+            $res_old = mysqli_stmt_get_result($stmt_get_old);
+            $row_old = mysqli_fetch_assoc($res_old);
+            $poin_lama = $row_old ? (int)$row_old['poin_reward'] : $poin;
+
+            // Update master reward
+            mysqli_stmt_bind_param($stmt_update, "sisi", $nama, $poin, $desc, $id_int);
+            if (!mysqli_stmt_execute($stmt_update)) {
+                throw new Exception(mysqli_stmt_error($stmt_update));
+            }
+
+            // Sinkronkan poin jika ada selisih
+            if ($poin !== $poin_lama) {
+                $selisih = $poin - $poin_lama;
+                mysqli_stmt_bind_param($stmt_sync, "ii", $id_int, $selisih);
+                if (!mysqli_stmt_execute($stmt_sync)) {
+                    throw new Exception(mysqli_stmt_error($stmt_sync));
+                }
+            }
+
             $success_count++;
         }
-    }
-    mysqli_stmt_close($stmt);
 
-    if ($success_count > 0) {
-        write_activity_log('UPDATE', 'jenis_reward', "Bulk update $success_count jenis reward sekaligus");
+        mysqli_stmt_close($stmt_get_old);
+        mysqli_stmt_close($stmt_update);
+        mysqli_stmt_close($stmt_sync);
+
+        mysqli_commit($conn);
+
+        if ($success_count > 0) {
+            write_activity_log('UPDATE', 'jenis_reward', "Bulk update $success_count jenis reward sekaligus dan sinkronisasi saldo poin");
+        }
+        $_SESSION['message'] = ['type' => 'success', 'text' => "$success_count data reward berhasil diperbarui dan saldo poin santri disinkronkan."];
+
+    } catch (Exception $e) {
+        mysqli_rollback($conn);
+        $_SESSION['message'] = ['type' => 'danger', 'text' => 'Gagal bulk update reward: ' . $e->getMessage()];
     }
-    $_SESSION['message'] = ['type' => 'success', 'text' => "$success_count data reward berhasil diperbarui sekaligus."];
+
     header("Location: index.php");
     exit;
 }

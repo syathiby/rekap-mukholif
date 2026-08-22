@@ -206,7 +206,7 @@ if (function_exists('has_permission')) {
         });
         Toast.fire({
             icon: iconType,
-            title: textMessage
+            html: textMessage
         });
     }
 

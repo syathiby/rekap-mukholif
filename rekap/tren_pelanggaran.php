@@ -22,7 +22,11 @@ $params_date = [];
 $types_date = '';
 
 // Tentukan tanggal mulai dan selesai berdasarkan filter 'rentang'
-if ($rentang == 'custom' && !empty($tanggal_mulai_input) && !empty($tanggal_selesai_input)) {
+$is_valid_custom = ($rentang === 'custom' && preg_match('/^\d{4}-\d{2}-\d{2}$/', $tanggal_mulai_input) && preg_match('/^\d{4}-\d{2}-\d{2}$/', $tanggal_selesai_input) && strtotime($tanggal_mulai_input) && strtotime($tanggal_selesai_input));
+if ($is_valid_custom) {
+    if ($tanggal_mulai_input > $tanggal_selesai_input) {
+        $tanggal_mulai_input = $tanggal_selesai_input;
+    }
     $tanggal_mulai = $tanggal_mulai_input . ' 00:00:00';
     $tanggal_selesai = $tanggal_selesai_input . ' 23:59:59';
     $judul_rentang = "Periode " . date('d/m/Y', strtotime($tanggal_mulai)) . " - " . date('d/m/Y', strtotime($tanggal_selesai));

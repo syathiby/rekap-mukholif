@@ -27,6 +27,18 @@ if (isset($_SESSION['flash_message'])) {
     } else {
         $info = $flash['message'];
     }
+} elseif (isset($_SESSION['message'])) {
+    $m_type = $_SESSION['message']['type'] ?? 'info';
+    $m_text = $_SESSION['message']['text'] ?? ($_SESSION['message']['message'] ?? '');
+    unset($_SESSION['message']);
+    
+    if ($m_type === 'success') {
+        $success = $m_text;
+    } elseif ($m_type === 'danger' || $m_type === 'error') {
+        $error = $m_text;
+    } else {
+        $info = $m_text;
+    }
 }
 
 if (isset($_GET['timeout'])) {

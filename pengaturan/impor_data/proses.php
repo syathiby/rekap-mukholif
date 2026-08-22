@@ -647,6 +647,16 @@ if ($action === 'confirm') {
             $stmt_ins_ni = mysqli_prepare($conn, 'INSERT INTO jenis_pelanggaran (nama_pelanggaran, bagian, poin, kategori) VALUES (?, ?, ?, ?)');
             $stmt_upd    = mysqli_prepare($conn, 'UPDATE jenis_pelanggaran SET nama_pelanggaran = ?, bagian = ?, poin = ?, kategori = ? WHERE id = ?');
             $stmt_del    = mysqli_prepare($conn, 'DELETE FROM jenis_pelanggaran WHERE id = ?');
+            $stmt_sync_jp = mysqli_prepare($conn, "
+                UPDATE santri s
+                JOIN (
+                    SELECT santri_id, COUNT(*) AS jumlah_pelanggaran
+                    FROM pelanggaran
+                    WHERE jenis_pelanggaran_id = ?
+                    GROUP BY santri_id
+                ) p ON s.id = p.santri_id
+                SET s.poin_aktif = s.poin_aktif + (? * p.jumlah_pelanggaran)
+            ");
 
             foreach ($preview_list as $row) {
                 if (!empty($row['is_fatal'])) continue;
@@ -663,6 +673,16 @@ if ($action === 'confirm') {
                 } elseif ($row['action'] === 'UPDATE') {
                     mysqli_stmt_bind_param($stmt_upd, 'ssisi', $d['nama_pelanggaran'], $d['bagian'], $d['poin'], $d['kategori'], $d['id']);
                     mysqli_stmt_execute($stmt_upd);
+
+                    // Sinkronisasi saldo poin santri jika ada perubahan nilai poin
+                    $poin_baru = (int)$d['poin'];
+                    $poin_lama = isset($row['old_data']['poin']) ? (int)$row['old_data']['poin'] : $poin_baru;
+                    if ($poin_baru !== $poin_lama) {
+                        $selisih = $poin_baru - $poin_lama;
+                        mysqli_stmt_bind_param($stmt_sync_jp, 'ii', $d['id'], $selisih);
+                        mysqli_stmt_execute($stmt_sync_jp);
+                    }
+
                     $update_count++;
                 } elseif ($row['action'] === 'DELETE') {
                     $pid = $d['id'];
@@ -683,6 +703,8 @@ if ($action === 'confirm') {
                 }
             }
 
+            mysqli_stmt_close($stmt_sync_jp);
+
             write_activity_log('SYNC', 'jenis_pelanggaran',
                 "Sinkronisasi massal Jenis Pelanggaran: {$insert_count} INSERT, {$update_count} UPDATE, {$delete_count} DELETE.",
                 ['insert' => $insert_count, 'update' => $update_count, 'delete' => $delete_count]
@@ -695,6 +717,16 @@ if ($action === 'confirm') {
             $stmt_ins_ni = mysqli_prepare($conn, 'INSERT INTO jenis_reward (nama_reward, poin_reward, deskripsi) VALUES (?, ?, ?)');
             $stmt_upd    = mysqli_prepare($conn, 'UPDATE jenis_reward SET nama_reward = ?, poin_reward = ?, deskripsi = ? WHERE id = ?');
             $stmt_del    = mysqli_prepare($conn, 'DELETE FROM jenis_reward WHERE id = ?');
+            $stmt_sync_jr = mysqli_prepare($conn, "
+                UPDATE santri s
+                JOIN (
+                    SELECT santri_id, COUNT(*) AS jumlah_reward
+                    FROM daftar_reward
+                    WHERE jenis_reward_id = ?
+                    GROUP BY santri_id
+                ) r ON s.id = r.santri_id
+                SET s.poin_aktif = s.poin_aktif - (? * r.jumlah_reward)
+            ");
 
             foreach ($preview_list as $row) {
                 if (!empty($row['is_fatal'])) continue;
@@ -711,6 +743,16 @@ if ($action === 'confirm') {
                 } elseif ($row['action'] === 'UPDATE') {
                     mysqli_stmt_bind_param($stmt_upd, 'sisi', $d['nama_reward'], $d['poin_reward'], $d['deskripsi'], $d['id']);
                     mysqli_stmt_execute($stmt_upd);
+
+                    // Sinkronisasi saldo poin santri jika ada perubahan nilai reward
+                    $poin_baru = (int)$d['poin_reward'];
+                    $poin_lama = isset($row['old_data']['poin_reward']) ? (int)$row['old_data']['poin_reward'] : $poin_baru;
+                    if ($poin_baru !== $poin_lama) {
+                        $selisih = $poin_baru - $poin_lama;
+                        mysqli_stmt_bind_param($stmt_sync_jr, 'ii', $d['id'], $selisih);
+                        mysqli_stmt_execute($stmt_sync_jr);
+                    }
+
                     $update_count++;
                 } elseif ($row['action'] === 'DELETE') {
                     $rid = $d['id'];
@@ -730,6 +772,8 @@ if ($action === 'confirm') {
                     }
                 }
             }
+
+            mysqli_stmt_close($stmt_sync_jr);
 
             write_activity_log('SYNC', 'jenis_reward',
                 "Sinkronisasi massal Jenis Reward: {$insert_count} INSERT, {$update_count} UPDATE, {$delete_count} DELETE.",

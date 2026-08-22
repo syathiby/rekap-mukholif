@@ -14,6 +14,11 @@ if (!$is_ajax) {
 // --- LOGIKA PHP ---
 $periode_aktif = PERIODE_AKTIF;
 
+// Ambil tanggal transaksi paling awal di database
+$q_earliest = mysqli_query($conn, "SELECT MIN(tanggal) as min_tgl FROM pelanggaran");
+$row_earliest = mysqli_fetch_assoc($q_earliest);
+$earliest_date = (!empty($row_earliest['min_tgl'])) ? date('Y-m-d', strtotime($row_earliest['min_tgl'])) : '2025-01-01';
+
 // Backward compat: URL lama (pelanggaran_umum, karakter, santri_teladan) → tipe baru
 $tipe_raw = $_GET['tipe'] ?? 'daftar_hitam';
 $compat_map = ['pelanggaran_umum' => 'daftar_hitam', 'karakter' => 'peringkat', 'santri_teladan' => 'peringkat'];
@@ -22,23 +27,23 @@ $tipe = in_array($tipe_raw, ['daftar_hitam', 'peringkat']) ? $tipe_raw : 'daftar
 
 $filter_kamar = $_GET['kamar']      ?? null;
 $filter_kelas = $_GET['kelas']      ?? null;
-$start_date   = $_GET['start_date'] ?? $periode_aktif;
-$end_date     = $_GET['end_date']   ?? date("Y-m-d");
+
+// Validasi format tanggal dari input GET
+$raw_start = $_GET['start_date'] ?? $periode_aktif;
+$raw_end   = $_GET['end_date']   ?? date("Y-m-d");
+$start_date = (preg_match('/^\d{4}-\d{2}-\d{2}$/', $raw_start) && strtotime($raw_start)) ? $raw_start : $periode_aktif;
+$end_date   = (preg_match('/^\d{4}-\d{2}-\d{2}$/', $raw_end)   && strtotime($raw_end))   ? $raw_end   : date("Y-m-d");
+// Pastikan start <= end
+if ($start_date > $end_date) { $start_date = $end_date; }
 
 // Dropdown kamar & kelas (dipakai semua tipe)
 $kamars_result = mysqli_query($conn, "SELECT DISTINCT kamar FROM santri WHERE kamar IS NOT NULL AND kamar != '' ORDER BY CAST(REGEXP_REPLACE(kamar, '[^0-9]', '') AS UNSIGNED) ASC, REGEXP_REPLACE(kamar, '[0-9]', '') ASC");
 $kelas_result  = mysqli_query($conn, "SELECT DISTINCT kelas FROM santri WHERE kelas IS NOT NULL AND kelas != '' ORDER BY CAST(REGEXP_REPLACE(kelas, '[^0-9]', '') AS UNSIGNED) ASC, REGEXP_REPLACE(kelas, '[0-9]', '') ASC");
 
-// Dropdown filter khusus daftar hitam
-$ff = [$start_date, $end_date];
-$bagian_stmt = $conn->prepare("SELECT DISTINCT jp.bagian FROM pelanggaran p JOIN jenis_pelanggaran jp ON p.jenis_pelanggaran_id = jp.id WHERE DATE(p.tanggal) BETWEEN ? AND ? AND jp.bagian IS NOT NULL AND jp.bagian != '' ORDER BY jp.bagian ASC");
-$bagian_stmt->bind_param("ss", ...$ff); $bagian_stmt->execute(); $bagian_result = $bagian_stmt->get_result();
-
-$kategori_stmt = $conn->prepare("SELECT DISTINCT jp.kategori FROM pelanggaran p JOIN jenis_pelanggaran jp ON p.jenis_pelanggaran_id = jp.id WHERE DATE(p.tanggal) BETWEEN ? AND ? AND jp.kategori IS NOT NULL AND jp.kategori != '' ORDER BY FIELD(jp.kategori, 'Sangat Berat', 'Berat', 'Sedang', 'Ringan')");
-$kategori_stmt->bind_param("ss", ...$ff); $kategori_stmt->execute(); $kategori_result = $kategori_stmt->get_result();
-
-$jp_stmt = $conn->prepare("SELECT DISTINCT jp.id, jp.nama_pelanggaran FROM pelanggaran p JOIN jenis_pelanggaran jp ON p.jenis_pelanggaran_id = jp.id WHERE DATE(p.tanggal) BETWEEN ? AND ? ORDER BY jp.nama_pelanggaran ASC");
-$jp_stmt->bind_param("ss", ...$ff); $jp_stmt->execute(); $jp_result = $jp_stmt->get_result();
+// Dropdown filter khusus daftar hitam (ambil seluruh master opsi valid di sistem)
+$bagian_result   = mysqli_query($conn, "SELECT DISTINCT bagian FROM jenis_pelanggaran WHERE bagian IS NOT NULL AND bagian != '' ORDER BY bagian ASC");
+$kategori_result = mysqli_query($conn, "SELECT DISTINCT kategori FROM jenis_pelanggaran WHERE kategori IS NOT NULL AND kategori != '' ORDER BY FIELD(kategori, 'Sangat Berat', 'Berat', 'Sedang', 'Ringan')");
+$jp_result       = mysqli_query($conn, "SELECT DISTINCT id, nama_pelanggaran FROM jenis_pelanggaran ORDER BY nama_pelanggaran ASC");
 
 // ================================================================
 // TIPE 1: DAFTAR HITAM (ex-pelanggaran_umum)
@@ -223,13 +228,19 @@ body { background:var(--light-bg); font-family:'Poppins',sans-serif; }
 .search-box input:focus { outline:none; border-color:var(--primary); background:#fff; box-shadow:0 0 0 3px rgba(79,70,229,.1); }
 .search-box i { position:absolute; left:12px; top:50%; transform:translateY(-50%); color:var(--text-muted); font-size:13px; }
 .conditional-filter.hidden { display:none; }
-/* Tabel Daftar Hitam */
+/* Tabel Daftar Hitam & Peringkat */
+.table-responsive { border-radius: 0.75rem; -webkit-overflow-scrolling: touch; }
 .table th { background:var(--light-bg); color:var(--text-muted); text-transform:uppercase; font-size:.7rem; letter-spacing:.05em; }
 .table tbody td { vertical-align:middle; padding:.85rem .75rem; }
 .rank-icon { font-size:1.4rem; }
-tr.rank-1 .rank-icon { color:var(--gold); }
-tr.rank-2 .rank-icon { color:var(--silver); }
-tr.rank-3 .rank-icon { color:var(--bronze); }
+/* Daftar Hitam: rank 1=paling banyak pelanggaran → warna merah */
+#tabelHitam tr.rank-1 .rank-icon { color: #dc2626; }
+#tabelHitam tr.rank-2 .rank-icon { color: #f87171; }
+#tabelHitam tr.rank-3 .rank-icon { color: #fca5a5; }
+/* Peringkat Santri: rank 1=terbaik → warna emas */
+#tabelPeringkat tr.rank-1 .rank-icon { color:var(--gold); }
+#tabelPeringkat tr.rank-2 .rank-icon { color:var(--silver); }
+#tabelPeringkat tr.rank-3 .rank-icon { color:var(--bronze); }
 .poin-value { font-size:1.2rem; font-weight:700; color:var(--primary-dark); }
 .periode-stats { font-size:.78rem; font-weight:500; color:var(--text-muted); background:#f1f5f9; padding:.2rem .6rem; border-radius:9999px; white-space:nowrap; display:inline-block; }
 .poin-aktif-info { display:block; font-size:.72rem; font-weight:500; margin-top:2px; }
@@ -238,34 +249,81 @@ tr.rank-3 .rank-icon { color:var(--bronze); }
 .tr-hidden { display:none !important; }
 .hover-row { transition: background-color 0.2s; }
 .hover-row:hover { background-color: #f8fafc !important; }
-/* Grid Kartu Peringkat */
-.card-grid { display:grid; grid-template-columns:repeat(auto-fill,minmax(300px,1fr)); gap:18px; }
-.santri-card { background:#fff; border-radius:16px; box-shadow:0 4px 15px rgba(0,0,0,.04); padding:20px 18px 16px; position:relative; overflow:hidden; transition:transform .25s,box-shadow .25s; border:1px solid #f1f5f9; cursor:pointer; }
-.santri-card.card-hidden { display:none; }
-.santri-card:hover { transform:translateY(-4px); box-shadow:0 12px 25px rgba(0,0,0,.08); }
-.santri-card.has-violation { border-top:4px solid var(--danger); }
-.card-rank { position:absolute; top:15px; right:15px; height:36px; min-width:36px; padding:0 9px; display:flex; align-items:center; justify-content:center; font-weight:800; font-size:14px; border-radius:50px; }
-.card-rank.cr-1 { background:linear-gradient(135deg,#fbbf24,#d97706); color:#fff; box-shadow:0 4px 12px rgba(217,119,6,.3); border:2px solid #fff; }
-.card-rank.cr-2 { background:linear-gradient(135deg,#cbd5e1,#64748b); color:#fff; box-shadow:0 4px 12px rgba(100,116,139,.3); border:2px solid #fff; }
-.card-rank.cr-3 { background:linear-gradient(135deg,#fca5a5,#b91c1c); color:#fff; box-shadow:0 4px 12px rgba(185,28,28,.3); border:2px solid #fff; }
-.card-rank.cr-other { background:#f1f5f9; color:#64748b; border:2px solid #e2e8f0; }
-.santri-card.has-violation .card-rank { background:#fef2f2; color:var(--danger); border:2px solid #fecaca; box-shadow:none; }
-.card-name { margin:0 0 10px 0; font-size:16px; font-weight:700; color:#0f172a; padding-right:44px; line-height:1.3; }
-.card-name a { color:inherit; text-decoration:none; transition:color .2s; }
-.card-name a:hover { color:var(--primary); }
-.loc-badge { display:inline-flex; align-items:center; gap:6px; background:#f8fafc; color:#475569; padding:4px 10px; border-radius:20px; font-size:11px; font-weight:600; margin-bottom:14px; border:1px solid #f1f5f9; }
-.stats-box { display:flex; justify-content:space-between; background:#f8fafc; border-radius:10px; padding:9px; border:1px solid #f1f5f9; }
-.stat-col { text-align:center; flex:1; }
-.stat-col:not(:last-child) { border-right:1px solid #e2e8f0; }
-.stat-val { font-size:16px; font-weight:800; display:block; line-height:1.2; letter-spacing:-.5px; }
-.stat-lbl { font-size:9px; color:#64748b; text-transform:uppercase; letter-spacing:.8px; margin-top:3px; font-weight:600; }
-.val-red   { color:var(--danger); }
-.val-green { color:var(--success); }
-.val-blue  { color:var(--primary); }
-.val-muted { color:var(--text-muted); }
-.score-row { margin-top:12px; padding-top:12px; border-top:1px dashed #e2e8f0; display:flex; justify-content:space-between; align-items:center; }
-.score-lbl  { font-size:10px; font-weight:700; color:#64748b; text-transform:uppercase; letter-spacing:.5px; }
-.score-num  { font-size:17px; font-weight:800; color:var(--primary); }
+
+/* Preset Scroll Container & Chips Modern Minimalis */
+.preset-scroll-container {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    overflow-x: auto;
+    flex-wrap: nowrap;
+    -webkit-overflow-scrolling: touch;
+    scrollbar-width: none;
+    -ms-overflow-style: none;
+    padding: 2px 0;
+}
+.preset-scroll-container::-webkit-scrollbar {
+    display: none;
+}
+.preset-chip {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 5px 12px;
+    font-size: 0.76rem;
+    font-weight: 600;
+    color: #475569;
+    background: #f8fafc;
+    border: 1px solid #e2e8f0;
+    border-radius: 50px;
+    white-space: nowrap !important;
+    flex-shrink: 0;
+    text-decoration: none;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    line-height: 1.25;
+}
+.preset-chip:hover {
+    background: #f1f5f9;
+    color: #1e293b;
+    border-color: #cbd5e1;
+}
+.preset-chip i {
+    font-size: 0.82rem;
+}
+
+/* State Aktif untuk Tiap Preset */
+.preset-chip.active-primary {
+    background: #4f46e5 !important;
+    color: #ffffff !important;
+    border-color: #4f46e5 !important;
+    box-shadow: 0 2px 6px rgba(79, 70, 229, 0.2) !important;
+}
+.preset-chip.active-danger {
+    background: #ef4444 !important;
+    color: #ffffff !important;
+    border-color: #ef4444 !important;
+    box-shadow: 0 2px 6px rgba(239, 68, 68, 0.2) !important;
+}
+.preset-chip.active-warning {
+    background: #d97706 !important;
+    color: #ffffff !important;
+    border-color: #d97706 !important;
+    box-shadow: 0 2px 6px rgba(217, 119, 6, 0.2) !important;
+}
+.preset-chip.active-dark {
+    background: #334155 !important;
+    color: #ffffff !important;
+    border-color: #334155 !important;
+    box-shadow: 0 2px 6px rgba(51, 65, 85, 0.2) !important;
+}
+.preset-chip.active-primary i,
+.preset-chip.active-danger i,
+.preset-chip.active-warning i,
+.preset-chip.active-dark i {
+    color: #ffffff !important;
+}
+
 .no-data { text-align:center; padding:60px 20px; background:#fff; border-radius:16px; border:1px dashed #cbd5e1; }
 .no-data .icon { font-size:50px; margin-bottom:12px; }
 #gridWrapper { position: relative; min-height: 300px; }
@@ -278,7 +336,27 @@ tr.rank-3 .rank-icon { color:var(--bronze); }
     <p class="text-muted mb-4" style="font-size:.9rem;">Daftar Hitam Pelanggar &amp; Peringkat Santri dalam satu halaman</p>
 
     <div class="filter-card mb-4 p-4">
-        <h5 class="fw-bold mb-3"><i class="fas fa-sliders-h me-2 text-primary"></i>Filter &amp; Pencarian</h5>
+        <div class="d-flex flex-column flex-md-row align-items-start align-items-md-center justify-content-between gap-2.5 mb-3">
+            <h5 class="fw-bold mb-0 text-nowrap"><i class="fas fa-sliders-h me-2 text-primary"></i>Filter &amp; Pencarian</h5>
+            
+            <!-- Tombol Pintas Preset Cepat -->
+            <div class="preset-scroll-container w-100 w-md-auto" id="presetButtonsGroup">
+                <span class="small fw-semibold text-muted me-1 d-none d-md-inline flex-shrink-0"><i class="fas fa-bolt text-warning me-1"></i>Pintas:</span>
+                <button type="button" id="btnPresetAktif" class="preset-chip" onclick="applyQuickPreset('aktif')">
+                    <i class="bi bi-calendar-check text-primary"></i>Tahun Ajaran Aktif
+                </button>
+                <button type="button" id="btnPresetSangatBeratAktif" class="preset-chip" onclick="applyQuickPreset('sangat_berat_aktif')">
+                    <i class="bi bi-shield-exclamation text-danger"></i>Sangat Berat
+                </button>
+                <button type="button" id="btnPresetSangatBeratLalu" class="preset-chip" onclick="applyQuickPreset('sangat_berat_lalu')">
+                    <i class="bi bi-clock-history text-warning"></i>Sangat Berat (Periode Lalu)
+                </button>
+                <button type="button" id="btnPresetAllTime" class="preset-chip" onclick="applyQuickPreset('all_time')">
+                    <i class="bi bi-infinity text-secondary"></i>Semua Waktu
+                </button>
+            </div>
+        </div>
+
         <form method="get" id="filterForm">
             <div class="row g-3 mb-3">
 
@@ -428,29 +506,30 @@ tr.rank-3 .rank-icon { color:var(--bronze); }
 
 <?php
 $filter_qs = "";
-if (!empty($filter_bagian)) $filter_qs .= "&bagian=" . urlencode($filter_bagian);
-if (!empty($filter_kategori)) $filter_qs .= "&kategori=" . urlencode($filter_kategori);
-if (!empty($filter_jp)) $filter_qs .= "&jenis_pelanggaran=" . urlencode($filter_jp);
+if (!empty($filter_kamar))   $filter_qs .= "&kamar="             . urlencode($filter_kamar);
+if (!empty($filter_kelas))   $filter_qs .= "&kelas="             . urlencode($filter_kelas);
+if (!empty($filter_bagian))  $filter_qs .= "&bagian="            . urlencode($filter_bagian);
+if (!empty($filter_kategori)) $filter_qs .= "&kategori="         . urlencode($filter_kategori);
+if (!empty($filter_jp))      $filter_qs .= "&jenis_pelanggaran=" . urlencode($filter_jp);
 
 // ================================================================
 // RENDER KONTEN
 // ================================================================
-
 if ($tipe === 'daftar_hitam'):
 ?>
-<div class="card border-0 shadow-sm">
-    <div class="card-body table-responsive p-0">
-        <table class="table table-hover mb-0" id="tabelHitam">
-            <thead>
+<div class="card border-0 shadow-sm rounded-4 overflow-hidden mb-4">
+    <div class="table-responsive p-0">
+        <table class="table table-hover mb-0 align-middle text-nowrap" id="tabelHitam" style="min-width: 580px;">
+            <thead class="table-light">
                 <tr>
-                    <th class="text-center ps-3" style="width:90px;">Peringkat</th>
+                    <th class="text-center ps-3" style="width:80px;">Peringkat</th>
                     <th>Santri</th>
                     <?php if ($filter_bagian === 'Pengabdian'): ?>
-                        <th class="text-center">Total</th>
+                        <th class="text-center" style="width:110px;">Total</th>
                         <th class="text-start">Detail Pelanggaran</th>
                     <?php else: ?>
-                        <th class="text-center">Poin</th>
-                        <th class="text-center">Kasus</th>
+                        <th class="text-center" style="width:130px;">Poin Periode</th>
+                        <th class="text-center" style="width:110px;">Kasus</th>
                     <?php endif; ?>
                 </tr>
             </thead>
@@ -461,24 +540,25 @@ if ($tipe === 'daftar_hitam'):
                     Tidak ada data pelanggaran ditemukan.
                 </td></tr>
             <?php else: ?>
-                <?php $no = 1; while ($row = mysqli_fetch_assoc($query)): ?>
+                <?php 
+                $no = 1;
+                while ($row = mysqli_fetch_assoc($query)): 
+                ?>
                 <tr class="rank-<?= $no ?> hover-row" data-nama="<?= strtolower(htmlspecialchars($row['nama'])) ?>" onclick="window.location.href='detail_per_santri.php?id=<?= $row['id'] ?>&start_date=<?= urlencode($start_date) ?>&end_date=<?= urlencode($end_date) ?><?= $filter_qs ?>'" style="cursor: pointer;">
                     <td class="text-center ps-3">
-                        <?php if ($no <= 3): ?><i class="fas fa-trophy rank-icon"></i><?php else: ?><span class="fw-bold fs-5 text-dark"><?= $no ?></span><?php endif; ?>
+                        <?php if ($no <= 3): ?>
+                            <i class="fas fa-trophy rank-icon"></i>
+                        <?php else: ?>
+                            <span class="badge bg-light text-secondary border rounded-pill px-2.5 py-1 fw-bold"><?= $no ?></span>
+                        <?php endif; ?>
                     </td>
                     <td>
                         <span class="fw-bold text-dark fs-6 text-decoration-none"><?= htmlspecialchars($row['nama']) ?></span>
-                        <small class="text-muted d-block mt-1 mb-1">NIS: <span class="fw-medium"><?= htmlspecialchars($row['nis'] ?? '-') ?></span></small>
-                        <small class="text-muted d-block mb-1">Kls: <?= htmlspecialchars($row['kelas']) ?> &bull; Kmr: <?= htmlspecialchars($row['kamar']) ?></small>
-                        <?php $pa = (int)$row['poin_aktif']; ?>
-                        <?php if ($pa > 0): ?><small class="poin-aktif-info text-danger"><i class="fas fa-history fa-xs"></i> Histori: <?= $pa ?></small>
-                        <?php elseif ($pa < 0): ?><small class="poin-aktif-info text-success"><i class="fas fa-star fa-xs text-warning"></i> Surplus: <?= abs($pa) ?> Reward</small>
-                        <?php else: ?><small class="poin-aktif-info text-secondary"><i class="fas fa-history fa-xs"></i> Histori: 0 (Bersih)</small><?php endif; ?>
-                    </td>
+                        <small class="text-muted d-block mt-0.5">NIS: <span class="fw-medium"><?= htmlspecialchars($row['nis'] ?? '-') ?></span> &bull; Kls <?= htmlspecialchars($row['kelas']) ?> &bull; Kmr <?= htmlspecialchars($row['kamar']) ?></small>
                     </td>
                     <?php if ($filter_bagian === 'Pengabdian'): ?>
                         <td class="text-center align-middle">
-                            <span class="badge rounded-pill bg-danger bg-opacity-10 text-danger fs-6 px-3 py-2"><?= $row['total_pelanggaran_periode'] ?></span>
+                            <span class="badge rounded-pill bg-danger-subtle text-danger border border-danger-subtle fs-6 px-3 py-1.5"><?= $row['total_pelanggaran_periode'] ?></span>
                         </td>
                         <td class="text-start align-middle">
                             <div class="d-flex flex-column gap-1">
@@ -488,19 +568,9 @@ if ($tipe === 'daftar_hitam'):
                                     foreach ($kasus_list as $k) {
                                         $parts = explode(':', $k);
                                         if (count($parts) == 2) {
-                                            $nama_p = trim($parts[0]);
-                                            $cnt_p = trim($parts[1]);
-                                            // Pilih warna/ikon dinamis
-                                            $icon = 'fas fa-exclamation-circle';
-                                            $color = 'text-primary';
-                                            if (stripos($nama_p, 'telat sholat') !== false) {
-                                                $icon = 'fas fa-praying-hands';
-                                                $color = 'text-danger';
-                                            } elseif (stripos($nama_p, 'telat kbm') !== false) {
-                                                $icon = 'fas fa-book-open';
-                                                $color = 'text-primary';
-                                            }
-                                            echo "<div style='font-size: 0.9rem; font-weight: 500;'><i class='{$icon} {$color} me-2' style='width:16px;text-align:center;'></i><span class='{$color}'>{$nama_p}:</span> <strong class='text-dark'>{$cnt_p}</strong></div>";
+                                            $nama_p = htmlspecialchars(trim($parts[0]), ENT_QUOTES, 'UTF-8');
+                                            $cnt_p  = (int)trim($parts[1]);
+                                            echo "<div class='small text-muted'><i class='fas fa-exclamation-circle text-primary me-1'></i><span class='text-dark fw-medium'>{$nama_p}:</span> <strong class='text-danger'>{$cnt_p}</strong></div>";
                                         }
                                     }
                                 }
@@ -508,8 +578,12 @@ if ($tipe === 'daftar_hitam'):
                             </div>
                         </td>
                     <?php else: ?>
-                        <td class="text-center"><span class="poin-value"><?= $row['total_poin_periode'] ?></span></td>
-                        <td class="text-center"><span class="periode-stats"><?= $row['total_pelanggaran_periode'] ?>×</span></td>
+                        <td class="text-center">
+                            <span class="badge bg-danger text-white rounded-pill px-3 py-1.5 fw-bold fs-6"><?= $row['total_poin_periode'] ?> poin</span>
+                        </td>
+                        <td class="text-center">
+                            <span class="periode-stats"><?= $row['total_pelanggaran_periode'] ?>×</span>
+                        </td>
                     <?php endif; ?>
                 </tr>
                 <?php $no++; endwhile; ?>
@@ -523,71 +597,73 @@ if ($tipe === 'daftar_hitam'):
     $formula_cur = $_GET['formula'] ?? 'semua_aspek';
     $sort_cur    = $_GET['sort_order'] ?? 'terbaik';
 ?>
-<div class="card border-0 shadow-sm" id="cardGrid">
-    <div class="card-body table-responsive p-0">
-        <table class="table table-hover mb-0" id="tabelPeringkat">
-            <thead>
+<div class="card border-0 shadow-sm rounded-4 overflow-hidden mb-4" id="cardGrid">
+    <div class="table-responsive p-0">
+        <table class="table table-hover mb-0 align-middle text-nowrap" id="tabelPeringkat" style="min-width: 620px;">
+            <thead class="table-light">
                 <tr>
-                    <th class="text-center ps-3" style="width:60px;">No.</th>
+                    <th class="text-center ps-3" style="width:70px;">Peringkat</th>
                     <th>Santri</th>
                     <?php if ($formula_cur === 'neraca'): ?>
-                    <th class="text-center">Pelanggaran</th>
-                    <th class="text-center">Reward</th>
-                    <th class="text-center">Poin Bersih</th>
+                    <th class="text-center" style="width:110px;">Pelanggaran</th>
+                    <th class="text-center" style="width:110px;">Reward</th>
+                    <th class="text-center" style="width:130px;">Poin Bersih</th>
                     <?php else: ?>
-                    <th class="text-center">Langgar</th>
-                    <th class="text-center">Reward</th>
-                    <th class="text-center">Rapot</th>
-                    <th class="text-center">Skor Teladan</th>
+                    <th class="text-center" style="width:100px;">Langgar</th>
+                    <th class="text-center" style="width:100px;">Reward</th>
+                    <th class="text-center" style="width:100px;">Rapot</th>
+                    <th class="text-center" style="width:130px;">Skor Teladan</th>
                     <?php endif; ?>
                 </tr>
             </thead>
             <tbody id="bodyPeringkat">
-<?php
-if (empty($santri_data)) {
-    echo "<tr><td colspan='" . ($formula_cur === 'neraca' ? 5 : 6) . "' class='text-center py-5 text-muted'><div style='font-size:3rem;margin-bottom:10px;'>🎉</div><p class='fw-semibold'>Belum ada data untuk ditampilkan.</p></td></tr>";
-} else {
-    $no = 1;
-    $limit = array_slice($santri_data, 0, 100);
-    foreach ($limit as $row):
-        $p_poin = (int)($row['poin_pelanggaran'] ?? 0);
-        $r_poin = (int)($row['poin_reward'] ?? 0);
-        $rapot  = round((float)($row['avg_rapot'] ?? 0), 1);
-        $skor   = $row['skor'] ?? 0;
-        
-        $onclick = "window.location.href='detail_per_santri.php?id=" . $row['id'] . "&start_date=" . urlencode($start_date) . "&end_date=" . urlencode($end_date) . $filter_qs . "'";
-?>
+            <?php
+            if (empty($santri_data)) {
+                echo "<tr><td colspan='" . ($formula_cur === 'neraca' ? 5 : 6) . "' class='text-center py-5 text-muted'><div style='font-size:3rem;margin-bottom:10px;'>🎉</div><p class='fw-semibold'>Belum ada data untuk ditampilkan.</p></td></tr>";
+            } else {
+                $no = 1;
+                $limit = array_slice($santri_data, 0, 100);
+                foreach ($limit as $row):
+                    $p_poin = (int)($row['poin_pelanggaran'] ?? 0);
+                    $r_poin = (int)($row['poin_reward'] ?? 0);
+                    $rapot  = round((float)($row['avg_rapot'] ?? 0), 1);
+                    $skor   = $row['skor'] ?? 0;
+                    $onclick = "window.location.href='detail_per_santri.php?id=" . $row['id'] . "&start_date=" . urlencode($start_date) . "&end_date=" . urlencode($end_date) . $filter_qs . "'";
+            ?>
                 <tr class="hover-row rank-<?= $no ?>" data-nama="<?= strtolower(htmlspecialchars($row['nama'])) ?>" onclick="<?= $onclick ?>" style="cursor: pointer;">
                     <td class="text-center ps-3">
-                        <?php if ($no <= 3): ?><i class="fas fa-trophy rank-icon"></i><?php else: ?><span class="fw-bold fs-6 text-muted"><?= $no ?></span><?php endif; ?>
+                        <?php if ($no <= 3): ?>
+                            <i class="fas fa-trophy rank-icon"></i>
+                        <?php else: ?>
+                            <span class="badge bg-light text-secondary border rounded-pill px-2.5 py-1 fw-bold"><?= $no ?></span>
+                        <?php endif; ?>
                     </td>
                     <td>
                         <span class="fw-bold text-dark text-decoration-none"><?= htmlspecialchars($row['nama']) ?></span>
-                        <small class="text-muted d-block mb-1">NIS: <span class="fw-medium"><?= htmlspecialchars($row['nis'] ?? '-') ?></span></small>
-                        <small class="text-muted d-block">Kls <?= htmlspecialchars($row['kelas']) ?> &bull; Kmr <?= htmlspecialchars($row['kamar']) ?></small>
+                        <small class="text-muted d-block mt-0.5">NIS: <?= htmlspecialchars($row['nis'] ?? '-') ?> &bull; Kls <?= htmlspecialchars($row['kelas']) ?> &bull; Kmr <?= htmlspecialchars($row['kamar']) ?></small>
                     </td>
                     <?php if ($formula_cur === 'neraca'): 
                         $pb = $skor;
                         $disp_pb = $pb < 0 ? 0 : $pb;
                     ?>
-                    <td class="text-center"><span class="periode-stats <?= $p_poin > 0 ? 'text-danger' : 'text-success' ?>"><?= $p_poin ?></span></td>
-                    <td class="text-center"><span class="periode-stats text-success">+<?= $r_poin ?></span></td>
-                    <td class="text-center"><span class="poin-value <?= $disp_pb > 0 ? 'text-danger' : 'text-success' ?>"><?= $disp_pb ?></span></td>
+                    <td class="text-center"><span class="badge bg-danger-subtle text-danger border border-danger-subtle rounded-pill px-2.5 py-1"><?= $p_poin ?></span></td>
+                    <td class="text-center"><span class="badge bg-success-subtle text-success border border-success-subtle rounded-pill px-2.5 py-1">+<?= $r_poin ?></span></td>
+                    <td class="text-center"><span class="badge <?= $disp_pb > 0 ? 'bg-danger text-white' : 'bg-success text-white' ?> rounded-pill px-3 py-1.5 fw-bold fs-6"><?= $disp_pb ?></span></td>
                     <?php else: 
                         $str_rapot = $rapot > 0 ? number_format($rapot, 1, '.', '') : '–';
                     ?>
-                    <td class="text-center"><span class="periode-stats <?= $p_poin > 0 ? 'text-danger' : 'text-success' ?>"><?= $p_poin ?></span></td>
-                    <td class="text-center"><span class="periode-stats text-success"><?= $r_poin > 0 ? '+' : '' ?><?= $r_poin ?></span></td>
-                    <td class="text-center"><span class="periode-stats text-primary"><i class="fas fa-star" style="font-size:9px;"></i> <?= $str_rapot ?></span></td>
-                    <td class="text-center"><span class="poin-value text-primary"><?= number_format($skor, 2) ?></span></td>
+                    <td class="text-center"><span class="badge bg-danger-subtle text-danger border border-danger-subtle rounded-pill px-2.5 py-1"><?= $p_poin ?></span></td>
+                    <td class="text-center"><span class="badge bg-success-subtle text-success border border-success-subtle rounded-pill px-2.5 py-1">+<?= $r_poin ?></span></td>
+                    <td class="text-center"><span class="badge bg-primary-subtle text-primary border border-primary-subtle rounded-pill px-2.5 py-1"><i class="fas fa-star fa-xs me-1"></i><?= $str_rapot ?></span></td>
+                    <td class="text-center"><span class="badge bg-primary text-white rounded-pill px-3 py-1.5 fw-bold fs-6"><?= number_format($skor, 2) ?></span></td>
                     <?php endif; ?>
                 </tr>
-<?php
-        $no++;
-    endforeach;
-    if (isset($stmt_p)) mysqli_stmt_close($stmt_p);
-}
-?>
+            <?php
+                    $no++;
+                endforeach;
+                if (isset($stmt_p)) mysqli_stmt_close($stmt_p);
+            }
+            ?>
             </tbody>
         </table>
     </div>
@@ -642,24 +718,16 @@ document.addEventListener('DOMContentLoaded', function () {
             const q = this.value.toLowerCase().trim();
             let visibleCount = 0;
 
-            // Tabel rows
-            document.querySelectorAll('#bodyHitam tr[data-nama]').forEach(tr => {
-                const isMatch = q === '' || tr.dataset.nama.includes(q);
-                tr.classList.toggle('tr-hidden', !isMatch);
-                if (isMatch) visibleCount++;
-            });
-
-            // Tabel Peringkat
-            document.querySelectorAll('#bodyPeringkat tr[data-nama]').forEach(tr => {
-                const isMatch = q === '' || tr.dataset.nama.includes(q);
-                tr.classList.toggle('tr-hidden', !isMatch);
+            // Filter baris tabel
+            document.querySelectorAll('#bodyHitam tr[data-nama], #bodyPeringkat tr[data-nama]').forEach(el => {
+                const isMatch = q === '' || el.dataset.nama.includes(q);
+                el.classList.toggle('tr-hidden', !isMatch);
                 if (isMatch) visibleCount++;
             });
             
             // Tampilkan empty state jika pencarian tidak ditemukan
             const emptySearch = document.getElementById('emptySearch');
             if (emptySearch) {
-                // Jangan hitung row "Tidak ada data pelanggaran ditemukan" yang tidak punya data-nama
                 const hasRealData = document.querySelectorAll('#bodyHitam tr[data-nama], #bodyPeringkat tr[data-nama]').length > 0;
                 if (hasRealData && visibleCount === 0 && q !== '') {
                     emptySearch.style.display = 'block';
@@ -684,13 +752,17 @@ document.addEventListener('DOMContentLoaded', function () {
         if (searchInput) searchInput.value = '';
 
         fetch(url, { headers: { 'X-Requested-With': 'XMLHttpRequest' } })
-            .then(r => r.text())
+            .then(r => {
+                if (!r.ok) throw new Error('HTTP ' + r.status);
+                return r.text();
+            })
             .then(html => {
                 gridContainer.innerHTML     = html;
                 gridContainer.style.opacity = '1';
                 gridContainer.style.pointerEvents = 'auto';
                 loadingOvl.style.display    = 'none';
                 window.history.pushState({}, '', url);
+                syncPresetButtons(); // Re-sync setelah konten baru dimuat
             })
             .catch(() => {
                 gridContainer.style.opacity = '1';
@@ -704,10 +776,97 @@ document.addEventListener('DOMContentLoaded', function () {
         fetchGrid('?' + new URLSearchParams(new FormData(filterForm)).toString());
     });
 
-    // Auto-submit saat filter DB berubah (bukan search)
+    // ── Sinkronisasi Warna Tombol Preset ──────────────────────────────────────
+    function syncPresetButtons() {
+        const startVal = document.getElementById('start_date').value;
+        const endVal   = document.getElementById('end_date').value;
+        const katEl    = document.getElementById('kategori');
+        const tipeEl   = document.getElementById('tipeSelect');
+        const katVal   = katEl ? katEl.value : '';
+        const tipeVal  = tipeEl ? tipeEl.value : '';
+        const periodeAktif  = '<?= $periode_aktif ?>';
+        const hariIni       = '<?= date('Y-m-d') ?>';
+        const earliestDate  = '<?= $earliest_date ?>';
+        const endLalu       = '<?= date('Y-m-d', strtotime($periode_aktif . ' -1 day')) ?>';
+
+        const bAktif = document.getElementById('btnPresetAktif');
+        const bSB    = document.getElementById('btnPresetSangatBeratAktif');
+        const bSBL   = document.getElementById('btnPresetSangatBeratLalu');
+        const bAll   = document.getElementById('btnPresetAllTime');
+
+        if (!bAktif || !bSB || !bSBL || !bAll) return;
+
+        // Reset class active dari semua tombol preset
+        [bAktif, bSB, bSBL, bAll].forEach(btn => {
+            btn.classList.remove('active-primary', 'active-danger', 'active-warning', 'active-dark');
+        });
+
+        if (tipeVal === 'daftar_hitam') {
+            const isAktif = (startVal === periodeAktif && endVal === hariIni && !katVal);
+            const isSB    = (startVal === periodeAktif && endVal === hariIni && katVal === 'Sangat Berat');
+            const isSBL   = (startVal === earliestDate && endVal === endLalu && katVal === 'Sangat Berat');
+            const isAll   = (startVal === earliestDate && endVal === hariIni && !katVal);
+
+            if (isSB) {
+                bSB.classList.add('active-danger');
+            } else if (isSBL) {
+                bSBL.classList.add('active-warning');
+            } else if (isAll) {
+                bAll.classList.add('active-dark');
+            } else if (isAktif) {
+                bAktif.classList.add('active-primary');
+            }
+        }
+    }
+
+    // Auto-submit & sync saat filter berubah
     filterForm.querySelectorAll('select, input[type="date"]').forEach(el => {
-        el.addEventListener('change', () => filterForm.dispatchEvent(new Event('submit')));
+        el.addEventListener('change', () => {
+            syncPresetButtons();
+            filterForm.dispatchEvent(new Event('submit'));
+        });
     });
+
+    // ── Quick Presets Handler ───────────────────────────────────────────────
+    window.applyQuickPreset = function(type) {
+        const startInput = document.getElementById('start_date');
+        const endInput   = document.getElementById('end_date');
+        const katSelect  = document.getElementById('kategori');
+        const tipeSelect = document.getElementById('tipeSelect');
+        const bagSelect  = document.getElementById('bagian');
+        const jpSelect   = document.getElementById('jenis_pelanggaran');
+
+        if (tipeSelect) tipeSelect.value = 'daftar_hitam';
+        if (bagSelect)  bagSelect.value = '';
+        if (jpSelect)   jpSelect.value = '';
+        if (searchInput) { searchInput.value = ''; searchInput.dispatchEvent(new Event('input')); }
+
+        if (type === 'aktif') {
+            startInput.value = '<?= $periode_aktif ?>';
+            endInput.value   = '<?= date('Y-m-d') ?>';
+            if (katSelect) katSelect.value = '';
+        } else if (type === 'sangat_berat_aktif') {
+            startInput.value = '<?= $periode_aktif ?>';
+            endInput.value   = '<?= date('Y-m-d') ?>';
+            if (katSelect) katSelect.value = 'Sangat Berat';
+        } else if (type === 'sangat_berat_lalu') {
+            startInput.value = '<?= $earliest_date ?>';
+            endInput.value   = '<?= date('Y-m-d', strtotime($periode_aktif . ' -1 day')) ?>';
+            if (katSelect) katSelect.value = 'Sangat Berat';
+        } else if (type === 'all_time') {
+            startInput.value = '<?= $earliest_date ?>';
+            endInput.value   = '<?= date('Y-m-d') ?>';
+            if (katSelect) katSelect.value = '';
+        }
+
+        updateFilters();
+        syncPresetButtons();
+        filterForm.dispatchEvent(new Event('submit'));
+    };
+
+    // Jalankan sync awal
+    updateFilters();
+    syncPresetButtons();
 });
 </script>
 

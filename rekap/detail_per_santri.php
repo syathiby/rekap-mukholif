@@ -13,12 +13,16 @@ if ($santri_id <= 0) {
     exit;
 }
 
-$start_date = $_GET['start_date'] ?? date('Y-m-d', strtotime('-1 year'));
-$end_date   = $_GET['end_date']   ?? date('Y-m-d');
+// Validasi format tanggal dari GET
+$raw_start = $_GET['start_date'] ?? date('Y-m-d', strtotime('-1 year'));
+$raw_end   = $_GET['end_date']   ?? date('Y-m-d');
+$start_date = (preg_match('/^\d{4}-\d{2}-\d{2}$/', $raw_start) && strtotime($raw_start)) ? $raw_start : date('Y-m-d', strtotime('-1 year'));
+$end_date   = (preg_match('/^\d{4}-\d{2}-\d{2}$/', $raw_end)   && strtotime($raw_end))   ? $raw_end   : date('Y-m-d');
+if ($start_date > $end_date) { $start_date = $end_date; }
 
-$filter_bagian = $_GET['bagian'] ?? '';
-$filter_kategori = $_GET['kategori'] ?? '';
-$filter_jp = $_GET['jenis_pelanggaran'] ?? '';
+$filter_bagian   = $_GET['bagian']             ?? '';
+$filter_kategori = $_GET['kategori']           ?? '';
+$filter_jp       = $_GET['jenis_pelanggaran']  ?? '';
 
 $filter_qs = "";
 if (!empty($filter_bagian)) $filter_qs .= "&bagian=" . urlencode($filter_bagian);
@@ -30,7 +34,12 @@ $stmt_santri = $conn->prepare("SELECT id, nis, nama, kelas, kamar, poin_aktif FR
 $stmt_santri->bind_param("i", $santri_id);
 $stmt_santri->execute();
 $santri = $stmt_santri->get_result()->fetch_assoc();
-if (!$santri) { die("Data santri tidak ditemukan."); }
+$stmt_santri->close();
+if (!$santri) {
+    set_flash_message('<b>Data Tidak Ditemukan!</b> Santri yang dicari tidak tersedia.', 'danger');
+    header("Location: rekap_per_santri.php");
+    exit;
+}
 
 // ─── 3.5 Build Filter Query ───────────────────────────────────────────────────
 $start_dt = $start_date . ' 00:00:00';

@@ -18,9 +18,12 @@ if (!$periode_aktif) {
     die("<div class='container' style='padding-top:20px;'><div class='alert alert-danger'>⚠ Periode aktif belum diset. Silakan atur dulu di halaman pengaturan.</div></div>");
 }
 
-// 🔹 Ambil filter dari URL (jika ada)
-$start_date = $_GET['start_date'] ?? $periode_aktif;
-$end_date = $_GET['end_date'] ?? date('Y-m-d');
+// 🔹 Ambil filter dari URL (jika ada) & validasi format
+$raw_start = $_GET['start_date'] ?? $periode_aktif;
+$raw_end   = $_GET['end_date']   ?? date('Y-m-d');
+$start_date = (preg_match('/^\d{4}-\d{2}-\d{2}$/', $raw_start) && strtotime($raw_start)) ? $raw_start : $periode_aktif;
+$end_date   = (preg_match('/^\d{4}-\d{2}-\d{2}$/', $raw_end)   && strtotime($raw_end))   ? $raw_end   : date('Y-m-d');
+if ($start_date > $end_date) { $start_date = $end_date; }
 
 // 🔹 Kueri 1: Master Kamar (O(1))
 $q_master = mysqli_query($conn, "SELECT kamar, COUNT(id) AS jumlah_santri FROM santri WHERE kamar IS NOT NULL AND kamar != '' GROUP BY kamar");

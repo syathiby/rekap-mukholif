@@ -55,19 +55,13 @@ function display_flash_message()
         if ($type === 'danger') {
             $swal_icon = 'error';
         }
-
-        // Tentukan judul berdasarkan ikon (EYD yang baik)
-        $title = 'Informasi';
-        if ($swal_icon === 'success') {
-            $title = 'Berhasil!';
-        } elseif ($swal_icon === 'error') {
-            $title = 'Oops...';
-        } elseif ($swal_icon === 'warning') {
-            $title = 'Peringatan!';
+        // Whitelist valid SweetAlert2 icon types
+        $valid_icons = ['success', 'error', 'warning', 'info', 'question'];
+        if (!in_array($swal_icon, $valid_icons, true)) {
+            $swal_icon = 'info';
         }
-        
-        $message_js = addslashes($message);
-        $title_js = addslashes($title);
+
+        $message_json = json_encode($message);
 
         echo "
         <script>
@@ -86,8 +80,7 @@ function display_flash_message()
                 });
                 Toast.fire({
                     icon: '{$swal_icon}',
-                    title: '{$title_js}',
-                    text: '{$message_js}'
+                    html: {$message_json}
                 });
             }
         });

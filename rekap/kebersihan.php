@@ -14,10 +14,13 @@ require_once __DIR__ . '/../layouts/header.php';
 // Ambil periode aktif dari pengaturan
 $periode_aktif = PERIODE_AKTIF;
 
-// Ambil data filter dari form
-$tanggal_awal = $_GET['tanggal_awal'] ?? $periode_aktif;
-$tanggal_akhir = $_GET['tanggal_akhir'] ?? date("Y-m-d");
-$sort_order = $_GET['sort'] ?? 'desc'; // default: terbanyak
+// Ambil data filter dari form & validasi format tanggal
+$raw_awal  = $_GET['tanggal_awal'] ?? $periode_aktif;
+$raw_akhir = $_GET['tanggal_akhir'] ?? date("Y-m-d");
+$tanggal_awal  = (preg_match('/^\d{4}-\d{2}-\d{2}$/', $raw_awal) && strtotime($raw_awal)) ? $raw_awal : $periode_aktif;
+$tanggal_akhir = (preg_match('/^\d{4}-\d{2}-\d{2}$/', $raw_akhir) && strtotime($raw_akhir)) ? $raw_akhir : date("Y-m-d");
+if ($tanggal_awal > $tanggal_akhir) { $tanggal_awal = $tanggal_akhir; }
+$sort_order = ($_GET['sort'] ?? 'desc') === 'asc' ? 'asc' : 'desc'; // default: terbanyak
 
 // Query
 $sql = "

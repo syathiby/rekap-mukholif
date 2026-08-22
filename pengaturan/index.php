@@ -87,6 +87,10 @@ require_once __DIR__ . '/../layouts/header.php';
     .card-api-key:hover { border-color: #7c3aed; }
     .card-api-key .icon-box { background: rgba(124, 58, 237, 0.08); color: #7c3aed; }
 
+    .card-reconcile::before { background: linear-gradient(90deg, #2563eb, #60a5fa); }
+    .card-reconcile:hover { border-color: #2563eb; }
+    .card-reconcile .icon-box { background: rgba(37, 99, 235, 0.08); color: #2563eb; }
+
     .icon-box {
         width: 52px;
         height: 52px;
@@ -237,6 +241,20 @@ require_once __DIR__ . '/../layouts/header.php';
                 <p class="card-desc">Arsipkan data pelanggaran, kebersihan, rapot kepengasuhan dan bersihkan laci utama untuk tahun ajaran baru.</p>
                 <a href="reset-poin/index.php" class="settings-link">
                     Lakukan Tutup Buku <i class="fas fa-arrow-right text-xs"></i>
+                </a>
+            </div>
+        </div>
+        <?php endif; ?>
+
+        <!-- KARTU: Rekonsiliasi Saldo Poin -->
+        <?php if (has_permission('rekonsiliasi_poin_manage')): ?>
+        <div class="col-xl-4 col-md-6">
+            <div class="settings-card card-reconcile">
+                <div class="icon-box"><i class="fas fa-arrows-rotate"></i></div>
+                <h5 class="card-title">Rekonsiliasi Saldo Poin</h5>
+                <p class="card-desc">Audit integritas saldo santri dan sinkronkan secara universal dengan akumulasi riwayat pelanggaran dan reward.</p>
+                <a href="rekonsiliasi-poin/index.php" class="settings-link">
+                    Audit & Rekonsiliasi <i class="fas fa-arrow-right text-xs"></i>
                 </a>
             </div>
         </div>

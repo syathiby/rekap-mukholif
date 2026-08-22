@@ -6,15 +6,26 @@ $end_date = $end_date ?? date('Y-m-d');
 $filter_kelas = $filter_kelas ?? '';
 $filter_kamar = $filter_kamar ?? '';
 
+$filter_kategori = $filter_kategori ?? ($_GET['kategori'] ?? '');
+$filter_bagian   = $filter_bagian   ?? ($_GET['bagian'] ?? '');
+$filter_jp       = $filter_jp       ?? ($_GET['jenis_pelanggaran'] ?? '');
+
 $filter_text = "periode <strong>" . date('d/m/Y', strtotime($start_date)) . " s/d " . date('d/m/Y', strtotime($end_date)) . "</strong>";
 if ($filter_kelas) $filter_text .= ", Kelas <strong>" . htmlspecialchars($filter_kelas) . "</strong>";
 if ($filter_kamar) $filter_text .= ", Kamar <strong>" . htmlspecialchars($filter_kamar) . "</strong>";
+if ($filter_kategori) $filter_text .= ", Kategori <span class='badge bg-danger-subtle text-danger border border-danger-subtle'>" . htmlspecialchars($filter_kategori) . "</span>";
 
 if ($tipe === 'daftar_hitam') {
     $banner_class = 'alert-danger';
     $icon = 'fas fa-exclamation-triangle';
     $title = 'Daftar Hitam Pelanggar';
     $desc = "Peringkat disusun murni berdasarkan <strong>Total Poin Pelanggaran</strong> terbanyak di $filter_text. <br><small>Peringkat 1 (medali merah) adalah santri dengan riwayat pelanggaran paling berat.</small>";
+
+    if ($filter_kategori === 'Sangat Berat') {
+        $desc .= "<div class='mt-2 p-2 rounded bg-white bg-opacity-75 border border-danger border-opacity-25 small text-danger-emphasis'><i class='fas fa-lock me-1 text-danger'></i><strong>Info Pelanggaran Sangat Berat:</strong> Sesuai aturan tata tertib kepengasuhan, pelanggaran kategori Sangat Berat bersifat <strong>permanen</strong> dan tidak diputihkan saat tutup buku tahunan.</div>";
+    } elseif ($start_date < PERIODE_AKTIF) {
+        $desc .= "<div class='mt-2 p-2 rounded bg-white bg-opacity-75 border border-warning border-opacity-50 small text-dark'><i class='fas fa-history me-1 text-warning'></i><strong>Mode Riwayat Lampau:</strong> Menampilkan data pelanggaran yang tercatat sebelum tahun ajaran aktif (" . date('d M Y', strtotime(PERIODE_AKTIF)) . ").</div>";
+    }
 } else {
     $formula_cur = $_GET['formula'] ?? 'semua_aspek';
     $sort_cur    = $_GET['sort_order'] ?? 'terbaik';
