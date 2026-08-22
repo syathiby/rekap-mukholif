@@ -6,16 +6,18 @@ $end_date = $end_date ?? date('Y-m-d');
 $filter_kelas = $filter_kelas ?? '';
 $filter_kamar = $filter_kamar ?? '';
 
-$filter_kategori = $filter_kategori ?? ($_GET['kategori'] ?? '');
-$filter_bagian   = $filter_bagian   ?? ($_GET['bagian'] ?? '');
-$filter_jp       = $filter_jp       ?? ($_GET['jenis_pelanggaran'] ?? '');
-
 $filter_text = "periode <strong>" . date('d/m/Y', strtotime($start_date)) . " s/d " . date('d/m/Y', strtotime($end_date)) . "</strong>";
 if ($filter_kelas) $filter_text .= ", Kelas <strong>" . htmlspecialchars($filter_kelas) . "</strong>";
 if ($filter_kamar) $filter_text .= ", Kamar <strong>" . htmlspecialchars($filter_kamar) . "</strong>";
-if ($filter_kategori) $filter_text .= ", Kategori <span class='badge bg-danger-subtle text-danger border border-danger-subtle'>" . htmlspecialchars($filter_kategori) . "</span>";
 
 if ($tipe === 'daftar_hitam') {
+    $filter_kategori = $filter_kategori ?? ($_GET['kategori'] ?? '');
+    $filter_bagian   = $filter_bagian   ?? ($_GET['bagian'] ?? '');
+    $filter_jp       = $filter_jp       ?? ($_GET['jenis_pelanggaran'] ?? '');
+
+    if ($filter_bagian)   $filter_text .= ", Bagian <strong>" . htmlspecialchars($filter_bagian) . "</strong>";
+    if ($filter_kategori) $filter_text .= ", Kategori <span class='badge bg-danger-subtle text-danger border border-danger-subtle'>" . htmlspecialchars($filter_kategori) . "</span>";
+
     $banner_class = 'alert-danger';
     $icon = 'fas fa-exclamation-triangle';
     $title = 'Daftar Hitam Pelanggar';

@@ -92,6 +92,9 @@ if ($tipe === 'daftar_hitam') {
 // TIPE 2: PERINGKAT SANTRI (merger: karakter + santri_teladan)
 // ================================================================
 if ($tipe === 'peringkat') {
+    $filter_bagian   = null;
+    $filter_kategori = null;
+    $filter_jp       = null;
 
     $formula        = $_GET['formula']        ?? 'semua_aspek'; // 'semua_aspek' | 'neraca'
     $hide_violators = 1; // Selalu 'Tanpa Pelanggaran' untuk semua_aspek
@@ -709,7 +712,17 @@ document.addEventListener('DOMContentLoaded', function () {
         document.querySelectorAll('.f-semua-aspek').forEach(el => el.classList.toggle('hidden', tipe !== 'peringkat' || formula !== 'semua_aspek'));
     }
 
-    tipeSelect.addEventListener('change', updateFilters);
+    tipeSelect.addEventListener('change', () => {
+        if (tipeSelect.value === 'peringkat') {
+            const bagEl = document.getElementById('bagian');
+            const katEl = document.getElementById('kategori');
+            const jpEl  = document.getElementById('jenis_pelanggaran');
+            if (bagEl) bagEl.value = '';
+            if (katEl) katEl.value = '';
+            if (jpEl)  jpEl.value  = '';
+        }
+        updateFilters();
+    });
     if (formulaSel) formulaSel.addEventListener('change', updateFilters);
 
     // ── Client-side search ─────────────────────────────────────────────────────
