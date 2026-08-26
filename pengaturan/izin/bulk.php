@@ -29,69 +29,34 @@ while($u = $usersResult->fetch_assoc()) $users[] = $u;
 
 <style>
 :root {
-    --bg:         #f8fafc; /* Slate 50 - fresh, clean, professional */
+    --bg:         #f8fafc;
     --surface:    #ffffff;
-    --border:     #e2e8f0; /* Slate 200 - subtle, clean borders */
-    --border-2:   #cbd5e1; /* Slate 300 - active borders */
-    --text-1:     #0f172a; /* Slate 900 - high contrast, highly readable */
-    --text-2:     #475569; /* Slate 600 - secondary text */
-    --text-3:     #64748b; /* Slate 500 - tertiary/muted text */
+    --border:     #e2e8f0;
+    --border-2:   #cbd5e1;
+    --text-1:     #0f172a;
+    --text-2:     #475569;
+    --text-3:     #64748b;
     
-    --accent:     #4f46e5; /* Indigo 600 - professional accent */
-    --accent-bg:  #e0e7ff; /* Indigo 100 - active background tint */
-    --accent-dim: #f5f3ff; /* Indigo 50 - extremely light tint */
+    --accent:     #2563eb; /* AsuhTrack Royal Blue */
+    --accent-bg:  #eff6ff;
+    --accent-dim: #f8fafc;
     
-    --red:        #e11d48; /* Rose 600 - natural warm red for destructive/remove actions */
-    --red-bg:     #fff1f2; /* Rose 50 - soft red bg */
-    --red-dim:    #ffe4e6; /* Rose 100 - soft red border */
+    --red:        #dc2626; /* Rose / Red */
+    --red-bg:     #fef2f2;
+    --red-dim:    #fee2e2;
     
-    --green:      #059669; /* Emerald 600 - natural green for success/grant actions */
-    --green-bg:   #ecfdf5; /* Emerald 50 - soft green bg */
-    --green-dim:  #d1fae5; /* Emerald 100 - soft green border */
+    --green:      #16a34a; /* Emerald / Green */
+    --green-bg:   #f0fdf4;
+    --green-dim:  #dcfce7;
     
-    --font:       'Poppins', 'DM Sans', sans-serif;
+    --font:       'Poppins', sans-serif;
     --mono:       'JetBrains Mono', monospace;
     
     --card-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05), 0 2px 4px -2px rgba(0, 0, 0, 0.05);
     --card-shadow-hover: 0 10px 15px -3px rgba(0, 0, 0, 0.08), 0 4px 6px -4px rgba(0, 0, 0, 0.08);
 }
 
-body { background: var(--bg); }
-
-/* ── Wrap ──────────────────────────────────────────────────────── */
-.bm {
-    max-width: 1200px;
-    margin: 0 auto;
-    padding: 3rem 2rem 8rem;
-    font-family: var(--font);
-    color: var(--text-1);
-}
-
-/* ── Page Header ───────────────────────────────────────────────── */
-.bm-top {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    gap: 1.5rem;
-    margin-bottom: 3rem;
-    padding-bottom: 2rem;
-    border-bottom: 1px solid var(--border);
-}
-
-.bm-top-left h1 {
-    font-size: 1.85rem;
-    font-weight: 700;
-    letter-spacing: -.025em;
-    color: var(--text-1);
-    margin: 0 0 .5rem;
-}
-
-.bm-top-left p {
-    font-size: 0.95rem;
-    color: var(--text-3);
-    margin: 0;
-}
-
+/* ── Segmented Nav Track ───────────────────────────────────────── */
 .nav-segmented-control {
     display: inline-flex;
     background: #f1f5f9;
@@ -102,6 +67,7 @@ body { background: var(--bg); }
     max-width: 100%;
     flex-wrap: nowrap;
     overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
     scrollbar-width: none;
 }
 .nav-segmented-control::-webkit-scrollbar {
@@ -118,6 +84,7 @@ body { background: var(--bg); }
     color: #64748b;
     text-decoration: none;
     white-space: nowrap;
+    flex-shrink: 0;
     transition: all 0.18s cubic-bezier(0.4, 0, 0.2, 1);
 }
 .nav-segment-link:hover {
@@ -126,37 +93,8 @@ body { background: var(--bg); }
 }
 .nav-segment-link.active {
     background: #ffffff;
-    color: #4f46e5;
+    color: var(--accent);
     box-shadow: 0 2px 6px rgba(15, 23, 42, 0.08), 0 0 0 1px rgba(226, 232, 240, 0.8);
-}
-
-@media (max-width: 991px) {
-    .bm-top {
-        flex-direction: column;
-        align-items: flex-start;
-    }
-    .nav-segmented-control {
-        width: 100%;
-        display: grid;
-        grid-template-columns: repeat(4, 1fr);
-        text-align: center;
-    }
-    .nav-segment-link {
-        justify-content: center;
-        padding: 0.45rem 0.4rem;
-        font-size: 0.76rem;
-    }
-}
-
-@media (max-width: 576px) {
-    .nav-segmented-control {
-        grid-template-columns: repeat(2, 1fr);
-        gap: 4px;
-    }
-    .nav-segment-link {
-        padding: 0.45rem 0.5rem;
-        font-size: 0.74rem;
-    }
 }
 
 /* ── Alert ─────────────────────────────────────────────────────── */
@@ -667,14 +605,21 @@ body { background: var(--bg); }
 }
 </style>
 
-<div class="bm">
+<div class="dashboard-wrapper container-fluid px-0 px-md-2 mt-2 mb-5">
 
-    <!-- ── Header ──────────────────────────────────────────────── -->
-    <div class="bm-top">
-        <div class="bm-top-left">
-            <h1>Edit Izin Massal</h1>
-            <p>Terapkan atau cabut akses ke beberapa pengguna sekaligus.</p>
+    <!-- Header Page (Standardized) -->
+    <div class="d-flex flex-column flex-xl-row justify-content-between align-items-start align-items-xl-center mb-4 px-1 gap-3">
+        <div class="d-flex align-items-center">
+            <div class="d-flex align-items-center justify-content-center rounded-3 me-3 shadow-sm flex-shrink-0" style="width: 48px; height: 48px; background: linear-gradient(135deg, #2563eb, #3b82f6); color: white;">
+                <i class="fas fa-users-cog fa-lg"></i>
+            </div>
+            <div>
+                <h3 class="fw-bold mb-0 text-dark" style="letter-spacing: -0.3px; font-size: 1.35rem;">Edit Izin Massal</h3>
+                <p class="text-muted mb-0" style="font-size: 0.85rem;">Terapkan atau cabut hak akses khusus ke beberapa pengguna sekaligus.</p>
+            </div>
         </div>
+        
+        <!-- Segmented Navigation Control (Standardized) -->
         <nav class="nav-segmented-control" aria-label="Navigasi Pengaturan Izin">
             <a href="index.php" class="nav-segment-link">
                 <i class="fas fa-user-shield"></i>
@@ -683,6 +628,10 @@ body { background: var(--bg); }
             <a href="role.php" class="nav-segment-link">
                 <i class="fas fa-layer-group"></i>
                 <span>Default Role</span>
+            </a>
+            <a href="manage_roles.php" class="nav-segment-link">
+                <i class="fas fa-tags"></i>
+                <span>Kelola Role</span>
             </a>
             <a href="bulk.php" class="nav-segment-link active">
                 <i class="fas fa-users-cog"></i>
@@ -902,7 +851,7 @@ body { background: var(--bg); }
                 icon: 'warning',
                 title: 'Belum ada pengguna dipilih',
                 text: 'Silakan pilih minimal satu pengguna untuk menerapkan perubahan.',
-                confirmButtonColor: '#4f46e5'
+                confirmButtonColor: '#2563eb'
             });
             return;
         }
@@ -913,7 +862,7 @@ body { background: var(--bg); }
                 icon: 'info',
                 title: 'Tidak ada tindakan',
                 text: 'Semua izin masih diatur ke "Biarkan". Anda harus menentukan minimal satu tindakan (Berikan/Cabut).',
-                confirmButtonColor: '#4f46e5'
+                confirmButtonColor: '#2563eb'
             });
             return;
         }
@@ -923,7 +872,7 @@ body { background: var(--bg); }
             text: `Anda akan menerapkan pengaturan izin ini ke ${selected.size} pengguna terpilih.`,
             icon: 'question',
             showCancelButton: true,
-            confirmButtonColor: '#4f46e5',
+            confirmButtonColor: '#2563eb',
             cancelButtonColor: '#64748b',
             confirmButtonText: 'Ya, Terapkan!',
             cancelButtonText: 'Batal',

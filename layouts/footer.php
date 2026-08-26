@@ -307,27 +307,41 @@ if (function_exists('has_permission')) {
     })();
 
     // ==========================================
-    // GLOBAL FLASH MESSAGE HANDLER (SweetAlert2)
+    // GLOBAL FLASH MESSAGE HANDLER (SweetAlert2 Modern Toast)
     // ==========================================
-    <?php if (isset($_SESSION['flash_message'])): ?>
-        <?php 
-            $f_type = 'success';
-            $f_msg = 'Operasi berhasil.';
+    <?php 
+        $toast_msg = null;
+        $toast_type = 'success';
+
+        if (isset($_SESSION['flash_message'])) {
             if (is_array($_SESSION['flash_message'])) {
-                $f_type = $_SESSION['flash_message']['type'] ?? 'success';
-                $f_msg = $_SESSION['flash_message']['message'] ?? '';
+                $toast_type = $_SESSION['flash_message']['type'] ?? 'success';
+                $toast_msg = $_SESSION['flash_message']['message'] ?? '';
             } else {
-                $f_msg = $_SESSION['flash_message'];
-                if (in_array(strtolower($f_msg), ['success', 'danger', 'warning', 'info', 'error'])) {
-                    $f_type = strtolower($f_msg);
-                    $f_msg = ($f_type == 'success') ? 'Operasi berhasil.' : 'Terjadi kesalahan.';
+                $toast_msg = $_SESSION['flash_message'];
+                if (in_array(strtolower((string)$toast_msg), ['success', 'danger', 'warning', 'info', 'error'])) {
+                    $toast_type = strtolower((string)$toast_msg);
+                    $toast_msg = ($toast_type == 'success') ? 'Operasi berhasil.' : 'Terjadi kesalahan.';
                 }
             }
-            if ($f_type == 'danger') $f_type = 'error'; // Map bootstrap danger to sweetalert error
-            unset($_SESSION['flash_message']); // Bersihkan session
-        ?>
+            unset($_SESSION['flash_message']);
+        } elseif (isset($_SESSION['success_message'])) {
+            $toast_type = 'success';
+            $toast_msg = $_SESSION['success_message'];
+            unset($_SESSION['success_message']);
+        } elseif (isset($_SESSION['error_message'])) {
+            $toast_type = 'error';
+            $toast_msg = $_SESSION['error_message'];
+            unset($_SESSION['error_message']);
+        }
+
+        if ($toast_type === 'danger') $toast_type = 'error';
+    ?>
+    <?php if ($toast_msg): ?>
         document.addEventListener('DOMContentLoaded', function() {
-            showToast("<?= addslashes(htmlspecialchars($f_msg)) ?>", "<?= addslashes(htmlspecialchars($f_type)) ?>");
+            if (typeof showToast === 'function') {
+                showToast("<?= addslashes(strip_tags(str_replace(['✅', '❌', '⚠️'], '', (string)$toast_msg))) ?>", "<?= addslashes($toast_type) ?>");
+            }
         });
     <?php endif; ?>
 </script>

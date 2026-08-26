@@ -128,19 +128,16 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     // ─── PROSES VERIFIKASI KREDENSIAL ────────────────────────────────────────
     // Dilakukan lebih awal agar admin bisa bypass blokir jika password benar
     $stmt = $conn->prepare("
-        SELECT
-            u.id, u.username, u.password, u.nama_lengkap, u.role, u.is_active,
-            GROUP_CONCAT(p.nama_izin) AS permissions
-        FROM users u
-        LEFT JOIN user_permissions up ON u.id = up.user_id
-        LEFT JOIN permissions p ON up.permission_id = p.id
-        WHERE u.username = ?
-        GROUP BY u.id
+        SELECT id, username, password, nama_lengkap, role, is_active
+        FROM users
+        WHERE username = ?
+        LIMIT 1
     ");
     $stmt->bind_param("s", $username);
     $stmt->execute();
     $result = $stmt->get_result();
     $user   = $result->fetch_assoc();
+    $stmt->close();
 
     $password_correct = false;
     $needs_rehash     = false;
@@ -202,14 +199,15 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             session_regenerate_id(true);
             
             // Simpan semua info penting ke session, termasuk kantong tiketnya
-            $_SESSION['user_id'] = $user['id'];
+            $_SESSION['user_id'] = (int)$user['id'];
             $_SESSION['username'] = $user['username'];
             $_SESSION['nama_lengkap'] = $user['nama_lengkap'];
             $_SESSION['role'] = strtolower(trim($user['role'])); // Pastikan role huruf kecil untuk validasi
             $_SESSION['login_time'] = time(); // Set login timestamp for 1 hour auto-logout
             
-            // Buat "kantong tiket" buat user
-            $_SESSION['permissions'] = $user['permissions'] ? explode(',', $user['permissions']) : [];
+            // Buat "kantong tiket" efektif buat user (Role + Allow/Deny Overrides)
+            $_SESSION['permissions'] = get_user_effective_permissions($conn, $user['id'], $user['role']);
+            $_SESSION['permissions_version'] = get_permissions_version();
 
             // Catat log login
             write_activity_log('LOGIN', 'auth', "User '" . $user['username'] . "' berhasil login ke sistem");

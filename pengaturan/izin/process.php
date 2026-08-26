@@ -3,10 +3,6 @@ if (session_status() === PHP_SESSION_NONE) { session_start(); }
 require_once __DIR__ . '/../../bootstrap/init.php';
 guard('izin_manage');
 
-// =================================================================
-// LOGIKA PROSES DIMULAI DI SINI
-// =================================================================
-
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     // Validasi CSRF Token
     if (!isset($_POST['csrf_token']) || !isset($_SESSION['csrf_token']) || !hash_equals($_SESSION['csrf_token'], $_POST['csrf_token'])) {
@@ -15,7 +11,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         exit;
     }
 
-    // Validasi input
+    // Validasi input user_id
     if (!isset($_POST['user_id']) || empty($_POST['user_id'])) {
         http_response_code(403);
         require __DIR__ . '/../../bootstrap/access_denied.php';
@@ -23,115 +19,167 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     }
 
     $userId = (int)$_POST['user_id'];
-
-    // --- LOGIKA BARU: CEGAH USER MENGEDIT IZINNYA SENDIRI ---
-    $loggedInUserId = $_SESSION['user_id'] ?? null; 
+    $loggedInUserId = (int)($_SESSION['user_id'] ?? 0); 
     
+    // Cegah user mengedit izinnya sendiri
     if ($userId === $loggedInUserId) {
-        // Jika user mencoba mengedit izinnya sendiri, lempar ke access_denied.php
         http_response_code(403);
         require __DIR__ . '/../../bootstrap/access_denied.php';
         exit;
     }
     
-    // --- LOGIKA BARU: PROTEKSI ROLE PENGELOLA & ADMIN ---
-    $stmt_check_role = $conn->prepare("SELECT role FROM users WHERE id = ?");
+    // Ambil data user target
+    $stmt_check_role = $conn->prepare("SELECT username, nama_lengkap, role FROM users WHERE id = ?");
     $stmt_check_role->bind_param("i", $userId);
     $stmt_check_role->execute();
-    $result_role = $stmt_check_role->get_result();
-    if ($row_role = $result_role->fetch_assoc()) {
-        $targetRole = strtolower($row_role['role']);
-        if ($targetRole === 'admin' || $targetRole === 'pengelola') {
-            if (!isset($_SESSION['role']) || strtolower($_SESSION['role']) !== 'admin') {
-                $stmt_check_role->close();
-                http_response_code(403);
-                require __DIR__ . '/../../bootstrap/access_denied.php';
-                exit;
-            }
-        }
-    }
+    $result_user = $stmt_check_role->get_result();
+    $targetUser = $result_user->fetch_assoc();
     $stmt_check_role->close();
-    // --- AKHIR DARI LOGIKA BARU ---
 
-    // =================================================================
-    // ✅ PERUBAHAN DIMULAI DI SINI
-    // =================================================================
-    // Ambil nama user dulu buat notifikasi yang lebih cakep
-    $userName = ''; // Siapin variabel kosong
-    $stmt_get_name = $conn->prepare("SELECT username FROM users WHERE id = ?");
-    $stmt_get_name->bind_param("i", $userId);
-    $stmt_get_name->execute();
-    $result_name = $stmt_get_name->get_result();
-    if ($user_row = $result_name->fetch_assoc()) {
-        $userName = $user_row['username']; // Dapetin namanya
+    if (!$targetUser) {
+        $_SESSION['error_message'] = "❌ Pengguna tidak ditemukan.";
+        header("Location: index.php");
+        exit;
     }
-    $stmt_get_name->close();
-    // =================================================================
-    // ✅ AKHIR DARI PERUBAHAN
-    // =================================================================
 
-    $permissionIds = $_POST['permissions'] ?? [];
+    $targetRole = strtolower(trim((string)$targetUser['role']));
+    $userName = $targetUser['username'];
 
-    // Ambil nama izin yang dicentang buat dicatat di log
-    $assigned_perm_names = [];
-    if (!empty($permissionIds)) {
-        $ids_str = implode(',', array_map('intval', $permissionIds));
-        // Kueri nama izin dari database
-        $q_perm = $conn->query("SELECT nama_izin FROM permissions WHERE id IN ($ids_str)");
-        if ($q_perm) {
-            while ($p_row = $q_perm->fetch_assoc()) {
-                $assigned_perm_names[] = $p_row['nama_izin'];
-            }
+    // Proteksi role pengelola & admin bagi non-admin
+    $is_admin = (isset($_SESSION['role']) && strtolower($_SESSION['role']) === 'admin');
+    if (($targetRole === 'admin' || $targetRole === 'pengelola') && !$is_admin) {
+        http_response_code(403);
+        require __DIR__ . '/../../bootstrap/access_denied.php';
+        exit;
+    }
+
+    $action = $_POST['action'] ?? 'save_overrides';
+
+    // ── AKSI 1: RESET SEMUA KE DEFAULT ROLE ──────────────────────────
+    if ($action === 'reset_all') {
+        $conn->begin_transaction();
+        try {
+            $stmt_del = $conn->prepare("DELETE FROM user_permissions WHERE user_id = ?");
+            $stmt_del->bind_param("i", $userId);
+            $stmt_del->execute();
+            $stmt_del->close();
+
+            $conn->commit();
+            touch_permissions_version();
+
+            write_activity_log('RESET_PERMISSION', 'izin', "Mereset semua izin khusus user '" . htmlspecialchars($userName) . "' kembali ke default role", [
+                'target_user_id' => $userId,
+                'target_username' => $userName,
+                'role' => $targetRole
+            ]);
+
+            $_SESSION['flash_message'] = [
+                'type' => 'success',
+                'message' => "Izin @" . htmlspecialchars($userName) . " di-reset ke default role (" . htmlspecialchars(ucfirst($targetRole)) . ")"
+            ];
+        } catch (Exception $e) {
+            $conn->rollback();
+            $_SESSION['flash_message'] = [
+                'type' => 'error',
+                'message' => "Gagal mereset izin: " . $e->getMessage()
+            ];
         }
+
+        header("Location: index.php?user_id=" . $userId);
+        exit;
     }
 
-    // Gunakan transaksi biar aman!
+    // ── AKSI 2: SIMPAN OVERRIDES (ALLOW & DENY) ──────────────────────
+    $submittedOverrides = $_POST['overrides'] ?? []; // [perm_id => 'default' | 'allow' | 'deny']
+
+    // Ambil daftar izin bawaan role user target
+    $rolePermissionIds = [];
+    $stmtRole = $conn->prepare("SELECT permission_id FROM role_permissions WHERE role = ?");
+    $stmtRole->bind_param("s", $targetRole);
+    $stmtRole->execute();
+    $resRole = $stmtRole->get_result();
+    while ($row = $resRole->fetch_assoc()) {
+        $rolePermissionIds[] = (int)$row['permission_id'];
+    }
+    $stmtRole->close();
+
     $conn->begin_transaction();
     try {
-        // 1. Hapus semua tiket lama milik user ini. Biar bersih.
-        $stmt_delete = $conn->prepare("DELETE FROM user_permissions WHERE user_id = ?");
-        $stmt_delete->bind_param("i", $userId);
-        $stmt_delete->execute();
-        $stmt_delete->close();
+        // 1. Bersihkan semua override lama milik user ini
+        $stmt_del = $conn->prepare("DELETE FROM user_permissions WHERE user_id = ?");
+        $stmt_del->bind_param("i", $userId);
+        $stmt_del->execute();
+        $stmt_del->close();
 
-        // 2. Jika ada tiket baru yang dicentang, masukkan satu per satu.
-        if (!empty($permissionIds)) {
-            $stmt_insert = $conn->prepare("INSERT INTO user_permissions (user_id, permission_id) VALUES (?, ?)");
-            foreach ($permissionIds as $permId) {
-                $permIdInt = (int)$permId;
-                $stmt_insert->bind_param("ii", $userId, $permIdInt);
-                $stmt_insert->execute();
-            }
-            $stmt_insert->close();
-        }
-
-        // Jika semua proses di atas lancar, kunci perubahannya!
-        $conn->commit();
+        // 2. Simpan hanya baris yang BENAR-BENAR BERBEDA dari bawaan role
+        $stmt_ins = $conn->prepare("INSERT INTO user_permissions (user_id, permission_id, is_allowed) VALUES (?, ?, ?)");
         
-        // Catat log perubahan izin
-        write_activity_log('UPDATE_PERMISSION', 'izin', "Memperbarui izin akses untuk user '" . htmlspecialchars($userName) . "'", [
+        $allowCount = 0;
+        $denyCount = 0;
+        $overrideDetails = [];
+
+        foreach ($submittedOverrides as $permId => $choice) {
+            $permIdInt = (int)$permId;
+            $hasRoleDefault = in_array($permIdInt, $rolePermissionIds, true);
+
+            if ($choice === 'allow') {
+                // Hanya perlu disimpan ke DB jika role aslinya BELUM punya
+                if (!$hasRoleDefault) {
+                    $isAllowedVal = 1;
+                    $stmt_ins->bind_param("iii", $userId, $permIdInt, $isAllowedVal);
+                    $stmt_ins->execute();
+                    $allowCount++;
+                    $overrideDetails[] = "Allow: ID $permIdInt";
+                }
+            } elseif ($choice === 'deny') {
+                // Hanya perlu disimpan ke DB jika role aslinya SUDAH punya (untuk dicabut/diblokir)
+                if ($hasRoleDefault) {
+                    $isAllowedVal = 0;
+                    $stmt_ins->bind_param("iii", $userId, $permIdInt, $isAllowedVal);
+                    $stmt_ins->execute();
+                    $denyCount++;
+                    $overrideDetails[] = "Deny: ID $permIdInt";
+                }
+            }
+            // Jika 'default': tidak perlu simpan apa-apa
+        }
+        $stmt_ins->close();
+
+        $conn->commit();
+        touch_permissions_version();
+
+        // Catat log aktivitas
+        write_activity_log('UPDATE_PERMISSION', 'izin', "Memperbarui izin khusus untuk user '" . htmlspecialchars($userName) . "'", [
             'target_user_id' => $userId,
             'target_username' => $userName,
-            'permissions_assigned' => $assigned_perm_names
+            'role' => $targetRole,
+            'allow_overrides_count' => $allowCount,
+            'deny_overrides_count' => $denyCount
         ]);
 
-        // ✅ UBAH NOTIFIKASI: Sebutin nama user-nya
-        $_SESSION['success_message'] = "✅ Tiket untuk user '" . htmlspecialchars($userName) . "' berhasil diperbarui!";
+        $msgParts = [];
+        if ($allowCount > 0) $msgParts[] = "$allowCount izin tambahan";
+        if ($denyCount > 0) $msgParts[] = "$denyCount izin dicabut";
+        $summaryTxt = !empty($msgParts) ? " • " . implode(', ', $msgParts) : "";
 
-    } catch (mysqli_sql_exception $exception) {
-        // Jika ada satu saja error, batalkan semua perubahan!
+        $_SESSION['flash_message'] = [
+            'type' => 'success',
+            'message' => "Izin @" . htmlspecialchars($userName) . " berhasil diperbarui" . $summaryTxt
+        ];
+
+    } catch (Exception $e) {
         $conn->rollback();
-        $_SESSION['error_message'] = "❌ Gagal memperbarui tiket: " . $exception->getMessage();
+        $_SESSION['flash_message'] = [
+            'type' => 'error',
+            'message' => "Gagal memperbarui izin: " . $e->getMessage()
+        ];
     }
 
-    // Setelah selesai, kembalikan ke halaman loket, sambil bawa ID user biar langsung nampilin user yg sama
-    $redirect_user_id = $userId ?? ($_POST['user_id'] ?? '');
-    header("Location: index.php?user_id=" . $redirect_user_id);
+    header("Location: index.php?user_id=" . $userId);
     exit;
+
 } else {
-    // Jika file ini diakses langsung via URL, tendang
     http_response_code(403);
     require __DIR__ . '/../../bootstrap/access_denied.php';
     exit;
 }
-?>

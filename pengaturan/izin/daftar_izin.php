@@ -46,13 +46,20 @@ if ($resRolePerm) {
     }
 }
 
-// 4. Ambil Mapping Izin User (User Permissions)
-$userPermMap = [];
-$resUserPerm = $conn->query("SELECT user_id, permission_id FROM user_permissions");
+// 4. Ambil Mapping Izin User Override (User Permissions: Allow & Deny)
+$userAllowMap = [];
+$userDenyMap = [];
+$resUserPerm = $conn->query("SELECT user_id, permission_id, is_allowed FROM user_permissions");
 if ($resUserPerm) {
     while ($up = $resUserPerm->fetch_assoc()) {
-        if (isset($usersMap[$up['user_id']])) {
-            $userPermMap[$up['permission_id']][] = $usersMap[$up['user_id']];
+        $uid = (int)$up['user_id'];
+        $pid = (int)$up['permission_id'];
+        if (isset($usersMap[$uid])) {
+            if ((int)$up['is_allowed'] === 1) {
+                $userAllowMap[$pid][] = $usersMap[$uid];
+            } else {
+                $userDenyMap[$pid][] = $usersMap[$uid];
+            }
         }
     }
 }
@@ -67,7 +74,8 @@ if ($permResult) {
     while ($row = $permResult->fetch_assoc()) {
         $pId = (int)$row['id'];
         $row['roles'] = $rolePermMap[$pId] ?? [];
-        $row['users'] = $userPermMap[$pId] ?? [];
+        $row['users_allow'] = $userAllowMap[$pId] ?? [];
+        $row['users_deny'] = $userDenyMap[$pId] ?? [];
         
         $permissions[$row['grup']][] = $row;
         $allPermissionsList[] = $row;
@@ -89,10 +97,10 @@ $totalUsers = count($usersMap);
        ========================================================================== */
     
     :root {
-        --di-primary: #0284c7;
-        --di-primary-dark: #0369a1;
-        --di-primary-light: #e0f2fe;
-        --di-primary-border: #bae6fd;
+        --di-primary: #2563eb;
+        --di-primary-dark: #1d4ed8;
+        --di-primary-light: #eff6ff;
+        --di-primary-border: #bfdbfe;
         --di-slate-50: #f8fafc;
         --di-slate-100: #f1f5f9;
         --di-slate-200: #e2e8f0;
@@ -536,26 +544,18 @@ $totalUsers = count($usersMap);
     @media (max-width: 991px) {
         .nav-segmented-control {
             width: 100%;
-            display: grid;
-            grid-template-columns: repeat(4, 1fr);
-            text-align: center;
+            overflow-x: auto;
+            flex-wrap: nowrap;
+            -webkit-overflow-scrolling: touch;
         }
         .nav-segment-link {
-            justify-content: center;
-            padding: 0.45rem 0.4rem;
-            font-size: 0.76rem;
+            flex-shrink: 0;
+            padding: 0.45rem 0.75rem;
+            font-size: 0.78rem;
         }
     }
 
     @media (max-width: 576px) {
-        .nav-segmented-control {
-            grid-template-columns: repeat(2, 1fr);
-            gap: 4px;
-        }
-        .nav-segment-link {
-            padding: 0.45rem 0.5rem;
-            font-size: 0.74rem;
-        }
         .stat-card-pro {
             padding: 0.75rem 0.85rem;
             gap: 0.65rem;
@@ -580,7 +580,7 @@ $totalUsers = count($usersMap);
     <!-- ─── HEADER PAGE & SEGMENTED NAV ─── -->
     <div class="d-flex flex-column flex-xl-row justify-content-between align-items-start align-items-xl-center mb-4 px-1 gap-3">
         <div class="d-flex align-items-center">
-            <div class="d-flex align-items-center justify-content-center rounded-3 me-3 shadow-sm flex-shrink-0" style="width: 48px; height: 48px; background: linear-gradient(135deg, #0284c7 0%, #0369a1 100%); color: white;">
+            <div class="d-flex align-items-center justify-content-center rounded-3 me-3 shadow-sm flex-shrink-0" style="width: 48px; height: 48px; background: linear-gradient(135deg, #2563eb 0%, #3b82f6 100%); color: white;">
                 <i class="fas fa-network-wired fa-lg"></i>
             </div>
             <div>
@@ -598,6 +598,10 @@ $totalUsers = count($usersMap);
             <a href="role.php" class="nav-segment-link">
                 <i class="fas fa-layer-group"></i>
                 <span>Default Role</span>
+            </a>
+            <a href="manage_roles.php" class="nav-segment-link">
+                <i class="fas fa-tags"></i>
+                <span>Kelola Role</span>
             </a>
             <a href="bulk.php" class="nav-segment-link">
                 <i class="fas fa-users-cog"></i>
@@ -703,14 +707,18 @@ $totalUsers = count($usersMap);
             <?php foreach ($allPermissionsList as $perm): 
                 $permId = $perm['id'];
                 $rolesGranted = $perm['roles'];
-                $usersGranted = $perm['users'];
-                $totalGrantedUsers = count($usersGranted);
+                $usersAllow = $perm['users_allow'] ?? [];
+                $usersDeny = $perm['users_deny'] ?? [];
+                $totalOverrides = count($usersAllow) + count($usersDeny);
                 
                 $searchContent = strtolower($perm['nama_izin'] . ' ' . $perm['deskripsi'] . ' ' . $perm['grup']);
                 foreach ($rolesGranted as $rKey) {
                     $searchContent .= ' ' . strtolower($rolesMap[$rKey] ?? $rKey);
                 }
-                foreach ($usersGranted as $uObj) {
+                foreach ($usersAllow as $uObj) {
+                    $searchContent .= ' ' . strtolower($uObj['nama_lengkap'] . ' ' . $uObj['username']);
+                }
+                foreach ($usersDeny as $uObj) {
                     $searchContent .= ' ' . strtolower($uObj['nama_lengkap'] . ' ' . $uObj['username']);
                 }
             ?>
@@ -759,46 +767,31 @@ $totalUsers = count($usersMap);
 
                             <hr class="my-0" style="border-color: #f1f5f9;">
 
-                            <!-- Bagian 2: Pengguna Khusus yang Memiliki Izin -->
+                            <!-- Bagian 2: Pengguna Khusus (Overrides: Allow / Deny) -->
                             <div>
                                 <div class="section-label-pro">
-                                    <span><i class="fas fa-user-check text-success me-1"></i> Pengguna Memiliki Izin</span>
-                                    <span class="badge bg-light text-muted border px-1.5 py-0.5" style="font-size: 0.68rem; font-weight: 600;"><?= $totalGrantedUsers ?> User</span>
+                                    <span><i class="fas fa-sliders text-warning me-1"></i> Pengecualian Khusus User</span>
+                                    <span class="badge bg-light text-muted border px-1.5 py-0.5" style="font-size: 0.68rem; font-weight: 600;"><?= $totalOverrides ?> Kustom</span>
                                 </div>
                                 
-                                <?php if (!empty($usersGranted)): ?>
+                                <?php if ($totalOverrides > 0): ?>
                                     <div class="d-flex flex-wrap gap-1 mt-1">
-                                        <?php 
-                                        $initialLimit = 6;
-                                        $displayUsers = array_slice($usersGranted, 0, $initialLimit);
-                                        $hiddenUsers = array_slice($usersGranted, $initialLimit);
-                                        ?>
-                                        <?php foreach ($displayUsers as $u): 
-                                            $initial = strtoupper(substr($u['nama_lengkap'], 0, 1));
-                                        ?>
-                                            <a href="index.php?user_id=<?= (int)$u['id'] ?>" class="chip-user-pro" title="Atur izin <?= htmlspecialchars($u['nama_lengkap']) ?> (@<?= htmlspecialchars($u['username']) ?>)">
-                                                <span class="chip-user-avatar"><?= $initial ?></span>
+                                        <?php foreach ($usersAllow as $u): ?>
+                                            <a href="index.php?user_id=<?= (int)$u['id'] ?>" class="chip-user-pro" style="background:#f0fdf4; border-color:#bbf7d0; color:#15803d;" title="Izin Tambahan Khusus (+ Allow) untuk <?= htmlspecialchars($u['nama_lengkap']) ?>">
+                                                <span class="chip-user-avatar" style="background:#16a34a; color:#fff; font-weight:bold;">+</span>
                                                 <span class="fw-semibold"><?= htmlspecialchars($u['nama_lengkap']) ?></span>
                                             </a>
                                         <?php endforeach; ?>
-
-                                        <?php if (!empty($hiddenUsers)): ?>
-                                            <?php foreach ($hiddenUsers as $u): 
-                                                $initial = strtoupper(substr($u['nama_lengkap'], 0, 1));
-                                            ?>
-                                                <a href="index.php?user_id=<?= (int)$u['id'] ?>" class="chip-user-pro user-extra-chip user-extra-<?= $permId ?>" style="display: none !important;" title="Atur izin <?= htmlspecialchars($u['nama_lengkap']) ?> (@<?= htmlspecialchars($u['username']) ?>)">
-                                                    <span class="chip-user-avatar"><?= $initial ?></span>
-                                                    <span class="fw-semibold"><?= htmlspecialchars($u['nama_lengkap']) ?></span>
-                                                </a>
-                                            <?php endforeach; ?>
-                                            <button type="button" class="btn-expand-users" data-count="<?= count($hiddenUsers) ?>" onclick="toggleExtraUsers(<?= $permId ?>, this)">
-                                                +<?= count($hiddenUsers) ?> lainnya
-                                            </button>
-                                        <?php endif; ?>
+                                        <?php foreach ($usersDeny as $u): ?>
+                                            <a href="index.php?user_id=<?= (int)$u['id'] ?>" class="chip-user-pro" style="background:#fef2f2; border-color:#fecaca; color:#b91c1c;" title="Izin Dicabut Khusus (- Deny) untuk <?= htmlspecialchars($u['nama_lengkap']) ?>">
+                                                <span class="chip-user-avatar" style="background:#dc2626; color:#fff; font-weight:bold;">-</span>
+                                                <span class="fw-semibold text-decoration-line-through"><?= htmlspecialchars($u['nama_lengkap']) ?></span>
+                                            </a>
+                                        <?php endforeach; ?>
                                     </div>
                                 <?php else: ?>
                                     <div class="text-muted small py-1" style="font-size: 0.75rem;">
-                                        <i class="fas fa-check-circle text-muted opacity-75 me-1"></i> Berlaku otomatis melalui penugasan role default.
+                                        <i class="fas fa-check-circle text-muted opacity-75 me-1"></i> 100% mengikuti aturan role (tidak ada pengecualian).
                                     </div>
                                 <?php endif; ?>
                             </div>
@@ -820,7 +813,7 @@ $totalUsers = count($usersMap);
                             <th style="width: 16%;">Kode Izin</th>
                             <th style="width: 12%;">Grup</th>
                             <th style="width: 20%;">Role Default</th>
-                            <th style="width: 20%;">Pengguna Izin Khusus</th>
+                            <th style="width: 20%;">Izin Khusus User</th>
                             <th style="width: 7%;" class="text-center">Aksi</th>
                         </tr>
                     </thead>
@@ -828,10 +821,12 @@ $totalUsers = count($usersMap);
                         <?php foreach ($allPermissionsList as $perm): 
                             $permId = $perm['id'];
                             $rolesGranted = $perm['roles'];
-                            $usersGranted = $perm['users'];
+                            $usersAllow = $perm['users_allow'] ?? [];
+                            $usersDeny = $perm['users_deny'] ?? [];
                             $searchContent = strtolower($perm['nama_izin'] . ' ' . $perm['deskripsi'] . ' ' . $perm['grup']);
                             foreach ($rolesGranted as $rKey) { $searchContent .= ' ' . strtolower($rolesMap[$rKey] ?? $rKey); }
-                            foreach ($usersGranted as $uObj) { $searchContent .= ' ' . strtolower($uObj['nama_lengkap'] . ' ' . $uObj['username']); }
+                            foreach ($usersAllow as $uObj) { $searchContent .= ' ' . strtolower($uObj['nama_lengkap'] . ' ' . $uObj['username']); }
+                            foreach ($usersDeny as $uObj) { $searchContent .= ' ' . strtolower($uObj['nama_lengkap'] . ' ' . $uObj['username']); }
                         ?>
                             <tr class="perm-item" data-group="<?= htmlspecialchars($perm['grup']) ?>" data-search="<?= htmlspecialchars($searchContent) ?>">
                                 <td>
@@ -856,19 +851,21 @@ $totalUsers = count($usersMap);
                                     </div>
                                 </td>
                                 <td>
-                                    <?php if (!empty($usersGranted)): ?>
+                                    <?php if (!empty($usersAllow) || !empty($usersDeny)): ?>
                                         <div class="d-flex flex-wrap gap-1">
-                                            <?php foreach (array_slice($usersGranted, 0, 4) as $u): ?>
-                                                <a href="index.php?user_id=<?= (int)$u['id'] ?>" class="badge bg-light text-dark border text-decoration-none" style="font-size: 0.72rem;" title="Atur izin <?= htmlspecialchars($u['nama_lengkap']) ?>">
-                                                    <?= htmlspecialchars($u['nama_lengkap']) ?>
+                                            <?php foreach ($usersAllow as $u): ?>
+                                                <a href="index.php?user_id=<?= (int)$u['id'] ?>" class="badge bg-success-subtle text-success border border-success-subtle text-decoration-none" style="font-size: 0.72rem;" title="Izin Tambahan Khusus (+ Allow)">
+                                                    + <?= htmlspecialchars($u['nama_lengkap']) ?>
                                                 </a>
                                             <?php endforeach; ?>
-                                            <?php if (count($usersGranted) > 4): ?>
-                                                <span class="badge bg-secondary-subtle text-secondary" style="font-size: 0.7rem;">+<?= count($usersGranted) - 4 ?> lainnya</span>
-                                            <?php endif; ?>
+                                            <?php foreach ($usersDeny as $u): ?>
+                                                <a href="index.php?user_id=<?= (int)$u['id'] ?>" class="badge bg-danger-subtle text-danger border border-danger-subtle text-decoration-none" style="font-size: 0.72rem;" title="Izin Dicabut Khusus (- Deny)">
+                                                    - <del><?= htmlspecialchars($u['nama_lengkap']) ?></del>
+                                                </a>
+                                            <?php endforeach; ?>
                                         </div>
                                     <?php else: ?>
-                                        <span class="text-muted small" style="font-size: 0.75rem;">-</span>
+                                        <span class="text-muted small" style="font-size: 0.75rem;">(Bawaan Role)</span>
                                     <?php endif; ?>
                                 </td>
                                 <td class="text-center">

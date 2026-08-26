@@ -1,5 +1,4 @@
 <?php
-session_start();
 require_once __DIR__ . '/../../bootstrap/init.php';
 
 // Validasi guard
@@ -64,23 +63,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 $stmtInsert->execute();
             }
             $stmtInsert->close();
-
-            // SINKRONISASI KE USER LAMA (SISTEM MENIMPA / MERGE)
-            // Tidak menghapus izin yang sudah ada, hanya menambahkan izin baru dari role
-            $stmtUserPerm = $conn->prepare("INSERT IGNORE INTO user_permissions (user_id, permission_id) VALUES (?, ?)");
-            $resUsers = $conn->query("SELECT id FROM users WHERE role = '" . $conn->real_escape_string($role) . "'");
-            while ($u = $resUsers->fetch_assoc()) {
-                $uid = (int)$u['id'];
-                foreach ($permissions as $perm_id) {
-                    $perm_id = (int)$perm_id;
-                    $stmtUserPerm->bind_param("ii", $uid, $perm_id);
-                    $stmtUserPerm->execute();
-                }
-            }
-            $stmtUserPerm->close();
         }
 
         $conn->commit();
+        touch_permissions_version();
         
         // Log aktivitas
         write_activity_log('UPDATE', 'role_permissions', "Memperbarui izin default untuk role: " . ucfirst($role), [
@@ -88,7 +74,15 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             'total_permissions' => count($permissions)
         ]);
         
-        $_SESSION['success_message'] = "Izin default untuk role <strong>" . ucfirst($role) . "</strong> berhasil diperbarui!";
+        $roleNameDisplay = ucfirst($role);
+        $resName = $conn->query("SELECT role_name FROM roles WHERE id = '" . $conn->real_escape_string($role) . "' LIMIT 1");
+        if ($resName && $rowName = $resName->fetch_assoc()) {
+            if (!empty($rowName['role_name'])) {
+                $roleNameDisplay = $rowName['role_name'];
+            }
+        }
+
+        $_SESSION['success_message'] = "Izin default role " . $roleNameDisplay . " berhasil diperbarui • " . count($permissions) . " izin aktif";
     } catch (Exception $e) {
         $conn->rollback();
         $_SESSION['error_message'] = "Terjadi kesalahan saat menyimpan: " . $e->getMessage();

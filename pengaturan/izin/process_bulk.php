@@ -28,7 +28,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $userIds = $_POST['user_ids'];
     $actions = $_POST['actions']; // Format: [perm_id => 'add' | 'remove' | 'no_change']
 
-    $loggedInUserId = $_SESSION['user_id'] ?? null;
+    $loggedInUserId = (int)($_SESSION['user_id'] ?? 0);
     $validUserIds = [];
     foreach ($userIds as $uid) {
         $uidInt = (int)$uid;
@@ -43,89 +43,115 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         exit;
     }
 
-    // 3.1. Pencegahan Eskalasi Hak Akses: Filter ID yang berstatus admin (dan pengelola jika bukan admin)
+    // 3. Filter ID yang aman (bukan admin dan bukan pengelola jika session bukan admin)
     $validIdsStr = implode(',', $validUserIds);
-    $safeUserIds = [];
+    $safeUsers = []; // [id => role]
     $is_admin = (isset($_SESSION['role']) && strtolower($_SESSION['role']) === 'admin');
     $role_condition = $is_admin ? "role != 'admin'" : "role NOT IN ('admin', 'pengelola')";
-    $res = $conn->query("SELECT id FROM users WHERE id IN ($validIdsStr) AND $role_condition");
+    $res = $conn->query("SELECT id, role FROM users WHERE id IN ($validIdsStr) AND $role_condition");
     if ($res) {
         while($row = $res->fetch_assoc()) {
-            $safeUserIds[] = (int)$row['id'];
+            $safeUsers[(int)$row['id']] = strtolower(trim((string)$row['role']));
         }
     }
     
-    $validUserIds = $safeUserIds;
-
-    if (empty($validUserIds)) {
+    if (empty($safeUsers)) {
         http_response_code(403);
         require __DIR__ . '/../../bootstrap/access_denied.php';
         exit;
     }
 
-    // 4. Proses Perubahan Massal dengan Transaksi Database
+    // 4. Cache daftar izin default untuk setiap role yang terlibat
+    $uniqueRoles = array_unique(array_values($safeUsers));
+    $rolePermCache = [];
+    foreach ($uniqueRoles as $rKey) {
+        $rolePermCache[$rKey] = [];
+        $stmtR = $conn->prepare("SELECT permission_id FROM role_permissions WHERE role = ?");
+        $stmtR->bind_param("s", $rKey);
+        $stmtR->execute();
+        $resR = $stmtR->get_result();
+        while($rowR = $resR->fetch_assoc()) {
+            $rolePermCache[$rKey][] = (int)$rowR['permission_id'];
+        }
+        $stmtR->close();
+    }
+
+    // 5. Proses Perubahan Massal dengan Transaksi Database
     $conn->begin_transaction();
     try {
-        // Persiapkan query check, insert, dan delete agar eksekusi sangat cepat
-        $stmt_check = $conn->prepare("SELECT 1 FROM user_permissions WHERE user_id = ? AND permission_id = ?");
-        $stmt_insert = $conn->prepare("INSERT INTO user_permissions (user_id, permission_id) VALUES (?, ?)");
         $stmt_delete = $conn->prepare("DELETE FROM user_permissions WHERE user_id = ? AND permission_id = ?");
+        $stmt_upsert = $conn->prepare("
+            INSERT INTO user_permissions (user_id, permission_id, is_allowed) 
+            VALUES (?, ?, ?) 
+            ON DUPLICATE KEY UPDATE is_allowed = VALUES(is_allowed)
+        ");
 
-        if (!$stmt_check || !$stmt_insert || !$stmt_delete) {
+        if (!$stmt_delete || !$stmt_upsert) {
             throw new Exception("Gagal mempersiapkan query database.");
         }
 
         $appliedAdds = 0;
         $appliedRemoves = 0;
 
-        foreach ($validUserIds as $userId) {
+        foreach ($safeUsers as $userId => $userRole) {
+            $userRolePerms = $rolePermCache[$userRole] ?? [];
+
             foreach ($actions as $permId => $actionVal) {
                 $permIdInt = (int)$permId;
-                
+                if ($actionVal === 'no_change') {
+                    continue;
+                }
+
+                $hasRoleDefault = in_array($permIdInt, $userRolePerms, true);
+
                 if ($actionVal === 'add') {
-                    // Cek apakah sudah punya izin ini
-                    $stmt_check->bind_param("ii", $userId, $permIdInt);
-                    $stmt_check->execute();
-                    $result = $stmt_check->get_result();
-                    $alreadyHas = $result->num_rows > 0;
-                    
-                    if (!$alreadyHas) {
-                        $stmt_insert->bind_param("ii", $userId, $permIdInt);
-                        $stmt_insert->execute();
+                    if ($hasRoleDefault) {
+                        // Role sudah punya izin ini: Hapus deny override jika ada (kembali ke default role)
+                        $stmt_delete->bind_param("ii", $userId, $permIdInt);
+                        $stmt_delete->execute();
+                    } else {
+                        // Role belum punya: Pasang override Allow (1)
+                        $isAllowed = 1;
+                        $stmt_upsert->bind_param("iii", $userId, $permIdInt, $isAllowed);
+                        $stmt_upsert->execute();
                         $appliedAdds++;
                     }
                 } elseif ($actionVal === 'remove') {
-                    // Jalankan penghapusan izin
-                    $stmt_delete->bind_param("ii", $userId, $permIdInt);
-                    $stmt_delete->execute();
-                    if ($stmt_delete->affected_rows > 0) {
+                    if ($hasRoleDefault) {
+                        // Role aslinya punya: Pasang override Deny (0) untuk memblokir
+                        $isAllowed = 0;
+                        $stmt_upsert->bind_param("iii", $userId, $permIdInt, $isAllowed);
+                        $stmt_upsert->execute();
                         $appliedRemoves++;
+                    } else {
+                        // Role aslinya tidak punya: Cukup hapus allow override jika ada
+                        $stmt_delete->bind_param("ii", $userId, $permIdInt);
+                        $stmt_delete->execute();
                     }
                 }
-                // Jika 'no_change', abaikan / biarkan
             }
         }
 
-        // Tutup statement
-        $stmt_check->close();
-        $stmt_insert->close();
         $stmt_delete->close();
+        $stmt_upsert->close();
 
         // Kunci semua perubahan!
         $conn->commit();
+        touch_permissions_version();
 
-        // Susun pesan notifikasi sukses yang informatif
-        $userCount = count($validUserIds);
-        $_SESSION['success_message'] = "✅ Perubahan massal berhasil diterapkan pada <strong>" . $userCount . "</strong> pengguna terpilih! (Izin ditambahkan: " . $appliedAdds . ", dicabut: " . $appliedRemoves . ")";
+        $userCount = count($safeUsers);
+        $_SESSION['success_message'] = "Izin massal berhasil diterapkan ke " . $userCount . " pengguna • " . $appliedAdds . " izin ditambah, " . $appliedRemoves . " izin dicabut";
 
     } catch (Exception $e) {
-        // Batalkan seluruh perubahan jika terjadi error
         $conn->rollback();
         $_SESSION['error_message'] = "❌ Gagal menerapkan perubahan izin massal: " . $e->getMessage();
     }
+
+    header("Location: bulk.php");
+    exit;
+
 } else {
     http_response_code(403);
     require __DIR__ . '/../../bootstrap/access_denied.php';
     exit;
 }
-?>

@@ -109,6 +109,11 @@ if (isset($_SESSION['user_id'], $_SESSION['login_time'])) {
         }
     }
 
+    // Real-time Permission Sync: Pastikan izin sesi selalu mutakhir jika ada perubahan dari admin
+    if (function_exists('sync_user_session_permissions')) {
+        sync_user_session_permissions($conn);
+    }
+
     // Reset timer aktivitas — user masih aktif, perpanjang sesi.
     $_SESSION['login_time'] = time();
 }

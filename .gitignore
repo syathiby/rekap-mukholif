@@ -4,4 +4,8 @@
 vendor/
 # Folder Cache (Jangan masukkan ke Git, server akan bikin otomatis)
 cache/
-update_v1_pengelola.sql
+
+# Local raw backups & temporary dumps (database/migrations/ tetap di-track)
+*.dump
+*.bak
+*.sql.gz

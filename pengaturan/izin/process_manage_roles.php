@@ -15,9 +15,8 @@ if (!isset($_POST['csrf_token']) || !isset($_SESSION['csrf_token']) || !hash_equ
     exit;
 }
 
-$action = $_POST['action'] ?? '';
-$protectedRoles = ['admin', 'pelihat', 'pengelola'];
-$reservedSlugs = ['admin', 'pelihat', 'pengelola', 'root', 'system', 'superuser', 'user', 'guest'];
+$protectedRoles = ['admin', 'musyrif', 'pelihat', 'pengelola'];
+$reservedSlugs = ['admin', 'musyrif', 'pelihat', 'pengelola', 'root', 'system', 'superuser', 'user', 'guest'];
 
 // Fungsi Helper untuk membuat ID ramah sistem (Slugifier)
 function generateSlug($string) {
@@ -69,6 +68,7 @@ if ($action === 'add') {
     $stmt->bind_param("ss", $id, $role_name);
     
     if ($stmt->execute()) {
+        touch_permissions_version();
         write_activity_log('CREATE', 'roles', "Menambahkan role baru: '$role_name' (ID: $id)", ['id' => $id, 'role_name' => $role_name]);
         $_SESSION['success_message'] = "Role <strong>" . htmlspecialchars($role_name) . "</strong> berhasil ditambahkan.";
     } else {
@@ -91,6 +91,7 @@ if ($action === 'add') {
     $stmt->bind_param("ss", $role_name, $id);
     
     if ($stmt->execute()) {
+        touch_permissions_version();
         write_activity_log('UPDATE', 'roles', "Memperbarui nama role: '$role_name' (ID: $id)", ['id' => $id, 'role_name' => $role_name]);
         $_SESSION['success_message'] = "Nama role berhasil diperbarui menjadi <strong>" . htmlspecialchars($role_name) . "</strong>.";
     } else {
@@ -151,6 +152,7 @@ if ($action === 'add') {
         $stmtRole->close();
 
         $conn->commit();
+        touch_permissions_version();
 
         write_activity_log('DELETE', 'roles', "Menghapus role: '$roleName' (ID: $id)", ['id' => $id, 'role_name' => $roleName]);
         $_SESSION['success_message'] = "Role <strong>" . htmlspecialchars($roleName) . "</strong> berhasil dihapus sepenuhnya beserta relasi izin defaultnya.";

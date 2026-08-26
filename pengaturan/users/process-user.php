@@ -209,12 +209,13 @@ if ($is_edit_mode) {
             'password_changed' => !empty($password)
         ]);
 
-        if (isset($role_asli) && $role !== $role_asli && $role !== 'admin') {
-            $conn->query("DELETE FROM user_permissions WHERE user_id = $user_id");
-            $stmt_perms = $conn->prepare("INSERT INTO user_permissions (user_id, permission_id) SELECT ?, permission_id FROM role_permissions WHERE role = ?");
-            $stmt_perms->bind_param("is", $user_id, $role);
-            $stmt_perms->execute();
-            $stmt_perms->close();
+        // Jika role berubah dan opsi reset dicentang, bersihkan izin khusus lama
+        if (isset($role_asli) && $role !== $role_asli) {
+            $should_reset_perms = isset($_POST['reset_permissions']) && $_POST['reset_permissions'] == '1';
+            if ($should_reset_perms) {
+                $conn->query("DELETE FROM user_permissions WHERE user_id = $user_id");
+            }
+            touch_permissions_version();
         }
 
         $_SESSION['flash_message'] = [
@@ -246,13 +247,8 @@ if ($is_edit_mode) {
             'kamar_id' => $kamar_id
         ]);
 
-        // --- LOGIKA BARU: Insert izin default ---
-        if ($role !== 'admin') {
-            $stmt_perms = $conn->prepare("INSERT INTO user_permissions (user_id, permission_id) SELECT ?, permission_id FROM role_permissions WHERE role = ?");
-            $stmt_perms->bind_param("is", $new_user_id, $role);
-            $stmt_perms->execute();
-            $stmt_perms->close();
-        }
+        // User baru otomatis mewarisi izin dari Role (tidak perlu insert ke user_permissions)
+        touch_permissions_version();
 
         $_SESSION['flash_message'] = [
             'type' => 'success',

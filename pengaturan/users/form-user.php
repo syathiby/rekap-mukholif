@@ -312,6 +312,20 @@ if ($result_kamar) {
                     </div>
                 </div>
 
+                <?php if ($is_edit_mode && !$is_editing_self): ?>
+                    <div class="mb-3 form-check p-3 rounded-3 border" id="reset_permissions_container" style="display: none; background: #fffbeb; border-color: #fde68a !important;">
+                        <div class="d-flex align-items-start gap-2">
+                            <input type="checkbox" class="form-check-input mt-1" id="reset_permissions" name="reset_permissions" value="1" checked style="cursor:pointer;">
+                            <label class="form-check-label text-dark fw-semibold" for="reset_permissions" style="font-size: 0.85rem; cursor:pointer;">
+                                <i class="fas fa-rotate-left text-warning me-1"></i> Reset izin khusus ke default role baru
+                            </label>
+                        </div>
+                        <div class="form-text text-muted ps-4" style="font-size: 0.76rem;">
+                            Jika dicentang, semua izin khusus/override lama user ini akan dihapus agar bersih mengikuti role baru.
+                        </div>
+                    </div>
+                <?php endif; ?>
+
                 <div class="mb-3" id="kamar_container" style="display: none;">
                     <label for="kamar_id" class="form-label">Kamar (Khusus Musyrif)</label>
                     <div class="input-group">
@@ -377,6 +391,8 @@ if ($result_kamar) {
             const kamarContainer = document.getElementById('kamar_container');
             const kamarInput = document.getElementById('kamar_id');
 
+            const resetPermsContainer = document.getElementById('reset_permissions_container');
+
             function toggleKamar() {
                 if (!roleInput) return;
                 const isMusyrif = roleInput.value.trim().toLowerCase() === 'musyrif';
@@ -388,9 +404,24 @@ if ($result_kamar) {
                 }
             }
 
+            function toggleResetPermissions() {
+                if (!resetPermsContainer || !roleInput || !isEditMode) return;
+                const currentVal = roleInput.value.trim().toLowerCase();
+                const origVal = (originalRole || '').trim().toLowerCase();
+                if (currentVal && currentVal !== origVal) {
+                    resetPermsContainer.style.display = 'block';
+                } else {
+                    resetPermsContainer.style.display = 'none';
+                }
+            }
+
             if (roleInput) {
-                roleInput.addEventListener('change', toggleKamar);
+                roleInput.addEventListener('change', function() {
+                    toggleKamar();
+                    toggleResetPermissions();
+                });
                 toggleKamar(); // Run on load
+                toggleResetPermissions();
             } else if (originalRole && originalRole.trim().toLowerCase() === 'musyrif') {
                 kamarContainer.style.display = 'block';
             }

@@ -85,7 +85,7 @@ if (isset($conn)) {
     ═══════════════════════════════════════════════════ -->
     <script>
     window.addEventListener('pageshow', function(event) {
-        if (event.persisted || (window.performance && window.performance.navigation.type === 2)) {
+        if (event.persisted) {
             window.location.reload();
         }
     });
