@@ -271,7 +271,7 @@ header("Expires: Sat, 26 Jul 1997 05:00:00 GMT");
 
     <!-- Minimalist Card Footer Watermark -->
     <div style="margin-top: 24px; padding-top: 16px; border-top: 1px solid var(--border-color); text-align: center; font-size: 0.8rem; color: var(--text-muted); letter-spacing: 0.01em;">
-        &copy; 2025 Built by <a href="https://ajsk.vercel.app/" target="_blank" rel="noopener noreferrer" style="color: var(--accent); font-weight: 600; text-decoration: none !important;">AJSK.</a>
+        &copy; 2025 Built by <a href="https://ajisakha.site/" target="_blank" rel="noopener noreferrer" style="color: var(--accent); font-weight: 600; text-decoration: none !important;">AJSK.</a>
     </div>
 </div>
 

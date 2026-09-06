@@ -1,5 +1,5 @@
 <footer class="app-footer">
-    &copy; 2025 Built by <a href="https://ajsk.vercel.app/" target="_blank" rel="noopener noreferrer">AJSK.</a>
+    &copy; 2025 Built by <a href="https://ajisakha.site/" target="_blank" rel="noopener noreferrer">AJSK.</a>
 </footer>
 </main>
 

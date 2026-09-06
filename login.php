@@ -377,7 +377,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
     <!-- Login Page Footer -->
     <footer class="app-footer text-center mt-3" style="padding: 0; font-size: 0.875rem; color: #64748b; position: relative; z-index: 10;">
-        &copy; 2025 Built by <a href="https://ajsk.vercel.app/" target="_blank" rel="noopener noreferrer" style="color: #2563eb; font-weight: 700; text-decoration: none !important;">AJSK.</a>
+        &copy; 2025 Built by <a href="https://ajisakha.site/" target="_blank" rel="noopener noreferrer" style="color: #2563eb; font-weight: 700; text-decoration: none !important;">AJSK.</a>
     </footer>
 
     <!-- ── Tombol Install PWA (muncul otomatis jika bisa di-install) ── -->
