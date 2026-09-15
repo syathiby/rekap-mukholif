@@ -165,6 +165,17 @@ if (isset($conn)) {
                 <i class="fas fa-sign-out-alt" style="color:#f87171;"></i>
                 <span style="color:#f87171;">Logout</span>
             </a>
+            <?php if (isset($_SESSION['role']) && strtolower($_SESSION['role']) === 'pelihat'): ?>
+            <div class="sb-footer-info overflow-hidden" style="display:flex; color:inherit; cursor:default;">
+                <div class="sb-avatar" style="background: #7c3aed;">
+                    <i class="fas fa-user-shield"></i>
+                </div>
+                <div class="overflow-hidden">
+                    <div class="sb-user-name text-truncate"><?= htmlspecialchars($_SESSION['nama_lengkap'] ?? 'Pengguna') ?></div>
+                    <div class="sb-user-role text-truncate" style="color:#94a3b8;"><?= htmlspecialchars($role_name_display) ?></div>
+                </div>
+            </div>
+            <?php else: ?>
             <a href="<?= BASE_URL ?>/pengaturan/users/profil.php" class="sb-footer-info overflow-hidden text-decoration-none" style="display:flex; color:inherit; transition: background 0.2s;" onmouseover="this.style.background='rgba(255,255,255,0.05)'" onmouseout="this.style.background='transparent'">
                 <div class="sb-avatar" style="background: #7c3aed;">
                     <i class="fas fa-user-shield"></i>
@@ -174,6 +185,7 @@ if (isset($conn)) {
                     <div class="sb-user-role text-truncate" style="color:#94a3b8;"><?= htmlspecialchars($role_name_display) ?></div>
                 </div>
             </a>
+            <?php endif; ?>
         </div>
     </nav>
 

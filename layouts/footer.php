@@ -69,37 +69,50 @@ if (function_exists('has_permission')) {
 
 <!-- --- Bottom Navigation Bar (Mobile Only) --- -->
 <nav class="bottom-nav">
-    <div class="bottom-nav-item">
-        <a class="bottom-nav-link <?= ($req_path === '/' || strpos($req_path, '/dashboard.php') !== false) ? 'active' : '' ?>" href="<?= BASE_URL ?>/dashboard.php">
-            <i class="fas fa-home"></i>
-            <span>Beranda</span>
-        </a>
+    <div class="bottom-nav-group">
+        <div class="bottom-nav-item">
+            <a class="bottom-nav-link <?= ($req_path === '/' || strpos($req_path, '/dashboard.php') !== false) ? 'active' : '' ?>" href="<?= BASE_URL ?>/dashboard.php">
+                <i class="fas fa-home"></i>
+                <span>Beranda</span>
+            </a>
+        </div>
+        <?php if (function_exists('has_permission') && has_permission('santri_view')): ?>
+        <div class="bottom-nav-item">
+            <a class="bottom-nav-link <?= strpos($req_path, '/santri') === 0 ? 'active' : '' ?>" href="<?= BASE_URL ?>/santri">
+                <i class="fas fa-users"></i>
+                <span>Santri</span>
+            </a>
+        </div>
+        <?php endif; ?>
     </div>
-    <?php if (function_exists('has_permission') && has_permission('santri_view')): ?>
-    <div class="bottom-nav-item">
-        <a class="bottom-nav-link <?= strpos($req_path, '/santri') === 0 ? 'active' : '' ?>" href="<?= BASE_URL ?>/santri">
-            <i class="fas fa-users"></i>
-            <span>Santri</span>
-        </a>
-    </div>
-    <?php endif; ?>
     
-    <!-- Spacer untuk memberikan tempat bagi tombol FAB (Plus) di tengah -->
-    <div class="bottom-nav-item fab-spacer" style="flex: 0.6; visibility: hidden; pointer-events: none;"></div>
+    <!-- Spacer untuk memberikan tempat bagi tombol FAB (Plus) di tengah persis -->
+    <div class="bottom-nav-fab-spacer"></div>
     
-    <?php if ($can_view_rekap): ?>
-    <div class="bottom-nav-item">
-        <a class="bottom-nav-link <?= strpos($req_path, '/rekap') === 0 ? 'active' : '' ?>" href="<?= BASE_URL ?>/rekap">
-            <i class="fas fa-chart-bar"></i>
-            <span>Rekap</span>
-        </a>
-    </div>
-    <?php endif; ?>
-    <div class="bottom-nav-item">
-        <a class="bottom-nav-link <?= strpos($req_path, '/pengaturan/users/profil.php') !== false ? 'active' : '' ?>" href="<?= BASE_URL ?>/pengaturan/users/profil.php">
-            <i class="fas fa-user"></i>
-            <span>Profil</span>
-        </a>
+    <div class="bottom-nav-group">
+        <?php if ($can_view_rekap): ?>
+        <div class="bottom-nav-item">
+            <a class="bottom-nav-link <?= strpos($req_path, '/rekap') === 0 ? 'active' : '' ?>" href="<?= BASE_URL ?>/rekap">
+                <i class="fas fa-chart-bar"></i>
+                <span>Rekap</span>
+            </a>
+        </div>
+        <?php endif; ?>
+        <?php if (isset($_SESSION['role']) && strtolower($_SESSION['role']) === 'pelihat'): ?>
+        <div class="bottom-nav-item">
+            <a class="bottom-nav-link <?= strpos($req_path, '/arsip') === 0 ? 'active' : '' ?>" href="<?= BASE_URL ?>/arsip">
+                <i class="fas fa-archive"></i>
+                <span>Arsip</span>
+            </a>
+        </div>
+        <?php else: ?>
+        <div class="bottom-nav-item">
+            <a class="bottom-nav-link <?= strpos($req_path, '/pengaturan/users/profil.php') !== false ? 'active' : '' ?>" href="<?= BASE_URL ?>/pengaturan/users/profil.php">
+                <i class="fas fa-user"></i>
+                <span>Profil</span>
+            </a>
+        </div>
+        <?php endif; ?>
     </div>
 </nav>
 
@@ -164,27 +177,65 @@ if (function_exists('has_permission')) {
         });
     }
 
-    // Fungsi Global untuk Alert Pengganti native alert()
-    function showAlert(textMessage, iconType = 'info') {
-        let titleText = 'Informasi';
-        if (iconType === 'error') titleText = 'Oops...';
-        else if (iconType === 'success') titleText = 'Berhasil!';
-        else if (iconType === 'warning') titleText = 'Peringatan!';
+    // Fungsi Global untuk Flash Notification / Mini Pop-up di tengah layar (Auto-close, no OK button)
+    function showFlashAlert(textMessage, iconType = 'warning', titleText = null, duration = 2400) {
+        if (typeof Swal === 'undefined') {
+            alert(textMessage);
+            return;
+        }
+
+        let defaultTitle = 'Peringatan!';
+        let iconClass = 'fa-triangle-exclamation';
+
+        if (iconType === 'error' || iconType === 'danger') {
+            iconType = 'error';
+            defaultTitle = 'Akses Ditolak';
+            iconClass = 'fa-circle-xmark';
+        } else if (iconType === 'success') {
+            defaultTitle = 'Berhasil!';
+            iconClass = 'fa-circle-check';
+        } else if (iconType === 'info') {
+            defaultTitle = 'Informasi';
+            iconClass = 'fa-circle-info';
+        } else if (iconType === 'warning') {
+            iconType = 'warning';
+            defaultTitle = 'Akses Dibatasi';
+            iconClass = 'fa-shield-halved';
+        }
+
+        const title = titleText || defaultTitle;
 
         Swal.fire({
-            title: titleText,
-            text: textMessage,
-            icon: iconType,
-            width: '22em',
-            padding: '1.2em',
+            html: `
+                <div class="flash-popup-content">
+                    <div class="flash-popup-icon-badge ${iconType}">
+                        <i class="fas ${iconClass}"></i>
+                    </div>
+                    <h4 class="flash-popup-title">${title}</h4>
+                    <p class="flash-popup-message">${textMessage}</p>
+                </div>
+            `,
+            position: 'center',
+            showConfirmButton: false,
+            timer: duration,
+            timerProgressBar: true,
+            backdrop: 'rgba(15, 23, 42, 0.45)',
+            allowOutsideClick: false,
+            allowEscapeKey: false,
             customClass: {
-                popup: 'rounded-4 shadow',
-                title: 'fs-6 fw-bold text-dark mb-1',
-                htmlContainer: 'text-secondary small m-0',
-                confirmButton: 'btn btn-primary btn-sm px-4 rounded-3 fw-medium'
+                popup: 'swal2-flash-popup',
+                timerProgressBar: 'swal2-flash-progressbar'
             },
-            buttonsStyling: false
+            didOpen: (popup) => {
+                popup.onmouseenter = Swal.stopTimer;
+                popup.onmouseleave = Swal.resumeTimer;
+            }
         });
+    }
+
+    // Fungsi Global untuk Alert Pengganti native alert() -> Menggunakan modern Flash Popup (Auto-close)
+    function showAlert(textMessage, iconType = 'info', titleText = null) {
+        showFlashAlert(textMessage, iconType, titleText);
     }
 
     // Fungsi Global untuk Toast Modern Minimalist (Auto-close, no OK button)

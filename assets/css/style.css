@@ -1523,15 +1523,32 @@ a {
     border-top: 1px solid var(--border-color);
     display: none; /* Hidden by default (desktop) */
     align-items: center;
-    justify-content: space-around;
+    justify-content: space-between;
     z-index: 1030;
     box-shadow: 0 -2px 10px rgba(0, 0, 0, 0.03);
+}
+
+.bottom-nav-group {
+    flex: 1;
+    display: flex;
+    align-items: center;
+    justify-content: space-around;
+    height: 100%;
+}
+
+.bottom-nav-fab-spacer,
+.bottom-nav-item.fab-spacer {
+    width: 68px;
+    flex: 0 0 68px;
+    visibility: hidden;
+    pointer-events: none;
 }
 
 .bottom-nav-item {
     flex: 1;
     display: flex;
     justify-content: center;
+    height: 100%;
 }
 
 .bottom-nav-link {
@@ -2659,4 +2676,91 @@ div:where(.swal2-container) div:where(.swal2-popup).swal2-toast .swal2-timer-pro
         border-radius: 12px !important;
         white-space: nowrap !important;
     }
+}
+
+/* --- Modern Center Flash Notification / Mini Pop-up --- */
+div:where(.swal2-container) div:where(.swal2-popup).swal2-flash-popup {
+    border-radius: 24px !important;
+    padding: 1.5rem 1.6rem !important;
+    max-width: 320px !important;
+    width: 88% !important;
+    background: #ffffff !important;
+    box-shadow: 0 25px 50px -12px rgba(15, 23, 42, 0.22), 0 0 0 1px rgba(15, 23, 42, 0.06) !important;
+    border: none !important;
+    overflow: hidden !important;
+}
+
+.flash-popup-content {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    text-align: center;
+}
+
+.flash-popup-icon-badge {
+    width: 60px;
+    height: 60px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.65rem;
+    margin-bottom: 0.9rem;
+    animation: flashIconPop 0.4s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+.flash-popup-icon-badge.warning {
+    background: #fffbeb;
+    color: #d97706;
+    border: 2px solid #fde68a;
+    box-shadow: 0 8px 20px -4px rgba(217, 119, 6, 0.25);
+}
+
+.flash-popup-icon-badge.error,
+.flash-popup-icon-badge.danger {
+    background: #fef2f2;
+    color: #ef4444;
+    border: 2px solid #fecaca;
+    box-shadow: 0 8px 20px -4px rgba(239, 68, 68, 0.25);
+}
+
+.flash-popup-icon-badge.success {
+    background: #ecfdf5;
+    color: #059669;
+    border: 2px solid #a7f3d0;
+    box-shadow: 0 8px 20px -4px rgba(5, 150, 105, 0.25);
+}
+
+.flash-popup-icon-badge.info {
+    background: #eff6ff;
+    color: #2563eb;
+    border: 2px solid #bfdbfe;
+    box-shadow: 0 8px 20px -4px rgba(37, 99, 235, 0.25);
+}
+
+.flash-popup-title {
+    font-size: 1.125rem;
+    font-weight: 700;
+    color: #0f172a;
+    margin-bottom: 0.35rem;
+    letter-spacing: -0.015em;
+}
+
+.flash-popup-message {
+    font-size: 0.865rem;
+    color: #64748b;
+    line-height: 1.5;
+    margin: 0;
+    font-weight: 450;
+}
+
+div:where(.swal2-container) .swal2-timer-progress-bar.swal2-flash-progressbar {
+    background: linear-gradient(90deg, #6366f1, #4f46e5) !important;
+    height: 3.5px !important;
+}
+
+@keyframes flashIconPop {
+    0% { transform: scale(0.5); opacity: 0; }
+    70% { transform: scale(1.15); }
+    100% { transform: scale(1); opacity: 1; }
 }
