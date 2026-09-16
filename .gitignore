@@ -9,3 +9,5 @@ cache/
 *.dump
 *.bak
 *.sql.gz
+backup_*.sql
+restore_arsip_log_bahasa_2025_2026.sql

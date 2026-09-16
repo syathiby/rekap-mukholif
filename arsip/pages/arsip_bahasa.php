@@ -88,29 +88,41 @@ while ($row = $res_data->fetch_assoc()) {
     $sid = (int)$row['santri_id'];
     $santri_logs[$sid][] = $row;
     
-    // Status log terakhir menjadi level puncak/terakhir di arsip ini
-    $santri_summary[$sid] = [
-        'id' => $sid,
-        'nama' => $row['santri_nama'],
-        'kelas' => $row['santri_kelas'],
-        'kamar' => $row['santri_kamar'],
-        'total_poin' => (int)$row['poin_lama'],
-        'level_terakhir' => $row['nama_pelanggaran'],
-        'level_id' => (int)$row['jenis_pelanggaran_id'],
-        'tanggal_terakhir' => $row['tanggal_melanggar'],
-        'total_insiden' => count($santri_logs[$sid])
-    ];
+    if (!isset($santri_summary[$sid])) {
+        $santri_summary[$sid] = [
+            'id' => $sid,
+            'nama' => $row['santri_nama'],
+            'kelas' => $row['santri_kelas'],
+            'kamar' => $row['santri_kamar'],
+            'total_poin' => 0,
+            'level_terakhir' => $row['nama_pelanggaran'],
+            'level_id' => (int)$row['jenis_pelanggaran_id'],
+            'tanggal_terakhir' => $row['tanggal_melanggar'],
+            'total_insiden' => 0
+        ];
+    }
+    
+    // Akumulasi total poin dari seluruh riwayat pelanggaran bahasa
+    $santri_summary[$sid]['total_poin'] += (int)$row['poin_lama'];
+    // Status log terakhir menjadi level puncak/terakhir di arsip ini (karena query diurutkan ORDER BY tanggal_melanggar ASC)
+    $santri_summary[$sid]['level_terakhir'] = $row['nama_pelanggaran'];
+    $santri_summary[$sid]['level_id'] = (int)$row['jenis_pelanggaran_id'];
+    $santri_summary[$sid]['tanggal_terakhir'] = $row['tanggal_melanggar'];
+    $santri_summary[$sid]['total_insiden'] = count($santri_logs[$sid]);
 }
 $stmt_data->close();
 
 $peringkat_list = array_values($santri_summary);
 
-// Urutkan berdasarkan poin tertinggi, lalu nama
+// Urutkan: Total Poin tertinggi (DESC) -> Jumlah Pelanggaran terbanyak (DESC) -> Nama Santri (ASC)
 usort($peringkat_list, function($a, $b) {
-    if ($b['total_poin'] == $a['total_poin']) {
-        return strcmp($a['nama'], $b['nama']);
+    if ($b['total_poin'] !== $a['total_poin']) {
+        return $b['total_poin'] - $a['total_poin'];
     }
-    return $b['total_poin'] - $a['total_poin'];
+    if ($b['total_insiden'] !== $a['total_insiden']) {
+        return $b['total_insiden'] - $a['total_insiden'];
+    }
+    return strcmp($a['nama'], $b['nama']);
 });
 
 // Data untuk Grafik
@@ -407,7 +419,7 @@ if ($is_ajax) {
         <div class="col-12 col-lg-7">
             <div class="card border-0 shadow-sm rounded-4 h-100">
                 <div class="card-body p-3 p-md-4 chart-card-body">
-                    <h6 class="fw-bold text-dark mb-3">Top 5 Santri (Poin Puncak saat Arsip)</h6>
+                    <h6 class="fw-bold text-dark mb-3">Top 5 Santri (Total Poin Bahasa)</h6>
                     <div class="chart-wrapper" style="height: 260px;"><canvas id="chartTopSantri"></canvas></div>
                 </div>
             </div>

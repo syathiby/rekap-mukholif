@@ -174,10 +174,11 @@ $types_all = $types_date . $types_jp;
 
 // Query 4: Feed Pelanggaran Terkini
 $query_feed = "
-    SELECT p.tanggal, s.nama AS nama_santri, jp.nama_pelanggaran, jp.bagian, jp.poin, jp.kategori
+    SELECT p.tanggal, s.nama AS nama_santri, jp.nama_pelanggaran, jp.bagian, jp.poin, jp.kategori, COALESCE(u.nama_lengkap, u.username) AS pencatat
     FROM pelanggaran p 
     JOIN santri s ON p.santri_id = s.id 
     JOIN jenis_pelanggaran jp ON p.jenis_pelanggaran_id = jp.id 
+    LEFT JOIN users u ON p.dicatat_oleh = u.id
     WHERE $date_condition_umum $jp_where_string
     ORDER BY 
         p.tanggal DESC,
@@ -330,12 +331,13 @@ require_once __DIR__ . '/../layouts/header.php';
                             <th scope="col">Pelanggaran</th>
                             <th scope="col">Bagian</th>
                             <th scope="col" class="text-center">Kategori</th>
+                            <th scope="col">Pencatat</th>
                         </tr>
                     </thead>
                     <tbody>
                         <?php if (count($feed_terkini_data) == 0): ?>
                             <tr>
-                                <td colspan="5" class="text-center py-5">
+                                <td colspan="6" class="text-center py-5">
                                     <i class="fas fa-search fa-3x text-muted mb-2"></i>
                                     <h5 class="mb-0">Data Tidak Ditemukan</h5>
                                     <p class="text-muted">Coba ubah atau reset filter yang Anda gunakan.</p>
@@ -365,6 +367,9 @@ require_once __DIR__ . '/../layouts/header.php';
                                     <td class="align-middle"><?= htmlspecialchars($row['bagian']) ?></td>
                                     <td class="text-center align-middle">
                                         <span class="badge <?= $badge_class ?>"><?= htmlspecialchars($row['kategori']) ?></span>
+                                    </td>
+                                    <td class="align-middle">
+                                        <span class="small text-muted"><i class="fas fa-user-edit me-1"></i><?= htmlspecialchars($row['pencatat'] ?? '-') ?></span>
                                     </td>
                                 </tr>
                             <?php endforeach; ?>
