@@ -9,3 +9,5 @@ cache/
 *.dump
 *.bak
 *.sql.gz
+# Lokal: VPS-only git pull trigger (jangan sampai developer commit)
+terminal.php
