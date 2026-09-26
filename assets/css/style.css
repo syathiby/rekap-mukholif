@@ -33,7 +33,7 @@
     /* Gray 200 */
 
     /* --- SIDEBAR & HEADER (PREMIUM DARK) --- */
-    --sidebar-width: 280px;
+    --sidebar-width: 235px;
     --header-height: 60px;
     --sidebar-bg: #111111;
     --sidebar-text: #9ca3af;
@@ -101,9 +101,9 @@ a {
 .main-content {
     flex-grow: 1;
     padding: 1.5rem;
-    margin-left: var(--sidebar-width);
-    transition: margin-left 0.3s ease;
-    width: calc(100% - var(--sidebar-width));
+    margin-left: 0;
+    transition: margin-left 0.28s cubic-bezier(0.4, 0, 0.2, 1), width 0.28s cubic-bezier(0.4, 0, 0.2, 1);
+    width: 100%;
 }
 
 @media (max-width: 991.98px) {
@@ -1953,7 +1953,7 @@ textarea:focus {
     --sb-active:   #1d4ed8;
     --sb-text:     #9ca3af;
     --sb-text-act: #ffffff;
-    --sb-width:    260px;
+    --sb-width:    235px;
 }
 
 #sidebar {
@@ -1963,33 +1963,78 @@ textarea:focus {
     display: flex;
     flex-direction: column;
     position: fixed;
-    top: 0; left: 0; bottom: 0;
+    top: 0; 
+    left: calc(-1 * var(--sb-width)); /* Default hidden */
+    bottom: 0;
     height: 100dvh;
     z-index: 1040;
     border-right: 1px solid var(--sb-border);
     overflow: hidden;
     overscroll-behavior: contain;
     padding-top: env(safe-area-inset-top, 0px);
-    transition: none;
+    transition: left 0.28s cubic-bezier(0.4, 0, 0.2, 1), box-shadow 0.28s ease;
+}
+
+/* State ketika sidebar dibuka di Desktop */
+body.sidebar-open #sidebar {
+    left: 0;
+    box-shadow: 4px 0 24px rgba(0, 0, 0, 0.25);
+}
+
+.sb-brand-container {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 0 8px 0 0;
+    border-bottom: 1px solid var(--sb-border);
+    flex-shrink: 0;
 }
 
 .sb-brand {
     display: flex;
     align-items: center;
     gap: 10px;
-    padding: 20px 18px 18px;
+    padding: 16px 14px;
     text-decoration: none;
-    border-bottom: 1px solid var(--sb-border);
     flex-shrink: 0;
+    cursor: default;
+    user-select: none;
+    pointer-events: none; /* Logo dan nama app tidak bisa dipencet */
 }
 .sb-brand-icon {
-    width: 34px; height: 34px;
+    width: 30px; height: 30px;
     background: var(--sb-active);
-    border-radius: 9px;
+    border-radius: 8px;
     display: flex; align-items: center; justify-content: center;
     flex-shrink: 0;
 }
-.sb-brand-icon i { color: #fff; font-size: 1rem; }
+.sb-brand-icon i { color: #fff; font-size: 0.9rem; }
+
+.sb-hide-btn {
+    width: 30px;
+    height: 30px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 8px;
+    background: rgba(255,255,255,0.06);
+    border: 1px solid var(--sb-border);
+    color: #9ca3af;
+    transition: all 0.2s ease;
+    cursor: pointer;
+    pointer-events: auto; /* Tombol X bisa dipencet */
+}
+.sb-hide-btn:hover {
+    background: rgba(255,255,255,0.14);
+    color: #ffffff;
+    transform: scale(1.05);
+}
+@media (min-width: 992px) {
+    .sb-hide-btn {
+        display: none !important;
+    }
+}
+
 #sidebar,
 .sb-brand,
 .sb-brand-name,
@@ -2003,7 +2048,7 @@ textarea:focus {
 }
 
 .sb-brand-name {
-    font-size: 1.25rem;
+    font-size: 1.15rem;
     font-weight: 800;
     color: #fff;
     letter-spacing: -0.3px;
@@ -2012,7 +2057,7 @@ textarea:focus {
 .sb-brand-name span { color: #60a5fa; }
 
 .sb-nav {
-    padding: 14px 10px;
+    padding: 10px 8px;
     flex: 1;
     overflow-y: auto;
     scrollbar-width: none;
@@ -2022,27 +2067,27 @@ textarea:focus {
 .sb-nav::-webkit-scrollbar { display: none; }
 
 .sb-section-label {
-    font-size: 0.75rem;
+    font-size: 0.7rem;
     font-weight: 700;
     letter-spacing: 0.08em;
     color: #4b5563;
     text-transform: uppercase;
-    padding: 10px 10px 6px;
+    padding: 8px 8px 4px;
 }
 
 .sb-link {
     display: flex;
     align-items: center;
-    gap: 10px;
-    padding: 10px 12px;
+    gap: 9px;
+    padding: 8px 10px;
     border-radius: 8px;
     color: var(--sb-text);
     text-decoration: none;
-    font-size: 0.9rem;
+    font-size: 0.85rem;
     font-weight: 500;
     margin-bottom: 2px;
     border: 1px solid transparent;
-    min-height: 44px;
+    min-height: 38px;
     transition: background 0.15s, color 0.15s;
 }
 .sb-link:hover {
@@ -2054,29 +2099,29 @@ textarea:focus {
     color: var(--sb-text-act);
     border-color: rgba(37,99,235,0.3);
 }
-.sb-link i { font-size: 1.1rem; flex-shrink: 0; width: 22px; text-align: center; }
+.sb-link i { font-size: 1rem; flex-shrink: 0; width: 20px; text-align: center; }
 
 .sb-divider {
     height: 1px;
     background: var(--sb-border);
-    margin: 10px 8px;
+    margin: 8px 6px;
 }
 
 .sb-footer {
-    padding: 14px 10px;
-    padding-bottom: calc(14px + env(safe-area-inset-bottom, 0px));
+    padding: 10px 8px;
+    padding-bottom: calc(10px + env(safe-area-inset-bottom, 0px));
     border-top: 1px solid var(--sb-border);
 }
 .sb-footer-info {
     display: flex;
     align-items: center;
-    gap: 9px;
-    padding: 8px 10px;
+    gap: 8px;
+    padding: 6px 8px;
     border-radius: 8px;
     background: rgba(255,255,255,0.04);
 }
 .sb-avatar {
-    width: 34px; height: 34px;
+    width: 30px; height: 30px;
     border-radius: 8px;
     background: #2563eb;
     display: flex; align-items: center; justify-content: center;
@@ -2084,13 +2129,42 @@ textarea:focus {
     font-weight: bold;
     color: white;
 }
-.sb-avatar i { color: #fff; font-size: 1rem; }
-.sb-user-name  { font-size: 0.85rem; font-weight: 600; color: #e5e7eb; line-height: 1.2; }
-.sb-user-role  { font-size: 0.75rem; color: #6b7280; }
+.sb-avatar i { color: #fff; font-size: 0.9rem; }
+.sb-user-name  { font-size: 0.82rem; font-weight: 600; color: #e5e7eb; line-height: 1.2; }
+.sb-user-role  { font-size: 0.72rem; color: #6b7280; }
+
+.sidebar-toggle-btn {
+    width: 38px;
+    height: 38px;
+    display: inline-flex !important;
+    align-items: center;
+    justify-content: center;
+    border-radius: 10px !important;
+    background-color: #f8fafc !important;
+    border: 1px solid #e2e8f0 !important;
+    color: #334155 !important;
+    cursor: pointer;
+    transition: all 0.2s ease !important;
+}
+.sidebar-toggle-btn:hover {
+    background-color: #f1f5f9 !important;
+    border-color: #cbd5e1 !important;
+    color: #0f172a !important;
+    transform: translateY(-1px);
+}
 
 .main-content {
-    margin-left: var(--sb-width) !important;
-    transition: margin-left 0.28s cubic-bezier(0.4,0,0.2,1);
+    margin-left: 0 !important; /* Default hidden = full width */
+    width: 100% !important;
+    padding: 1.5rem;
+    transition: margin-left 0.28s cubic-bezier(0.4,0,0.2,1), width 0.28s cubic-bezier(0.4,0,0.2,1);
+}
+
+@media (min-width: 992px) {
+    body.sidebar-open .main-content {
+        margin-left: var(--sb-width) !important;
+        width: calc(100% - var(--sb-width)) !important;
+    }
 }
 
 @media (max-width: 991.98px) {
@@ -2098,11 +2172,16 @@ textarea:focus {
         left: calc(-1 * var(--sb-width));
         transition: left 0.28s cubic-bezier(0.4, 0, 0.2, 1);
     }
-    #sidebar.toggled {
+    #sidebar.toggled,
+    body.sidebar-open #sidebar {
         left: 0;
         box-shadow: 6px 0 32px rgba(0,0,0,0.5);
     }
-    .main-content { margin-left: 0 !important; }
+    .main-content { 
+        margin-left: 0 !important; 
+        width: 100% !important; 
+        padding: 1rem;
+    }
 }
 
 /* =================================================================

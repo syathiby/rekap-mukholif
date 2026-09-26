@@ -141,19 +141,20 @@ if (isset($conn)) {
 
     <!-- Unified Sidebar -->
     <nav id="sidebar">
-        <!-- Mobile Close Button -->
-        <button class="d-md-none btn btn-sm text-white position-absolute end-0 top-0 me-2"
-                id="sidebarCloseBtn"
-                style="margin-top: calc(1rem + env(safe-area-inset-top, 0px)); background: rgba(255,255,255,0.1); border: none; border-radius: 50%; width: 32px; height: 32px; display: flex; align-items: center; justify-content: center; z-index: 1050;"
-                onclick="closeSidebarMobile()">
-            <i class="fas fa-times"></i>
-        </button>
-
-        <!-- Brand -->
-        <a href="<?= BASE_URL ?>/dashboard.php" class="sb-brand">
-            <div class="sb-brand-icon"><i class="fas fa-shield-alt"></i></div>
-            <div class="sb-brand-name">Asuh<span>Track</span></div>
-        </a>
+        <!-- Brand (Non-clickable) & Close Button (Mobile Only) -->
+        <div class="sb-brand-container">
+            <div class="sb-brand">
+                <div class="sb-brand-icon"><i class="fas fa-shield-alt"></i></div>
+                <div class="sb-brand-name">Asuh<span>Track</span></div>
+            </div>
+            <button class="sb-hide-btn me-2 d-lg-none"
+                    id="sidebarCloseBtn"
+                    type="button"
+                    title="Tutup Menu"
+                    onclick="closeSidebarMobile()">
+                <i class="fas fa-times"></i>
+            </button>
+        </div>
 
         <!-- Nav -->
         <?php include __DIR__ . '/sidebar.php'; ?>
@@ -196,9 +197,9 @@ if (isset($conn)) {
         <header class="header sticky-top bg-white mb-4" style="border-bottom: 1px solid var(--border-color); z-index: 1020;">
             <nav class="navbar h-100 px-lg-4 px-3 py-2">
                 <div class="container-fluid d-flex align-items-center justify-content-between p-0">
-                    <!-- Kiri: Burger (Mobile) & Page Title (Mobile & Desktop) -->
+                    <!-- Kiri: Burger / Toggle Button (Mobile & Desktop) & Page Title -->
                     <div class="d-flex align-items-center">
-                        <button class="btn btn-light d-lg-none me-3" type="button" onclick="openSidebarMobile()">
+                        <button class="btn btn-light sidebar-toggle-btn me-3" type="button" onclick="toggleSidebar()" title="Tampilkan / Sembunyikan Menu (Ctrl+B)">
                             <i class="fas fa-bars"></i>
                         </button>
                         
@@ -241,11 +242,33 @@ if (isset($conn)) {
         </header>
 
 <script>
+function isMobileView() {
+    return window.innerWidth < 992;
+}
+
+function toggleSidebar() {
+    var side = document.getElementById('sidebar');
+    if (isMobileView()) {
+        if (side && (side.classList.contains('toggled') || document.body.classList.contains('sidebar-open'))) {
+            closeSidebarMobile();
+        } else {
+            openSidebarMobile();
+        }
+    } else {
+        if (document.body.classList.contains('sidebar-open')) {
+            document.body.classList.remove('sidebar-open');
+        } else {
+            document.body.classList.add('sidebar-open');
+        }
+    }
+}
+
 function openSidebarMobile() {
     var side = document.getElementById('sidebar');
     var overlay = document.getElementById('sidebarOverlay');
-    if(side) side.classList.add('toggled');
-    if(overlay) {
+    if (side) side.classList.add('toggled');
+    document.body.classList.add('sidebar-open');
+    if (overlay) {
         overlay.style.display = 'block';
         requestAnimationFrame(() => overlay.classList.add('visible'));
     }
@@ -255,13 +278,43 @@ function openSidebarMobile() {
 function closeSidebarMobile() {
     var side = document.getElementById('sidebar');
     var overlay = document.getElementById('sidebarOverlay');
-    if(side) side.classList.remove('toggled');
-    if(overlay) {
+    if (side) side.classList.remove('toggled');
+    document.body.classList.remove('sidebar-open');
+    if (overlay) {
         overlay.classList.remove('visible');
         setTimeout(() => { overlay.style.display = 'none'; }, 250);
     }
     document.body.style.overflow = '';
 }
+
+function closeSidebar() {
+    closeSidebarMobile();
+    document.body.classList.remove('sidebar-open');
+}
+
+// Otomatis tutup sidebar setiap kali menu / link di sidebar dipilih
+document.addEventListener('DOMContentLoaded', function() {
+    var sidebar = document.getElementById('sidebar');
+    if (sidebar) {
+        sidebar.addEventListener('click', function(e) {
+            var link = e.target.closest('a');
+            if (link && !link.hasAttribute('data-bs-toggle') && link.getAttribute('href') !== '#') {
+                closeSidebar();
+            }
+        });
+    }
+});
+
+// Shortcut Keyboard: Ctrl + B / Cmd + B untuk toggle sidebar
+document.addEventListener('keydown', function(e) {
+    if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'b') {
+        var tag = (e.target.tagName || '').toLowerCase();
+        if (tag !== 'input' && tag !== 'textarea' && !e.target.isContentEditable) {
+            e.preventDefault();
+            toggleSidebar();
+        }
+    }
+});
 
 function confirmLogout(event) {
     if (event) {

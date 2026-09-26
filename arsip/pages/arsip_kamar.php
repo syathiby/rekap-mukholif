@@ -75,6 +75,51 @@ while ($r = mysqli_fetch_assoc($res_kbs)) {
     if (isset($raw_data[$r['kamar']])) $raw_data[$r['kamar']]['pelanggaran_kebersihan'] = (int)$r['total'];
 }
 
+// 🔹 Kueri 6: Ambil Musyrif per Kamar dari Arsip
+$musyrif_map = [];
+
+// Dari arsip_data_rapot (diurutkan berdasarkan entri terbanyak per kamar untuk mengambil musyrif utama)
+$stmt_musyrif = mysqli_prepare($conn, "
+    SELECT santri_kamar, musyrif_nama, COUNT(*) as cnt 
+    FROM arsip_data_rapot 
+    WHERE arsip_id = ? AND musyrif_nama IS NOT NULL AND TRIM(musyrif_nama) != '' 
+    GROUP BY santri_kamar, musyrif_nama 
+    ORDER BY santri_kamar, cnt DESC
+");
+if ($stmt_musyrif) {
+    mysqli_stmt_bind_param($stmt_musyrif, "i", $arsip_id);
+    mysqli_stmt_execute($stmt_musyrif);
+    $res_musyrif = mysqli_stmt_get_result($stmt_musyrif);
+    while ($rm = mysqli_fetch_assoc($res_musyrif)) {
+        $kmr = (string)$rm['santri_kamar'];
+        if (!isset($musyrif_map[$kmr])) {
+            $musyrif_map[$kmr] = $rm['musyrif_nama'];
+        }
+    }
+    mysqli_stmt_close($stmt_musyrif);
+}
+
+// Fallback jika belum ada di rapot, ambil dari arsip_data_rapot_tahunan
+$stmt_musyrif_tahunan = mysqli_prepare($conn, "
+    SELECT kamar, musyrif_nama, COUNT(*) as cnt 
+    FROM arsip_data_rapot_tahunan 
+    WHERE arsip_id = ? AND musyrif_nama IS NOT NULL AND TRIM(musyrif_nama) != '' 
+    GROUP BY kamar, musyrif_nama 
+    ORDER BY kamar, cnt DESC
+");
+if ($stmt_musyrif_tahunan) {
+    mysqli_stmt_bind_param($stmt_musyrif_tahunan, "i", $arsip_id);
+    mysqli_stmt_execute($stmt_musyrif_tahunan);
+    $res_musyrif_tahunan = mysqli_stmt_get_result($stmt_musyrif_tahunan);
+    while ($rm = mysqli_fetch_assoc($res_musyrif_tahunan)) {
+        $kmr = (string)$rm['kamar'];
+        if (!isset($musyrif_map[$kmr])) {
+            $musyrif_map[$kmr] = $rm['musyrif_nama'];
+        }
+    }
+    mysqli_stmt_close($stmt_musyrif_tahunan);
+}
+
 // 🔹 Merakit dan Menghitung Agregat Rata-rata per Kamar
 $kamar_data = [];
 
@@ -94,7 +139,8 @@ foreach ($raw_data as $d) {
         'avg_kasus' => $avg_kasus,
         'avg_reward' => $avg_rwd,
         'avg_rapot' => $avg_rpt,
-        'pelanggaran_kebersihan' => $kbs
+        'pelanggaran_kebersihan' => $kbs,
+        'musyrif' => $musyrif_map[$d['kamar']] ?? '-'
     ];
 }
 
@@ -244,6 +290,12 @@ body { background-color: #f8f9fa; font-family: 'Poppins', sans-serif; color: #33
                         
                         <div style="font-size: 13px; color: #64748b; margin-bottom: 15px;">
                             <i class="fas fa-users me-1"></i> Terdiri dari <?= $jml_santri ?> santri
+                            <?php if(isset($row['musyrif']) && $row['musyrif'] !== '-'): ?>
+                            <br>
+                            <span class="badge bg-white text-secondary border mt-2 fw-normal shadow-sm" style="font-size: 0.72rem; padding: 0.35rem 0.6rem; border-radius: 6px; display: inline-block;">
+                                <i class="fas fa-user-tie text-muted me-1"></i>Musyrif: <?= htmlspecialchars($row['musyrif']) ?>
+                            </span>
+                            <?php endif; ?>
                         </div>
 
                         <div class="stats-container">

@@ -106,20 +106,102 @@ require_once __DIR__ . '/../../layouts/header.php';
 }
 .tab-nav-wrap .nav-link:hover:not(.active) { background: #e2e8f0; }
 
-/* Tables */
+/* Tables & Headers */
 .table-section-header {
     display: flex;
     align-items: center;
     justify-content: space-between;
     flex-wrap: wrap;
-    gap: 10px;
+    gap: 12px;
     margin-bottom: 16px;
+    width: 100%;
 }
 .table-section-header h5 {
-    font-size: clamp(0.9rem, 2.5vw, 1.1rem);
+    font-size: clamp(0.95rem, 2.5vw, 1.15rem);
     font-weight: 700;
     margin: 0;
+    color: #0f172a;
 }
+.section-header-badge {
+    width: 38px;
+    height: 38px;
+    border-radius: 10px;
+    background: #eef2ff;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.1rem;
+    flex-shrink: 0;
+}
+.header-actions-group {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    flex-wrap: wrap;
+}
+
+/* Solid Button Ingatkan Massal (No Gradient) */
+.btn-ingatkan-massal {
+    background-color: #d97706 !important;
+    color: #ffffff !important;
+    border: 1px solid #b45309 !important;
+    border-radius: 10px;
+    padding: 8px 16px;
+    font-size: 0.84rem;
+    font-weight: 600;
+    letter-spacing: 0.1px;
+    box-shadow: 0 2px 5px rgba(217, 119, 6, 0.22);
+    transition: all 0.15s ease;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    white-space: nowrap;
+}
+.btn-ingatkan-massal:hover {
+    background-color: #b45309 !important;
+    border-color: #92400e !important;
+    box-shadow: 0 3px 8px rgba(180, 83, 9, 0.3);
+    transform: translateY(-1px);
+}
+.btn-ingatkan-massal:active {
+    transform: translateY(0);
+}
+.btn-ingatkan-massal:disabled {
+    background-color: #f1f5f9 !important;
+    color: #94a3b8 !important;
+    border: 1px solid #e2e8f0 !important;
+    box-shadow: none !important;
+    cursor: not-allowed;
+    transform: none !important;
+}
+
+.btn-segarkan-custom {
+    border-radius: 10px;
+    padding: 8px 14px;
+    font-size: 0.84rem;
+    font-weight: 600;
+    white-space: nowrap;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+}
+
+.user-avatar-mini {
+    width: 36px;
+    height: 36px;
+    border-radius: 10px;
+    background: #e0e7ff;
+    color: #4338ca;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: 700;
+    font-size: 0.9rem;
+    flex-shrink: 0;
+}
+
 .table th {
     font-size: 0.78rem;
     font-weight: 600;
@@ -127,22 +209,155 @@ require_once __DIR__ . '/../../layouts/header.php';
     text-transform: uppercase;
     color: #64748b;
     border-bottom: 2px solid #e2e8f0;
+    padding: 12px 14px;
 }
-.table td { font-size: 0.875rem; vertical-align: middle; }
+.table td { 
+    font-size: 0.875rem; 
+    vertical-align: middle; 
+    padding: 12px 14px;
+}
 
-/* Mobile card view for tables */
-@media (max-width: 640px) {
-    .table-responsive .table thead { display: none; }
-    .table-responsive .table tbody tr {
-        display: block;
+/* Subtle Badges */
+.bg-success-subtle { background-color: #ecfdf5 !important; }
+.border-success-subtle { border-color: #a7f3d0 !important; }
+.bg-danger-subtle { background-color: #fef2f2 !important; }
+.border-danger-subtle { border-color: #fecaca !important; }
+.bg-warning-subtle { background-color: #fffbeb !important; }
+.border-warning-subtle { border-color: #fde68a !important; }
+
+/* ── RESPONSIVE MOBILE CARD VIEW (NO HORIZONTAL SCROLL) ── */
+@media (max-width: 767.98px) {
+    .table-section-header {
+        flex-direction: column;
+        align-items: stretch;
+        gap: 10px;
+        margin-bottom: 14px;
+    }
+    .header-actions-group {
+        display: flex !important;
+        flex-direction: column !important;
+        gap: 8px !important;
+        width: 100% !important;
+        box-sizing: border-box !important;
+    }
+    .header-actions-group .btn-ingatkan-massal,
+    .header-actions-group .btn-segarkan-custom {
+        width: 100% !important;
+        padding: 9px 14px !important;
+        font-size: 0.85rem !important;
+        justify-content: center !important;
+        box-sizing: border-box !important;
+    }
+
+    .table-responsive {
+        overflow-x: visible !important;
+        border: none !important;
+        padding: 0 !important;
+    }
+    .table-responsive .table {
+        display: block !important;
+        width: 100% !important;
+        min-width: 100% !important;
+        margin: 0 !important;
+        border: none !important;
+    }
+    .table-responsive .table thead {
+        display: none !important;
+    }
+    .table-responsive .table tbody {
+        display: flex !important;
+        flex-direction: column !important;
+        gap: 12px !important;
+        width: 100% !important;
+    }
+
+    /* Tiap Musyrif jadi Card Rapi (CSS Grid Mobile) */
+    .table-responsive .table tbody tr.kinerja-card-item {
+        display: grid !important;
+        grid-template-columns: 1fr auto;
+        grid-template-areas: 
+            "user status"
+            "tunggakan tunggakan"
+            "action action";
+        background: #ffffff !important;
+        border: 1px solid #e2e8f0 !important;
+        border-radius: 14px !important;
+        padding: 14px !important;
+        box-shadow: 0 2px 6px rgba(0, 0, 0, 0.03) !important;
+        gap: 10px 8px !important;
+        align-items: center !important;
+    }
+
+    .table-responsive .table tbody tr.kinerja-card-item > td {
+        padding: 0 !important;
+        border: none !important;
+        background: transparent !important;
+    }
+
+    .cell-user {
+        grid-area: user;
+    }
+    .cell-status {
+        grid-area: status;
+        text-align: right;
+    }
+    .cell-tertunggak {
+        grid-area: tunggakan;
+        background: #f8fafc !important;
+        border-radius: 10px !important;
+        padding: 8px 10px !important;
+        border: 1px solid #f1f5f9 !important;
+    }
+    .cell-action {
+        grid-area: action;
+        width: 100% !important;
+        margin-top: 2px;
+    }
+    .cell-action .btn {
+        width: 100% !important;
+        padding: 8px 14px !important;
+        font-size: 0.84rem !important;
+        display: flex !important;
+        align-items: center !important;
+        justify-content: center !important;
+    }
+
+    /* Empty state row center alignment */
+    .table-responsive .table tbody tr.empty-state-row {
+        display: block !important;
+        background: #ffffff !important;
+        border: 1px solid #e2e8f0 !important;
+        border-radius: 14px !important;
+        box-shadow: 0 2px 6px rgba(0, 0, 0, 0.03) !important;
+        padding: 20px 14px !important;
+        text-align: center !important;
+    }
+    .table-responsive .table tbody tr.empty-state-row td {
+        display: flex !important;
+        flex-direction: row !important;
+        align-items: center !important;
+        justify-content: center !important;
+        gap: 8px !important;
+        padding: 0 !important;
+        border: none !important;
+        width: 100% !important;
+        text-align: center !important;
+    }
+    .table-responsive .table tbody tr.empty-state-row td::before {
+        display: none !important;
+        content: '' !important;
+    }
+
+    /* Standard generic mobile row for tableAktivitas / tableMusyrif */
+    .table-responsive .table tbody tr:not(.kinerja-card-item):not(.empty-state-row) {
+        display: block !important;
         background: #fff;
         border: 1px solid #e2e8f0;
         border-radius: 12px;
-        margin-bottom: 10px;
         padding: 12px;
-        box-shadow: 0 1px 4px rgba(0,0,0,0.04);
+        box-shadow: 0 1px 4px rgba(0,0,0,0.03);
     }
-    .table-responsive .table tbody td {
+    .table-responsive .table tbody tr:not(.kinerja-card-item):not(.empty-state-row) td {
         display: flex;
         justify-content: space-between;
         align-items: center;
@@ -151,19 +366,18 @@ require_once __DIR__ . '/../../layouts/header.php';
         border-bottom: 1px solid #f1f5f9;
         font-size: 0.85rem;
     }
-    .table-responsive .table tbody td:last-child { border-bottom: none; }
-    .table-responsive .table tbody td::before {
+    .table-responsive .table tbody tr:not(.kinerja-card-item):not(.empty-state-row) td:last-child {
+        border-bottom: none;
+    }
+    .table-responsive .table tbody tr:not(.kinerja-card-item):not(.empty-state-row) td::before {
         content: attr(data-label);
         font-weight: 600;
         color: #64748b;
         font-size: 0.75rem;
         text-transform: uppercase;
-        letter-spacing: 0.4px;
         flex-shrink: 0;
         margin-right: 8px;
     }
-    .table-responsive .table tbody td.text-end { justify-content: flex-end; }
-    .table-responsive .table tbody td.text-end::before { content: ''; }
 }
 
 /* Main card */
@@ -375,16 +589,29 @@ require_once __DIR__ . '/../../layouts/header.php';
             <div class="tab-pane fade" id="kinerja" role="tabpanel">
                 <!-- Musyrif Belum Rapot -->
                 <div class="table-section-header">
-                    <h5><i class="fas fa-file-invoice text-primary me-2"></i>Musyrif Belum Cetak Rapot</h5>
-                    <button class="btn btn-sm btn-outline-primary" onclick="loadKinerja()">
-                        <i class="fas fa-sync-alt me-1"></i> Segarkan
-                    </button>
+                    <div class="d-flex align-items-center gap-2">
+                        <div class="section-header-badge">
+                            <i class="fas fa-file-invoice text-primary"></i>
+                        </div>
+                        <div>
+                            <h5 class="mb-0">Musyrif Belum Cetak Rapot</h5>
+                            <span class="text-muted small d-none d-sm-inline">Daftar musyrif dengan rapot yang belum disetorkan</span>
+                        </div>
+                    </div>
+                    <div class="header-actions-group">
+                        <button class="btn btn-ingatkan-massal" id="btnKirimSemuaPeringatan" onclick="kirimSemuaPeringatan()" style="display:none;">
+                            <i class="fas fa-bell me-1"></i> Ingatkan Semua
+                        </button>
+                        <button class="btn btn-sm btn-outline-primary btn-segarkan-custom fw-semibold px-3 py-1 rounded-3" onclick="loadKinerja()">
+                            <i class="fas fa-sync-alt me-1"></i> Segarkan
+                        </button>
+                    </div>
                 </div>
-                <div class="table-responsive mb-5">
+                <div class="table-responsive mb-4">
                     <table class="table table-hover align-middle mb-0" id="tableKinerja">
                         <thead class="table-light">
                             <tr>
-                                <th>Nama Lengkap</th>
+                                <th>Nama Musyrif</th>
                                 <th>Username</th>
                                 <th>Bulan Tertunggak</th>
                                 <th>Status</th>
@@ -398,9 +625,21 @@ require_once __DIR__ . '/../../layouts/header.php';
                 </div>
 
                 <!-- Rapot Janggal / Mencurigakan -->
-                <div class="table-section-header mt-2">
-                    <h5><i class="fas fa-exclamation-triangle text-warning me-2"></i>Rapot Mencurigakan <span class="badge bg-warning text-dark ms-1" id="badgeJanggalCount" style="display:none;"></span></h5>
-                    <span class="text-muted small">Musyrif yang mengisi rapot sebelum waktunya</span>
+                <div class="table-section-header mt-4">
+                    <div class="d-flex align-items-center gap-2">
+                        <div class="section-header-badge" style="background:#fffbeb;">
+                            <i class="fas fa-exclamation-triangle text-warning"></i>
+                        </div>
+                        <div>
+                            <h5 class="mb-0">Rapot Mencurigakan <span class="badge bg-warning text-dark ms-1" id="badgeJanggalCount" style="display:none;"></span></h5>
+                            <span class="text-muted small d-none d-sm-inline">Musyrif yang mengisi rapot sebelum waktunya dibuka</span>
+                        </div>
+                    </div>
+                    <div class="header-actions-group">
+                        <button class="btn btn-ingatkan-massal" id="btnKirimSemuaJanggal" onclick="kirimSemuaPeringatanJanggal()" style="display:none;">
+                            <i class="fas fa-shield-alt me-1"></i> Ingatkan Semua Integritas
+                        </button>
+                    </div>
                 </div>
                 <div class="alert alert-warning border-0 py-2 px-3 mb-3" style="font-size:0.82rem; border-radius:10px;">
                     <i class="fas fa-info-circle me-1"></i>
@@ -410,7 +649,7 @@ require_once __DIR__ . '/../../layouts/header.php';
                     <table class="table table-hover align-middle mb-0" id="tableJanggal">
                         <thead class="table-light">
                             <tr>
-                                <th>Nama Lengkap</th>
+                                <th>Nama Musyrif</th>
                                 <th>Username</th>
                                 <th>Rapot Janggal</th>
                                 <th>Status</th>
@@ -529,33 +768,66 @@ function loadKinerja() {
         if (res.status === 'success') {
             // ── Tabel: Musyrif Belum Rapot ──
             const tbody = document.querySelector('#tableKinerja tbody');
+            const btnAll = document.getElementById('btnKirimSemuaPeringatan');
             tbody.innerHTML = '';
+
             if (res.data.length === 0) {
-                tbody.innerHTML = '<tr><td colspan="5" class="text-center py-5 text-success fw-bold"><i class="fas fa-check-circle fs-3 d-block mb-2"></i>Semua musyrif sudah menyetorkan rapot!</td></tr>';
+                tbody.innerHTML = '<tr class="empty-state-row"><td colspan="5" class="py-4 text-success fw-semibold"><i class="fas fa-check-circle fs-4 me-2 text-success"></i><span>Semua musyrif sudah menyetorkan rapot!</span></td></tr>';
+                if (btnAll) btnAll.style.display = 'none';
             } else {
+                const unnotified = res.data.filter(item => !item.has_recent_warning);
+                if (btnAll) {
+                    btnAll.style.display = 'inline-flex';
+                    if (unnotified.length > 0) {
+                        btnAll.disabled = false;
+                        btnAll.className = 'btn btn-ingatkan-massal';
+                        btnAll.innerHTML = `<i class="fas fa-bell me-1"></i> Ingatkan Semua (${unnotified.length})`;
+                    } else {
+                        btnAll.disabled = true;
+                        btnAll.className = 'btn btn-ingatkan-massal';
+                        btnAll.innerHTML = `<i class="fas fa-check-circle me-1"></i> Semua Sudah Diingatkan`;
+                    }
+                }
+
                 res.data.forEach(item => {
                     const badgeStatus = item.is_active == 1
-                        ? '<span class="badge bg-success">Aktif</span>'
-                        : '<span class="badge bg-danger">Suspend</span>';
+                        ? '<span class="badge bg-success-subtle text-success border border-success-subtle px-2 py-1 rounded-pill fw-medium"><i class="fas fa-check-circle me-1 small"></i>Aktif</span>'
+                        : '<span class="badge bg-danger-subtle text-danger border border-danger-subtle px-2 py-1 rounded-pill fw-medium"><i class="fas fa-ban me-1 small"></i>Suspend</span>';
 
                     let badges = '';
                     if (item.tertunggak && item.tertunggak.length > 0) {
-                        badges = item.tertunggak.map(m => `<span class="badge bg-danger me-1 mb-1" style="font-size:0.72rem;">${m}</span>`).join('');
+                        badges = item.tertunggak.map(m => `<span class="badge bg-danger-subtle text-danger border border-danger-subtle me-1 mb-1 fw-normal" style="font-size:0.75rem; border-radius:6px;"><i class="fas fa-exclamation-circle me-1 small"></i>${m}</span>`).join('');
                     }
 
                     const pesan_bc = `Peringatan: Anda belum menyetorkan rapot kepengasuhan untuk bulan: ${item.tertunggak.join(', ')}. Mohon untuk segera diselesaikan.`;
 
                     const btnPeringatan = item.has_recent_warning
-                        ? `<button class="btn btn-sm btn-secondary" disabled title="Sudah diingatkan dalam 24 jam terakhir"><i class="fas fa-check-circle me-1"></i>Terkirim</button>`
-                        : `<button class="btn btn-sm btn-outline-warning" onclick="kirimPeringatan(${item.id}, '${pesan_bc}')"><i class="fas fa-bell me-1"></i>Peringatan</button>`;
+                        ? `<button class="btn btn-sm btn-light border text-muted px-3 py-1 rounded-3" disabled title="Sudah diingatkan dalam 24 jam terakhir"><i class="fas fa-check-circle text-success me-1"></i>Terkirim</button>`
+                        : `<button class="btn btn-sm btn-outline-warning text-dark fw-semibold px-3 py-1 rounded-3" onclick="kirimPeringatan(${item.id}, '${pesan_bc}')"><i class="fas fa-bell text-warning me-1"></i>Peringatan</button>`;
+
+                    const initial = (item.nama_lengkap || 'M').charAt(0).toUpperCase();
 
                     tbody.innerHTML += `
-                        <tr>
-                            <td data-label="Nama" class="fw-bold">${item.nama_lengkap}</td>
-                            <td data-label="Username" class="text-muted">${item.username}</td>
-                            <td data-label="Tertunggak">${badges}</td>
-                            <td data-label="Status">${badgeStatus}</td>
-                            <td data-label="Aksi" class="text-end">${btnPeringatan}</td>
+                        <tr class="kinerja-card-item">
+                            <td class="cell-user" data-label="Musyrif">
+                                <div class="d-flex align-items-center gap-2">
+                                    <div class="user-avatar-mini">${initial}</div>
+                                    <div>
+                                        <div class="fw-bold text-dark">${item.nama_lengkap}</div>
+                                        <div class="text-muted small">@${item.username}</div>
+                                    </div>
+                                </div>
+                            </td>
+                            <td class="cell-tertunggak" data-label="Bulan Tertunggak">
+                                <div class="d-md-none text-muted small fw-semibold mb-1"><i class="fas fa-clock text-danger me-1"></i>Tunggakan Rapot:</div>
+                                <div>${badges}</div>
+                            </td>
+                            <td class="cell-status" data-label="Status">
+                                <div>${badgeStatus}</div>
+                            </td>
+                            <td class="cell-action text-end" data-label="Aksi">
+                                ${btnPeringatan}
+                            </td>
                         </tr>
                     `;
                 });
@@ -564,36 +836,69 @@ function loadKinerja() {
             // ── Tabel: Rapot Janggal ──
             const tbodyJ = document.querySelector('#tableJanggal tbody');
             const badgeCount = document.getElementById('badgeJanggalCount');
+            const btnAllJ = document.getElementById('btnKirimSemuaJanggal');
             tbodyJ.innerHTML = '';
             if (!res.janggal || res.janggal.length === 0) {
-                tbodyJ.innerHTML = '<tr><td colspan="5" class="text-center py-4 text-success"><i class="fas fa-check-circle me-1"></i>Tidak ada rapot mencurigakan.</td></tr>';
+                tbodyJ.innerHTML = '<tr class="empty-state-row"><td colspan="5" class="py-4 text-success fw-medium"><i class="fas fa-check-circle fs-5 me-2 text-success"></i><span>Tidak ada rapot mencurigakan.</span></td></tr>';
                 badgeCount.style.display = 'none';
+                if (btnAllJ) btnAllJ.style.display = 'none';
             } else {
                 badgeCount.textContent = res.janggal.length;
                 badgeCount.style.display = 'inline-block';
+                
+                const unnotifiedJ = res.janggal.filter(item => !item.has_recent_warning);
+                if (btnAllJ) {
+                    btnAllJ.style.display = 'inline-flex';
+                    if (unnotifiedJ.length > 0) {
+                        btnAllJ.disabled = false;
+                        btnAllJ.className = 'btn btn-ingatkan-massal';
+                        btnAllJ.innerHTML = `<i class="fas fa-shield-alt me-1"></i> Ingatkan Semua Integritas (${unnotifiedJ.length})`;
+                    } else {
+                        btnAllJ.disabled = true;
+                        btnAllJ.className = 'btn btn-ingatkan-massal';
+                        btnAllJ.innerHTML = `<i class="fas fa-check-circle me-1"></i> Semua Sudah Diingatkan`;
+                    }
+                }
+
                 res.janggal.forEach(item => {
                     const badgeStatus = item.is_active == 1
-                        ? '<span class="badge bg-success">Aktif</span>'
-                        : '<span class="badge bg-danger">Suspend</span>';
+                        ? '<span class="badge bg-success-subtle text-success border border-success-subtle px-2 py-1 rounded-pill fw-medium"><i class="fas fa-check-circle me-1 small"></i>Aktif</span>'
+                        : '<span class="badge bg-danger-subtle text-danger border border-danger-subtle px-2 py-1 rounded-pill fw-medium"><i class="fas fa-ban me-1 small"></i>Suspend</span>';
 
                     const badges = item.bulan_janggal.map(b =>
-                        `<span class="badge bg-warning text-dark me-1 mb-1" style="font-size:0.72rem;"><i class="fas fa-exclamation-circle me-1"></i>${b}</span>`
+                        `<span class="badge bg-warning-subtle text-warning-emphasis border border-warning-subtle me-1 mb-1 fw-normal" style="font-size:0.75rem; border-radius:6px; color:#9a3412 !important;"><i class="fas fa-exclamation-triangle me-1 small text-warning"></i>${b}</span>`
                     ).join('');
 
                     const bulanList = item.bulan_janggal.join(', ');
                     const pesanJanggal = `Peringatan Integritas Data: Anda terdeteksi mengisi rapot kepengasuhan untuk ${bulanList} sebelum periode pengisian dibuka (7 hari terakhir bulan tersebut). Tindakan ini berpotensi melanggar integritas data. Harap segera Lakukan klarifikasi Data.`;
 
                     const btnPeringatan = item.has_recent_warning
-                        ? `<button class="btn btn-sm btn-secondary" disabled title="Sudah diingatkan dalam 24 jam terakhir"><i class="fas fa-check-circle me-1"></i>Terkirim</button>`
-                        : `<button class="btn btn-sm btn-outline-warning" onclick="kirimPeringatanJanggal(${item.id}, '${pesanJanggal.replace(/'/g, "&apos;")}')"><i class="fas fa-bell me-1"></i>Peringatan</button>`;
+                        ? `<button class="btn btn-sm btn-light border text-muted px-3 py-1 rounded-3" disabled title="Sudah diingatkan dalam 24 jam terakhir"><i class="fas fa-check-circle text-success me-1"></i>Terkirim</button>`
+                        : `<button class="btn btn-sm btn-outline-warning text-dark fw-semibold px-3 py-1 rounded-3" onclick="kirimPeringatanJanggal(${item.id}, '${pesanJanggal.replace(/'/g, "&apos;")}')"><i class="fas fa-shield-alt text-warning me-1"></i>Peringatan</button>`;
+
+                    const initial = (item.nama_lengkap || 'M').charAt(0).toUpperCase();
 
                     tbodyJ.innerHTML += `
-                        <tr>
-                            <td data-label="Nama" class="fw-bold">${item.nama_lengkap}</td>
-                            <td data-label="Username" class="text-muted">${item.username}</td>
-                            <td data-label="Rapot Janggal">${badges}</td>
-                            <td data-label="Status">${badgeStatus}</td>
-                            <td data-label="Aksi" class="text-end">${btnPeringatan}</td>
+                        <tr class="kinerja-card-item">
+                            <td class="cell-user" data-label="Musyrif">
+                                <div class="d-flex align-items-center gap-2">
+                                    <div class="user-avatar-mini">${initial}</div>
+                                    <div>
+                                        <div class="fw-bold text-dark">${item.nama_lengkap}</div>
+                                        <div class="text-muted small">@${item.username}</div>
+                                    </div>
+                                </div>
+                            </td>
+                            <td class="cell-tertunggak" data-label="Rapot Janggal">
+                                <div class="d-md-none text-muted small fw-semibold mb-1"><i class="fas fa-exclamation-triangle text-warning me-1"></i>Rapot Janggal:</div>
+                                <div>${badges}</div>
+                            </td>
+                            <td class="cell-status" data-label="Status">
+                                <div>${badgeStatus}</div>
+                            </td>
+                            <td class="cell-action text-end" data-label="Aksi">
+                                ${btnPeringatan}
+                            </td>
                         </tr>
                     `;
                 });
@@ -631,9 +936,65 @@ function kirimPeringatan(id, pesan) {
                 if (res.status === 'success') {
                     showToast('Peringatan berhasil di-broadcast ke musyrif.', 'success');
                     loadKinerja();
+                    loadStats();
                 } else {
                     showToast(res.message || 'Gagal mengirim peringatan.', 'error');
                 }
+            });
+        }
+    });
+}
+
+function kirimSemuaPeringatan() {
+    Swal.fire({
+        html: `
+            <div class="swal-custom-modal">
+                <div class="swal-icon-badge-warning">
+                    <i class="fas fa-bullhorn"></i>
+                </div>
+                <h3 class="swal-custom-title">Kirim Peringatan Massal?</h3>
+                <p class="swal-custom-desc">Sistem akan otomatis mengirimkan notifikasi peringatan rapot ke <strong>seluruh musyrif yang belum menyelesaikan rapotnya</strong>.</p>
+                <div class="alert alert-light border text-start small mb-0 mt-2 py-2 px-3 text-muted" style="border-radius:10px;">
+                    <i class="fas fa-info-circle me-1 text-primary"></i> Musyrif yang sudah dikirimi peringatan dalam 24 jam terakhir akan otomatis dilewati.
+                </div>
+            </div>
+        `,
+        showCancelButton: true,
+        confirmButtonText: 'Ya, Kirim ke Semua!',
+        cancelButtonText: 'Batal',
+        reverseButtons: true,
+        focusConfirm: true,
+        customClass: {
+            popup: 'swal-modern-popup',
+            actions: 'swal-modern-actions',
+            confirmButton: 'swal-btn-confirm-warning',
+            cancelButton: 'swal-btn-cancel'
+        },
+        buttonsStyling: false
+    }).then((result) => {
+        if (result.isConfirmed) {
+            Swal.fire({
+                title: 'Mengirim Peringatan...',
+                text: 'Mohon tunggu sebentar',
+                allowOutsideClick: false,
+                didOpen: () => { Swal.showLoading(); }
+            });
+            fetchAPI('kirim_semua_peringatan', { tipe: 'rapot' }).then(res => {
+                Swal.close();
+                if (res.status === 'success') {
+                    showToast(res.message || 'Peringatan massal berhasil dikirim!', 'success');
+                    loadKinerja();
+                    loadStats();
+                } else if (res.status === 'info') {
+                    showToast(res.message, 'info');
+                    loadKinerja();
+                    loadStats();
+                } else {
+                    showToast(res.message || 'Gagal mengirim peringatan massal.', 'error');
+                }
+            }).catch(() => {
+                Swal.close();
+                showToast('Terjadi kesalahan koneksi server.', 'error');
             });
         }
     });
@@ -668,9 +1029,62 @@ function kirimPeringatanJanggal(id, pesan) {
                 if (res.status === 'success') {
                     showToast('Peringatan integritas berhasil dikirim.', 'success');
                     loadKinerja();
+                    loadStats();
                 } else {
                     showToast(res.message || 'Gagal mengirim peringatan.', 'error');
                 }
+            });
+        }
+    });
+}
+
+function kirimSemuaPeringatanJanggal() {
+    Swal.fire({
+        html: `
+            <div class="swal-custom-modal">
+                <div class="swal-icon-badge-warning">
+                    <i class="fas fa-shield-alt"></i>
+                </div>
+                <h3 class="swal-custom-title">Kirim Peringatan Integritas Massal?</h3>
+                <p class="swal-custom-desc">Sistem akan otomatis mengirimkan peringatan khusus ke <strong>seluruh musyrif yang mengisi rapot sebelum waktunya</strong>.</p>
+            </div>
+        `,
+        showCancelButton: true,
+        confirmButtonText: 'Ya, Kirim Integritas!',
+        cancelButtonText: 'Batal',
+        reverseButtons: true,
+        focusConfirm: true,
+        customClass: {
+            popup: 'swal-modern-popup',
+            actions: 'swal-modern-actions',
+            confirmButton: 'swal-btn-confirm-warning',
+            cancelButton: 'swal-btn-cancel'
+        },
+        buttonsStyling: false
+    }).then((result) => {
+        if (result.isConfirmed) {
+            Swal.fire({
+                title: 'Mengirim Peringatan...',
+                text: 'Mohon tunggu sebentar',
+                allowOutsideClick: false,
+                didOpen: () => { Swal.showLoading(); }
+            });
+            fetchAPI('kirim_semua_peringatan', { tipe: 'janggal' }).then(res => {
+                Swal.close();
+                if (res.status === 'success') {
+                    showToast(res.message || 'Peringatan integritas massal berhasil dikirim!', 'success');
+                    loadKinerja();
+                    loadStats();
+                } else if (res.status === 'info') {
+                    showToast(res.message, 'info');
+                    loadKinerja();
+                    loadStats();
+                } else {
+                    showToast(res.message || 'Gagal mengirim peringatan massal.', 'error');
+                }
+            }).catch(() => {
+                Swal.close();
+                showToast('Terjadi kesalahan koneksi server.', 'error');
             });
         }
     });

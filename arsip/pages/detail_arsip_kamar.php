@@ -100,6 +100,46 @@ $stmt_santri = mysqli_prepare($conn, $sql_santri);
 mysqli_stmt_bind_param($stmt_santri, "iiiis", $arsip_id, $arsip_id, $arsip_id, $arsip_id, $kamar);
 mysqli_stmt_execute($stmt_santri);
 $santri_res = mysqli_stmt_get_result($stmt_santri);
+
+// 3. Ambil Musyrif Kamar dari Arsip (prioritas arsip_data_rapot, fallback arsip_data_rapot_tahunan)
+$musyrif_name = '-';
+$stmt_musyrif = mysqli_prepare($conn, "
+    SELECT musyrif_nama, COUNT(*) as cnt 
+    FROM arsip_data_rapot 
+    WHERE arsip_id = ? AND santri_kamar = ? AND musyrif_nama IS NOT NULL AND TRIM(musyrif_nama) != '' 
+    GROUP BY musyrif_nama 
+    ORDER BY cnt DESC 
+    LIMIT 1
+");
+if ($stmt_musyrif) {
+    mysqli_stmt_bind_param($stmt_musyrif, "is", $arsip_id, $kamar);
+    mysqli_stmt_execute($stmt_musyrif);
+    $res_musyrif = mysqli_stmt_get_result($stmt_musyrif);
+    if ($row_m = mysqli_fetch_assoc($res_musyrif)) {
+        $musyrif_name = $row_m['musyrif_nama'];
+    }
+    mysqli_stmt_close($stmt_musyrif);
+}
+
+if ($musyrif_name === '-') {
+    $stmt_musyrif_tahunan = mysqli_prepare($conn, "
+        SELECT musyrif_nama, COUNT(*) as cnt 
+        FROM arsip_data_rapot_tahunan 
+        WHERE arsip_id = ? AND kamar = ? AND musyrif_nama IS NOT NULL AND TRIM(musyrif_nama) != '' 
+        GROUP BY musyrif_nama 
+        ORDER BY cnt DESC 
+        LIMIT 1
+    ");
+    if ($stmt_musyrif_tahunan) {
+        mysqli_stmt_bind_param($stmt_musyrif_tahunan, "is", $arsip_id, $kamar);
+        mysqli_stmt_execute($stmt_musyrif_tahunan);
+        $res_musyrif_tahunan = mysqli_stmt_get_result($stmt_musyrif_tahunan);
+        if ($row_m2 = mysqli_fetch_assoc($res_musyrif_tahunan)) {
+            $musyrif_name = $row_m2['musyrif_nama'];
+        }
+        mysqli_stmt_close($stmt_musyrif_tahunan);
+    }
+}
 ?>
 
 <style>
@@ -156,7 +196,13 @@ body { background-color: #f8f9fa; font-family: 'Poppins', sans-serif; color: #33
                 </div>
                 Detail Kamar <?= htmlspecialchars($kamar) ?>
             </h2>
-                <i class="far fa-calendar-alt me-1"></i> Arsip: <?= htmlspecialchars($arsip['judul']) ?> (<?= date('d M Y', strtotime($arsip['tanggal_mulai'])) ?> s/d <?= date('d M Y', strtotime($arsip['tanggal_selesai'])) ?>)
+            <div class="subtitle d-flex flex-wrap align-items-center gap-2 mt-2">
+                <span><i class="far fa-calendar-alt me-1"></i> Arsip: <?= htmlspecialchars($arsip['judul']) ?> (<?= date('d M Y', strtotime($arsip['tanggal_mulai'])) ?> s/d <?= date('d M Y', strtotime($arsip['tanggal_selesai'])) ?>)</span>
+                <?php if ($musyrif_name !== '-'): ?>
+                    <span class="badge bg-white border text-secondary fw-normal shadow-sm" style="font-size: 0.75rem; padding: 0.35rem 0.6rem; border-radius: 6px;">
+                        <i class="fas fa-user-tie text-muted me-1"></i>Musyrif: <?= htmlspecialchars($musyrif_name) ?>
+                    </span>
+                <?php endif; ?>
             </div>
         </div>
         <a href="arsip_kamar.php?id=<?= $arsip_id ?>" class="btn-back">

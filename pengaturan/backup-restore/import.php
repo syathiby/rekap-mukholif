@@ -59,12 +59,43 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_FILES['sql_file'])) {
         
         // Jika baris diakhiri dengan titik koma, artinya satu statement lengkap, maka eksekusi
         if (substr(rtrim($query), -1) === ';') {
-            if (!$conn->query($query)) {
+            // Sanitasi collation yang mungkin tidak didukung versi MySQL / MariaDB server lokal
+            $execQuery = preg_replace('/utf8mb4_uca1400_bin/i', 'utf8mb4_bin', $query);
+            $execQuery = preg_replace('/utf8mb4_0900_bin/i', 'utf8mb4_bin', $execQuery);
+            $execQuery = preg_replace('/utf8mb4_uca1400[a-zA-Z0-9_]*/i', 'utf8mb4_unicode_ci', $execQuery);
+            $execQuery = preg_replace('/utf8mb4_0900[a-zA-Z0-9_]*/i', 'utf8mb4_unicode_ci', $execQuery);
+
+            try {
+                if (!$conn->query($execQuery)) {
+                    $success = false;
+                    $error_msg = $conn->error;
+                    break; // Hentikan eksekusi jika ada error fatal
+                }
+            } catch (Throwable $e) {
+                $success = false;
+                $error_msg = $e->getMessage();
+                break;
+            }
+
+            $query = ''; // Reset untuk query berikutnya
+        }
+    }
+    
+    // Eksekusi sisa query terakhir jika ada (tidak diakhiri newline/titik koma di loop sebelumnya)
+    if ($success && !empty(trim($query))) {
+        $execQuery = preg_replace('/utf8mb4_uca1400_bin/i', 'utf8mb4_bin', $query);
+        $execQuery = preg_replace('/utf8mb4_0900_bin/i', 'utf8mb4_bin', $execQuery);
+        $execQuery = preg_replace('/utf8mb4_uca1400[a-zA-Z0-9_]*/i', 'utf8mb4_unicode_ci', $execQuery);
+        $execQuery = preg_replace('/utf8mb4_0900[a-zA-Z0-9_]*/i', 'utf8mb4_unicode_ci', $execQuery);
+
+        try {
+            if (!$conn->query($execQuery)) {
                 $success = false;
                 $error_msg = $conn->error;
-                break; // Hentikan eksekusi jika ada error fatal
             }
-            $query = ''; // Reset untuk query berikutnya
+        } catch (Throwable $e) {
+            $success = false;
+            $error_msg = $e->getMessage();
         }
     }
     

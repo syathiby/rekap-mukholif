@@ -14,13 +14,18 @@ $filter_bagian = $_GET['bagian'] ?? '';
 $filter_kategori = $_GET['kategori'] ?? '';
 
 // --- Ambil data untuk dropdown filter bagian ---
-$bagian_list_query = "SELECT DISTINCT bagian FROM jenis_pelanggaran ORDER BY bagian ASC";
+$bagian_list = [];
+$bagian_list_query = "SELECT DISTINCT bagian FROM jenis_pelanggaran WHERE bagian IS NOT NULL AND bagian != '' ORDER BY bagian ASC";
 $bagian_list_result = mysqli_query($conn, $bagian_list_query);
+while ($bagian_row = mysqli_fetch_assoc($bagian_list_result)) {
+    $bagian_list[] = $bagian_row['bagian'];
+}
+if (!in_array('Kebersihan', $bagian_list)) {
+    $bagian_list[] = 'Kebersihan';
+}
+sort($bagian_list);
 
 // 4. Siapin variabel tanggal buat query
-$params_date = [];
-$types_date = '';
-
 // Tentukan tanggal mulai dan selesai berdasarkan filter 'rentang'
 $is_valid_custom = ($rentang === 'custom' && preg_match('/^\d{4}-\d{2}-\d{2}$/', $tanggal_mulai_input) && preg_match('/^\d{4}-\d{2}-\d{2}$/', $tanggal_selesai_input) && strtotime($tanggal_mulai_input) && strtotime($tanggal_selesai_input));
 if ($is_valid_custom) {
@@ -44,24 +49,20 @@ if ($is_valid_custom) {
     $tanggal_selesai = date('Y-m-d 23:59:59');
 }
 
-// Kondisi WHERE untuk tanggal (dipakai di semua query)
-$date_condition_umum = "p.tanggal BETWEEN ? AND ?";
-$date_condition_kebersihan = "tanggal BETWEEN ? AND ?";
-$params_date = [$tanggal_mulai, $tanggal_selesai];
-$types_date = "ss";
-
 // 5. --- EKSEKUSI QUERY UNTUK CHARTS (HANYA PAKAI FILTER TANGGAL) ---
 
-// Query 1: Tren Harian (Line Chart)
+// Query 1: Tren Harian (Line Chart) - Gabungkan Pelanggaran Umum & Kebersihan
 $query_tren_harian = "
-    SELECT DATE(p.tanggal) AS hari, COUNT(p.id) AS jumlah 
-    FROM pelanggaran p 
-    WHERE $date_condition_umum 
-    GROUP BY DATE(p.tanggal) 
+    SELECT hari, COUNT(*) AS jumlah FROM (
+        SELECT DATE(tanggal) AS hari FROM pelanggaran WHERE tanggal BETWEEN ? AND ?
+        UNION ALL
+        SELECT DATE(tanggal) AS hari FROM pelanggaran_kebersihan WHERE tanggal BETWEEN ? AND ?
+    ) all_harian
+    GROUP BY hari 
     ORDER BY hari ASC
 ";
 $stmt_tren = mysqli_prepare($conn, $query_tren_harian);
-mysqli_stmt_bind_param($stmt_tren, $types_date, ...$params_date);
+mysqli_stmt_bind_param($stmt_tren, "ssss", $tanggal_mulai, $tanggal_selesai, $tanggal_mulai, $tanggal_selesai);
 mysqli_stmt_execute($stmt_tren);
 $result_tren = mysqli_stmt_get_result($stmt_tren);
 
@@ -79,18 +80,24 @@ foreach ($period as $date) {
 }
 
 
-// Query 2: Top 5 Pelanggaran (Doughnut Chart)
+// Query 2: Top 5 Pelanggaran (Doughnut Chart) - Gabungkan Pelanggaran Umum & Kebersihan
 $query_top_5 = "
-    SELECT jp.nama_pelanggaran, COUNT(p.id) AS jumlah 
-    FROM pelanggaran p 
-    JOIN jenis_pelanggaran jp ON p.jenis_pelanggaran_id = jp.id 
-    WHERE $date_condition_umum 
-    GROUP BY jp.id 
+    SELECT nama_pelanggaran, COUNT(*) AS jumlah FROM (
+        SELECT jp.nama_pelanggaran 
+        FROM pelanggaran p 
+        JOIN jenis_pelanggaran jp ON p.jenis_pelanggaran_id = jp.id 
+        WHERE p.tanggal BETWEEN ? AND ?
+        UNION ALL
+        SELECT 'Kebersihan Kamar' AS nama_pelanggaran 
+        FROM pelanggaran_kebersihan 
+        WHERE tanggal BETWEEN ? AND ?
+    ) all_top
+    GROUP BY nama_pelanggaran 
     ORDER BY jumlah DESC 
     LIMIT 5
 ";
 $stmt_top_5 = mysqli_prepare($conn, $query_top_5);
-mysqli_stmt_bind_param($stmt_top_5, $types_date, ...$params_date);
+mysqli_stmt_bind_param($stmt_top_5, "ssss", $tanggal_mulai, $tanggal_selesai, $tanggal_mulai, $tanggal_selesai);
 mysqli_stmt_execute($stmt_top_5);
 $result_top_5 = mysqli_stmt_get_result($stmt_top_5);
 
@@ -98,7 +105,7 @@ $top_pelanggaran_labels = [];
 $top_pelanggaran_values = [];
 while ($row = mysqli_fetch_assoc($result_top_5)) {
     $top_pelanggaran_labels[] = $row['nama_pelanggaran'];
-    $top_pelanggaran_values[] = $row['jumlah'];
+    $top_pelanggaran_values[] = (int)$row['jumlah'];
 }
 mysqli_stmt_close($stmt_top_5);
 
@@ -111,16 +118,16 @@ $query_bagian_umum = "
     SELECT jp.bagian, COUNT(p.id) AS jumlah 
     FROM pelanggaran p 
     JOIN jenis_pelanggaran jp ON p.jenis_pelanggaran_id = jp.id 
-    WHERE $date_condition_umum 
+    WHERE p.tanggal BETWEEN ? AND ? 
     GROUP BY jp.bagian
 ";
 $stmt_bagian_umum = mysqli_prepare($conn, $query_bagian_umum);
-mysqli_stmt_bind_param($stmt_bagian_umum, $types_date, ...$params_date);
+mysqli_stmt_bind_param($stmt_bagian_umum, "ss", $tanggal_mulai, $tanggal_selesai);
 mysqli_stmt_execute($stmt_bagian_umum);
 $result_bagian_umum = mysqli_stmt_get_result($stmt_bagian_umum);
 
 while ($row = mysqli_fetch_assoc($result_bagian_umum)) {
-    $bagian_data[$row['bagian']] = $row['jumlah'];
+    $bagian_data[$row['bagian']] = (int)$row['jumlah'];
 }
 mysqli_stmt_close($stmt_bagian_umum);
 
@@ -128,15 +135,15 @@ mysqli_stmt_close($stmt_bagian_umum);
 $query_bagian_kebersihan = "
     SELECT COUNT(id) AS jumlah 
     FROM pelanggaran_kebersihan 
-    WHERE $date_condition_kebersihan
+    WHERE tanggal BETWEEN ? AND ?
 ";
 $stmt_bagian_kebersihan = mysqli_prepare($conn, $query_bagian_kebersihan);
-mysqli_stmt_bind_param($stmt_bagian_kebersihan, $types_date, ...$params_date);
+mysqli_stmt_bind_param($stmt_bagian_kebersihan, "ss", $tanggal_mulai, $tanggal_selesai);
 mysqli_stmt_execute($stmt_bagian_kebersihan);
 $result_kebersihan = mysqli_stmt_get_result($stmt_bagian_kebersihan);
 $row_kebersihan = mysqli_fetch_assoc($result_kebersihan);
 if ($row_kebersihan && $row_kebersihan['jumlah'] > 0) {
-    $bagian_data['Kebersihan'] = $row_kebersihan['jumlah'];
+    $bagian_data['Kebersihan'] = (int)$row_kebersihan['jumlah'];
 }
 mysqli_stmt_close($stmt_bagian_kebersihan);
 
@@ -146,54 +153,78 @@ $bagian_values = array_values($bagian_data);
 
 
 // --- Query 4 (Feed) DENGAN FILTER TAMBAHAN ---
-
-// Buat kondisi filter Bagian & Kategori
-$jp_conditions = [];
-$params_jp = [];
-$types_jp = '';
-
-if (!empty($filter_bagian)) {
-    $jp_conditions[] = "jp.bagian = ?";
-    $params_jp[] = $filter_bagian;
-    $types_jp .= 's';
-}
-if (!empty($filter_kategori)) {
-    $jp_conditions[] = "jp.kategori = ?";
-    $params_jp[] = $filter_kategori;
-    $types_jp .= 's';
-}
-
-$jp_where_string = "";
-if (count($jp_conditions) > 0) {
-    $jp_where_string = " AND " . implode(" AND ", $jp_conditions);
-}
-
-// Gabungkan parameter tanggal + filter jp
-$params_all = array_merge($params_date, $params_jp);
-$types_all = $types_date . $types_jp;
-
-// Query 4: Feed Pelanggaran Terkini
-$query_feed = "
-    SELECT p.tanggal, s.nama AS nama_santri, jp.nama_pelanggaran, jp.bagian, jp.poin, jp.kategori, COALESCE(u.nama_lengkap, u.username) AS pencatat
-    FROM pelanggaran p 
-    JOIN santri s ON p.santri_id = s.id 
-    JOIN jenis_pelanggaran jp ON p.jenis_pelanggaran_id = jp.id 
-    LEFT JOIN users u ON p.dicatat_oleh = u.id
-    WHERE $date_condition_umum $jp_where_string
-    ORDER BY 
-        p.tanggal DESC,
-        FIELD(jp.bagian, 'Kesantrian', 'Diniyyah', 'Bahasa', 'Tahfidz', 'Pengabdian')
-";
-$stmt_feed = mysqli_prepare($conn, $query_feed);
-mysqli_stmt_bind_param($stmt_feed, $types_all, ...$params_all);
-mysqli_stmt_execute($stmt_feed);
-$result_feed = mysqli_stmt_get_result($stmt_feed);
-
 $feed_terkini_data = [];
-while ($row = mysqli_fetch_assoc($result_feed)) {
-    $feed_terkini_data[] = $row;
+
+// Apakah filter mengizinkan pelanggaran umum?
+$allow_umum = empty($filter_bagian) || $filter_bagian !== 'Kebersihan';
+
+// Apakah filter mengizinkan kebersihan?
+$allow_kebersihan = (empty($filter_bagian) || $filter_bagian === 'Kebersihan') && (empty($filter_kategori) || $filter_kategori === 'Sedang');
+
+// 1. Ambil Pelanggaran Umum jika diizinkan
+if ($allow_umum) {
+    $jp_conditions = ["p.tanggal BETWEEN ? AND ?"];
+    $params_feed_u = [$tanggal_mulai, $tanggal_selesai];
+    $types_feed_u = "ss";
+
+    if (!empty($filter_bagian)) {
+        $jp_conditions[] = "jp.bagian = ?";
+        $params_feed_u[] = $filter_bagian;
+        $types_feed_u .= "s";
+    }
+    if (!empty($filter_kategori)) {
+        $jp_conditions[] = "jp.kategori = ?";
+        $params_feed_u[] = $filter_kategori;
+        $types_feed_u .= "s";
+    }
+
+    $where_umum_sql = implode(" AND ", $jp_conditions);
+    $query_feed_umum = "
+        SELECT p.tanggal, s.nama AS nama_santri, jp.nama_pelanggaran, jp.bagian, jp.poin, jp.kategori, COALESCE(u.nama_lengkap, u.username) AS pencatat
+        FROM pelanggaran p 
+        JOIN santri s ON p.santri_id = s.id 
+        JOIN jenis_pelanggaran jp ON p.jenis_pelanggaran_id = jp.id 
+        LEFT JOIN users u ON p.dicatat_oleh = u.id
+        WHERE $where_umum_sql
+    ";
+    $stmt_feed_u = mysqli_prepare($conn, $query_feed_umum);
+    mysqli_stmt_bind_param($stmt_feed_u, $types_feed_u, ...$params_feed_u);
+    mysqli_stmt_execute($stmt_feed_u);
+    $res_feed_u = mysqli_stmt_get_result($stmt_feed_u);
+    while ($row = mysqli_fetch_assoc($res_feed_u)) {
+        $feed_terkini_data[] = $row;
+    }
+    mysqli_stmt_close($stmt_feed_u);
 }
-mysqli_stmt_close($stmt_feed);
+
+// 2. Ambil Pelanggaran Kebersihan jika diizinkan
+if ($allow_kebersihan) {
+    $query_feed_kbs = "
+        SELECT pk.tanggal, 
+               CONCAT('Kamar ', pk.kamar) AS nama_santri, 
+               IF(pk.catatan IS NOT NULL AND TRIM(pk.catatan) != '', CONCAT('Kebersihan Kamar (', pk.catatan, ')'), 'Kebersihan Kamar') AS nama_pelanggaran,
+               'Kebersihan' AS bagian, 
+               0 AS poin, 
+               'Sedang' AS kategori, 
+               COALESCE(u.nama_lengkap, u.username) AS pencatat
+        FROM pelanggaran_kebersihan pk
+        LEFT JOIN users u ON pk.dicatat_oleh = u.id
+        WHERE pk.tanggal BETWEEN ? AND ?
+    ";
+    $stmt_feed_k = mysqli_prepare($conn, $query_feed_kbs);
+    mysqli_stmt_bind_param($stmt_feed_k, "ss", $tanggal_mulai, $tanggal_selesai);
+    mysqli_stmt_execute($stmt_feed_k);
+    $res_feed_k = mysqli_stmt_get_result($stmt_feed_k);
+    while ($row = mysqli_fetch_assoc($res_feed_k)) {
+        $feed_terkini_data[] = $row;
+    }
+    mysqli_stmt_close($stmt_feed_k);
+}
+
+// Urutkan feed berdasarkan tanggal descending
+usort($feed_terkini_data, function($a, $b) {
+    return strtotime($b['tanggal']) <=> strtotime($a['tanggal']);
+});
 
 
 // 6. Panggil Tampilan Header
@@ -302,12 +333,11 @@ require_once __DIR__ . '/../layouts/header.php';
                         <label for="bagian" class="form-label fw-bold text-muted" style="font-size: 0.8rem;">BAGIAN</label>
                         <select name="bagian" id="bagian" class="form-select form-select-sm shadow-sm" style="border-radius: 0.5rem; padding: 0.5rem;">
                             <option value="">-- Semua Bagian --</option>
-                            <?php mysqli_data_seek($bagian_list_result, 0); ?>
-                            <?php while ($bagian_row = mysqli_fetch_assoc($bagian_list_result)) : ?>
-                                <option value="<?= htmlspecialchars($bagian_row['bagian']); ?>" <?= ($filter_bagian == $bagian_row['bagian']) ? 'selected' : ''; ?>>
-                                    <?= htmlspecialchars(format_typing($bagian_row['bagian'])); ?>
+                            <?php foreach ($bagian_list as $bg_item) : ?>
+                                <option value="<?= htmlspecialchars($bg_item); ?>" <?= ($filter_bagian == $bg_item) ? 'selected' : ''; ?>>
+                                    <?= htmlspecialchars(format_typing($bg_item)); ?>
                                 </option>
-                            <?php endwhile; ?>
+                            <?php endforeach; ?>
                         </select>
                     </div>
                     <div class="col-md-6">
@@ -359,12 +389,28 @@ require_once __DIR__ . '/../layouts/header.php';
                                         <span class="fw-bold"><?= date('H:i', strtotime($row['tanggal'])) ?></span>
                                         <small class="d-block text-muted"><?= date('d M Y', strtotime($row['tanggal'])) ?></small>
                                     </td>
-                                    <td class="align-middle"><?= htmlspecialchars($row['nama_santri']) ?></td>
+                                    <td class="align-middle">
+                                        <?php if ($row['bagian'] === 'Kebersihan'): ?>
+                                            <span class="badge bg-light text-dark border px-2 py-1"><i class="fas fa-door-open text-primary me-1"></i><?= htmlspecialchars($row['nama_santri']) ?></span>
+                                        <?php else: ?>
+                                            <?= htmlspecialchars($row['nama_santri']) ?>
+                                        <?php endif; ?>
+                                    </td>
                                     <td class="align-middle">
                                         <?= htmlspecialchars($row['nama_pelanggaran']) ?>
-                                        <small class="text-muted ms-1" style="font-size: 0.8em;">(<?= $row['poin'] ?> Poin)</small>
+                                        <?php if ($row['bagian'] !== 'Kebersihan' || $row['poin'] > 0): ?>
+                                            <small class="text-muted ms-1" style="font-size: 0.8em;">(<?= $row['poin'] ?> Poin)</small>
+                                        <?php else: ?>
+                                            <small class="text-muted ms-1" style="font-size: 0.8em;">(Kamar)</small>
+                                        <?php endif; ?>
                                     </td>
-                                    <td class="align-middle"><?= htmlspecialchars($row['bagian']) ?></td>
+                                    <td class="align-middle">
+                                        <?php if ($row['bagian'] === 'Kebersihan'): ?>
+                                            <span class="badge bg-success bg-opacity-10 text-success border border-success border-opacity-25 px-2 py-1"><i class="fas fa-broom me-1"></i>Kebersihan</span>
+                                        <?php else: ?>
+                                            <?= htmlspecialchars($row['bagian']) ?>
+                                        <?php endif; ?>
+                                    </td>
                                     <td class="text-center align-middle">
                                         <span class="badge <?= $badge_class ?>"><?= htmlspecialchars($row['kategori']) ?></span>
                                     </td>

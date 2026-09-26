@@ -45,9 +45,9 @@ if ($action === 'get_stats') {
     $q_aktivitas = mysqli_query($conn, "SELECT COUNT(*) as total FROM log_aktifitas l JOIN users u ON l.user_id = u.id WHERE DATE(l.dibuat_pada) = '$today' AND u.role = 'musyrif'");
     $total_aktivitas = mysqli_fetch_assoc($q_aktivitas)['total'] ?? 0;
     
-    // Pengumuman aktif
-    $q_pengumuman = mysqli_query($conn, "SELECT COUNT(*) as total FROM pengumuman_sistem WHERE status_aktif = 1");
-    $total_pengumuman = mysqli_fetch_assoc($q_pengumuman)['total'] ?? 0;
+    // Pengumuman aktif (aktif & masih dalam masa tayang 24 jam)
+    $q_pengumuman = mysqli_query($conn, "SELECT COUNT(*) as total FROM pengumuman_sistem WHERE status_aktif = 1 AND created_at >= DATE_SUB(NOW(), INTERVAL 24 HOUR)");
+    $total_pengumuman = (int)(mysqli_fetch_assoc($q_pengumuman)['total'] ?? 0);
 
     // Musyrif Belum Rapot (Tahun Ajaran)
     $currentMonth = (int)date('n');
@@ -373,7 +373,10 @@ if ($action === 'buat_peringatan') {
     $tipe = $_POST['tipe'] ?? 'rapot'; // 'rapot' atau 'janggal'
     
     if ($target_id && $pesan) {
-        $user_id = $_SESSION['user_id'];
+        $user_id_raw = (int)($_SESSION['user_id'] ?? 0);
+        $check_u = mysqli_query($conn, "SELECT id FROM users WHERE id = $user_id_raw");
+        $creator_id = ($check_u && mysqli_num_rows($check_u) > 0) ? $user_id_raw : null;
+
         $judul = ($tipe === 'janggal') ? 'Peringatan Rapot Janggal!' : 'Peringatan Rapot!';
         
         // Cek apakah sudah ada peringatan aktif dalam 24 jam terakhir (per judul)
@@ -385,8 +388,10 @@ if ($action === 'buat_peringatan') {
             exit;
         }
         
-        $q = "INSERT INTO pengumuman_sistem (target_user_id, judul, pesan, status_aktif, created_by) VALUES ('$target_id', '$judul_esc', '$pesan', 1, '$user_id')";
+        $created_by_sql = $creator_id !== null ? (int)$creator_id : "NULL";
+        $q = "INSERT INTO pengumuman_sistem (target_user_id, judul, pesan, status_aktif, created_by) VALUES ('$target_id', '$judul_esc', '$pesan', 1, $created_by_sql)";
         if (mysqli_query($conn, $q)) {
+            write_activity_log('BROADCAST', 'pengelola', "Mengirim peringatan $tipe ke musyrif ID $target_id");
             echo json_encode(['status' => 'success']);
         } else {
             echo json_encode(['status' => 'error', 'message' => mysqli_error($conn)]);
@@ -395,6 +400,208 @@ if ($action === 'buat_peringatan') {
         echo json_encode(['status' => 'error', 'message' => 'Data tidak lengkap.']);
     }
     exit;
+}
+
+if ($action === 'kirim_semua_peringatan') {
+    $tipe = $_POST['tipe'] ?? 'rapot';
+    $user_id_raw = (int)($_SESSION['user_id'] ?? 0);
+    $check_u = mysqli_query($conn, "SELECT id FROM users WHERE id = $user_id_raw");
+    $creator_id = ($check_u && mysqli_num_rows($check_u) > 0) ? $user_id_raw : null;
+    $sent_count = 0;
+
+    $currentMonth = (int)date('n');
+    $currentYear = (int)date('Y');
+    $currentDay = (int)date('j');
+    $daysInMonth = (int)date('t');
+    $startYear = ($currentMonth >= 7) ? $currentYear : ($currentYear - 1);
+    
+    // Bulan target: jika belum masuk 7 hari sebelum berganti bulan, bulan ini belum wajib
+    $deadlineDay = $daysInMonth - 7;
+    $maxMonth = $currentMonth;
+    $maxYear = $currentYear;
+    if ($currentDay <= $deadlineDay) {
+        $maxMonth--;
+        if ($maxMonth < 1) {
+            $maxMonth = 12;
+            $maxYear--;
+        }
+    }
+    
+    $nama_bulan_id = [1=>'Jan',2=>'Feb',3=>'Mar',4=>'Apr',5=>'Mei',6=>'Jun',7=>'Juli',8=>'Agustus',9=>'Sep',10=>'Okt',11=>'Nov',12=>'Des'];
+    $nama_bulan_db = [1=>'Januari',2=>'Februari',3=>'Maret',4=>'April',5=>'Mei',6=>'Juni',7=>'Juli',8=>'Agustus',9=>'September',10=>'Oktober',11=>'November',12=>'Desember'];
+
+    if ($tipe === 'rapot') {
+        $expected = [];
+        $y = $startYear; $m = 7;
+        while ($y < $maxYear || ($y == $maxYear && $m <= $maxMonth)) {
+            $expected[] = ['month' => $m, 'year' => $y];
+            $m++; if ($m > 12) { $m = 1; $y++; }
+        }
+        
+        $res_m = mysqli_query($conn, "
+            SELECT u.id, u.username, u.nama_lengkap, u.role, u.is_active, COUNT(s.id) as total_santri 
+            FROM users u 
+            LEFT JOIN santri s ON u.kamar_id = s.kamar 
+            WHERE u.role = 'musyrif' AND u.is_active = 1 
+            GROUP BY u.id 
+            ORDER BY u.nama_lengkap ASC
+        ");
+        
+        if ($res_m && mysqli_num_rows($res_m) > 0) {
+            $all_musyrif = [];
+            $m_ids = [];
+            while($r = mysqli_fetch_assoc($res_m)) {
+                $all_musyrif[$r['id']] = $r;
+                $m_ids[] = $r['id'];
+            }
+            $ids_str = implode(',', $m_ids);
+            
+            $conds = [];
+            foreach($expected as $exp) {
+                $nama_bln = $nama_bulan_db[$exp['month']];
+                $conds[] = "(bulan = '$nama_bln' AND tahun = {$exp['year']})";
+            }
+            $cond_str = count($conds) > 0 ? implode(" OR ", $conds) : "1=0";
+            
+            $q_r = "SELECT musyrif_id, bulan, tahun, COUNT(*) as total_rapot FROM rapot_kepengasuhan WHERE musyrif_id IN ($ids_str) AND ($cond_str) GROUP BY musyrif_id, bulan, tahun";
+            $res_r = mysqli_query($conn, $q_r);
+            $submitted = [];
+            if ($res_r) {
+                while($r = mysqli_fetch_assoc($res_r)) {
+                    $submitted[$r['musyrif_id']][$r['bulan'].'-'.$r['tahun']] = $r['total_rapot'];
+                }
+            }
+            
+            // Cek peringatan 24 jam terakhir yang masih aktif
+            $recent_warnings = [];
+            $q_warnings = "SELECT target_user_id FROM pengumuman_sistem WHERE judul = 'Peringatan Rapot!' AND status_aktif = 1 AND created_at >= DATE_SUB(NOW(), INTERVAL 24 HOUR) AND target_user_id IN ($ids_str)";
+            $res_w = mysqli_query($conn, $q_warnings);
+            if ($res_w) {
+                while($r = mysqli_fetch_assoc($res_w)) {
+                    $recent_warnings[$r['target_user_id']] = true;
+                }
+            }
+            
+            $created_by_sql = $creator_id !== null ? (int)$creator_id : "NULL";
+            $stmt = mysqli_prepare($conn, "INSERT INTO pengumuman_sistem (target_user_id, judul, pesan, status_aktif, created_by) VALUES (?, 'Peringatan Rapot!', ?, 1, $created_by_sql)");
+            
+            foreach($all_musyrif as $id => $m_data) {
+                if (isset($recent_warnings[$id])) continue; // Lewati jika sudah pernah diingatkan dalam 24 jam terakhir
+                
+                $missing = [];
+                $t_santri = $m_data['total_santri'];
+                
+                if ($t_santri > 0) {
+                    foreach($expected as $exp) {
+                        $nama_bln_db_val = $nama_bulan_db[$exp['month']];
+                        $key = $nama_bln_db_val.'-'.$exp['year'];
+                        $rapot_count = isset($submitted[$id][$key]) ? $submitted[$id][$key] : 0;
+                        
+                        if($rapot_count < $t_santri) {
+                            $sisa = $t_santri - $rapot_count;
+                            $missing[] = $nama_bulan_id[$exp['month']] . ' ' . $exp['year'] . ' (sisa ' . $sisa . ' santri)';
+                        }
+                    }
+                }
+                
+                if (count($missing) > 0) {
+                    $pesan_bc = "Peringatan: Anda belum menyetorkan rapot kepengasuhan untuk bulan: " . implode(', ', $missing) . ". Mohon untuk segera diselesaikan.";
+                    mysqli_stmt_bind_param($stmt, "is", $id, $pesan_bc);
+                    if (mysqli_stmt_execute($stmt)) {
+                        $sent_count++;
+                    }
+                }
+            }
+            mysqli_stmt_close($stmt);
+        }
+
+        if ($sent_count > 0) {
+            write_activity_log('BROADCAST_ALL', 'pengelola', "Mengirim peringatan rapot massal ke $sent_count musyrif");
+            echo json_encode(['status' => 'success', 'sent_count' => $sent_count, 'message' => "Peringatan berhasil dikirim ke $sent_count musyrif."]);
+        } else {
+            echo json_encode(['status' => 'info', 'sent_count' => 0, 'message' => 'Semua musyrif yang tertunggak sudah menerima peringatan dalam 24 jam terakhir atau tidak ada data tertunggak.']);
+        }
+        exit;
+    }
+    
+    if ($tipe === 'janggal') {
+        $res_m = mysqli_query($conn, "SELECT id FROM users WHERE role = 'musyrif' AND is_active = 1");
+        $m_ids = [];
+        if ($res_m) {
+            while ($r = mysqli_fetch_assoc($res_m)) {
+                $m_ids[] = $r['id'];
+            }
+        }
+        
+        $janggal_conds = [];
+        if ($currentDay <= $deadlineDay) {
+            $bln_indo_now = $nama_bulan_db[$currentMonth];
+            $janggal_conds[] = "(bulan = '$bln_indo_now' AND tahun = $currentYear)";
+        }
+        
+        $ck_m = $currentMonth + 1; $ck_y = $currentYear;
+        for ($i = 0; $i < 12; $i++) {
+            if ($ck_m > 12) { $ck_m = 1; $ck_y++; }
+            $janggal_conds[] = "(bulan = '{$nama_bulan_db[$ck_m]}' AND tahun = $ck_y)";
+            $ck_m++;
+        }
+        
+        if (!empty($janggal_conds) && !empty($m_ids)) {
+            $ids_str = implode(',', $m_ids);
+            $j_cond = implode(' OR ', $janggal_conds);
+            
+            $recent_janggal_warnings = [];
+            $q_jwarn = "SELECT target_user_id FROM pengumuman_sistem WHERE judul = 'Peringatan Rapot Janggal!' AND status_aktif = 1 AND created_at >= DATE_SUB(NOW(), INTERVAL 24 HOUR) AND target_user_id IN ($ids_str)";
+            $res_jwarn = mysqli_query($conn, $q_jwarn);
+            if ($res_jwarn) {
+                while ($rjw = mysqli_fetch_assoc($res_jwarn)) {
+                    $recent_janggal_warnings[$rjw['target_user_id']] = true;
+                }
+            }
+            
+            $q_j = "
+                SELECT r.musyrif_id, r.bulan, r.tahun, COUNT(*) as total_rapot
+                FROM rapot_kepengasuhan r
+                WHERE r.musyrif_id IN ($ids_str) AND ($j_cond)
+                GROUP BY r.musyrif_id, r.bulan, r.tahun
+            ";
+            $res_j = mysqli_query($conn, $q_j);
+            if ($res_j) {
+                $grouped_janggal = [];
+                while ($rj = mysqli_fetch_assoc($res_j)) {
+                    $mid = $rj['musyrif_id'];
+                    if (!isset($grouped_janggal[$mid])) {
+                        $grouped_janggal[$mid] = [];
+                    }
+                    $grouped_janggal[$mid][] = $rj['bulan'] . ' ' . $rj['tahun'] . ' (' . $rj['total_rapot'] . ' rapot)';
+                }
+                
+                $created_by_sql = $creator_id !== null ? (int)$creator_id : "NULL";
+                $stmt = mysqli_prepare($conn, "INSERT INTO pengumuman_sistem (target_user_id, judul, pesan, status_aktif, created_by) VALUES (?, 'Peringatan Rapot Janggal!', ?, 1, $created_by_sql)");
+                
+                foreach ($grouped_janggal as $mid => $bulan_list) {
+                    if (isset($recent_janggal_warnings[$mid])) continue;
+                    
+                    $bulan_str = implode(', ', $bulan_list);
+                    $pesan_janggal = "Peringatan Integritas Data: Anda terdeteksi mengisi rapot kepengasuhan untuk $bulan_str sebelum periode pengisian dibuka (7 hari terakhir bulan tersebut). Tindakan ini berpotensi melanggar integritas data. Harap segera lakukan klarifikasi data.";
+                    
+                    mysqli_stmt_bind_param($stmt, "is", $mid, $pesan_janggal);
+                    if (mysqli_stmt_execute($stmt)) {
+                        $sent_count++;
+                    }
+                }
+                mysqli_stmt_close($stmt);
+            }
+        }
+        
+        if ($sent_count > 0) {
+            write_activity_log('BROADCAST_ALL', 'pengelola', "Mengirim peringatan rapot janggal massal ke $sent_count musyrif");
+            echo json_encode(['status' => 'success', 'sent_count' => $sent_count, 'message' => "Peringatan integritas berhasil dikirim ke $sent_count musyrif."]);
+        } else {
+            echo json_encode(['status' => 'info', 'sent_count' => 0, 'message' => 'Semua musyrif terkait sudah menerima peringatan integritas dalam 24 jam terakhir.']);
+        }
+        exit;
+    }
 }
 
 if ($action === 'reset_password') {
