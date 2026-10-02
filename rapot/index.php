@@ -657,12 +657,10 @@ require_once __DIR__ . '/../layouts/header.php';
 </div>
 
 <div class="modal fade" id="background-download-modal" data-bs-backdrop="static" data-bs-keyboard="false" tabindex="-1" aria-hidden="true">
-    <div class="modal-dialog modal-dialog-centered modal-sm" role="document">
-        <div class="modal-content border-0 shadow-lg" style="border-radius: 1rem; overflow: hidden; background-color: transparent;">
-            <div class="modal-body p-0" style="position: relative;">
-                <iframe id="background-download-iframe" src="" style="width: 100%; height: 350px; border: none; background-color: transparent; border-radius: 1rem;"></iframe>
-                <!-- Tombol paksa tutup darurat jika hang -->
-                <button type="button" class="btn-close position-absolute" data-bs-dismiss="modal" style="top: 15px; right: 15px; z-index: 1050; opacity: 0.5;" title="Tutup paksa jika macet"></button>
+    <div class="modal-dialog modal-dialog-centered" role="document" style="max-width: 360px;">
+        <div class="modal-content border-0" style="border-radius: 1.25rem; overflow: hidden; background-color: transparent; box-shadow: none;">
+            <div class="modal-body p-0">
+                <iframe id="background-download-iframe" src="" style="width: 100%; height: 260px; border: none; background-color: transparent; border-radius: 1.25rem;"></iframe>
             </div>
         </div>
     </div>

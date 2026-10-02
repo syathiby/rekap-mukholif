@@ -74,8 +74,14 @@ try {
 // ============================================================
 // Generate PDF via mPDF
 // ============================================================
+$tempDir = sys_get_temp_dir() . '/mpdf';
+if (!is_dir($tempDir)) {
+    @mkdir($tempDir, 0777, true);
+}
+
 try {
     $mpdf = new \Mpdf\Mpdf([
+        'tempDir'       => is_dir($tempDir) && is_writable($tempDir) ? $tempDir : sys_get_temp_dir(),
         'mode'          => 'utf-8',
         'format'        => 'A4',
         'margin_left'   => 8,

@@ -108,7 +108,7 @@ $musyrif = [
 ];
 
 $logo_path = $base_url . '/assets/img/Kop Syathiby.jpg';
-$logo_file_path = __DIR__ . '/../assets/img/Kop Syathiby.jpg';
+$logo_file_path = __DIR__ . '/../../assets/img/Kop Syathiby.jpg';
 if (!file_exists($logo_file_path)) $logo_path = ''; 
 
 $nama_santri_clean = preg_replace("/[^a-zA-Z0-9 ]/", "", $santri['nama']);
@@ -130,47 +130,107 @@ if ($mode === 'html') {
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Memproses Rapot PNG...</title>
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css    ">
-    <script src="https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js    "></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css">
+    <script src="https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js"></script>
     <style>
-        body, html {
-            margin: 0; padding: 0; width: 100%; min-height: 100vh;
-            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+        * {
             box-sizing: border-box;
         }
-        body { background-color: #f4f7f6; display: flex; flex-direction: column; justify-content: center; align-items: center; padding: 20px; }
-        html.in-iframe body { background-color: transparent !important; padding: 0 !important; }
-        html.in-iframe .loader-card { box-shadow: none !important; margin: auto !important; height: 100vh; display: flex; flex-direction: column; justify-content: center; }
-        .loader-card {
-            background-color: #ffffff; border-radius: 12px; box-shadow: 0 8px 20px rgba(0, 0, 0, 0.08);
-            padding: 32px 40px; text-align: center; width: 100%; max-width: 400px; box-sizing: border-box;
+        body, html {
+            margin: 0;
+            padding: 0;
+            width: 100%;
+            height: 100%;
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif !important;
+            background-color: transparent;
         }
-        .loader-card .icon-wrapper { font-size: 48px; color: #007bff; margin-bottom: 24px; }
-        .loader-card .loading-text { font-size: 1.1rem; font-weight: 600; color: #333; margin-bottom: 8px; }
-        .loader-card .sub-text { font-size: 0.9rem; color: #777; }
-        .loader-card.success .icon-wrapper { color: #28a745; }
-        .loader-card.error .icon-wrapper { color: #dc3545; }
-        .hidden-content-wrapper { position: absolute; left: -9999px; top: -9999px; opacity: 0; }
-        .page-wrapper { width: 210mm; min-height: 297mm; background-color: white; box-shadow: none; margin: 0; padding: 7mm 10mm 4mm 10mm; box-sizing: border-box; }
-        @media (max-width: 480px) {
-            body { padding: 15px; }
-            .loader-card { padding: 24px 20px; }
-            .loader-card .icon-wrapper { font-size: 40px; margin-bottom: 20px; }
-            .loader-card .loading-text { font-size: 1rem; }
-            .loader-card .sub-text { font-size: 0.85rem; }
+        body {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 16px;
+        }
+        .loader-card {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif !important;
+            background: #ffffff;
+            border-radius: 20px;
+            box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.08), 0 8px 10px -6px rgba(0, 0, 0, 0.03);
+            border: 1px solid #f1f5f9;
+            padding: 28px 24px;
+            text-align: center;
+            width: 100%;
+            max-width: 320px;
+            margin: auto;
+            transition: all 0.3s ease;
+        }
+        .loader-card * {
+            font-family: inherit !important;
+        }
+        .icon-box {
+            width: 52px;
+            height: 52px;
+            border-radius: 50%;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            margin: 0 auto 16px auto;
+            background-color: #f0f7ff;
+            color: #2563eb;
+            font-size: 20px;
+            transition: all 0.35s cubic-bezier(0.34, 1.56, 0.64, 1);
+        }
+        .loader-card.success .icon-box {
+            background-color: #ecfdf5;
+            color: #10b981;
+            transform: scale(1.05);
+            animation: popCheck 0.4s cubic-bezier(0.34, 1.56, 0.64, 1);
+        }
+        .loader-card.error .icon-box {
+            background-color: #fef2f2;
+            color: #ef4444;
+            animation: popCheck 0.4s cubic-bezier(0.34, 1.56, 0.64, 1);
+        }
+        @keyframes popCheck {
+            0% { transform: scale(0.6); opacity: 0; }
+            100% { transform: scale(1.05); opacity: 1; }
+        }
+        .loading-title {
+            font-size: 1rem;
+            font-weight: 600;
+            color: #0f172a;
+            margin: 0 0 6px 0;
+            letter-spacing: -0.01em;
+        }
+        .loading-desc {
+            font-size: 0.825rem;
+            color: #64748b;
+            margin: 0;
+            line-height: 1.45;
+        }
+        .hidden-content-wrapper {
+            position: absolute;
+            left: -9999px;
+            top: -9999px;
+            opacity: 0;
+        }
+        .page-wrapper {
+            width: 210mm;
+            min-height: 297mm;
+            background-color: white;
+            box-shadow: none;
+            margin: 0;
+            padding: 7mm 10mm 4mm 10mm;
+            box-sizing: border-box;
         }
     </style>
-    <script>
-        if (window.self !== window.top) {
-            document.documentElement.classList.add('in-iframe');
-        }
-    </script>
 </head>
 <body>
     <div class="loader-card" id="loader-card">
-        <div class="icon-wrapper" id="loader-icon"><i class="fas fa-spinner fa-spin"></i></div>
-        <div class="loading-text" id="loading-text">Sedang menyiapkan PNG...</div>
-        <div class="sub-text" id="sub-text">Mohon tunggu sebentar, file Anda sedang diproses.</div>
+        <div class="icon-box" id="loader-icon">
+            <i class="fas fa-spinner fa-spin"></i>
+        </div>
+        <div class="loading-title" id="loading-title">Menyiapkan PNG...</div>
+        <div class="loading-desc" id="loading-desc">Mohon tunggu sebentar, file sedang diproses.</div>
     </div>
 
     <!-- Konten Render Tersembunyi -->
@@ -184,8 +244,8 @@ if ($mode === 'html') {
         document.addEventListener("DOMContentLoaded", function() {
             var loaderCard = document.getElementById('loader-card');
             var loaderIcon = document.getElementById('loader-icon');
-            var loadingMessage = document.getElementById('loading-text');
-            var subMessage = document.getElementById('sub-text');
+            var loadingTitle = document.getElementById('loading-title');
+            var loadingDesc = document.getElementById('loading-desc');
             var targetElement = document.getElementById('capture-area');
 
             // Optimasi opsi untuk merender HTML menjadi Canvas seukuran Kertas A4
@@ -209,21 +269,21 @@ if ($mode === 'html') {
                 document.body.removeChild(link);
 
                 loaderCard.classList.add('success');
-                loaderIcon.innerHTML = '<i class="fas fa-check-circle"></i>';
-                loadingMessage.innerText = "Download Berhasil!";
-                subMessage.innerText = "Jendela ini akan tertutup otomatis...";
+                loaderIcon.innerHTML = '<i class="fas fa-check"></i>';
+                loadingTitle.innerText = "Download Berhasil!";
+                loadingDesc.innerText = "Jendela ini akan tertutup otomatis...";
                 
                 if (window.self !== window.top) {
-                    setTimeout(function() { window.parent.postMessage('downloadComplete', '*'); }, 2000);
+                    setTimeout(function() { window.parent.postMessage('downloadComplete', '*'); }, 1200);
                 } else {
-                    setTimeout(function() { window.close(); }, 2000);
+                    setTimeout(function() { window.close(); }, 1200);
                 }
             }).catch(function(error) {
                 loaderCard.classList.add('error');
-                loaderIcon.innerHTML = '<i class="fas fa-times-circle"></i>';
-                loadingMessage.style.color = '#dc3545';
-                loadingMessage.innerText = 'Oops, Gagal Membuat PNG';
-                subMessage.innerText = 'Error: ' + error.message; 
+                loaderIcon.innerHTML = '<i class="fas fa-exclamation"></i>';
+                loadingTitle.style.color = '#ef4444';
+                loadingTitle.innerText = 'Gagal Membuat PNG';
+                loadingDesc.innerText = error.message || 'Terjadi kesalahan saat memproses gambar.'; 
                 console.error('Oops, ada error:', error);
             });
         });

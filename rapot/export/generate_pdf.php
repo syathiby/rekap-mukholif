@@ -108,7 +108,7 @@ $musyrif = [
     'nama_lengkap' => $rapot['nama_musyrif'] ?? 'User Dihapus'
 ];
 
-$logo_path = __DIR__ . '/../assets/img/Kop Syathiby.jpg';
+$logo_path = __DIR__ . '/../../assets/img/Kop Syathiby.jpg';
 if (!file_exists($logo_path)) $logo_path = ''; 
 
 ob_start(); 
@@ -116,13 +116,19 @@ include __DIR__ . '/../config/template_rapot_bulanan.php';
 $html = ob_get_contents();
 ob_end_clean(); 
 
+$tempDir = sys_get_temp_dir() . '/mpdf';
+if (!is_dir($tempDir)) {
+    @mkdir($tempDir, 0777, true);
+}
+
 try {
     $mpdf = new \Mpdf\Mpdf([
-        'mode' => 'utf-8',
-        'format' => 'A4',
-        'margin_left' => 10,
-        'margin_right' => 10,
-        'margin_top' => 7,
+        'tempDir'       => is_dir($tempDir) && is_writable($tempDir) ? $tempDir : sys_get_temp_dir(),
+        'mode'          => 'utf-8',
+        'format'        => 'A4',
+        'margin_left'   => 10,
+        'margin_right'  => 10,
+        'margin_top'    => 7,
         'margin_bottom' => 4,
     ]);
 
