@@ -242,8 +242,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 <html lang="id">
 <head>
     <meta charset="UTF-8">
-    <!-- viewport-fit=cover penting untuk iPhone X+ (notch & safe area) -->
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+    <!-- viewport-fit=cover penting untuk iPhone X+ (notch & safe area), user-scalable=no mencegah zoom tak diinginkan di iOS & PWA -->
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <meta name="format-detection" content="telephone=no">
     <title>AsuhTrack — Login</title>
 
     <!-- ══════════════════════════════════════
@@ -311,6 +312,67 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 });
         });
     }
+    </script>
+
+    <!-- ══════════════════════════════════════
+         IOS & PWA ANTI-ZOOM STABILIZATION
+    ══════════════════════════════════════ -->
+    <script>
+    (function() {
+        function isZoomAllowed(target) {
+            if (!target) return false;
+            try {
+                return !!(
+                    target.closest && (
+                        target.closest('.allow-zoom') ||
+                        target.closest('.zoomable') ||
+                        target.closest('#viewRapotModal') ||
+                        target.closest('#viewRapotIframe') ||
+                        target.closest('.page-wrapper')
+                    )
+                );
+            } catch(e) {
+                return false;
+            }
+        }
+
+        // WebKit gesturestart (iOS pinch zoom)
+        document.addEventListener('gesturestart', function(e) {
+            if (isZoomAllowed(e.target)) return;
+            e.preventDefault();
+        }, { passive: false });
+
+        document.addEventListener('gesturechange', function(e) {
+            if (isZoomAllowed(e.target)) return;
+            e.preventDefault();
+        }, { passive: false });
+
+        document.addEventListener('gestureend', function(e) {
+            if (isZoomAllowed(e.target)) return;
+            e.preventDefault();
+        }, { passive: false });
+
+        // Multi-touch touchmove
+        document.addEventListener('touchmove', function(e) {
+            if (e.touches && e.touches.length > 1) {
+                if (isZoomAllowed(e.target)) return;
+                e.preventDefault();
+            }
+        }, { passive: false });
+
+        // Cegah double-tap zoom pada area non-interaktif
+        var lastTouchEnd = 0;
+        document.addEventListener('touchend', function(e) {
+            var now = Date.now();
+            if (now - lastTouchEnd <= 300) {
+                var isInteractive = e.target && e.target.closest && e.target.closest('a, button, input, select, textarea, .btn, [role="button"]');
+                if (!isInteractive && !isZoomAllowed(e.target)) {
+                    e.preventDefault();
+                }
+            }
+            lastTouchEnd = now;
+        }, { passive: false });
+    })();
     </script>
 </head>
 <body class="login-body">

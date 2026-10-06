@@ -511,16 +511,19 @@ require_once __DIR__ . '/../../layouts/header.php';
         <div class="modal-content border-0 shadow-lg" style="background-color: #525659; overflow: hidden; max-height: 95vh;">
             <div class="modal-header bg-dark text-white border-0 py-2">
                 <h6 class="modal-title text-white m-0"><i class="fas fa-eye text-white me-2"></i>Preview Rapot</h6>
-                <div class="d-flex align-items-center gap-3">
+                <div class="d-flex align-items-center gap-2 ms-auto">
+                    <a id="viewRapotExternalBtn" href="#" target="_blank" class="btn btn-sm btn-outline-light py-1 px-2" style="font-size:0.8rem; border-radius:6px;" title="Buka di Layar Penuh">
+                        <i class="fas fa-external-link-alt me-1"></i>Tab Baru
+                    </a>
                     <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close" onclick="document.getElementById('viewRapotIframe').src=''"></button>
                 </div>
             </div>
-            <div class="modal-body p-0 position-relative" style="height: 85vh; background-color: #525659;">
+            <div class="modal-body p-0 position-relative allow-zoom" style="height: 85vh; background-color: #525659; overflow: auto; -webkit-overflow-scrolling: touch;">
                 <div id="loadingIframe" class="position-absolute top-50 start-50 translate-middle text-center text-white">
                     <div class="spinner-border text-light mb-2" role="status"></div>
                     <div>Memuat Preview...</div>
                 </div>
-                <iframe id="viewRapotIframe" src="" style="width: 100%; height: 100%; border: none; background: transparent; position: relative; z-index: 2;" onload="document.getElementById('loadingIframe').style.display='none';"></iframe>
+                <iframe id="viewRapotIframe" class="allow-zoom" src="" style="width: 100%; height: 100%; border: none; background: transparent; position: relative; z-index: 2; touch-action: pan-x pan-y pinch-zoom;" onload="document.getElementById('loadingIframe').style.display='none';"></iframe>
             </div>
         </div>
     </div>
@@ -530,6 +533,8 @@ require_once __DIR__ . '/../../layouts/header.php';
 window.openViewModal = function(url) {
     document.getElementById('loadingIframe').style.display = 'block';
     document.getElementById('viewRapotIframe').src = url;
+    var extBtn = document.getElementById('viewRapotExternalBtn');
+    if (extBtn) extBtn.href = url;
     var myModal = new bootstrap.Modal(document.getElementById('viewRapotModal'));
     myModal.show();
 }

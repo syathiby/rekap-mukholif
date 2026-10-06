@@ -66,6 +66,23 @@
     scrollbar-width: none !important;  /* Firefox */
 }
 
+html, body {
+    touch-action: pan-x pan-y;
+    -webkit-text-size-adjust: 100%;
+    -moz-text-size-adjust: 100%;
+    -ms-text-size-adjust: 100%;
+    text-size-adjust: 100%;
+    -webkit-tap-highlight-color: transparent;
+}
+
+/* Hilangkan double-tap delay & double-tap zoom di tombol, link, kartu */
+a, button, input, select, textarea, label,
+.btn, .nav-link, .dropdown-item, .card, .table,
+.sb-link, .bottom-nav-link, .badge, .page-link,
+[role="button"] {
+    touch-action: manipulation;
+}
+
 body {
     background-color: var(--bg-body);
     font-family: 'Poppins', sans-serif;
@@ -1859,14 +1876,34 @@ a {
     margin-bottom: 1.25rem;
 }
 
-/* --- 6. iOS Auto-zoom Prevention & Touch optimization for inputs & Select2 --- */
+/* --- 6. iOS Auto-zoom Prevention & Touch optimization for all inputs & Select2 --- */
+/* PENTING UNTUK IOS & PWA: Font-size minimal 16px mutlak diperlukan agar iOS Safari & WebKit
+   tidak memicu zoom otomatis saat keyboard muncul atau saat elemen difokuskan */
+input:not([type="checkbox"]):not([type="radio"]):not([type="hidden"]):not([type="file"]):not([type="submit"]):not([type="button"]):not([type="reset"]),
+select,
+textarea,
+.form-control,
+.form-control-sm,
+.form-control-lg,
+.form-select,
+.form-select-sm,
+.form-select-lg,
+.input-modern,
+.dataTables_filter input,
+.flatpickr-input {
+    font-size: 16px !important; /* Mencegah auto-zoom iOS Safari saat fokus input */
+}
+
 input[type="text"],
 input[type="password"],
 input[type="date"],
+input[type="number"],
+input[type="email"],
+input[type="search"],
+input[type="tel"],
 select,
 .form-control,
 .form-select {
-    font-size: 16px !important; /* Forces iOS to not zoom when focused */
     min-height: 46px;
     border-radius: 10px;
     border: 1px solid #cbd5e1;
@@ -1878,19 +1915,47 @@ textarea.form-control {
 }
 
 /* Select2 iOS touch & zoom optimizations */
-.select2-container--bootstrap-5 .select2-selection {
-    min-height: 48px !important;
+.select2-container--bootstrap-5 .select2-selection,
+.select2-container--bootstrap-5 .select2-selection--single,
+.select2-container--bootstrap-5 .select2-selection--multiple {
+    min-height: 46px !important;
     border-radius: 10px !important;
     border: 1px solid #cbd5e1 !important;
-    font-size: 16px !important;
-    padding: 0.5rem 0.75rem !important;
-    display: flex;
-    align-items: center;
+    padding: 0.4rem 0.85rem !important;
+    display: flex !important;
+    align-items: center !important;
+    background-color: #ffffff !important;
 }
 
-.select2-container--bootstrap-5 .select2-search__field {
+.select2-container--bootstrap-5 .select2-selection--single {
+    padding-right: 2.25rem !important;
+}
+
+/* Label text di dalam Select2 TIDAK boleh memiliki border atau min-height sendiri */
+.select2-container--bootstrap-5 .select2-selection .select2-selection__rendered {
+    border: none !important;
+    border-radius: 0 !important;
+    min-height: auto !important;
+    padding: 0 !important;
+    margin: 0 !important;
+    background: transparent !important;
+    box-shadow: none !important;
     font-size: 16px !important;
+    line-height: normal !important;
+    color: #1e293b !important;
+    flex-grow: 1;
+    overflow: hidden !important;
+    text-overflow: ellipsis !important;
+    white-space: nowrap !important;
+}
+
+.select2-container--bootstrap-5 .select2-search__field,
+.select2-search__field {
+    min-height: 38px !important;
     border-radius: 8px !important;
+    border: 1px solid #cbd5e1 !important;
+    font-size: 16px !important;
+    padding: 0.375rem 0.75rem !important;
 }
 
 .select2-container--bootstrap-5 .select2-dropdown .select2-results__option {
@@ -1898,11 +1963,25 @@ textarea.form-control {
     font-size: 0.95rem !important;
 }
 
-/* Prevent auto-scroll on inputs */
+/* Prevent auto-scroll jump on inputs */
 input:focus,
 select:focus,
 textarea:focus {
     outline: none;
+}
+
+/* --- Rapot Preview Modal Zoomability & Touch Optimization --- */
+/* Memastikan area preview rapot tetap bisa di-zoom dan di-pan dengan lancar */
+#viewRapotModal .modal-body,
+.modal-preview-rapot .modal-body {
+    overflow: auto !important;
+    -webkit-overflow-scrolling: touch !important;
+    touch-action: pan-x pan-y pinch-zoom !important;
+}
+
+#viewRapotModal iframe,
+.modal-preview-rapot iframe {
+    touch-action: pan-x pan-y pinch-zoom !important;
 }
 
 /* --- 7. Global Page Title Card Contrast Fix (White text on gradient banners) --- */

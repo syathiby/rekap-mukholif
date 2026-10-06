@@ -4,7 +4,7 @@
  * Versi cache: naikkan angka ini setiap kali ada perubahan besar
  */
 
-const CACHE_VERSION = 'asuhtrack-v3';
+const CACHE_VERSION = 'asuhtrack-v6';
 const STATIC_CACHE  = `${CACHE_VERSION}-static`;
 const DYNAMIC_CACHE = `${CACHE_VERSION}-dynamic`;
 

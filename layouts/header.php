@@ -28,8 +28,9 @@ if (isset($conn)) {
 <html lang="id">
 <head>
     <meta charset="UTF-8">
-    <!-- viewport-fit=cover penting untuk iPhone X+ (notch & safe area) -->
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+    <!-- viewport-fit=cover penting untuk iPhone X+ (notch & safe area), user-scalable=no mencegah zoom tak diinginkan di iOS & PWA -->
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <meta name="format-detection" content="telephone=no">
     <title>AsuhTrack</title>
 
     <!-- ═══════════════════════════════════════════════════
@@ -118,6 +119,71 @@ if (isset($conn)) {
                 });
         });
     }
+    </script>
+
+    <!-- ═══════════════════════════════════════════════════
+         IOS & PWA ANTI-ZOOM STABILIZATION
+         Mencegah pinch zoom & double-tap zoom tak diinginkan di iOS Safari & PWA.
+         Pengecualian khusus: Tetap mengizinkan zoom pada Preview Rapot (.allow-zoom, #viewRapotModal, iframe, dll)
+    ═══════════════════════════════════════════════════ -->
+    <script>
+    (function() {
+        function isZoomAllowed(target) {
+            if (!target) return false;
+            try {
+                return !!(
+                    target.closest && (
+                        target.closest('.allow-zoom') ||
+                        target.closest('.zoomable') ||
+                        target.closest('#viewRapotModal') ||
+                        target.closest('#viewRapotIframe') ||
+                        target.closest('.rapot-preview') ||
+                        target.closest('.rapot-zoom-container') ||
+                        target.closest('.page-wrapper')
+                    )
+                );
+            } catch(e) {
+                return false;
+            }
+        }
+
+        // 1. WebKit gesturestart / gesturechange / gestureend (Pinch gesture di iOS Safari)
+        document.addEventListener('gesturestart', function(e) {
+            if (isZoomAllowed(e.target)) return;
+            e.preventDefault();
+        }, { passive: false });
+
+        document.addEventListener('gesturechange', function(e) {
+            if (isZoomAllowed(e.target)) return;
+            e.preventDefault();
+        }, { passive: false });
+
+        document.addEventListener('gestureend', function(e) {
+            if (isZoomAllowed(e.target)) return;
+            e.preventDefault();
+        }, { passive: false });
+
+        // 2. Multi-touch touchmove (Pinch di mobile browser)
+        document.addEventListener('touchmove', function(e) {
+            if (e.touches && e.touches.length > 1) {
+                if (isZoomAllowed(e.target)) return;
+                e.preventDefault();
+            }
+        }, { passive: false });
+
+        // 3. Cegah double-tap zoom pada area non-interaktif
+        var lastTouchEnd = 0;
+        document.addEventListener('touchend', function(e) {
+            var now = Date.now();
+            if (now - lastTouchEnd <= 300) {
+                var isInteractive = e.target && e.target.closest && e.target.closest('a, button, input, select, textarea, .btn, .sb-link, .bottom-nav-link, [role="button"]');
+                if (!isInteractive && !isZoomAllowed(e.target)) {
+                    e.preventDefault();
+                }
+            }
+            lastTouchEnd = now;
+        }, { passive: false });
+    })();
     </script>
 </head>
 <body>

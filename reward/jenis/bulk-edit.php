@@ -1,4 +1,4 @@
-﻿<?php
+<?php
 require_once __DIR__ . '/../../bootstrap/init.php';
 guard('jenis_reward_edit'); 
 
@@ -26,7 +26,8 @@ while($row = mysqli_fetch_assoc($result)) {
 <html lang="id">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <meta name="format-detection" content="telephone=no">
     <title>Bulk Edit Reward - AsuhTrack</title>
     <style>
         /* Modern Minimalist Styles */
